@@ -11,6 +11,13 @@
 
 ---
 
+## Status (08/10, tarde)
+
+**Bloco A concluído:** A0–A6.3, exceto o que depende de rede ou de pessoa: A2.1 (criar o projeto), A4.5 (ler o QR impresso), A5.4 (ampliar fotos) e A6.1 (importar na Vercel).
+
+- **Revisão adversarial feita:** 4 frentes, 15 achados confirmados e corrigidos com teste. Isso cobre a A2.7.
+- **Falta no Supabase real:** aplicar o `supabase/setup.sql`, criar o usuário do painel e conferir o Realtime em produção. Daqui não há rede até o Supabase.
+
 ## 0. O que já foi feito (nesta sessão)
 
 | Item | Resultado |
@@ -75,7 +82,7 @@ mineiro-lanches/
 | `produtos` | `id text pk`, `categoria`, `nome`, `preco numeric(10,2)`, `tipo` (`lanche`/`combo`/`porcao`/`bebida`), `foto`, `dados jsonb` (ing, inclui, base), `ordem`, `ativo bool`, `esgotado_dia date` | **55 itens**: 34 lanches, 11 combos, 2 porções, 8 bebidas |
 | `adicionais` | `id text pk`, `nome`, `preco` | 5 itens a R$ 7,50 |
 | `loja` | linha única: `modo` (`auto`/`aberta`/`fechada`), `combo_preco 14.90`, `adicional_preco 7.50`, `aceita_fechada bool` | |
-| `clientes` | `telefone pk`, `nome`, `endereco`, `referencia`, `pedidos int`, `ultimo_pedido_em` | É o "registrar": base para CRM |
+| `clientes` | `telefone pk`, `nome`, `endereco`, `referencia`, `pedidos int`, `ultimo_pedido_em` | É o "registrar": base para CRM. Guarda o **último** nome e endereço informados para aquele telefone, **sem verificação** (qualquer pessoa pode pedir com qualquer telefone). Não é fonte confiável de identidade: o dado de cada pedido vale o que está em `pedidos.cliente_nome`, `endereco` e `referencia`. Se um dia o CRM ler esta tabela, guardar histórico (ex.: `clientes_enderecos`) ou verificar o telefone por OTP. |
 | `pedidos` | `id uuid`, `numero bigint identity` (#0001), `token uuid unique` (acompanhamento), `criado_em`, `origem` (`cardapio`/`qrcode`/`exemplo`), `mesa`, `cliente_nome`, `cliente_telefone`, `modo`, `endereco`, `referencia`, `pagamento`, `troco`, `obs`, `itens jsonb`, `total`, `status`, `historico jsonb` | `itens` em jsonb no mesmo formato do contrato do painel. Normalizar depois, se precisar de relatório em SQL. |
 | `equipe` | `user_id uuid pk → auth.users` | Quem acessa o painel |
 
@@ -198,10 +205,12 @@ mineiro-lanches/
 | ID | Tarefa | Quem | Min |
 |---|---|---|---|
 | B1 | Responder as perguntas da seção 6 (abrir a reunião com elas) | 👤 + cliente | 15 |
-| B2 | Aplicar as respostas no `CONFIG` e no seed: preços divergentes, domingo, pagamento, taxa, sabores, Combo Casal → `gerar-seed` → commit → deploy | H | 15 |
+| B2 | Aplicar as respostas no `CONFIG` e no seed: preços divergentes, domingo, pagamento, taxa, sabores, Combo Casal → `gerar-seed` → `montar-setup` → commit → deploy → colar o `setup.sql` no SQL Editor. O `CONFIG` manda no `ativo`: item que sai do `CONFIG` fica inativo e item que volta é reativado. Para tirar um item só por hoje, use "esgotado" no painel. | H | 15 |
 | B3 | Criar o usuário do painel com o e-mail do dono e inserir em `equipe`; fazer login no aparelho do truck e testar o som | 👤 | 10 |
 | B4 | Domínio final na Vercel (se houver) → `node scripts/qrcode.mjs` → imprimir o cartaz | 👤 + H | 15 |
+| B4.1 | **Antes do B5, abrir a loja.** Às 18h de quinta a loja está fechada no modo Automático (o turno começa às 19h) e o pedido real seria recusado com "O truck não está recebendo pedidos agora". No painel: **Loja → Aberta**. Antes da reunião, conferir no Supabase real: `select modo, aceita_fechada from loja;` | 👤 | 1 |
 | B5 | Pedido real pelo celular do cliente (via QR) → painel → status → acompanhar | 👤 + cliente | 10 |
+| B5.1 | **Depois da demonstração, voltar a Loja para Automático.** Em Aberta, a loja aceita pedidos fora do horário e aos domingos. Não mudar o `aceita_fechada` sem a resposta da pergunta 10 da seção 6. | 👤 | 1 |
 | B6 | Limpar os testes: `delete from pedidos where origem = 'exemplo' or obs ilike '%teste%'`; reiniciar a numeração se o cliente quiser | 👤 | 5 |
 | B7 | Cliente troca o link da bio do Instagram pela URL nova | cliente | 5 |
 
