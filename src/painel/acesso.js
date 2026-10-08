@@ -1,0 +1,203 @@
+/* Mineiro Lanche · acesso ao painel: login da equipe antes de montar o quadro.
+   1. Sessão guardada no aparelho (Supabase Auth, persistente): entra direto.
+   2. Sem sessão: e-mail e senha (signInWithPassword). O cadastro é feito pelo dono no Supabase.
+   3. Logado: confere se o usuário está na tabela equipe (o RLS deixa ler só a própria linha).
+      Fora da equipe: "Sem acesso", com o botão Sair.
+   4. Na equipe: instala a store do Supabase, espera a primeira carga e só então monta o painel
+      (assim os pedidos que já existiam não tocam som como se fossem novos).
+   Sessão expirada (o servidor recusa o token e a renovação falha): volta para o login. */
+import { obterSupabase } from '../lib/supabase.js';
+import { instalarStoreSupabase } from '../lib/store-supabase.js';
+
+export function iniciarAcesso(opc) {
+  const ML = window.ML;
+  const esc = ML.fmt.esc;
+  const quadro = opc.el;
+  quadro.hidden = true;
+
+  const tela = document.createElement('section');
+  tela.className = 'painel pn-acesso';
+  tela.setAttribute('aria-labelledby', 'pn-acesso-tit');
+  tela.innerHTML = `<div class="pn-acesso-caixa">
+      <img class="pn-acesso-logo" src="/assets/logo-selo.svg" alt="" width="84" height="84">
+      <h1 class="pn-acesso-tit" id="pn-acesso-tit">Painel de pedidos</h1>
+      <p class="pn-acesso-sub">${esc(ML.CONFIG.nome)} · acesso da equipe</p>
+      <div class="pn-acesso-corpo" data-corpo></div>
+    </div>`;
+  quadro.parentNode.insertBefore(tela, quadro);
+  const corpo = tela.querySelector('[data-corpo]');
+
+  let sb = null;
+  let store = null;
+  let montado = false;
+  let saindo = false;
+  let expirou = false;
+  let conferindo = null;
+
+  function etapa(html, foco) {
+    tela.hidden = false;
+    corpo.innerHTML = html;
+    const f = foco && corpo.querySelector(foco);
+    if (f) f.focus();
+  }
+  function aguarde(txt) {
+    etapa(`<p class="pn-acesso-msg" role="status">${esc(txt)}</p>`);
+  }
+  function semRede(txt, tentar) {
+    etapa(
+      `<p class="pn-erro" role="alert">${esc(txt)}</p><button type="button" class="pn-btn pn-btn--prim pn-acesso-b" data-tentar>Tentar de novo</button>`,
+      '[data-tentar]'
+    );
+    corpo.querySelector('[data-tentar]').addEventListener('click', tentar);
+  }
+
+  // ---------- login ----------
+  function mostrarLogin(aviso) {
+    etapa(
+      `<form class="pn-acesso-form" novalidate>
+        ${aviso ? `<p class="pn-acesso-aviso" role="status">${esc(aviso)}</p>` : ''}
+        <label class="pn-campo"><span class="pn-campo-r">E-mail</span><input class="pn-input" type="email" name="email" autocomplete="username" required></label>
+        <label class="pn-campo"><span class="pn-campo-r">Senha</span><input class="pn-input" type="password" name="senha" autocomplete="current-password" required></label>
+        <p class="pn-erro" role="alert" data-erro hidden></p>
+        <button type="submit" class="pn-btn pn-btn--prim pn-acesso-b">Entrar</button>
+      </form>`,
+      'input[name="email"]'
+    );
+    const form = corpo.querySelector('form');
+    const erro = form.querySelector('[data-erro]');
+    const botao = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = form.email.value.trim();
+      const senha = form.senha.value;
+      if (!email || !senha) {
+        erro.textContent = 'Preencha o e-mail e a senha.';
+        erro.hidden = false;
+        (email ? form.senha : form.email).focus();
+        return;
+      }
+      erro.hidden = true;
+      botao.disabled = true;
+      botao.textContent = 'Entrando…';
+      let r;
+      try {
+        r = await sb.auth.signInWithPassword({ email, password: senha });
+      } catch (x) {
+        r = { error: x };
+      }
+      if (r.error || !r.data || !r.data.user) {
+        botao.disabled = false;
+        botao.textContent = 'Entrar';
+        erro.textContent = mensagemDoLogin(r.error);
+        erro.hidden = false;
+        form.senha.select();
+        return;
+      }
+      // depois de uma sessão expirada o painel já montado recomeça do zero com o novo login
+      if (montado) {
+        location.reload();
+        return;
+      }
+      entrar(r.data.user);
+    });
+  }
+  function mensagemDoLogin(e) {
+    const status = e && e.status;
+    const codigo = (e && (e.code || '')) + ' ' + ((e && e.message) || '');
+    if (/invalid_credentials|invalid login/i.test(codigo) || status === 400) return 'E-mail ou senha incorretos.';
+    if (/not confirmed/i.test(codigo)) return 'Este e-mail ainda não foi confirmado.';
+    if (status === 429) return 'Muitas tentativas seguidas. Espere um pouco e tente de novo.';
+    return 'Não foi possível falar com o servidor. Confira a internet e tente de novo.';
+  }
+
+  // ---------- equipe ----------
+  async function entrar(usuario) {
+    aguarde('Conferindo o acesso…');
+    const { data, error } = await sb.from('equipe').select('user_id').eq('user_id', usuario.id).maybeSingle();
+    if (error) {
+      if (/jwt/i.test(error.message || '') || /^PGRST30/.test(error.code || ''))
+        return mostrarLogin('Sua sessão expirou. Entre de novo para continuar.');
+      return semRede('Não foi possível conferir o acesso agora.', () => entrar(usuario));
+    }
+    if (!data) return semAcesso(usuario);
+    abrirPainel(usuario);
+  }
+  function semAcesso(usuario) {
+    etapa(
+      `<div class="pn-acesso-sem" role="alert"><h2>Sem acesso</h2>
+        <p>O usuário <strong>${esc(usuario.email || '')}</strong> não está na equipe do painel. Peça ao responsável do truck para liberar este e-mail.</p></div>
+        <button type="button" class="pn-btn pn-acesso-b" data-sair>Sair</button>`,
+      '[data-sair]'
+    );
+    corpo.querySelector('[data-sair]').addEventListener('click', sair);
+  }
+
+  // ---------- painel ----------
+  async function abrirPainel(usuario) {
+    aguarde('Carregando os pedidos…');
+    store = instalarStoreSupabase({ papel: 'painel', aoSessaoExpirada: conferirSessao });
+    const avisoLento = setTimeout(() => !expirou && aguarde('Sem resposta do servidor. Tentando de novo…'), 8000);
+    await store.iniciar();
+    clearTimeout(avisoLento);
+    if (expirou) return;
+    tela.hidden = true;
+    quadro.hidden = false;
+    montado = true;
+    window.MLPainel.montar(quadro, { demo: !!opc.demo, usuario: usuario.email || '', aoSair: sair });
+    window.MLPainel.mostrar();
+  }
+  // o servidor recusou o token: tenta renovar; se não der, volta para o login
+  function conferirSessao() {
+    if (conferindo || expirou || saindo) return conferindo;
+    conferindo = sb.auth
+      .refreshSession()
+      .then(({ data, error }) => {
+        // sem rede na renovação: a sessão continua guardada e o plano B tenta de novo
+        if (error && error.name === 'AuthRetryableFetchError') return;
+        if (error || !data || !data.session) sessaoExpirada();
+        else if (store) store.recarregar().catch(() => {});
+      })
+      .catch(() => {
+        /* sem rede: o plano B tenta de novo e, se for mesmo a sessão, volta aqui */
+      })
+      .finally(() => {
+        conferindo = null;
+      });
+    return conferindo;
+  }
+  function sessaoExpirada() {
+    if (expirou || saindo) return;
+    expirou = true;
+    if (store) store.parar();
+    if (montado) window.MLPainel.esconder();
+    quadro.hidden = true;
+    mostrarLogin('Sua sessão expirou. Entre de novo para continuar.');
+  }
+  async function sair() {
+    saindo = true;
+    if (store) store.parar();
+    try {
+      await sb.auth.signOut({ scope: 'local' });
+    } catch {
+      /* sem rede: a sessão local já foi apagada */
+    }
+    location.reload();
+  }
+
+  // ---------- início ----------
+  async function comecar() {
+    aguarde('Conferindo o acesso…');
+    try {
+      sb = await obterSupabase({ sessao: true });
+    } catch {
+      return semRede('Não foi possível carregar o painel. Confira a internet.', comecar);
+    }
+    sb.auth.onAuthStateChange((evento) => {
+      if (evento === 'SIGNED_OUT' && montado) sessaoExpirada();
+    });
+    const { data } = await sb.auth.getSession();
+    if (data && data.session && data.session.user) entrar(data.session.user);
+    else mostrarLogin();
+  }
+  comecar();
+}

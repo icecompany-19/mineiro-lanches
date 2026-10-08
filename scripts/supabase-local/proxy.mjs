@@ -26,7 +26,7 @@ function usuarioPorEmail(email) {
     // variável do psql só é interpolada lendo do stdin (com -c não funciona)
     const out = execFileSync('psql', [PG, '-At', '-v', 'e=' + email, '-f', '-'], { encoding: 'utf8', input: "select id from auth.users where email = :'e';" });
     return out.trim() || null;
-  } catch (e) { return null; }
+  } catch { return null; }
 }
 function sessao(id, email) {
   const agora = Math.floor(Date.now() / 1000);

@@ -1,0 +1,1013 @@
+/* Mineiro Lanche · app do cliente (bio, cardápio, ficha, sacola, checkout, acompanhamento) e site.
+   Usa window.ML (core.js) com a store do Supabase já instalada: main-cliente.js chama iniciarApp() depois.
+   O painel é outra página (/painel/). */
+import FOTOS_JSON from 'virtual:fotos'; // public/assets/fotos.json (plugin em vite.config.js)
+
+export function iniciarApp() {
+  'use strict';
+  var ML = window.ML, C = ML.CONFIG, esc = ML.fmt.esc, brl = ML.fmt.brl;
+  var $ = function (s, el) { return (el || document).querySelector(s); };
+  var $$ = function (s, el) { return Array.prototype.slice.call((el || document).querySelectorAll(s)); };
+  var reduz = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var clamp = function (v, a, b) { return Math.min(b === undefined ? 1 : b, Math.max(a || 0, v)); };
+
+  // #painel nesta página leva ao painel da equipe, que vive em /painel/
+  if (/^#painel(\/|$)/.test(location.hash)) { location.replace('/painel/'); return; }
+
+  // fotos reais: tamanho original e cor dominante (public/assets/fotos.json); "recorte:*" são os PNG sem fundo
+  var FOTOS = {};
+  Object.keys(FOTOS_JSON).forEach(function (k) { if (k.indexOf('recorte:') !== 0) FOTOS[k] = FOTOS_JSON[k]; });
+  var produtoDaFoto = {};
+  Object.keys(ML.produtos).forEach(function (id) { var p = ML.produtos[id]; if (p.foto && !produtoDaFoto[p.foto]) produtoDaFoto[p.foto] = p; });
+
+  var ICONE_CAT = { artesanais: 'burger', tradicionais: 'burger', hotdog: 'hotdog', baguetes: 'baguete', combos: 'combo', porcoes: 'batata', bebidas: 'lata' };
+  function iconeDe(p) {
+    if (p.id === 'porcao-onion') return 'onion';
+    if (p.id === 'refri-600' || p.id === 'refri-1l' || p.id === 'suco-1l' || p.id === 'agua' || p.id === 'h2o') return 'garrafa';
+    return ICONE_CAT[p.cat] || 'burger';
+  }
+  function ic(nome, cls) { return '<svg class="ic' + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#i-' + nome + '"/></svg>'; }
+  function src(slug, tam) { return '/assets/fotos/' + slug + '-' + tam + '.webp'; }
+  // Larguras reais dos arquivos: o -540 e o -1080 nunca passam do original (dog-doritos tem 481 px,
+  // gran-burger 720 e gran-crispy 716), então a largura é min(540, w) e min(1080, w), sem repetir.
+  function arquivos(slug) {
+    var f = FOTOS[slug], lista = [];
+    [['540', 540], ['1080', 1080]].forEach(function (t) {
+      var w = Math.min(t[1], f.w);
+      if (!lista.some(function (a) { return a.w === w; })) lista.push({ tam: t[0], w: w, h: Math.round(f.h * w / f.w) });
+    });
+    return lista;
+  }
+  // Tamanho exibido de cada uso (para o navegador escolher o arquivo do srcset).
+  var SIZES = {
+    card: '180px',
+    ficha: '(min-width: 440px) 440px, 100vw',
+    carta: '(min-width: 1180px) 600px, (min-width: 880px) 52vw, calc(100vw - 40px)',
+    art: '(min-width: 411px) 320px, 78vw',
+    dog: '(min-width: 460px) 420px, calc(100vw - 40px)',
+    mosaico: '(min-width: 1180px) 276px, (min-width: 880px) calc(25vw - 19px), calc(50vw - 26px)',
+    monte: '(min-width: 520px) 300px, 58vw',
+    story: '(min-width: 480px) 480px, 100vw',
+    luz: '(min-width: 750px) 720px, 96vw'
+  };
+  // carga: 'lcp' (imagem principal da tela: sem lazy, prioridade alta), 'cedo' (acima da dobra) ou 'lazy' (padrão)
+  function atrCarga(carga) {
+    if (carga === 'lcp') return ' fetchpriority="high"';
+    if (carga === 'cedo') return ' decoding="async"';
+    return ' loading="lazy" decoding="async"';
+  }
+  // atributos de uma foto: src, srcset pela largura real, sizes, width/height do arquivo do src (sem CLS) e carga
+  function atrFoto(slug, tam, uso, carga) {
+    if (tam === 'q') return 'src="' + src(slug, 'q') + '" width="360" height="360"' + atrCarga(carga);
+    var lista = arquivos(slug), base = lista.filter(function (a) { return a.tam === tam; })[0] || lista[lista.length - 1];
+    return 'src="' + src(slug, base.tam) + '" srcset="' + lista.map(function (a) { return src(slug, a.tam) + ' ' + a.w + 'w'; }).join(', ') + '"' +
+      ' sizes="' + SIZES[uso] + '" width="' + base.w + '" height="' + base.h + '"' + atrCarga(carga);
+  }
+  // o mesmo para um <img> que troca de foto (story, foto ampliada, monte seu combo)
+  function trocarFoto(img, slug, tam, uso) {
+    var lista = arquivos(slug), base = lista.filter(function (a) { return a.tam === tam; })[0] || lista[lista.length - 1];
+    img.sizes = SIZES[uso];
+    img.srcset = lista.map(function (a) { return src(slug, a.tam) + ' ' + a.w + 'w'; }).join(', ');
+    img.width = base.w; img.height = base.h;
+    img.src = src(slug, base.tam);
+  }
+  // foto real (sem alteração) ou arte da categoria quando o item não tem foto
+  // opc: { uso: chave de SIZES (fotos -540/-1080), carga: 'lcp' | 'cedo' | 'lazy' }
+  function visual(p, tam, extra, opc) {
+    opc = opc || {};
+    if (p.foto && FOTOS[p.foto]) {
+      var f = FOTOS[p.foto];
+      return '<span class="foto' + (extra ? ' ' + extra : '') + '" style="--cor:' + f.cor + '"><img ' + atrFoto(p.foto, tam, opc.uso, opc.carga) + ' alt="Foto do ' + esc(p.nome) + '"></span>';
+    }
+    return '<span class="arte' + (extra ? ' ' + extra : '') + '" aria-hidden="true"><svg class="rabisco"><rect width="100%" height="100%" fill="url(#p-rabisco)"/></svg>' + ic(iconeDe(p)) + '</span>';
+  }
+  // imagens aparecem com um fade quando carregam
+  document.addEventListener('load', function (e) { if (e.target.tagName === 'IMG' && e.target.parentNode && e.target.parentNode.classList.contains('foto')) e.target.classList.add('ok'); }, true);
+  function marcarCarregadas(raiz) { $$('.foto img', raiz).forEach(function (i) { if (i.complete && i.naturalWidth) i.classList.add('ok'); }); }
+  function ingTexto(p) { return p.inclui ? p.inclui.join(' · ') : [p.base].concat(p.ing || []).filter(Boolean).join(', '); }
+
+  // ================= estado =================
+  // aba: 'app' (bio, cardápio e telas do pedido) ou 'site'; tela: a tela visível dentro do app
+  // pedidoToken: o pedido aberto em "Acompanhe" (#pedido/<token>, link que pode ser compartilhado)
+  var st = { aba: 'app', tela: 'bio', busca: '', filtro: null, pedidoToken: null, modo: 'entrega', pagamento: null };
+  // sacola e rascunho do checkout ficam no aparelho (localStorage, prefixo mineiro:v2:) e nunca se perdem num erro de envio
+  var CHAVE_SACOLA = 'mineiro:v2:sacola', CHAVE_RASCUNHO = 'mineiro:v2:rascunho';
+  function lerLocal(k, padrao) { try { var v = localStorage.getItem(k); return v == null ? padrao : JSON.parse(v); } catch { return padrao; } }
+  function gravarLocal(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem storage */ } }
+  var sacola = lerLocal(CHAVE_SACOLA, []).filter(function (l) { return l && l.sel && ML.produtos[l.sel.produtoId]; });
+  function salvarSacola() { gravarLocal(CHAVE_SACOLA, sacola); atualizarContadores(); }
+  // quem chega pelo QR (?origem=qrcode&mesa=3): vale para a visita toda (sessionStorage), mesmo depois de navegar
+  var CHAVE_ORIGEM = 'mineiro:v2:origem';
+  var origemQR = (function () {
+    var q = new URLSearchParams(location.search), o = null;
+    if (q.get('origem') === 'qrcode') {
+      var mesa = String(q.get('mesa') || '').trim();
+      o = { origem: 'qrcode', mesa: /^[0-9A-Za-z-]{1,10}$/.test(mesa) ? mesa : null };
+      try { sessionStorage.setItem(CHAVE_ORIGEM, JSON.stringify(o)); } catch { /* sem storage */ }
+      return o;
+    }
+    try { o = JSON.parse(sessionStorage.getItem(CHAVE_ORIGEM) || 'null'); } catch { o = null; }
+    return o && o.origem === 'qrcode' ? o : null;
+  })();
+  // mesa do QR: o checkout já abre em "Comer no local · Mesa N"
+  if (origemQR && origemQR.mesa) st.modo = 'local';
+  // item que não dá para pedir agora: esgotado hoje ou fora do cardápio (estado_cardapio do banco)
+  function indisponivel(id) { var p = ML.produtos[id]; return !p || !!p.inativo || !!ML.store.esgotados()[id]; }
+  function comboTxt() { return brl(C.regras.combo.preco); }
+  function totaisSacola() { var n = 0, v = 0; sacola.forEach(function (l) { var it = ML.precos.item(l.sel); n += it.qtd; v += it.subtotal; }); return { n: n, v: Math.round(v * 100) / 100 }; }
+  function addSacola(sel) {
+    var n = ML.precos.normalizar(sel), k = ML.precos.chave(n);
+    var ja = sacola.filter(function (l) { return l.chave === k; })[0];
+    if (ja) ja.sel.qtd += n.qtd; else sacola.push({ chave: k, sel: n });
+    salvarSacola();
+  }
+  function trocarLinha(chaveAntiga, sel) {
+    sacola = sacola.filter(function (l) { return l.chave !== chaveAntiga; });
+    addSacola(sel);
+  }
+  function plural(n) { return n === 1 ? '1 item' : n + ' itens'; }
+
+  // ================= horário e status =================
+  function atualizarStatus() {
+    var s = ML.horario.situacao();
+    $$('[data-status]').forEach(function (el) { el.textContent = s.txt; el.classList.toggle('fechado', !s.aberto); });
+    $$('[data-status-curto]').forEach(function (el) { el.textContent = (s.aberto ? 'Aberto · ' : 'Fechado · ') + C.nome; });
+    $$('[data-semana]').forEach(renderSemana);
+    return s;
+  }
+  // escala das barras: 18h → 2h (480 min)
+  function renderSemana(el) {
+    var a = ML.horario.agora(), ini = 1080, faixa = 480;
+    var turnoAtual = ML.horario.situacaoNo(a.dia, a.min);
+    var ordem = [1, 2, 3, 4, 5, 6, 0];
+    el.innerHTML = ordem.map(function (d) {
+      var t = ML.horario.turnos[d], hoje = d === a.dia, nome = ML.fmt.dia(d);
+      var barra, hora;
+      if (t) { barra = '<span class="faixa" style="left:' + ((t.abre - ini) / faixa * 100) + '%;width:' + ((t.fecha - t.abre) / faixa * 100) + '%"></span>'; hora = ML.fmt.hora(t.abre) + '–' + ML.fmt.hora(t.fecha).replace('meia-noite', '0h'); }
+      else { barra = '<span class="faixa duvida" style="left:' + (60 / faixa * 100) + '%;width:' + (360 / faixa * 100) + '%"></span>'; hora = 'a confirmar'; }
+      var marca = '';
+      var minRel = turnoAtual.aberto && turnoAtual.turnoDia === d ? (a.min < ini ? a.min + 1440 : a.min) : (hoje ? a.min : -1);
+      if (minRel >= ini && minRel <= ini + faixa) marca = '<span class="agora" style="left:' + ((minRel - ini) / faixa * 100) + '%"></span>';
+      return '<li' + (hoje ? ' class="hoje"' : '') + '><span>' + nome.charAt(0).toUpperCase() + nome.slice(1) + '</span><span class="trilho">' + barra + marca + '</span><span class="hora">' + hora + '</span></li>';
+    }).join('');
+  }
+
+  // ================= montagem: bio =================
+  var STORIES = [
+    { nome: 'Dog com Doritos', fotos: ['dog-doritos', 'combo-2-dog-doritos'] },
+    { nome: 'Artesanais', fotos: ['gran-bacon-onion', 'gran-crispy', 'gran-egg-bacon', 'gran-chicken', 'gran-burger', 'gran-burger-bacon', 'gran-salada'] },
+    { nome: 'Combos', fotos: ['combo-diluvio', 'combo-casal', 'gran-bacon-maionese'] },
+    { nome: 'Dog Pizza', fotos: ['dog-pizza'] }
+  ];
+  var ICONE_BIO = { 'Hambúrguer artesanal': 'burger', 'Hot dog com Doritos': 'hotdog', 'Consumo no local': 'mesa', 'Entregas': 'moto' };
+  function montarBio() {
+    var naBio = st.aba === 'app' && st.tela === 'bio';
+    $('#chips-bio').innerHTML = C.bio.map(function (b) { return '<li>' + ic(ICONE_BIO[b] || 'estrela') + esc(b) + '</li>'; }).join('');
+    $('#stories').innerHTML = STORIES.map(function (s, i) {
+      return '<button type="button" class="story-btn" data-story-abrir="' + i + '"><span class="story-anel"><img ' + atrFoto(s.fotos[0], 'q', null, naBio ? 'cedo' : 'lazy') + ' alt=""></span>' + esc(s.nome) + '</button>';
+    }).join('');
+    $('#destaques').innerHTML = C.destaques.filter(function (id) { return ML.produtos[id] && !ML.produtos[id].inativo; }).map(function (id) {
+      var p = ML.produtos[id];
+      return '<button type="button" class="dest" data-abrir="' + id + '">' + visual(p, '540', null, { uso: 'card' }) + '<span class="dest-corpo"><strong>' + esc(p.nome) + '</strong><span>' + brl(p.preco) + '</span></span></button>';
+    }).join('');
+    $$('[data-wa]').forEach(function (a) { a.href = ML.whatsapp.link('Olá, ' + C.nome + '! Vim pelo link da bio.'); });
+    $$('[data-insta]').forEach(function (a) { a.href = C.instagram; });
+  }
+
+  // ================= montagem: cardápio =================
+  var FILTROS = [
+    { id: 'bacon', label: 'Com bacon', fn: function (p) { return /bacon/i.test(p.nome + ' ' + ingTexto(p)); } },
+    { id: 'ovo', label: 'Com ovo', fn: function (p) { return /\bovo\b|egg/i.test(p.nome + ' ' + ingTexto(p)); } },
+    { id: 'frango', label: 'Frango', fn: function (p) { return /frango|chicken/i.test(p.nome + ' ' + ingTexto(p)); } },
+    { id: 'doritos', label: 'Com Doritos', fn: function (p) { return /doritos/i.test(p.nome + ' ' + ingTexto(p)); } },
+    { id: 'foto', label: 'Com foto', fn: function (p) { return !!p.foto; } }
+  ];
+  function semAcento(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  function montarChips() {
+    $('#chips').innerHTML = C.categorias.map(function (c, i) {
+      return '<button type="button" class="chip" data-chip="' + c.id + '" aria-pressed="' + (i === 0) + '">' + ic(c.icone) + esc(c.label) + '</button>';
+    }).join('');
+    $('#filtros').innerHTML = FILTROS.map(function (f) { return '<button type="button" class="filtro" data-filtro="' + f.id + '" aria-pressed="false">' + esc(f.label) + '</button>'; }).join('');
+  }
+  function renderMenu() {
+    var esg = ML.store.esgotados(), q = semAcento(st.busca.trim()), filtro = FILTROS.filter(function (f) { return f.id === st.filtro; })[0];
+    var achou = 0, naTela = st.aba === 'app' && st.tela === 'menu', fotos = 0;
+    $('#menu-lista').innerHTML = C.categorias.map(function (c) {
+      var itens = c.itens.filter(function (p) { return (!q || semAcento(p.nome + ' ' + ingTexto(p)).indexOf(q) >= 0) && (!filtro || filtro.fn(p)); });
+      achou += itens.length;
+      if (!itens.length) return '';
+      return '<section class="cat" id="cat-' + c.id + '" data-cat="' + c.id + '" aria-labelledby="ct-' + c.id + '"><div class="cat-cab">' + ic(c.icone) + '<div><h2 id="ct-' + c.id + '">' + esc(c.label) + '</h2><small>' + esc(c.desc) + '</small></div></div>' +
+        itens.map(function (p) {
+          var off = !!esg[p.id], carga = 'lazy';
+          if (naTela && p.foto && fotos < 4) carga = fotos++ === 0 ? 'lcp' : 'cedo';
+          return '<button type="button" class="prod' + (off ? ' esgotado' : '') + '" id="prod-' + p.id + '" data-abrir="' + p.id + '">' + visual(p, 'q', null, { carga: carga }) +
+            '<span><span class="prod-nome">' + esc(p.nome) + '</span><span class="prod-ing">' + esc(ingTexto(p)) + '</span>' +
+            (off ? '<span class="selo-esgotado">Esgotado hoje</span>' : (ML.regras.podeCombo(p) ? '<span class="selo-combo">Vira combo +' + comboTxt() + '</span>' : '')) +
+            '<span class="prod-pe"><span class="preco">' + brl(p.preco) + '</span><span class="prod-mais" aria-hidden="true">' + ic('mais') + '</span></span></span></button>';
+        }).join('') + '</section>';
+    }).join('');
+    $('#vazio-busca').hidden = achou > 0;
+    marcarCarregadas($('#menu-lista'));
+  }
+  function marcarChip() {
+    var chips = $('#chips'), atual = null, lim = (chips ? chips.getBoundingClientRect().bottom : 182) + 18;
+    $$('.cat').forEach(function (c) { if (c.getBoundingClientRect().top - lim <= 0) atual = c.getAttribute('data-cat'); });
+    if (!atual) { var pri = $('.cat'); atual = pri && pri.getAttribute('data-cat'); }
+    $$('[data-chip]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-chip') === atual)); });
+  }
+
+  // ================= ficha do lanche =================
+  var ficha = { sel: null, editar: null, origem: null };
+  var dlg = $('#ficha');
+  function abrirFicha(id, opcoes) {
+    opcoes = opcoes || {};
+    var p = ML.produtos[id]; if (!p) return;
+    ficha.editar = opcoes.editar || null;
+    ficha.origem = opcoes.origem || null;
+    ficha.sel = opcoes.sel ? JSON.parse(JSON.stringify(opcoes.sel)) : { produtoId: id, completo: true, removidos: [], prensado: false, combo: { ativo: !!opcoes.combo, refri: '' }, adicionais: {}, sabor: '', qtd: 1 };
+    renderFicha();
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    $('#ficha-corpo').scrollTop = 0;
+    voarParaFicha();
+    if (opcoes.focoRefri) { var r = $('#f-refri'); if (r) setTimeout(function () { r.focus(); }, 380); }
+  }
+  // a foto do card "voa" até o topo da ficha
+  function voarParaFicha() {
+    if (reduz || !ficha.origem) return;
+    var de = ficha.origem.querySelector('.foto img, .arte'), para = $('.ficha-foto img, .ficha-foto .arte', dlg);
+    if (!de || !para) return;
+    var a = de.getBoundingClientRect(), b = para.getBoundingClientRect();
+    if (!a.width || !b.width) return;
+    para.animate([
+      { transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ',' + (a.height / b.height) + ')', transformOrigin: '0 0', borderRadius: '14px' },
+      { transform: 'none', transformOrigin: '0 0', borderRadius: '0' }
+    ], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  }
+  function fecharFicha(depois) {
+    if (!dlg.open) { if (depois) depois(); return; }
+    if (reduz) { dlg.close(); if (depois) depois(); return; }
+    dlg.classList.add('fecha');
+    setTimeout(function () { dlg.classList.remove('fecha'); dlg.style.transform = ''; dlg.close(); if (depois) depois(); }, 240);
+  }
+  function renderFicha(manterRolagem) {
+    var p = ML.produtos[ficha.sel.produtoId], s = ficha.sel, esg = indisponivel(p.id);
+    var corpo = $('#ficha-corpo'), rol = corpo.scrollTop;
+    var h = '<div class="ficha-foto" style="--cor:' + (p.foto && FOTOS[p.foto] ? FOTOS[p.foto].cor : 'var(--amarelo)') + '">' +
+      (p.foto && FOTOS[p.foto] ? '<img ' + atrFoto(p.foto, '1080', 'ficha', 'lcp') + ' alt="Foto do ' + esc(p.nome) + '">' : visual(p, 'q')) + '</div>';
+    h += '<div class="ficha-cab"><h2 id="ficha-nome">' + esc(p.nome) + '</h2><span class="preco">' + brl(p.preco) + '</span>';
+    if (p.inclui) h += '<ul class="ficha-inclui">' + p.inclui.map(function (x) { return '<li>' + ic('check') + esc(x) + '</li>'; }).join('') + '</ul>';
+    else h += '<p class="ficha-desc">' + esc(ingTexto(p)) + '</p>';
+    if (p.nota) h += '<p class="ficha-nota">' + esc(p.nota) + '</p>';
+    if (esg) h += '<p class="ficha-nota">' + (p.inativo ? 'Fora do cardápio no momento.' : 'Esgotado hoje no truck.') + '</p>';
+    h += '</div>';
+    if ((p.tipo === 'lanche' || p.tipo === 'combo') && p.ing && p.ing.length) {
+      h += '<section class="grupo"><div class="grupo-cab">' + ic('completo') + '<div><strong>Como você quer?</strong><small>Completo, ou tire o que não quiser</small></div></div>' +
+        '<div class="seg"><button type="button" class="opt" data-completo="1" aria-pressed="' + (s.completo !== false) + '">Completo</button><button type="button" class="opt" data-completo="0" aria-pressed="' + (s.completo === false) + '">Tirar algum item</button></div>';
+      if (s.completo === false) {
+        h += '<div class="ings" role="group" aria-label="Ingredientes">' + p.ing.map(function (i) {
+          var tem = (s.removidos || []).indexOf(i) < 0;
+          return '<button type="button" class="ing" data-ing="' + esc(i) + '" aria-pressed="' + tem + '" aria-label="' + esc(i) + (tem ? ', no lanche' : ', retirado') + '">' + esc(i) + '</button>';
+        }).join('') + '</div><p class="ing-dica">Toque no ingrediente para tirar ou devolver.</p>';
+      }
+      h += '</section>';
+    }
+    if (ML.regras.podePrensar(p)) {
+      h += '<section class="grupo"><div class="grupo-cab"><svg class="prensa-demo' + (s.prensado ? ' on' : '') + '" viewBox="0 0 64 46" aria-hidden="true"><g class="placa-cima"><rect x="30" y="0" width="4" height="8" rx="2" fill="#6E5B4E"/><rect x="6" y="8" width="52" height="6" rx="3" fill="#C8102E"/></g><g class="lanche"><rect x="10" y="24" width="44" height="7" rx="3.5" fill="#E9A64A"/><rect x="10" y="31" width="44" height="4" fill="#F7C21B"/><rect x="10" y="35" width="44" height="6" rx="3" fill="#E6A94A"/></g><rect x="4" y="41" width="56" height="5" rx="2.5" fill="#3E3131"/></svg>' +
+        '<div><strong>Prensado?</strong><small>' + esc(C.regras.prensado.texto) + '</small></div></div>' +
+        '<div class="seg"><button type="button" class="opt" data-prensado="0" aria-pressed="' + !s.prensado + '">Não</button><button type="button" class="opt" data-prensado="1" aria-pressed="' + !!s.prensado + '">Sim, prensado<small>grátis</small></button></div></section>';
+    }
+    if (ML.regras.podeCombo(p)) {
+      h += '<section class="grupo"><button type="button" class="interruptor" role="switch" aria-checked="' + !!s.combo.ativo + '" data-combo><span class="grupo-cab" style="margin:0">' + ic('combo') + '<span><strong>Vira combo? +' + comboTxt() + '</strong><small>Batata frita 140 g + refrigerante lata 350 ml</small></span></span><span class="trilho" aria-hidden="true"></span></button>';
+      if (s.combo.ativo) {
+        h += '<div class="combo-extra"><div class="combo-itens"><span class="combo-item">' + ic('batata') + 'Batata 140 g</span><span class="combo-item">' + ic('lata') + 'Lata 350 ml</span></div>' +
+          '<div class="campo" style="margin-top:0"><label for="f-refri">Qual refrigerante?</label><input id="f-refri" maxlength="40" placeholder="Ex.: Coca-Cola, Guaraná" value="' + esc(s.combo.refri || '') + '"></div></div>';
+      }
+      h += '</section>';
+    }
+    if (p.escolheRefri) {
+      h += '<section class="grupo"><div class="campo" style="margin-top:0"><label for="f-refri-combo">Qual refrigerante lata?</label><input id="f-refri-combo" maxlength="40" placeholder="Ex.: Coca-Cola, Guaraná" value="' + esc(s.sabor || '') + '"></div></section>';
+    }
+    if (ML.regras.podeAdicionais(p)) {
+      h += '<section class="grupo"><div class="grupo-cab">' + ic('mais') + '<div><strong>Adicionais</strong><small>R$ 7,50 cada</small></div></div>' +
+        C.adicionais.map(function (a) {
+          var q = (s.adicionais || {})[a.id] || 0;
+          return '<div class="adic"><span>' + esc(a.nome) + '<small>+ ' + brl(a.preco) + '</small></span><div class="stepper" role="group" aria-label="' + esc(a.nome) + '"><button type="button" data-adic="' + a.id + '" data-d="-1" aria-label="Menos ' + esc(a.nome) + '"' + (q ? '' : ' disabled') + '>' + ic('menos') + '</button><output>' + q + '</output><button type="button" data-adic="' + a.id + '" data-d="1" aria-label="Mais ' + esc(a.nome) + '">' + ic('mais') + '</button></div></div>';
+        }).join('') + '</section>';
+    }
+    if (p.sabor) {
+      h += '<section class="grupo"><div class="campo" style="margin-top:0"><label for="f-sabor">Sabor</label><input id="f-sabor" maxlength="40" placeholder="Escreva o sabor que você quer" value="' + esc(s.sabor || '') + '"></div></section>';
+    }
+    h += '<div style="height:18px"></div>';
+    corpo.innerHTML = h;
+    if (manterRolagem) corpo.scrollTop = rol;
+    atualizarRodapeFicha();
+  }
+  function atualizarRodapeFicha() {
+    var s = ficha.sel, p = ML.produtos[s.produtoId], esg = indisponivel(p.id);
+    var n = ML.precos.normalizar(s), total = ML.precos.unitario(n) * n.qtd;
+    $('#ficha-qtd').textContent = n.qtd;
+    $('[data-fq="-1"]').disabled = n.qtd <= 1;
+    $('#ficha-add-txt').textContent = esg ? (p.inativo ? 'Indisponível' : 'Esgotado hoje') : (ficha.editar ? 'Salvar' : 'Adicionar');
+    $('#ficha-add').setAttribute('aria-disabled', String(esg));
+    contar($('#ficha-total'), total);
+  }
+  // contagem animada do total
+  function contar(el, alvo) {
+    var de = +(el.getAttribute('data-v') || alvo);
+    el.setAttribute('data-v', alvo);
+    if (reduz || de === alvo) { el.textContent = brl(alvo); return; }
+    var t0 = performance.now();
+    (function passo(t) { var k = clamp((t - t0) / 320), e = 1 - Math.pow(1 - k, 3); el.textContent = brl(de + (alvo - de) * e); if (k < 1) requestAnimationFrame(passo); })(t0);
+  }
+  function confirmarFicha() {
+    var p = ML.produtos[ficha.sel.produtoId];
+    if (indisponivel(p.id)) return;
+    var sel = JSON.parse(JSON.stringify(ficha.sel)), origem = ficha.origem, editar = ficha.editar;
+    fecharFicha(function () {
+      if (editar) { trocarLinha(editar, sel); renderSacola(); toast(p.nome + ' atualizado na sacola'); return; }
+      addSacola(sel);
+      voar(origem, p);
+      toast(p.nome + ' na sacola · ' + plural(totaisSacola().n));
+    });
+  }
+  // arrastar a alça para fechar
+  (function () {
+    var y0 = null, dy = 0;
+    function ini(e) { y0 = e.clientY; dy = 0; dlg.style.transition = 'none'; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); }
+    function mov(e) { if (y0 == null) return; dy = Math.max(0, e.clientY - y0); dlg.style.transform = 'translateY(' + dy + 'px)'; }
+    function fim() { if (y0 == null) return; y0 = null; dlg.style.transition = 'transform .25s var(--suave)'; if (dy > 110) fecharFicha(); else dlg.style.transform = ''; setTimeout(function () { dlg.style.transition = ''; }, 260); }
+    [$('[data-arraste]', dlg), $('.ficha-alca', dlg)].forEach(function (el) { el.addEventListener('pointerdown', ini); el.addEventListener('pointermove', mov); el.addEventListener('pointerup', fim); el.addEventListener('pointercancel', fim); });
+  })();
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) fecharFicha(); });
+  dlg.addEventListener('cancel', function (e) { e.preventDefault(); fecharFicha(); });
+  dlg.addEventListener('input', function (e) {
+    if (e.target.id === 'f-refri') ficha.sel.combo.refri = e.target.value;
+    if (e.target.id === 'f-sabor' || e.target.id === 'f-refri-combo') ficha.sel.sabor = e.target.value;
+  });
+
+  // ================= sacola =================
+  function tagsHTML(sel) {
+    var p = ML.produtos[sel.produtoId], t = [];
+    if (p.tipo === 'lanche' || p.tipo === 'combo') t.push(sel.completo === false && sel.removidos && sel.removidos.length ? '<span class="tag sem">Sem ' + esc(sel.removidos.join(', ').toLowerCase()) + '</span>' : '<span class="tag">Completo</span>');
+    if (ML.regras.podePrensar(p)) t.push(sel.prensado ? '<span class="tag prensado">Prensado</span>' : '<span class="tag">Não prensado</span>');
+    if (sel.combo && sel.combo.ativo) t.push('<span class="tag combo">Combo +' + comboTxt() + (sel.combo.refri ? ' · ' + esc(sel.combo.refri) : '') + '</span>');
+    Object.keys(sel.adicionais || {}).forEach(function (id) { var q = sel.adicionais[id]; t.push('<span class="tag adic">+ ' + (q > 1 ? q + '× ' : '') + esc(ML.adicionais[id].nome) + '</span>'); });
+    if (sel.sabor) t.push('<span class="tag">' + esc(sel.sabor) + '</span>');
+    return t.join('');
+  }
+  function renderSacola() {
+    var vazia = !sacola.length;
+    $('#sacola-vazia').hidden = !vazia;
+    $('#sacola-resumo').hidden = vazia;
+    $('#btn-continuar').setAttribute('aria-disabled', String(vazia));
+    $('#sacola-linhas').innerHTML = sacola.map(function (l) {
+      var p = ML.produtos[l.sel.produtoId], it = ML.precos.item(l.sel), fora = indisponivel(p.id);
+      var upsell = !fora && ML.regras.podeCombo(p) && !(l.sel.combo && l.sel.combo.ativo)
+        ? '<div class="upsell"><span>Vira combo por +' + comboTxt() + '? Batata 140 g + lata 350 ml</span><button type="button" data-upsell="' + esc(l.chave) + '">Quero combo</button></div>' : '';
+      // item que esgotou depois de entrar na sacola: fica marcado até sair (o servidor recusaria o pedido)
+      var selo = fora ? '<span class="tag esgotado">' + (p.inativo ? 'Fora do cardápio' : 'Esgotado hoje') + '</span>' : '';
+      return '<article class="linha' + (fora ? ' esgotado' : '') + '" data-card>' + visual(p, 'q') + '<div><div class="linha-nome"><span>' + esc(p.nome) + '</span><span class="preco" style="font-size:16px">' + brl(it.subtotal) + '</span></div><div class="linha-esc">' + selo + tagsHTML(l.sel) + '</div>' +
+        '<div class="linha-pe"><div class="stepper" role="group" aria-label="Quantidade de ' + esc(p.nome) + '"><button type="button" data-sq="' + esc(l.chave) + '" data-d="-1" aria-label="Menos um ' + esc(p.nome) + '">' + ic(l.sel.qtd > 1 ? 'menos' : 'lixo') + '</button><output>' + l.sel.qtd + '</output><button type="button" data-sq="' + esc(l.chave) + '" data-d="1" aria-label="Mais um ' + esc(p.nome) + '">' + ic('mais') + '</button></div>' +
+        '<div class="linha-acoes"><button type="button" class="mini" data-editar="' + esc(l.chave) + '">' + ic('lapis') + 'Editar</button></div></div></div>' + upsell + '</article>';
+    }).join('');
+    marcarCarregadas($('#sacola-linhas'));
+    atualizarContadores();
+  }
+
+  // ================= checkout =================
+  var ICONE_MODO = { entrega: 'moto', retirada: 'sacola', local: 'mesa' };
+  // peças do checkout que não estão no index.html: telefone obrigatório (o servidor exige), aviso de privacidade
+  // (LGPD) e o bloco de erro do envio com "Tentar de novo" e "Enviar pelo WhatsApp"
+  (function () {
+    var tel = $('#f-tel'), campo = tel.closest('.campo');
+    campo.id = 'c-tel';
+    $('label', campo).textContent = 'Telefone com DDD (WhatsApp)';
+    tel.required = true; tel.setAttribute('autocomplete', 'tel-national');
+    campo.insertAdjacentHTML('beforeend', '<span class="msg-erro" hidden>Informe o telefone com DDD para o truck falar com você.</span>');
+    campo.insertAdjacentHTML('afterend', '<p class="nota-dados">' + ic('check') + 'Usamos seus dados só para preparar e entregar este pedido.</p>');
+    $('.enviar-wrap').insertAdjacentHTML('afterend',
+      '<div class="envio-erro" id="envio-erro" role="alert" tabindex="-1" hidden><strong id="envio-erro-tit"></strong><p id="envio-erro-txt"></p>' +
+      '<div class="envio-erro-acoes"><button type="button" class="btn btn-vermelho" data-tentar>Tentar de novo</button>' +
+      '<button type="button" class="btn btn-vermelho" data-go="sacola" data-ajustar hidden>Ajustar a sacola</button>' +
+      '<a class="btn btn-borda" id="envio-wa" href="#" target="_blank" rel="noopener">' + ic('chat') + 'Enviar pelo WhatsApp</a></div>' +
+      '<small>A sacola e os seus dados continuam aqui.</small></div>');
+    // rascunho do formulário: volta como estava (a observação some depois que o pedido é enviado)
+    var r = lerLocal(CHAVE_RASCUNHO, {});
+    [['f-nome', 'nome'], ['f-tel', 'tel'], ['f-end', 'end'], ['f-ref', 'ref'], ['f-obs', 'obs']].forEach(function (c) { if (r[c[1]]) $('#' + c[0]).value = r[c[1]]; });
+    // o modo escolhido também, a não ser que o QR da mesa mande "Comer no local"
+    if (!(origemQR && origemQR.mesa) && C.modos.some(function (m) { return m.id === r.modo; })) st.modo = r.modo;
+  })();
+  function salvarRascunho() {
+    gravarLocal(CHAVE_RASCUNHO, { nome: $('#f-nome').value, tel: $('#f-tel').value, end: $('#f-end').value, ref: $('#f-ref').value, obs: $('#f-obs').value, modo: st.modo });
+  }
+  $('#form-pedido').addEventListener('input', function () { salvarRascunho(); });
+  // só os dígitos; aceita +55 e o 0 da operadora na frente
+  function digitosTel(v) {
+    var d = String(v || '').replace(/\D/g, '');
+    if ((d.length === 12 || d.length === 13) && d.indexOf('55') === 0) d = d.slice(2);
+    if (d.length === 11 && d.charAt(0) === '0') d = d.slice(1);
+    if (d.length === 12 && d.charAt(0) === '0') d = d.slice(1);
+    return d;
+  }
+  function modoLabel(m) { return m.id === 'local' && origemQR && origemQR.mesa ? m.label + ' · Mesa ' + origemQR.mesa : m.label; }
+  function renderCheckout() {
+    $('#modos').innerHTML = C.modos.map(function (m) {
+      return '<button type="button" class="modo" data-modo="' + m.id + '" aria-pressed="' + (st.modo === m.id) + '">' + ic(ICONE_MODO[m.id]) + '<span><strong>' + esc(modoLabel(m)) + '</strong><small>' + esc(m.desc) + '</small></span></button>';
+    }).join('');
+    $('#bloco-endereco').hidden = st.modo !== 'entrega';
+    $('#pagamentos').innerHTML = C.pagamentos
+      ? '<div class="seg tres">' + C.pagamentos.map(function (p) { return '<button type="button" class="opt" data-pag="' + esc(p) + '" aria-pressed="' + (st.pagamento === p) + '">' + esc(p) + '</button>'; }).join('') + '</div>'
+      : '<p class="aviso">A forma de pagamento é combinada com o ' + esc(C.nome) + ' na entrega ou no truck.</p>';
+    var t = totaisSacola();
+    $('#chk-itens').textContent = plural(t.n);
+    $('#chk-taxa').textContent = st.modo === 'entrega' ? 'taxa combinada' : 'sem taxa';
+    var s = ML.horario.situacao(), av = $('#aviso-fechado');
+    av.hidden = s.aberto;
+    if (!s.aberto) av.textContent = s.txt + (ML.store.loja().aceitaFechada ? '. Os pedidos são preparados no horário de funcionamento do truck.' : '. Fora do horário o truck não recebe pedidos pelo site; se precisar, chame no WhatsApp.');
+  }
+
+  // envio: um uuid de idempotência por pedido montado; "Tentar de novo" reaproveita o mesmo (o servidor
+  // devolve o pedido já gravado em vez de duplicar se a primeira tentativa chegou lá e só a resposta se perdeu)
+  var envio = { uuid: null, assinatura: null, enviando: false };
+  function novoUuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    var b = new Uint8Array(16); crypto.getRandomValues(b); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    var h = Array.prototype.map.call(b, function (x) { return (x + 256).toString(16).slice(1); }).join('');
+    return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+  }
+  function lerFormulario() {
+    var mesa = st.modo === 'local' && origemQR ? origemQR.mesa : null;
+    return {
+      cliente: { nome: $('#f-nome').value.trim(), telefone: digitosTel($('#f-tel').value) }, modo: st.modo,
+      endereco: st.modo === 'entrega' ? $('#f-end').value.trim() : '', referencia: st.modo === 'entrega' ? $('#f-ref').value.trim() : '',
+      pagamento: st.pagamento, troco: '', obs: $('#f-obs').value.trim(),
+      origem: origemQR ? 'qrcode' : 'cardapio', mesa: mesa,
+      itens: sacola.map(function (l) { return l.sel; })
+    };
+  }
+  // o mesmo pedido montado aqui, para a mensagem de WhatsApp quando o servidor não responde
+  function pedidoLocal(d) {
+    var itens = d.itens.map(function (s) { return ML.precos.item(s); });
+    return Object.assign({}, d, { numero: null, itens: itens, total: Math.round(itens.reduce(function (a, i) { return a + i.subtotal; }, 0) * 100) / 100 });
+  }
+  var ERRO_ENVIO = {
+    loja_fechada: ['O truck não está recebendo pedidos agora', function () { return ML.horario.situacao().txt + '. Você pode chamar o ' + C.nome + ' pelo WhatsApp.'; }],
+    produto_esgotado: ['Um item da sacola esgotou', function (d) { return (d.esgotados.length ? d.esgotados.join(', ') : 'Um dos itens') + ' acabou de esgotar hoje. Tire da sacola e envie de novo, ou peça pelo WhatsApp.'; }],
+    produto_invalido: ['Um item da sacola saiu do cardápio', function (d) { return (d.esgotados.length ? d.esgotados.join(', ') + ' não está' : 'Um dos itens não está') + ' disponível agora. Ajuste a sacola e envie de novo.'; }],
+    muitos_pedidos: ['Muitos pedidos deste telefone', function () { return 'Recebemos vários pedidos deste número em poucos minutos. Espere um pouco ou fale com o truck pelo WhatsApp.'; }],
+    dados_invalidos: ['Confira os seus dados', function () { return 'O truck não aceitou algum campo do pedido. Confira nome, telefone e endereço e tente de novo.'; }],
+    rede: ['Não conseguimos falar com o truck', function () { return 'Sem conexão ou o servidor não respondeu. Tente de novo, ou envie o pedido completo pelo WhatsApp.'; }]
+  };
+  function nomesIndisponiveis() {
+    return sacola.filter(function (l) { return indisponivel(l.sel.produtoId); }).map(function (l) { return ML.produtos[l.sel.produtoId].nome; });
+  }
+  function mostrarErroEnvio(codigo, dados, soTexto) {
+    var e = ERRO_ENVIO[codigo] || ERRO_ENVIO.rede, nomes = nomesIndisponiveis();
+    $('#envio-erro-tit').textContent = e[0];
+    $('#envio-erro-txt').textContent = e[1]({ esgotados: nomes });
+    var ajustar = codigo === 'produto_esgotado' || codigo === 'produto_invalido';
+    $('[data-tentar]').hidden = ajustar || codigo === 'muitos_pedidos';
+    $('[data-ajustar]').hidden = !ajustar;
+    $('#envio-wa').href = ML.whatsapp.link(ML.whatsapp.mensagem(pedidoLocal(dados)));
+    var box = $('#envio-erro');
+    box.hidden = false;
+    if (soTexto) return;
+    box.focus({ preventScroll: true });
+    box.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'center' });
+  }
+  function esconderErroEnvio() { $('#envio-erro').hidden = true; }
+  function travarEnvio(sim) {
+    var btn = $('#btn-enviar');
+    envio.enviando = sim;
+    btn.classList.toggle('enviando', sim);
+    btn.setAttribute('aria-disabled', String(sim));
+    $('#form-pedido').setAttribute('aria-busy', String(sim));
+    $('span', btn).textContent = sim ? 'Enviando para o truck…' : 'Enviar pedido';
+  }
+  function validar() {
+    var nome = $('#f-nome').value.trim(), tel = digitosTel($('#f-tel').value), end = $('#f-end').value.trim(), ok = true;
+    var erroNome = nome.length < 2, erroTel = !/^\d{10,11}$/.test(tel), erroEnd = st.modo === 'entrega' && end.length < 5;
+    [['#c-nome', erroNome], ['#c-tel', erroTel], ['#c-end', erroEnd]].forEach(function (c) {
+      $(c[0]).classList.toggle('erro', c[1]); $(c[0] + ' .msg-erro').hidden = !c[1]; if (c[1]) ok = false;
+    });
+    if (!ok) { var prim = $('.campo.erro input'); if (prim) prim.focus(); }
+    return ok;
+  }
+  $('#form-pedido').addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (envio.enviando) return;
+    if (!sacola.length) { navegar('cardapio'); return; }
+    if (!validar()) return;
+    var dados = lerFormulario();
+    // item que já se sabe esgotado nem vai ao servidor
+    if (nomesIndisponiveis().length) { renderSacola(); mostrarErroEnvio('produto_esgotado', dados); return; }
+    var assinatura = JSON.stringify(dados);
+    if (!envio.uuid || envio.assinatura !== assinatura) { envio.uuid = novoUuid(); envio.assinatura = assinatura; }
+    dados.idempotencia = envio.uuid;
+    esconderErroEnvio();
+    travarEnvio(true);
+    ML.store.criarPedido(dados).then(function (pedido) {
+      envio.uuid = null; envio.assinatura = null;
+      sacola = []; salvarSacola();
+      $('#f-obs').value = ''; salvarRascunho();
+      travarEnvio(false);
+      st.pedidoToken = pedido.token;
+      // o checkout sai do histórico: voltar do acompanhamento leva à sacola, não ao formulário enviado
+      navegar('pedido', true);
+    }, function (err) {
+      travarEnvio(false);
+      var codigo = (err && err.codigo) || 'rede';
+      // esgotou ou saiu do cardápio: busca o estado do cardápio para marcar o item na sacola
+      if (codigo === 'produto_esgotado' || codigo === 'produto_invalido' || codigo === 'loja_fechada') {
+        ML.store.recarregar().catch(function () {}).then(function () { renderSacola(); if (!$('#envio-erro').hidden) mostrarErroEnvio(codigo, dados, true); });
+      }
+      mostrarErroEnvio(codigo, dados);
+    });
+  });
+
+  // ================= acompanhar pedido =================
+  var PASSOS = {
+    entrega: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['rota', 'Saiu para entrega', 'moto'], ['entregue', 'Entregue', 'check']],
+    retirada: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['pronto', 'Pronto para retirar', 'sacola'], ['entregue', 'Retirado', 'check']],
+    local: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['pronto', 'Pronto para servir', 'mesa'], ['entregue', 'Servido', 'check']]
+  };
+  var MSG = { novo: 'Pedido recebido pelo Mineiro Lanche', preparo: 'Seu lanche está na chapa', pronto: 'Pronto!', rota: 'Saiu para entrega', entregue: 'Bom apetite!', cancelado: 'Pedido cancelado' };
+  var FINAIS = ['entregue', 'cancelado'];
+  $('#ped-msg').insertAdjacentHTML('afterend', '<p class="sr" id="ped-status" role="status" aria-live="polite"></p>');
+  var RE_TOKEN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function tokenDaRota(hash) { var t = String(hash || '').replace(/^#/, '').split('/'); return t[0] === 'pedido' && RE_TOKEN.test(t[1] || '') ? t[1].toLowerCase() : null; }
+  function horaDe(iso) { var d = new Date(iso); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  // selos do item: completos quando o pedido foi feito neste aparelho; senão, a partir do resumo do servidor
+  function tagsDoItem(i) {
+    if (i.produtoId && ML.produtos[i.produtoId]) return tagsHTML(Object.assign({}, i, { adicionais: (i.adicionais || []).reduce(function (o, a) { o[a.id] = a.qtd; return o; }, {}) }));
+    return String(i.resumo || '').split(' · ').filter(Boolean).map(function (r) {
+      var cls = /^Sem /.test(r) ? ' sem' : r === 'Prensado' ? ' prensado' : /^Combo /.test(r) ? ' combo' : /^\+ /.test(r) ? ' adic' : '';
+      return '<span class="tag' + cls + '">' + esc(r) + '</span>';
+    }).join('');
+  }
+  function renderPedido() {
+    if (!st.pedidoToken) { var meus = ML.store.meus(); if (meus.length) st.pedidoToken = meus[0].token; }
+    if (!st.pedidoToken) { navegar('cardapio', true); return; }
+    var p = ML.store.acompanhamento(st.pedidoToken);
+    $('#ped-wa').hidden = !p;
+    if (!p) {
+      // ainda consultando (undefined) ou link de pedido que não existe (null)
+      $('#ped-num').textContent = '#····';
+      $('#ped-msg').textContent = p === null ? 'Pedido não encontrado. Confira o link ou faça um pedido novo.' : 'Buscando o seu pedido…';
+      $('#truck').classList.toggle('on', p !== null);
+      $('#linha-tempo').innerHTML = ''; $('#ped-itens').innerHTML = ''; $('#ped-total').textContent = '—';
+      $('#ped-status').textContent = '';
+      renderMeus();
+      return;
+    }
+    $('#ped-num').textContent = ML.fmt.numero(p.numero);
+    var msg = MSG[p.status] || '';
+    if (p.status === 'pronto') msg = p.modo === 'retirada' ? 'Pronto! Pode retirar no truck' : 'Pronto para servir';
+    if (p.status === 'cancelado') { var u = p.historico[p.historico.length - 1]; msg += u && u.motivo ? ' · ' + u.motivo : ''; }
+    $('#ped-msg').textContent = msg;
+    // para leitor de tela: o status muda sozinho (consulta a cada 10 s)
+    var rotulo = (ML.STATUS[p.status] || { label: p.status }).label;
+    if ($('#ped-status').textContent !== 'Status do pedido: ' + rotulo) $('#ped-status').textContent = 'Status do pedido: ' + rotulo;
+    $('#truck').classList.toggle('on', p.status !== 'cancelado');
+    var passos = PASSOS[p.modo] || PASSOS.entrega, ordem = passos.map(function (x) { return x[0]; }), idx = ordem.indexOf(p.status);
+    $('#linha-tempo').innerHTML = p.status === 'cancelado'
+      ? '<li class="passo atual"><span class="bolha">' + ic('x') + '</span><span><strong>Cancelado</strong><small>' + esc(msg) + '</small></span></li>'
+      : passos.map(function (ps, i) {
+        var h = p.historico.filter(function (x) { return x.status === ps[0]; })[0];
+        var cls = i < idx || (i === idx && p.status === 'entregue') ? 'feito' : (i === idx ? 'atual' : '');
+        return '<li class="passo ' + cls + '"><span class="bolha">' + ic(ps[2]) + '</span><span><strong>' + esc(ps[1]) + '</strong><small>' + (h ? horaDe(h.em) : 'aguardando') + '</small></span></li>';
+      }).join('');
+    $('#ped-itens').innerHTML = p.itens.map(function (i) {
+      return '<div class="linha" style="grid-template-columns:1fr"><div><div class="linha-nome"><span>' + i.qtd + '× ' + esc(i.nome) + '</span><span class="preco" style="font-size:16px">' + brl(i.subtotal) + '</span></div><div class="linha-esc">' + tagsDoItem(i) + '</div></div></div>';
+    }).join('');
+    // total do servidor (nunca o calculado no navegador)
+    $('#ped-total').textContent = brl(p.total) + (p.modo === 'entrega' ? ' + entrega' : '');
+    $('#ped-wa').href = ML.whatsapp.link(ML.whatsapp.mensagem(Object.assign({ cliente: { nome: '' }, endereco: '', referencia: '', pagamento: null, troco: '', obs: '', origem: origemQR ? 'qrcode' : 'cardapio' }, p, { itens: p.itens.map(function (i) { return Object.assign({ resumo: '' }, i); }) })));
+    renderMeus();
+  }
+  function renderMeus() {
+    var outros = ML.store.meus().filter(function (m) { return m.token !== st.pedidoToken; });
+    $('#bloco-meus').hidden = !outros.length;
+    $('#meus').innerHTML = outros.map(function (o) { return '<button type="button" class="meu" data-ver-pedido="' + esc(o.token) + '"><span><strong>' + ML.fmt.numero(o.numero) + '</strong> · ' + esc((ML.STATUS[o.status] || { label: o.status }).label) + '</span><span class="preco" style="font-size:15px">' + brl(o.total) + '</span></button>'; }).join('');
+  }
+  // consulta acompanhar_pedido a cada 10 s com a tela visível; para no pedido entregue ou cancelado.
+  // vez: cada chamada nova invalida a anterior (nunca ficam dois ciclos de consulta rodando)
+  var acomp = { timer: null, vez: 0, conferido: null };
+  function pararAcompanhar() { clearTimeout(acomp.timer); acomp.timer = null; acomp.vez++; }
+  function acompanhar() {
+    pararAcompanhar();
+    var tok = st.pedidoToken, vez = acomp.vez;
+    if (!tok || st.aba !== 'app' || st.tela !== 'pedido' || document.visibilityState !== 'visible') return;
+    // pedido já encerrado e conferido no servidor nesta visita: não precisa consultar de novo
+    var atual = ML.store.acompanhamento(tok);
+    if (atual && FINAIS.indexOf(atual.status) >= 0 && acomp.conferido === tok) return;
+    ML.store.acompanhar(tok).then(function () { acomp.conferido = tok; }, function () { /* sem rede: tenta de novo no próximo ciclo */ }).then(function () {
+      if (vez !== acomp.vez || tok !== st.pedidoToken || st.tela !== 'pedido') return;
+      renderPedido();
+      var p = ML.store.acompanhamento(tok);
+      if (p === null || (p && FINAIS.indexOf(p.status) >= 0)) return;
+      acomp.timer = setTimeout(acompanhar, 10000);
+    });
+  }
+  // outro pedido de "Meus pedidos": troca o token do endereço (o link continua compartilhável)
+  function verPedido(token) {
+    st.pedidoToken = token;
+    gravarRota('pedido', (history.state && history.state.de) || null, true);
+    renderPedido(); acompanhar(); window.scrollTo(0, 0);
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && st.tela === 'pedido') acompanhar(); });
+  window.addEventListener('online', function () { if (st.tela === 'pedido') acompanhar(); });
+
+  // ================= stories =================
+  var story = { g: 0, i: 0, timer: null };
+  var dlgStory = $('#story');
+  function abrirStory(g) {
+    story.g = g; story.i = 0;
+    $('#story-barras').innerHTML = STORIES[g].fotos.map(function () { return '<span><i></i></span>'; }).join('');
+    $('#story-tit').textContent = STORIES[g].nome;
+    if (typeof dlgStory.showModal === 'function') dlgStory.showModal(); else dlgStory.setAttribute('open', '');
+    mostrarStory();
+  }
+  function mostrarStory() {
+    clearTimeout(story.timer);
+    var s = STORIES[story.g], slug = s.fotos[story.i], p = produtoDaFoto[slug];
+    trocarFoto($('#story-img'), slug, '1080', 'story');
+    $('#story-img').alt = p ? 'Foto do ' + p.nome : '';
+    $('#story-nome').textContent = p ? p.nome : '';
+    $('#story-preco').textContent = p ? brl(p.preco) : '';
+    $('#story-pedir').setAttribute('data-produto', p ? p.id : '');
+    $$('#story-barras span').forEach(function (b, i) { b.className = i < story.i ? 'visto' : (i === story.i ? 'agora' : ''); });
+    var barra = $$('#story-barras span')[story.i];
+    if (barra) { var i = barra.querySelector('i'); i.style.animation = 'none'; void i.offsetWidth; i.style.animation = ''; }
+    dlgStory.classList.remove('pausado');
+    if (!reduz) story.timer = setTimeout(function () { passarStory(1); }, 4500);
+  }
+  function passarStory(d) {
+    var s = STORIES[story.g], prox = story.i + d;
+    if (prox < 0) prox = 0;
+    if (prox >= s.fotos.length) { if (story.g + 1 < STORIES.length) { abrirStoryContinuar(story.g + 1); } else fecharStory(); return; }
+    story.i = prox; mostrarStory();
+  }
+  function abrirStoryContinuar(g) { story.g = g; story.i = 0; $('#story-barras').innerHTML = STORIES[g].fotos.map(function () { return '<span><i></i></span>'; }).join(''); $('#story-tit').textContent = STORIES[g].nome; mostrarStory(); }
+  function fecharStory() { clearTimeout(story.timer); if (dlgStory.open) dlgStory.close(); }
+  dlgStory.addEventListener('cancel', function () { clearTimeout(story.timer); });
+  $('.story-foto', dlgStory).addEventListener('pointerdown', function () { clearTimeout(story.timer); dlgStory.classList.add('pausado'); });
+  $('.story-foto', dlgStory).addEventListener('pointerup', function () { dlgStory.classList.remove('pausado'); if (!reduz) story.timer = setTimeout(function () { passarStory(1); }, 2500); });
+
+  // ================= voo, toast e contadores =================
+  function alvoCarrinho() {
+    if (!$('#fab').hidden) return $('#fab');
+    if (st.tela === 'menu' && !$('#barra').hidden) return $('#barra .btn');
+    var b = $('[data-screen="' + st.tela + '"] [data-sacola-btn]');
+    if (b && b.offsetParent) return b;
+    return null;
+  }
+  function pular(el) { var b = el.querySelector('.badge') || el; b.classList.remove('pula'); void b.offsetWidth; b.classList.add('pula'); }
+  function voar(origem, p) {
+    var alvo = alvoCarrinho();
+    if (reduz || !alvo) { if (alvo) pular(alvo); return; }
+    var fonte = origem && (origem.querySelector('.foto img, .arte') || origem);
+    if (!fonte || !fonte.getBoundingClientRect().width) { pular(alvo); return; }
+    var r = fonte.getBoundingClientRect(), a = alvo.getBoundingClientRect(), size = Math.max(54, Math.min(r.width, 110));
+    var el = document.createElement('div');
+    el.className = 'voo'; el.innerHTML = p.foto && FOTOS[p.foto] ? '<img ' + atrFoto(p.foto, 'q', null, 'cedo') + ' alt="">' : visual(p, 'q');
+    el.style.cssText = 'left:' + (r.left + r.width / 2 - size / 2) + 'px;top:' + (r.top + r.height / 2 - size / 2) + 'px;width:' + size + 'px;height:' + size + 'px';
+    document.body.appendChild(el);
+    var dx = a.left + a.width / 2 - (r.left + r.width / 2), dy = a.top + a.height / 2 - (r.top + r.height / 2);
+    el.animate([
+      { transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1 },
+      { transform: 'translate(' + dx * 0.45 + 'px,' + (dy * 0.45 - 120) + 'px) scale(.8) rotate(-18deg)', opacity: 1, offset: 0.45 },
+      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.15) rotate(-40deg)', opacity: 0.5 }
+    ], { duration: 800, easing: 'cubic-bezier(.45,0,.55,1)' }).onfinish = function () { el.remove(); pular(alvo); };
+  }
+  var toastTimer;
+  function toast(txt) {
+    var el = $('#toast'); $('#toast-txt').textContent = txt;
+    if (st.aba === 'app' && (st.tela === 'sacola' || st.tela === 'checkout')) return;
+    el.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.classList.remove('on'); }, 2600);
+  }
+  function atualizarContadores() {
+    var t = totaisSacola();
+    $$('[data-contador]').forEach(function (b) { b.textContent = t.n; b.hidden = t.n === 0; });
+    $$('[data-contagem]').forEach(function (b) { b.textContent = plural(t.n); });
+    $$('[data-total]').forEach(function (b) { b.textContent = brl(t.v); });
+    $$('[data-total-txt]').forEach(function (b) { b.textContent = plural(t.n) + ' · ' + brl(t.v); });
+    $$('[data-sacola-btn]').forEach(function (b) { b.classList.toggle('cheio', t.n > 0); });
+    $('#barra').hidden = !(t.n > 0 && st.aba === 'app' && st.tela === 'menu');
+    // o botão flutuante mostra a sacola no site e na bio (telas sem o botão da sacola no cabeçalho)
+    $('#fab').hidden = !(t.n > 0 && (st.aba === 'site' || st.tela === 'bio'));
+  }
+
+  // ================= telas e rotas =================
+  // Rotas no hash: #bio (início, também sem hash), #cardapio, #site, #sacola, #checkout e #pedido.
+  // Cada troca entra no histórico, então o voltar do navegador refaz o caminho.
+  var TELA_DA_ROTA = { bio: 'bio', cardapio: 'menu', sacola: 'sacola', checkout: 'checkout', pedido: 'pedido' };
+  var ROTA_DA_TELA = { bio: 'bio', menu: 'cardapio', sacola: 'sacola', checkout: 'checkout', pedido: 'pedido' };
+  function podeTransicao() { return !!document.startViewTransition && !reduz && document.visibilityState === 'visible'; }
+  function silenciar(t) { ['ready', 'finished', 'updateCallbackDone'].forEach(function (k) { if (t && t[k]) t[k].catch(function () {}); }); }
+  function rotaAtual() { return st.aba === 'site' ? 'site' : ROTA_DA_TELA[st.tela]; }
+  // '#cardapio' → 'cardapio'; vazio ou desconhecido → 'bio' (o prefixo vale: '#pedido/…' → 'pedido')
+  function lerRota(hash) {
+    var h = String(hash || '').replace(/^#/, '').split('/')[0];
+    return h === 'site' || h === 'painel' || TELA_DA_ROTA[h] ? h : 'bio';
+  }
+  function mostrarView(qual) {
+    st.aba = qual;
+    $('#view-app').hidden = qual !== 'app';
+    $('#view-site').hidden = qual !== 'site';
+    if (qual === 'site') iniciarSite();
+  }
+  function focarTitulo(raiz) {
+    var h = raiz.querySelector('h1:not(.sr)') || raiz.querySelector('h1');
+    if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+  }
+  // troca a tela do app; inicial = primeira pintura (sem transição nem foco)
+  function irTela(tela, inicial) {
+    var usaVT = !inicial && podeTransicao();
+    var troca = function () {
+      if (st.aba !== 'app') mostrarView('app');
+      st.tela = tela;
+      $$('[data-screen]').forEach(function (s) { s.hidden = s.getAttribute('data-screen') !== tela; });
+      if (tela === 'menu') { renderMenu(); requestAnimationFrame(marcarChip); animarFaixas(); }
+      if (tela === 'sacola') renderSacola();
+      if (tela === 'checkout') renderCheckout();
+      if (tela === 'pedido') { renderPedido(); acompanhar(); } else pararAcompanhar();
+      if (tela === 'checkout') esconderErroEnvio();
+      if (tela === 'bio') animarFaixas();
+      atualizarContadores();
+      if (inicial) return;
+      window.scrollTo(0, 0);
+      var atual = $('[data-screen="' + tela + '"]');
+      if (!usaVT) { atual.classList.remove('entra'); void atual.offsetWidth; atual.classList.add('entra'); }
+      focarTitulo(atual);
+    };
+    if (usaVT) silenciar(document.startViewTransition(troca)); else troca();
+  }
+  function irSite(inicial) {
+    var troca = function () {
+      mostrarView('site'); atualizarContadores();
+      if (inicial) return;
+      window.scrollTo(0, 0); focarTitulo($('#view-site'));
+    };
+    if (!inicial && podeTransicao()) silenciar(document.startViewTransition(troca)); else troca();
+  }
+  // mostra a rota (sem mexer no histórico); devolve a rota de fato mostrada
+  function aplicarRota(rota, inicial) {
+    if (rota === 'checkout' && !sacola.length) rota = 'cardapio';
+    if (dlg.open) dlg.close();
+    fecharStory();
+    if ($('#luz-caixa').open) $('#luz-caixa').close();
+    $('#toast').classList.remove('on');
+    if (rota === 'site') irSite(inicial); else irTela(TELA_DA_ROTA[rota] || 'bio', inicial);
+    return rota;
+  }
+  function gravarRota(rota, de, substituir) {
+    var estado = { rota: rota, de: de }, hash = rota === 'pedido' && st.pedidoToken ? 'pedido/' + st.pedidoToken : rota;
+    try { history[substituir ? 'replaceState' : 'pushState'](estado, '', '#' + hash); } catch { /* sem histórico */ }
+  }
+  // navegação pelos botões e links do app: entra no histórico (ou substitui a entrada atual)
+  function navegar(rota, substituir) {
+    var de = rotaAtual();
+    if (rota === de && !substituir) return;
+    var mostrada = aplicarRota(rota);
+    if (substituir) gravarRota(mostrada, (history.state && history.state.de) || null, true);
+    else if (mostrada !== de) gravarRota(mostrada, de, false);
+  }
+  // botão "voltar" do cabeçalho: se a tela anterior no histórico é o destino, volta de verdade
+  function voltarPara(rota) {
+    if (history.state && history.state.de === rota) history.back(); else navegar(rota);
+  }
+  // voltar/avançar do navegador e links diretos digitados
+  function aoMudarEndereco() {
+    var rota = lerRota(location.hash);
+    if (rota === 'painel') { location.replace('/painel/'); return; }
+    // link de outro pedido (#pedido/<token>) com a tela de pedido já aberta
+    var tok = rota === 'pedido' ? tokenDaRota(location.hash) : null;
+    if (tok && tok !== st.pedidoToken) { st.pedidoToken = tok; if (rotaAtual() === 'pedido') { renderPedido(); acompanhar(); return; } }
+    if (rota !== rotaAtual()) {
+      var mostrada = aplicarRota(rota);
+      if (mostrada !== rota) gravarRota(mostrada, (history.state && history.state.de) || null, true);
+    }
+  }
+  function animarFaixas() { $$('[data-faixa-combo]').forEach(function (f) { f.classList.remove('anima'); void f.offsetWidth; f.classList.add('anima'); }); }
+
+  // ================= site =================
+  var LANCHES_MONTE = ['gran-bacon-onion', 'gran-crispy', 'gran-egg-bacon', 'gran-chicken', 'gran-burger', 'gran-burger-bacon', 'gran-salada', 'dog-doritos', 'dog-pizza'];
+  var monte = { id: 'gran-burger', combo: false };
+  var siteIniciado = false, rafPend = false, ultimoY = 0, velocidade = 0;
+  function montarSite() {
+    $$('[data-letras]').forEach(function (el) {
+      var off = +(el.getAttribute('data-desloc') || 0);
+      el.innerHTML = el.getAttribute('data-letras').split('').map(function (ch, i) { return '<span class="letra" aria-hidden="true" style="--i:' + (i + off) + '">' + esc(ch) + '</span>'; }).join('');
+    });
+    var estrela = '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-estrela"/></svg>';
+    var faixa = function (l) { var b = l.map(function (n) { return '<span class="fita__item">' + esc(n) + estrela + '</span>'; }).join(''); return b + b + b; };
+    $('[data-fita="a"]').innerHTML = faixa(['Hambúrguer artesanal', 'Hot dog com Doritos', 'Consumo no local', 'Entregas em Suzano e região', 'Prensado sem custo']);
+    $('[data-fita="b"]').innerHTML = faixa(['Gran Bacon Onion', 'Gran Crispy', 'Combo Dilúvio', 'Dog com Doritos', 'Hot Dog Pizza', 'Combo Casal']);
+    $('#monte-escolha').innerHTML = LANCHES_MONTE.map(function (id) {
+      var p = ML.produtos[id];
+      return '<button type="button" data-monte="' + id + '" aria-pressed="' + (id === monte.id) + '"><img ' + atrFoto(p.foto, 'q') + ' alt="">' + esc(p.nome) + '</button>';
+    }).join('');
+    renderMonte(true);
+    $('#art-trilho').innerHTML = C.categorias[0].itens.slice().sort(function (a, b) { return (b.foto ? 1 : 0) - (a.foto ? 1 : 0); }).map(function (p) {
+      return '<button type="button" class="art-card" data-abrir="' + p.id + '">' + visual(p, '540', null, { uso: 'art' }) + '<span class="art-corpo"><strong>' + esc(p.nome) + '</strong><small>' + esc(ingTexto(p)) + '</small><span>' + brl(p.preco) + '</span></span></button>';
+    }).join('');
+    var dog = ML.produtos['dog-doritos'];
+    $('.dog-foto').insertAdjacentHTML('afterbegin', visual(dog, '1080', null, { uso: 'dog' }));
+    var tri = '';
+    for (var i = 0; i < 14; i++) tri += '<svg viewBox="0 0 30 28" data-dorito="' + i + '" style="left:' + (Math.random() * 90).toFixed(1) + '%"><path d="M15 2 28 26H2z" fill="#F08A1E" stroke="#B4560E" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="17" r="1" fill="#C4600F"/><circle cx="17" cy="20" r="1" fill="#C4600F"/><circle cx="15" cy="12" r=".9" fill="#C4600F"/></svg>';
+    $('#doritos').innerHTML = tri;
+    var pz = ML.produtos['dog-pizza'];
+    $('#mini-pizza').innerHTML = visual(pz, 'q') + '<span><strong>' + esc(pz.nome) + '</strong><span>' + brl(pz.preco) + '</span></span>';
+    $('#pilha').innerHTML = ['combo-diluvio', 'combo-casal', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos'].map(function (id, i) {
+      var p = ML.produtos[id];
+      return '<article class="carta" style="--i:' + i + '">' + visual(p, '1080', null, { uso: 'carta' }) + '<div class="carta-corpo"><strong>' + esc(p.nome) + '</strong><ul>' + p.inclui.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
+        (p.nota ? '<small style="color:var(--tinta-2)">' + esc(p.nota) + '</small>' : '') +
+        '<div class="carta-pe"><span class="preco">' + brl(p.preco) + '</span><button type="button" class="btn btn-vermelho" data-abrir="' + id + '">' + ic('sacola') + 'Pedir</button></div></div></article>';
+    }).join('');
+    $('#mosaico').innerHTML = Object.keys(FOTOS).map(function (slug) {
+      var p = produtoDaFoto[slug];
+      return '<button type="button" data-luz="' + slug + '" aria-label="Ampliar foto' + (p ? ' do ' + esc(p.nome) : '') + '"><img ' + atrFoto(slug, '540', 'mosaico') + ' alt="' + (p ? 'Foto do ' + esc(p.nome) : '') + '"></button>';
+    }).join('');
+    marcarCarregadas($('#view-site'));
+  }
+  function renderMonte(primeira) {
+    var p = ML.produtos[monte.id];
+    trocarFoto($('#monte-img'), p.foto, '540', 'monte');
+    $('#monte-img').alt = 'Foto do ' + p.nome;
+    $('#monte-lanche').className = 'monte-lanche foto';
+    $('#monte').classList.toggle('combo', monte.combo);
+    $('#monte-switch').setAttribute('aria-checked', String(monte.combo));
+    $('#monte-conta').textContent = p.nome + ' ' + brl(p.preco) + (monte.combo ? ' + combo ' + brl(C.regras.combo.preco) : '');
+    var v = p.preco + (monte.combo ? C.regras.combo.preco : 0);
+    if (primeira) { $('#monte-preco').textContent = brl(v); $('#monte-preco').setAttribute('data-v', v); } else contar($('#monte-preco'), v);
+    $$('[data-monte]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-monte') === monte.id)); });
+  }
+  function aplicarPrensa(v) {
+    var t = v / 100 * 76, svg = $('#prensa-ilustra');
+    $('.placa-cima', svg).style.transform = 'translateY(' + t.toFixed(1) + 'px)';
+    var esmaga = t > 46 ? (236 - (94 + t)) / 96 : 1;
+    $('.lanche', svg).style.transform = 'scaleY(' + esmaga.toFixed(3) + ')';
+    var prensado = v >= 85;
+    svg.classList.toggle('prensado', prensado);
+    $('#prensa-estado').textContent = prensado ? 'Prensado! Não cobramos para prensar.' : (v > 10 ? 'Prensando…' : 'Não prensado');
+  }
+  function iniciarSite() {
+    if (!siteIniciado) {
+      siteIniciado = true;
+      prepararRevelacoes($('#view-site'));
+      var palco = $('#palco');
+      palco.addEventListener('pointermove', function (e) {
+        if (e.pointerType !== 'mouse') return;
+        var r = palco.getBoundingClientRect();
+        palco.style.setProperty('--mx', ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
+        palco.style.setProperty('--my', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
+        pedirQuadro();
+      });
+      $('#art-trilho').addEventListener('pointermove', function (e) {
+        if (e.pointerType !== 'mouse') return;
+        var card = e.target.closest('.art-card'); if (!card) return;
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--ry', (((e.clientX - r.left) / r.width - 0.5) * 10).toFixed(2) + 'deg');
+        card.style.setProperty('--rx', (((e.clientY - r.top) / r.height - 0.5) * -8).toFixed(2) + 'deg');
+      });
+      $('#art-trilho').addEventListener('pointerout', function (e) { var c = e.target.closest('.art-card'); if (c && !c.contains(e.relatedTarget)) { c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); } });
+      // prensa: régua e arraste na ilustração
+      var regua = $('#f-prensa');
+      regua.addEventListener('input', function () { aplicarPrensa(+regua.value); });
+      var svg = $('#prensa-ilustra'), y0 = null, v0 = 0;
+      svg.addEventListener('pointerdown', function (e) { y0 = e.clientY; v0 = +regua.value; svg.setPointerCapture(e.pointerId); });
+      svg.addEventListener('pointermove', function (e) { if (y0 == null) return; var v = clamp(v0 + (e.clientY - y0) / svg.getBoundingClientRect().height * 160, 0, 100); regua.value = v; aplicarPrensa(v); });
+      svg.addEventListener('pointerup', function () { y0 = null; });
+      aplicarPrensa(0);
+    }
+    pedirQuadro();
+  }
+  function pedirQuadro() { if (!rafPend) { rafPend = true; requestAnimationFrame(quadro); } }
+  function quadro() {
+    rafPend = false;
+    if (st.aba !== 'site') return;
+    var y = window.scrollY, vh = window.innerHeight;
+    velocidade = velocidade * 0.85 + Math.abs(y - ultimoY) * 0.15; ultimoY = y;
+    if (!reduz) {
+      $$('.fita__trilho').forEach(function (tr) { var an = tr.getAnimations && tr.getAnimations()[0]; if (an) an.playbackRate = 1 + Math.min(velocidade / 6, 5); });
+      var palco = $('#palco'), mx = +palco.style.getPropertyValue('--mx') || 0, my = +palco.style.getPropertyValue('--my') || 0;
+      $$('.recorte', palco).forEach(function (o) { var p = +o.getAttribute('data-prof'); o.style.transform = 'translate(' + (mx * 28 * p).toFixed(1) + 'px,' + (my * 28 * p - y * 0.1 * p).toFixed(1) + 'px)'; });
+      var dog = $('#s-dog'), rd = dog.getBoundingClientRect();
+      if (rd.bottom > 0 && rd.top < vh) {
+        var pd = clamp((vh - rd.top) / (vh + rd.height));
+        var box = $('#doritos'), alt = box.getBoundingClientRect().height;
+        $$('[data-dorito]', box).forEach(function (t, i) {
+          var fase = (pd * 1.6 + i / 14) % 1;
+          t.style.transform = 'translateY(' + ((fase * (alt + 80)) - 60).toFixed(1) + 'px) rotate(' + ((fase * 360 + i * 47) % 360).toFixed(0) + 'deg)';
+        });
+      }
+      var cartas = $$('.carta');
+      cartas.forEach(function (c, i) {
+        var prox = cartas[i + 1]; if (!prox) { c.style.transform = ''; c.style.filter = ''; return; }
+        var r1 = c.getBoundingClientRect(), rp = prox.getBoundingClientRect(), sob = clamp((r1.bottom - rp.top) / r1.height);
+        c.style.transform = 'scale(' + (1 - sob * 0.06).toFixed(3) + ')';
+        c.style.filter = 'brightness(' + (1 - sob * 0.3).toFixed(3) + ')';
+      });
+      if (velocidade > 0.5) pedirQuadro();
+    }
+  }
+  function prepararRevelacoes(raiz) {
+    if (reduz || !('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.remove('fora'); io.unobserve(e.target); } }); }, { threshold: 0.12 });
+    $$('.rv', raiz).forEach(function (el) { if (el.getBoundingClientRect().top > window.innerHeight) { el.classList.add('fora'); io.observe(el); } });
+  }
+
+  // ================= eventos =================
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('a[href^="#"],[data-go],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-monte],#monte-switch,#monte-add,[data-luz],[data-fechar-luz],#luz-pedir');
+    if (!t) return;
+    var A = function (n) { return t.getAttribute(n); };
+    // links internos (#bio, #site…): mesma navegação dos botões, com o histórico do app
+    if (t.matches('a[href^="#"]')) {
+      var h = A('href').slice(1);
+      if (!h || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      e.preventDefault(); navegar(lerRota(h)); return;
+    }
+    if (t.hasAttribute('data-go')) {
+      var go = A('data-go'), rota = ROTA_DA_TELA[go] || go;
+      if (go === 'checkout' && !sacola.length) return;
+      if (t.hasAttribute('data-voltar')) voltarPara(rota); else navegar(rota);
+    }
+    else if (t.hasAttribute('data-abrir')) abrirFicha(A('data-abrir'), { origem: t.closest('[data-abrir]') });
+    else if (t.hasAttribute('data-chip')) { var cat = $('#cat-' + A('data-chip')); if (cat) cat.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'start' }); }
+    else if (t.hasAttribute('data-filtro')) { st.filtro = st.filtro === A('data-filtro') ? null : A('data-filtro'); $$('[data-filtro]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-filtro') === st.filtro)); }); renderMenu(); }
+    else if (t.hasAttribute('data-completo')) { ficha.sel.completo = A('data-completo') === '1'; if (ficha.sel.completo) ficha.sel.removidos = []; renderFicha(true); }
+    else if (t.hasAttribute('data-ing')) { var ing = A('data-ing'), r = ficha.sel.removidos || (ficha.sel.removidos = []), ix = r.indexOf(ing); if (ix >= 0) r.splice(ix, 1); else r.push(ing); renderFicha(true); var f = $('[data-ing="' + CSS.escape(ing) + '"]', dlg); if (f) f.focus(); }
+    else if (t.hasAttribute('data-prensado')) { ficha.sel.prensado = A('data-prensado') === '1'; renderFicha(true); }
+    else if (t.hasAttribute('data-combo')) { ficha.sel.combo.ativo = !ficha.sel.combo.ativo; renderFicha(true); var sw = $('[data-combo]', dlg); if (sw) sw.focus(); }
+    else if (t.hasAttribute('data-adic')) { var id = A('data-adic'), ad = ficha.sel.adicionais || (ficha.sel.adicionais = {}); ad[id] = Math.max(0, Math.min(5, (ad[id] || 0) + (+A('data-d')))); if (!ad[id]) delete ad[id]; renderFicha(true); var bf = $('[data-adic="' + id + '"][data-d="' + A('data-d') + '"]', dlg); if (bf && !bf.disabled) bf.focus(); }
+    else if (t.hasAttribute('data-fq')) { ficha.sel.qtd = Math.max(1, Math.min(20, (ficha.sel.qtd || 1) + (+A('data-fq')))); atualizarRodapeFicha(); }
+    else if (t.id === 'ficha-add') confirmarFicha();
+    else if (t.hasAttribute('data-fechar-ficha')) fecharFicha();
+    else if (t.hasAttribute('data-sq')) {
+      var l = sacola.filter(function (x) { return x.chave === A('data-sq'); })[0];
+      if (l) { l.sel.qtd += +A('data-d'); if (l.sel.qtd <= 0) sacola = sacola.filter(function (x) { return x !== l; }); salvarSacola(); renderSacola(); }
+    }
+    else if (t.hasAttribute('data-editar')) { var le = sacola.filter(function (x) { return x.chave === A('data-editar'); })[0]; if (le) abrirFicha(le.sel.produtoId, { sel: le.sel, editar: le.chave, origem: t.closest('[data-card]') }); }
+    else if (t.hasAttribute('data-upsell')) {
+      var lu = sacola.filter(function (x) { return x.chave === A('data-upsell'); })[0];
+      if (lu) { var s2 = JSON.parse(JSON.stringify(lu.sel)); s2.combo = { ativo: true, refri: '' }; abrirFicha(s2.produtoId, { sel: s2, editar: lu.chave, origem: t.closest('[data-card]'), focoRefri: true }); }
+    }
+    else if (t.hasAttribute('data-modo')) { st.modo = A('data-modo'); renderCheckout(); salvarRascunho(); }
+    else if (t.hasAttribute('data-pag')) { st.pagamento = A('data-pag'); renderCheckout(); }
+    else if (t.hasAttribute('data-story-abrir')) abrirStory(+A('data-story-abrir'));
+    else if (t.hasAttribute('data-story')) passarStory(+A('data-story'));
+    else if (t.hasAttribute('data-fechar-story')) fecharStory();
+    else if (t.id === 'story-pedir') { var pid = A('data-produto'); fecharStory(); if (pid) abrirFicha(pid); }
+    else if (t.hasAttribute('data-ver-pedido')) verPedido(A('data-ver-pedido'));
+    else if (t.hasAttribute('data-tentar')) { var form = $('#form-pedido'); if (form.requestSubmit) form.requestSubmit(); else form.dispatchEvent(new Event('submit', { cancelable: true })); }
+    else if (t.hasAttribute('data-novo-pedido')) navegar('cardapio');
+    else if (t.hasAttribute('data-monte')) { monte.id = A('data-monte'); renderMonte(); }
+    else if (t.id === 'monte-switch') { monte.combo = !monte.combo; renderMonte(); }
+    else if (t.id === 'monte-add') abrirFicha(monte.id, { combo: monte.combo, origem: $('#monte-lanche') });
+    else if (t.hasAttribute('data-luz')) { var slug = A('data-luz'), pp = produtoDaFoto[slug], lz = $('#luz-caixa'); trocarFoto($('#luz-img'), slug, '1080', 'luz'); $('#luz-img').alt = pp ? 'Foto do ' + pp.nome : ''; $('#luz-nome').textContent = pp ? pp.nome + ' · ' + brl(pp.preco) : ''; $('#luz-pedir').setAttribute('data-produto', pp ? pp.id : ''); $('#luz-pedir').hidden = !pp; lz.showModal ? lz.showModal() : lz.setAttribute('open', ''); }
+    else if (t.hasAttribute('data-fechar-luz')) $('#luz-caixa').close();
+    else if (t.id === 'luz-pedir') { var lp = A('data-produto'); $('#luz-caixa').close(); if (lp) abrirFicha(lp); }
+  });
+  $('#luz-caixa').addEventListener('click', function (e) { if (e.target === e.currentTarget) e.currentTarget.close(); });
+  $('#f-busca').addEventListener('input', function (e) { st.busca = e.target.value; renderMenu(); });
+  window.addEventListener('scroll', function () { if (st.aba === 'site') pedirQuadro(); else if (st.aba === 'app' && st.tela === 'menu') marcarChip(); }, { passive: true });
+  window.addEventListener('resize', function () { if (st.aba === 'site') pedirQuadro(); });
+  window.addEventListener('popstate', aoMudarEndereco);
+  window.addEventListener('hashchange', aoMudarEndereco);
+  // status do pedido, esgotados, preços e loja chegando do servidor (store do Supabase: Realtime ou consulta)
+  ML.store.ouvir(function (ev) {
+    var tipo = ev.tipo || '';
+    if (tipo.indexOf('pedido') === 0) { if (st.aba === 'app' && st.tela === 'pedido') renderPedido(); atualizarContadores(); }
+    if (tipo === 'cardapio:esgotados' || tipo === 'cardapio:estado') {
+      if (tipo === 'cardapio:estado') { montarBio(); marcarCarregadas($('#destaques')); atualizarStatus(); atualizarContadores(); }
+      if (st.tela === 'menu') renderMenu();
+      if (st.tela === 'sacola') renderSacola();
+      if (st.tela === 'checkout') renderCheckout();
+      if (dlg.open) renderFicha(true);
+    }
+    if (tipo === 'loja:modo') { atualizarStatus(); if (st.tela === 'checkout') renderCheckout(); }
+  });
+
+  // ================= início =================
+  // A bio é a tela inicial. Link direto (#cardapio, #site…) abre a tela pedida; quem chega pelo QR (?origem=qrcode) cai no cardápio.
+  var inicial = lerRota(location.hash);
+  if (!location.hash && origemQR && new URLSearchParams(location.search).get('origem') === 'qrcode') inicial = 'cardapio';
+  if (inicial === 'checkout' && !sacola.length) inicial = 'cardapio';
+  if (inicial === 'pedido') { st.pedidoToken = tokenDaRota(location.hash); if (!st.pedidoToken && !ML.store.meus().length) inicial = 'cardapio'; }
+  // estado antes de montar: as imagens da tela inicial carregam já, as outras ficam para depois (lazy)
+  st.aba = inicial === 'site' ? 'site' : 'app';
+  st.tela = TELA_DA_ROTA[inicial] || 'bio';
+  // os recortes do palco do site ficam lazy no HTML (o site começa escondido); se ele é a primeira tela, carregam já
+  if (st.aba === 'site') $$('#palco img[loading="lazy"]').forEach(function (i) { i.loading = 'eager'; });
+  montarBio(); montarChips(); renderMenu(); montarSite();
+  atualizarStatus(); setInterval(atualizarStatus, 30000);
+  aplicarRota(inicial, true);
+  var mostrada = rotaAtual();
+  if (location.hash || mostrada !== 'bio') gravarRota(mostrada, null, true);
+  else try { history.replaceState({ rota: 'bio', de: null }, ''); } catch { /* sem histórico */ }
+  marcarCarregadas(document);
+  prepararRevelacoes($('#view-app'));
+  window.MLApp = { navegar: navegar, irTela: irTela };
+}

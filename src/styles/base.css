@@ -1,0 +1,36 @@
+/* Mineiro Lanche · base comum ao site do cliente e ao painel: tokens, reset e utilitários.
+   Tema único por escolha: a identidade é vermelho, amarelo e dourado do logo. */
+:root{
+  color-scheme:light;
+  --vermelho:#C8102E; --vermelho-escuro:#9E0B23; --vinho:#7A1426; --amarelo:#F7C21B; --amarelo-claro:#FFDB5C; --ouro:#E8B33A; --ouro-escuro:#B8862B;
+  --carvao:#1A1414; --carvao-2:#231B1B; --carvao-3:#2E2424; --borda-escura:#3E3131;
+  --creme:#FFF6E0; --papel:#FFFDF6; --linha:#EBDCC0; --tinta:#2A1F1A; --tinta-2:#6E5B4E; --cinza-quente:#C9B9A6;
+  --verde:#2E7D4F; --laranja:#E8772E;
+  --f-letreiro:'Lilita One','Arial Black',Impact,sans-serif;
+  --f-placa:'Oswald','Arial Narrow',sans-serif;
+  --f-corpo:'Rubik',system-ui,-apple-system,'Segoe UI',sans-serif;
+  /* topo da página: só a área segura do aparelho (sem barra fixa) */
+  --top:env(safe-area-inset-top, 0px);
+  --mola:cubic-bezier(.34,1.56,.64,1);
+  --suave:cubic-bezier(.2,.8,.2,1);
+  --sombra:0 18px 40px -18px rgba(42,31,26,.45);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;background:var(--carvao)}
+body{margin:0;background:var(--carvao);color:var(--tinta);font-family:var(--f-corpo);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+/* height:auto evita foto esticada quando o <img> traz width/height */
+img{max-width:100%;height:auto;display:block}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+a{color:inherit;-webkit-tap-highlight-color:transparent}
+h1,h2,h3{text-wrap:balance}
+:focus-visible{outline:3px solid var(--amarelo);outline-offset:3px;border-radius:10px}
+[tabindex="-1"]:focus{outline:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic{width:22px;height:22px;flex:none;--ic-d:rgba(247,194,27,.55)}
+[hidden]{display:none!important}
+.placa{font-family:var(--f-placa);text-transform:uppercase;letter-spacing:.06em}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
