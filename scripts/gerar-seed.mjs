@@ -1,8 +1,8 @@
 // Gera supabase/seed.sql a partir do CONFIG do core.js (cardápio, adicionais e loja).
-// Uso: node scripts/gerar-seed.mjs [caminho/do/core.js]   (padrão: src/core.js; se não existir, preview/core.js)
-// O seed é idempotente: atualiza nome, preço, categoria, ordem, ingredientes, tipo e foto pelo id,
-// sem mexer em esgotado_dia nem em ativo (só desativa o que saiu do CONFIG). Loja: insere se não existir
-// e só atualiza horarios e combo_preco.
+// Uso: node scripts/gerar-seed.mjs [caminho/do/core.js]   (padrão: src/core.js)
+// O seed é idempotente: atualiza nome, preço, categoria, ordem, ingredientes, tipo e foto pelo id, sem mexer
+// em esgotado_dia. O CONFIG manda no ativo: o que está nele fica ativo (inclusive o que saiu e voltou) e o que
+// saiu fica inativo. Loja: insere se não existir e só atualiza horarios e combo_preco.
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -12,8 +12,7 @@ const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 export function caminhoCore(arg) {
   if (arg) return path.resolve(arg);
-  const src = path.join(RAIZ, 'src/core.js');
-  return fs.existsSync(src) ? src : path.join(RAIZ, 'preview/core.js');
+  return path.join(RAIZ, 'src/core.js');
 }
 
 // core.js como script: tira import/export (caso tenha virado módulo) para rodar no node:vm
@@ -111,7 +110,8 @@ export function montarSeed(CONFIG, origem = 'src/core.js') {
 
   return `-- Cardápio do Mineiro Lanche: gerado por scripts/gerar-seed.mjs a partir do CONFIG de ${origem}. Não edite à mão.
 -- ${produtos.length} produtos e ${adicionais.length} adicionais. Idempotente: atualiza nome, preço, categoria, ordem,
--- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia nem em ativo.
+-- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia. O CONFIG manda no ativo: quem está nele fica
+-- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo.
 
 insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingredientes, ordem) values
 ${linhasProd.join(',\n')}
@@ -122,7 +122,8 @@ on conflict (id) do update set
   tipo = excluded.tipo,
   foto = excluded.foto,
   ingredientes = excluded.ingredientes,
-  ordem = excluded.ordem;
+  ordem = excluded.ordem,
+  ativo = true;
 
 -- o que saiu do CONFIG fica inativo (pedidos antigos continuam apontando para ele)
 update public.produtos set ativo = false
@@ -132,7 +133,8 @@ insert into public.adicionais (id, nome, preco) values
 ${linhasAdic.join(',\n')}
 on conflict (id) do update set
   nome = excluded.nome,
-  preco = excluded.preco;
+  preco = excluded.preco,
+  ativo = true;
 
 update public.adicionais set ativo = false
 where ativo and id not in (${adicionais.map((a) => txt(a.id)).join(', ')});

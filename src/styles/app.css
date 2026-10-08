@@ -33,6 +33,21 @@ main{padding-top:var(--top)}
 @media (min-width:640px){.celular{margin:28px auto 56px;border-radius:30px;min-height:0;box-shadow:0 0 0 1px rgba(232,179,58,.25),0 50px 90px -30px rgba(0,0,0,.9)}}
 .tela{padding-bottom:30px}
 .tela.entra{animation:entra .45s var(--suave)}
+/* tela inicial antes do app (public/rota.js marca html[data-tela-inicial]): quem chega pelo QR ou por link direto
+   (#cardapio, #site, #pedido/…) vê a tela certa já na primeira pintura, sem a bio piscar antes */
+html[data-tela-inicial] [data-screen="bio"],html[data-tela-inicial="site"] #view-app{display:none!important}
+html[data-tela-inicial="site"] #view-site[hidden],
+html[data-tela-inicial="menu"] [data-screen="menu"][hidden],
+html[data-tela-inicial="sacola"] [data-screen="sacola"][hidden],
+html[data-tela-inicial="checkout"] [data-screen="checkout"][hidden],
+html[data-tela-inicial="pedido"] [data-screen="pedido"][hidden]{display:block!important}
+html[data-tela-inicial="menu"] #menu-lista:empty{min-height:100vh}
+#chips:empty{min-height:63px}
+#filtros:empty{min-height:46px}
+html[data-tela-inicial="pedido"] .pedido-num,html[data-tela-inicial="pedido"] .pedido-msg{visibility:hidden}
+/* foco nas telas claras do cliente: o amarelo some sobre o creme (1,5:1); o vinho dá cerca de 10:1.
+   O site, o painel, os stories e o aside escuro continuam com o amarelo */
+.tela :focus-visible,.ficha :focus-visible{outline-color:var(--vinho)}
 
 .bio-topo{position:relative;padding:22px 20px 56px;color:#fff;text-align:center;background:radial-gradient(90% 70% at 50% 30%,#E0213C 0%,var(--vermelho) 45%,var(--vermelho-escuro) 100%);overflow:hidden}
 .bio-topo .rabisco{position:absolute;inset:0;width:100%;height:100%;color:rgba(255,255,255,.09);pointer-events:none}
@@ -43,13 +58,21 @@ main{padding-top:var(--top)}
 .bio-id{position:relative;z-index:2;margin-top:6px;padding:0 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px}
 .bio-sub{margin:0;font-family:var(--f-placa);font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--vinho);display:flex;align-items:center;gap:6px}
 .bio-sub .ic{width:18px;height:18px;color:var(--vermelho);--ic-d:rgba(200,16,46,.2)}
-.status{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:0 14px;border-radius:999px;background:var(--verde);color:#fff;font-size:13.5px;font-weight:600}
-.status::before{content:"";width:8px;height:8px;border-radius:50%;background:#A8F0C2;animation:pulso 2s infinite}
+.status{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:0 14px;border-radius:999px;background:var(--tinta-2);color:#fff;font-size:13.5px;font-weight:600}
+/* neutro até o app conferir o horário e a loja (o HTML não sabe se está aberto) */
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cinza-quente)}
+.status.aberto{background:var(--verde)}
+.status.aberto::before{background:#A8F0C2;animation:pulso 2s infinite}
 .status.fechado{background:var(--vinho)}
 .status.fechado::before{background:var(--amarelo);animation:none}
 .chips-bio{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:4px 0 0;padding:0;list-style:none}
 .chips-bio li{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;background:var(--papel);border:1px solid var(--linha);font-size:13px;font-weight:600;color:var(--tinta)}
 .chips-bio .ic{width:17px;height:17px;color:var(--vermelho);--ic-d:rgba(247,194,27,.6)}
+/* a bio pinta antes do app preencher chips e stories: o espaço já fica reservado e o "Fazer pedido" não desce.
+   Até 413 px os chips ocupam 3 linhas com a Rubik (a fonte de reserva pode dar 2): ali a reserva fica sempre */
+#chips-bio:empty{min-height:73px}
+@media (max-width:413px){#chips-bio,#chips-bio:empty{min-height:113px;align-content:flex-start}}
+#stories:empty{min-height:129px}
 
 .stories{display:flex;gap:14px;overflow-x:auto;padding:18px 20px 4px;scrollbar-width:none}
 .stories::-webkit-scrollbar{display:none}
@@ -75,6 +98,7 @@ main{padding-top:var(--top)}
 .faixa-combo::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.18) 0 10px,transparent 10px 22px)}
 .faixa-combo strong{position:relative;display:block;font-family:var(--f-letreiro);font-weight:400;font-size:22px;line-height:1.05}
 .faixa-combo span{position:relative;display:block;font-size:13.5px;font-weight:600;margin-top:3px}
+.faixa-combo span [data-combo-preco]{display:inline;margin:0}
 .faixa-combo .montagem{position:absolute;left:10px;top:50%;width:78px;height:56px;transform:translateY(-50%)}
 .faixa-combo .montagem .ic{position:absolute;width:34px;height:34px;color:var(--vinho);--ic-d:#fff}
 .faixa-combo .m1{left:0;top:12px}.faixa-combo .m2{left:24px;top:0}.faixa-combo .m3{left:46px;top:14px}

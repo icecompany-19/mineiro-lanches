@@ -18,18 +18,24 @@ select pg_temp.ok((select ingredientes = array['Maionese', 'Barbecue', '3 onion 
   'seed: ingredientes = ing do CONFIG, com categoria, preço e foto');
 select pg_temp.ok((select foto is null and ingredientes = '{}' from produtos where id = 'porcao-batata'), 'seed: sem foto e sem ing ficam null e {}');
 
--- seed de novo: não mexe em esgotado nem em ativo, desativa o que saiu do CONFIG, loja só horarios e combo_preco
+-- seed de novo: não mexe em esgotado, o CONFIG manda no ativo (quem saiu e voltou é reativado; quem saiu fica
+-- inativo), loja só horarios e combo_preco
 update produtos set esgotado_dia = dia_operacional(), ativo = false, preco = 1 where id = 'gran-burger';
+update adicionais set ativo = false, preco = 1 where id = 'bacon';
 update loja set modo = 'fechada', aceita_fechada = true, combo_preco = 1, horarios = '{}';
 insert into produtos (id, categoria, nome, preco, tipo, ordem) values ('saiu-do-config', 'artesanais', 'Antigo', 10, 'lanche', 99);
+insert into adicionais (id, nome, preco) values ('saiu-do-config', 'Antigo', 7.50);
 \ir ../seed.sql
-select pg_temp.ok((select preco = 25.90 and esgotado_dia = dia_operacional() and not ativo from produtos where id = 'gran-burger'),
-  'seed repetido: volta o preço e preserva esgotado_dia e ativo');
+select pg_temp.ok((select preco = 25.90 and esgotado_dia = dia_operacional() from produtos where id = 'gran-burger'),
+  'seed repetido: volta o preço e preserva esgotado_dia');
+select pg_temp.ok((select ativo from produtos where id = 'gran-burger'), 'seed repetido: produto que voltou ao CONFIG fica ativo de novo');
+select pg_temp.ok((select ativo and preco = 7.50 from adicionais where id = 'bacon'), 'seed repetido: adicional que voltou ao CONFIG fica ativo de novo');
 select pg_temp.ok((select not ativo from produtos where id = 'saiu-do-config'), 'seed repetido: produto fora do CONFIG fica inativo');
+select pg_temp.ok((select not ativo from adicionais where id = 'saiu-do-config'), 'seed repetido: adicional fora do CONFIG fica inativo');
 select pg_temp.ok((select modo = 'fechada' and aceita_fechada and combo_preco = 14.90 and horarios ? '5' from loja),
   'seed repetido: loja preserva modo e aceita_fechada, atualiza combo_preco e horarios');
 select pg_temp.igual((select count(*) from produtos)::text, '56', 'seed repetido: não duplica produtos');
-select pg_temp.igual((select count(*) from adicionais)::text, '5', 'seed repetido: não duplica adicionais');
+select pg_temp.igual((select count(*) from adicionais)::text, '6', 'seed repetido: não duplica adicionais');
 
 -- RLS e Realtime
 select pg_temp.ok((select bool_and(relrowsecurity) and count(*) = 6 from pg_class

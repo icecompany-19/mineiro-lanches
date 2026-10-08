@@ -1,12 +1,15 @@
 /* Mineiro Lanche · ML.store sobre o Supabase (docs/CONTRATO-API.md).
-   Mesmo contrato da store da prévia (preview/CONTRATO-PAINEL.md), para app.js e painel.js quase não mudarem:
+   Mesmo contrato da store da prévia (docs/CONTRATO-PAINEL.md), para app.js e painel.js quase não mudarem:
    - leituras síncronas (pedidos, esgotados, loja) de um cache em memória carregado do servidor;
    - escritas pelas RPCs, com atualização otimista; se o servidor recusar, desfaz e avisa ('store:erro');
    - os mesmos eventos de antes (pedido:novo, pedido:status, pedidos:limpos, cardapio:esgotados, loja:modo,
      config), achados comparando id e status a cada recarga. A carga inicial não dispara pedido:novo.
    Mudanças chegam pelo Realtime; enquanto o canal não está SUBSCRIBED (ou no Supabase local, que não tem
    Realtime), o plano B consulta de tempos em tempos: painel a cada 5 s, cardápio a cada 60 s, e sempre ao
-   voltar para a aba ou ao voltar a rede. Config (som e tempos) continua local, por aparelho. */
+   voltar para a aba ou ao voltar a rede. Config (som e tempos) continua local, por aparelho.
+   Pedidos nunca voltam no tempo: o historico só cresce (+1 a cada mudança de status), então uma versão com
+   historico menor que a do cache é mais velha; e a foto de uma consulta não desfaz o que chegou (Realtime ou
+   RPC) enquanto ela estava no ar. */
 import { obterSupabase } from './supabase.js';
 
 const NS = 'mineiro:v2:';
@@ -178,7 +181,8 @@ export function criarStoreSupabase(opc) {
   const C = ML.CONFIG;
   const painel = opc.papel === 'painel';
   const intervalo = opc.intervalo || (painel ? 5000 : 60000); // plano B sem Realtime
-  const intervaloComCanal = opc.intervaloComCanal || (painel ? 60000 : 300000); // conferência com o canal ligado
+  // conferência com o canal ligado. O cardápio também a cada 60 s (CONTRATO): adicionais não estão no Realtime
+  const intervaloComCanal = opc.intervaloComCanal || 60000;
   const cliente = () => obterSupabase({ sessao: painel });
 
   // estado em memória
@@ -187,7 +191,11 @@ export function criarStoreSupabase(opc) {
   let loja = { modo: 'auto', aceitaFechada: false };
   let pedidosCarregados = false;
   let online = true;
-  const pendPedidos = new Map(); // id → { p } enquanto a RPC não volta (a recarga não desfaz o otimista)
+  const pendPedidos = new Map(); // id → { p, eco } enquanto a RPC não volta (a recarga não desfaz o otimista)
+  // versão local: cada pedido trocado ou apagado no cache (Realtime, RPC, otimista) ganha a próxima versão.
+  // Uma consulta guarda a versão do início; o que mudou depois dela vale mais que a foto que ela trouxe.
+  let versao = 0;
+  const tocado = new Map(); // id → versão da última mudança local
   const pendEsgotados = new Map(); // id → { v }
   let pendLoja = null;
   const acompanhamentos = new Map(); // token → acompanhamento (null = não existe)
@@ -272,16 +280,60 @@ export function criarStoreSupabase(opc) {
       }
     }
   }
-  // troca (ou acrescenta) um pedido no cache
+  const hist = (p) => (p && p.historico ? p.historico.length : 0);
+  const marcar = (id) => tocado.set(id, ++versao);
+  // troca (ou acrescenta) um pedido no cache, sem conferir versão (otimista e desfazer)
   function guardarPedido(p) {
+    marcar(p.id);
     const lista = pedidos.filter((x) => x.id !== p.id);
     lista.push(p);
     aplicarPedidos(lista, false);
+  }
+  // versão que veio do servidor (Realtime ou resposta de RPC): não troca o cache por uma mais velha
+  function receberPedido(p) {
+    const atual = pedidos.find((x) => x.id === p.id);
+    if (atual && hist(atual) > hist(p)) return;
+    guardarPedido(p);
+  }
+  function tirarPedidos(ids) {
+    ids.forEach(marcar);
+    aplicarPedidos(
+      pedidos.filter((p) => ids.indexOf(p.id) < 0),
+      false
+    );
+  }
+  // foto da consulta (tirada quando o cache estava na versão "desde") sobre o cache atual:
+  // - pedido mexido depois do início da consulta: fica o do cache, a não ser que a foto seja mais nova;
+  //   se ele saiu do cache nesse meio-tempo (apagado), não volta; se não veio na foto (chegou depois), fica;
+  // - os outros: vale a foto (o servidor já tinha tudo o que o cache sabia quando a consulta saiu).
+  function juntarFoto(foto, desde) {
+    const recente = (id) => (tocado.get(id) || 0) > desde;
+    const cache = new Map(pedidos.map((p) => [p.id, p]));
+    const naFoto = new Set();
+    const lista = [];
+    foto.forEach((p) => {
+      naFoto.add(p.id);
+      const c = cache.get(p.id);
+      if (!c) {
+        if (!recente(p.id)) lista.push(p);
+        return;
+      }
+      lista.push(recente(p.id) && hist(p) <= hist(c) ? c : p);
+    });
+    cache.forEach((c, id) => {
+      if (!naFoto.has(id) && recente(id)) lista.push(c);
+    });
+    // o que mudou antes desta foto já está nela: não precisa mais ser lembrado
+    tocado.forEach((v, id) => {
+      if (v <= desde) tocado.delete(id);
+    });
+    return lista;
   }
   async function carregarPedidos() {
     const sb = await cliente();
     const ctrl = new AbortController();
     const relogio = setTimeout(() => ctrl.abort(), TEMPO_LIMITE);
+    const desde = versao;
     try {
       const { data, error } = await sb
         .from('pedidos')
@@ -290,7 +342,7 @@ export function criarStoreSupabase(opc) {
         .order('criado_em')
         .abortSignal(ctrl.signal);
       if (error) throw erroCom(codigoDoErro(error), error);
-      aplicarPedidos((data || []).map(linhaParaPedido), !pedidosCarregados);
+      aplicarPedidos(juntarFoto((data || []).map(linhaParaPedido), desde), !pedidosCarregados);
       pedidosCarregados = true;
     } finally {
       clearTimeout(relogio);
@@ -321,8 +373,10 @@ export function criarStoreSupabase(opc) {
       c.itens.splice(0, c.itens.length, ...itens);
     });
     const adic = e.adicionais || {};
+    // inativo fica marcado no próprio objeto (é o mesmo de ML.adicionais): a sacola acusa o adicional que saiu
     ADICIONAIS.forEach((a) => {
       if (adic[a.id] != null) a.preco = Number(adic[a.id]);
+      a.inativo = adic[a.id] == null;
     });
     C.adicionais.splice(0, C.adicionais.length, ...ADICIONAIS.filter((a) => adic[a.id] != null));
     const l = e.loja || {};
@@ -419,12 +473,18 @@ export function criarStoreSupabase(opc) {
   function aoMudarPedido(payload) {
     if (payload.eventType === 'DELETE') {
       const id = payload.old && payload.old.id;
-      const resto = pedidos.filter((p) => p.id !== id);
-      if (id) aplicarPedidos(resto, false);
+      if (id) tirarPedidos([id]);
       return;
     }
-    if (!payload.new || !payload.new.id || pendPedidos.has(payload.new.id)) return;
-    guardarPedido(linhaParaPedido(payload.new));
+    if (!payload.new || !payload.new.id) return;
+    const p = linhaParaPedido(payload.new);
+    // com a RPC deste aparelho no ar, guarda o eco mais novo: vale se for mais novo que a resposta da RPC
+    const pend = pendPedidos.get(p.id);
+    if (pend) {
+      if (!pend.eco || hist(p) > hist(pend.eco)) pend.eco = p;
+      return;
+    }
+    receberPedido(p);
   }
   async function ligarCanal() {
     let sb;
@@ -434,6 +494,18 @@ export function criarStoreSupabase(opc) {
       return; // sem o pacote: fica no plano B
     }
     if (!ativo || canal) return;
+    // O phx_join precisa levar o JWT da equipe. O supabase-js só busca o token depois de abrir o socket, e o
+    // join sairia sem access_token: o Realtime usaria a apikey (anon) e o RLS barraria os eventos de pedidos,
+    // com o canal SUBSCRIBED (consulta só a cada 60 s). Com o token já no socket, o join e o rejoin o levam;
+    // o token renovado segue no heartbeat seguinte. Se demorar (sem rede), segue: o heartbeat tenta de novo.
+    if (painel) {
+      try {
+        await Promise.race([sb.realtime.setAuth(), new Promise((ok) => setTimeout(ok, 5000))]);
+      } catch {
+        /* segue: o heartbeat tenta de novo */
+      }
+      if (!ativo || canal) return;
+    }
     canal = sb.channel('mineiro-' + (painel ? 'painel' : 'cardapio') + '-' + Math.random().toString(36).slice(2, 8));
     if (painel) canal.on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, aoMudarPedido);
     canal
@@ -511,17 +583,20 @@ export function criarStoreSupabase(opc) {
       const evento = { status, em: new Date().toISOString() };
       if (motivo) evento.motivo = motivo;
       const otimista = Object.assign({}, atual, { status, historico: (atual.historico || []).concat([evento]) });
-      const marca = { p: otimista };
+      const anterior = pendPedidos.get(id);
+      const marca = { p: otimista, eco: anterior ? anterior.eco : null };
       pendPedidos.set(id, marca);
       guardarPedido(otimista);
+      // o eco do Realtime que chegou com a RPC no ar vale se for mais novo (outro aparelho mexeu depois)
+      const maisNovo = (p) => (marca.eco && hist(marca.eco) > hist(p) ? marca.eco : p);
       rpc('mudar_status', { p_id: id, p_status: status, p_motivo: motivo || null })
         .then((j) => {
           if (pendPedidos.get(id) === marca) pendPedidos.delete(id);
-          if (!pendPedidos.has(id)) guardarPedido(pedidoDoServidor(j));
+          if (!pendPedidos.has(id)) guardarPedido(maisNovo(pedidoDoServidor(j)));
         })
         .catch((e) => {
           if (pendPedidos.get(id) === marca) pendPedidos.delete(id);
-          if (!pendPedidos.has(id)) guardarPedido(atual);
+          if (!pendPedidos.has(id)) guardarPedido(marca.eco && hist(marca.eco) >= hist(atual) ? marca.eco : atual);
           avisar(e, { acao: 'status', id });
           recarregar().catch(() => {});
         });
@@ -534,9 +609,8 @@ export function criarStoreSupabase(opc) {
     },
     // apaga só os pedidos de exemplo (origem 'exemplo'); devolve Promise com quantos saíram
     removerTestes() {
-      const antes = pedidos;
-      pedidos = pedidos.filter((p) => p.origem !== 'exemplo');
-      if (pedidos.length !== antes.length) emitir('pedidos:limpos');
+      const exemplos = pedidos.filter((p) => p.origem === 'exemplo').map((p) => p.id);
+      if (exemplos.length) tirarPedidos(exemplos);
       return rpc('remover_testes').then(
         (n) => {
           recarregar().catch(() => {});
@@ -570,6 +644,7 @@ export function criarStoreSupabase(opc) {
         }
       } finally {
         const lista = pedidos.filter((x) => !criados.some((c) => c.id === x.id)).concat(criados);
+        criados.forEach((c) => marcar(c.id));
         const eventos = fila;
         fila = null;
         aplicarPedidos(lista, false);

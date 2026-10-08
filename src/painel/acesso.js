@@ -6,7 +6,7 @@
    4. Na equipe: instala a store do Supabase, espera a primeira carga e só então monta o painel
       (assim os pedidos que já existiam não tocam som como se fossem novos).
    Sessão expirada (o servidor recusa o token e a renovação falha): volta para o login. */
-import { obterSupabase } from '../lib/supabase.js';
+import { obterSupabase, CHAVE_SESSAO } from '../lib/supabase.js';
 import { instalarStoreSupabase } from '../lib/store-supabase.js';
 
 export function iniciarAcesso(opc) {
@@ -134,12 +134,15 @@ export function iniciarAcesso(opc) {
 
   // ---------- painel ----------
   async function abrirPainel(usuario) {
+    // login novo depois de uma sessão recusada na primeira carga: recomeça do zero (a store antiga já parou)
+    expirou = false;
     aguarde('Carregando os pedidos…');
-    store = instalarStoreSupabase({ papel: 'painel', aoSessaoExpirada: conferirSessao });
-    const avisoLento = setTimeout(() => !expirou && aguarde('Sem resposta do servidor. Tentando de novo…'), 8000);
-    await store.iniciar();
+    const minha = instalarStoreSupabase({ papel: 'painel', aoSessaoExpirada: conferirSessao });
+    store = minha;
+    const avisoLento = setTimeout(() => !expirou && store === minha && aguarde('Sem resposta do servidor. Tentando de novo…'), 8000);
+    await minha.iniciar();
     clearTimeout(avisoLento);
-    if (expirou) return;
+    if (expirou || store !== minha) return;
     tela.hidden = true;
     quadro.hidden = false;
     montado = true;
@@ -173,13 +176,30 @@ export function iniciarAcesso(opc) {
     quadro.hidden = true;
     mostrarLogin('Sua sessão expirou. Entre de novo para continuar.');
   }
+  // Sair apaga a sessão do aparelho mesmo sem rede: o signOut do supabase-js devolve { error } sem apagar
+  // nada quando o /logout falha (rede ruim, 5xx), e quem abrisse o painel depois entraria direto.
+  // Espera no máximo 3 s pelo servidor. O rascunho do checkout (mesma origem) também sai.
   async function sair() {
     saindo = true;
     if (store) store.parar();
+    let r;
     try {
-      await sb.auth.signOut({ scope: 'local' });
+      r = await Promise.race([
+        sb.auth.signOut({ scope: 'local' }),
+        new Promise((ok) => setTimeout(() => ok({ error: new Error('tempo esgotado') }), 3000))
+      ]);
+    } catch (e) {
+      r = { error: e };
+    }
+    try {
+      if (r && r.error) {
+        Object.keys(localStorage)
+          .filter((k) => k.indexOf(CHAVE_SESSAO) === 0)
+          .forEach((k) => localStorage.removeItem(k));
+      }
+      localStorage.removeItem('mineiro:v2:rascunho');
     } catch {
-      /* sem rede: a sessão local já foi apagada */
+      /* sem storage: não há sessão guardada */
     }
     location.reload();
   }

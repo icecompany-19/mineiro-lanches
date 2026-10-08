@@ -52,6 +52,8 @@
   "sameAs": ["https://www.instagram.com/mineirolanchesuzano/"]
 }
 </script>
+<!-- antes do app: marca a tela pedida (QR, #cardapio, #site…) para a bio não aparecer antes dela -->
+<script src="/rota.js"></script>
 <script type="module" src="/src/main-cliente.js"></script>
 </head>
 <body>
@@ -65,7 +67,7 @@
       <p class="lado__tit">Assim você pede, em três passos</p>
       <ol>
         <li><span><strong>Escolha o lanche</strong>e veja na hora se o truck está aberto.</span></li>
-        <li><span><strong>Monte do seu jeito</strong>completo ou sem algum item, prensado ou não, e vire combo por +R$ 14,90.</span></li>
+        <li><span><strong>Monte do seu jeito</strong>completo ou sem algum item, prensado ou não, e vire combo por +<span data-combo-preco>R$ 14,90</span>.</span></li>
         <li><span><strong>Envie o pedido</strong>que cai no painel do truck, e acompanhe o status por aqui.</span></li>
       </ol>
       <p class="lado__dica">Prefere falar com a gente? Chame no <a data-wa href="#" target="_blank" rel="noopener">WhatsApp (11) 98572-0150</a>.</p>
@@ -99,8 +101,8 @@
     <g class="lg-l2"><text x="316" text-anchor="middle" font-size="112" font-family="'ML Lilita','Lilita One',Impact,sans-serif" y="407" dx="3.15" fill="#5A0812" stroke="#5A0812" stroke-width="14" stroke-linejoin="round">LANCHE</text><text x="316" text-anchor="middle" font-size="112" font-family="'ML Lilita','Lilita One',Impact,sans-serif" y="404" dx="2.0999999999999996" fill="#5A0812" stroke="#5A0812" stroke-width="14" stroke-linejoin="round">LANCHE</text><text x="316" text-anchor="middle" font-size="112" font-family="'ML Lilita','Lilita One',Impact,sans-serif" y="401" dx="1.0499999999999998" fill="#5A0812" stroke="#5A0812" stroke-width="14" stroke-linejoin="round">LANCHE</text><text x="316" text-anchor="middle" font-size="112" font-family="'ML Lilita','Lilita One',Impact,sans-serif" y="398" fill="url(#lb-branco)" stroke="#5A0812" stroke-width="10" stroke-linejoin="round" paint-order="stroke">LANCHE</text></g>
   </g>
   <text class="lg-ft" x="300" y="482" text-anchor="middle" font-size="44" font-family="'ML Rubik','Rubik',sans-serif" font-weight="600" fill="#FFF6E0" letter-spacing="1">food truck</text></svg>
-          <img class="bio-recorte" src="/assets/recortes/gran-bacon-onion.webp" alt="" width="554" height="720" fetchpriority="high">
-          <img class="bio-recorte b" src="/assets/recortes/gran-chicken.webp" alt="" width="720" height="665" decoding="async">
+          <img class="bio-recorte" src="/assets/recortes/gran-bacon-onion.webp" alt="" width="554" height="720" loading="lazy" decoding="async">
+          <img class="bio-recorte b" src="/assets/recortes/gran-chicken.webp" alt="" width="720" height="665" loading="lazy" decoding="async">
           <svg class="rasgo" viewBox="0 0 400 34" preserveAspectRatio="none" aria-hidden="true"><path d="M0 34V14l14 6 12-9 15 8 13-7 16 9 11-8 17 10 12-9 15 7 13-8 16 10 12-8 15 7 14-9 16 9 12-7 15 8 13-9 16 10 12-8 15 7 14-9 16 9 13-7 15 8 12-9 14 7v20z" fill="#F7C21B"/><path d="M0 34V22l16 5 14-7 15 6 13-5 17 7 12-6 16 7 13-6 15 5 14-6 16 7 13-5 15 6 14-7 16 6 12-5 15 6 14-7 16 7 13-6 15 5 14-6 16 7 13-5 15 6 13-7v14z" fill="#FFF6E0"/></svg>
         </div>
         <div class="bio-id">
@@ -117,7 +119,7 @@
         <div class="faixa-combo" data-faixa-combo>
           <span class="montagem" aria-hidden="true"><svg class="ic m1"><use href="#i-burger"/></svg><svg class="ic m2"><use href="#i-batata"/></svg><svg class="ic m3"><use href="#i-lata"/></svg></span>
           <strong>Qualquer lanche vira combo</strong>
-          <span>+R$ 14,90 · batata frita 140 g + refrigerante lata 350 ml</span>
+          <span>+<span data-combo-preco>R$ 14,90</span> · batata frita 140 g + refrigerante lata 350 ml</span>
         </div>
         <section class="sec" aria-labelledby="dest-tit">
           <div class="sec-cab"><h2 id="dest-tit">Destaques da casa</h2><button type="button" class="link-btn" data-go="menu">Ver tudo</button></div>
@@ -156,7 +158,7 @@
       <section class="tela" data-screen="menu" aria-labelledby="menu-tit" hidden>
         <header class="tela-cab">
           <button type="button" class="ibtn" data-go="bio" data-voltar aria-label="Voltar para o link da bio"><svg class="ic" aria-hidden="true"><use href="#i-voltar"/></svg></button>
-          <div><h1 id="menu-tit">Cardápio</h1><small data-status-curto></small></div>
+          <div><h1 id="menu-tit">Cardápio</h1><small data-status-curto>Mineiro Lanche</small></div>
           <div class="acoes"><button type="button" class="ibtn" data-go="sacola" aria-label="Ver a sacola" data-sacola-btn><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span class="badge" data-contador hidden>0</span></button></div>
         </header>
         <div class="busca"><label><svg class="ic" aria-hidden="true"><use href="#i-busca"/></svg><span class="sr">Buscar no cardápio</span><input id="f-busca" type="search" placeholder="Buscar: bacon, frango, doritos…" autocomplete="off"></label></div>
@@ -165,7 +167,7 @@
         <div class="faixa-combo" data-faixa-combo style="margin:14px 12px 0">
           <span class="montagem" aria-hidden="true"><svg class="ic m1"><use href="#i-burger"/></svg><svg class="ic m2"><use href="#i-batata"/></svg><svg class="ic m3"><use href="#i-lata"/></svg></span>
           <strong>Qualquer lanche vira combo</strong>
-          <span>+R$ 14,90 · batata 140 g + lata 350 ml, você escolhe ao abrir o lanche</span>
+          <span>+<span data-combo-preco>R$ 14,90</span> · batata 140 g + lata 350 ml, você escolhe ao abrir o lanche</span>
         </div>
         <div id="menu-lista"></div>
         <div class="vazio-busca" id="vazio-busca" hidden><svg class="ic" aria-hidden="true"><use href="#i-busca"/></svg><p>Nada encontrado com esse nome ou ingrediente.</p></div>
@@ -205,14 +207,14 @@
           <div class="aviso alerta" id="aviso-fechado" hidden></div>
           <section class="bloco" aria-labelledby="quem-tit">
             <h2 id="quem-tit">Quem está pedindo?</h2>
-            <div class="campo" id="c-nome"><label for="f-nome">Seu nome</label><input id="f-nome" autocomplete="given-name" maxlength="60" required><span class="msg-erro" hidden>Escreva seu nome para o truck chamar você.</span></div>
+            <div class="campo" id="c-nome"><label for="f-nome">Seu nome</label><input id="f-nome" autocomplete="given-name" maxlength="60" required><span class="msg-erro" id="erro-nome" hidden>Escreva seu nome para o truck chamar você.</span></div>
             <div class="campo"><label for="f-tel">Telefone (opcional)</label><input id="f-tel" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="(11) 90000-0000"></div>
           </section>
           <section class="bloco" aria-labelledby="modo-tit">
             <h2 id="modo-tit">Como você quer receber?</h2>
             <div class="modos" id="modos"></div>
             <div id="bloco-endereco">
-              <div class="campo" id="c-end"><label for="f-end">Endereço para entrega</label><input id="f-end" autocomplete="street-address" maxlength="140" placeholder="Rua, número e bairro"><span class="msg-erro" hidden>Informe o endereço para a entrega.</span></div>
+              <div class="campo" id="c-end"><label for="f-end">Endereço para entrega</label><input id="f-end" autocomplete="street-address" maxlength="140" placeholder="Rua, número e bairro"><span class="msg-erro" id="erro-end" hidden>Informe o endereço para a entrega.</span></div>
               <div class="campo"><label for="f-ref">Referência (opcional)</label><input id="f-ref" maxlength="80" placeholder="Ex.: portão azul, perto da praça"></div>
             </div>
           </section>
@@ -307,7 +309,7 @@
       <div class="s-wrap s-hero__grid">
         <div>
           <p class="s-olho">Hambúrguer artesanal · Hot dog com Doritos</p>
-          <h1 class="s-letreiro" id="s-tit" aria-label="Mineiro Lanche"><span class="l1" data-letras="MINEIRO"></span><span class="l2" data-letras="LANCHE" data-desloc="7"></span></h1>
+          <h1 class="s-letreiro" id="s-tit" aria-label="Mineiro Lanche"><span class="l1" data-letras="MINEIRO">MINEIRO</span><span class="l2" data-letras="LANCHE" data-desloc="7">LANCHE</span></h1>
           <p class="s-sub"><span class="estrelas" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg></span>food truck · Suzano</p>
           <p class="s-lead"><strong>Lanche de rua feito na chapa</strong>, com entrega em Suzano e região e consumo no truck.</p>
           <p class="status" data-status role="status"></p>
@@ -321,10 +323,10 @@
           <svg class="ic estrela-s" style="left:12%;top:8%" aria-hidden="true"><use href="#i-estrela"/></svg>
           <svg class="ic estrela-s" style="right:10%;top:14%;animation-delay:-1s" aria-hidden="true"><use href="#i-estrela"/></svg>
           <svg class="ic estrela-s" style="left:4%;top:52%;animation-delay:-1.6s" aria-hidden="true"><use href="#i-estrela"/></svg>
-          <div class="recorte r-esq" data-prof="1.4"><img src="/assets/recortes/gran-chicken.webp" alt="" width="720" height="665" decoding="async" style="--d:-2s"></div>
+          <div class="recorte r-esq" data-prof="1.4"><img src="/assets/recortes/gran-chicken.webp" alt="" width="720" height="665" loading="lazy" decoding="async" style="--d:-2s"></div>
           <div class="recorte r-dir" data-prof="-1.2"><img src="/assets/recortes/gran-egg-bacon.webp" alt="" width="661" height="720" loading="lazy" decoding="async" style="--d:-4s"></div>
-          <div class="recorte r-principal" data-prof=".6"><img src="/assets/recortes/gran-bacon-onion.webp" alt="Gran Bacon Onion, foto do Mineiro Lanche" width="554" height="720" fetchpriority="high"></div>
-          <p class="palco__dica" aria-hidden="true">Gran Bacon Onion · R$ 34,90</p>
+          <div class="recorte r-principal" data-prof=".6"><img src="/assets/recortes/gran-bacon-onion.webp" alt="Gran Bacon Onion, foto do Mineiro Lanche" width="554" height="720" loading="lazy" decoding="async"></div>
+          <p class="palco__dica" aria-hidden="true">Gran Bacon Onion · <span data-preco-de="gran-bacon-onion">R$ 34,90</span></p>
         </div>
       </div>
     </section>
@@ -339,7 +341,7 @@
       <div class="s-wrap" style="position:relative">
         <p class="s-olho rv">Regra da casa</p>
         <h2 class="s-h2 rv" id="monte-tit">Monte seu combo</h2>
-        <p class="s-p rv">Qualquer lanche do cardápio vira combo por +R$ 14,90, com batata frita 140 g e refrigerante lata 350 ml.</p>
+        <p class="s-p rv">Qualquer lanche do cardápio vira combo por +<span data-combo-preco>R$ 14,90</span>, com batata frita 140 g e refrigerante lata 350 ml.</p>
         <div class="monte" id="monte">
           <div>
             <div class="monte-escolha" id="monte-escolha" role="group" aria-label="Escolha o lanche"></div>
@@ -353,7 +355,7 @@
           <div class="monte-painel">
             <p class="monte-conta" id="monte-conta"></p>
             <p class="monte-preco" id="monte-preco" aria-live="polite">R$ 0,00</p>
-            <button type="button" class="interruptor" role="switch" aria-checked="false" id="monte-switch"><span>Vira combo +R$ 14,90</span><span class="trilho" aria-hidden="true"></span></button>
+            <button type="button" class="interruptor" role="switch" aria-checked="false" id="monte-switch"><span>Vira combo +<span data-combo-preco>R$ 14,90</span></span><span class="trilho" aria-hidden="true"></span></button>
             <button type="button" class="btn btn-vermelho" id="monte-add"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Escolher e adicionar</button>
           </div>
         </div>
@@ -408,7 +410,7 @@
           <p class="s-olho" style="color:var(--amarelo-claro)">Destaque do perfil</p>
           <h2 class="s-h2" id="dog-tit">Hot dog com Doritos</h2>
           <p class="s-p" style="color:#FFE3E7">O dog da casa com Doritos e cheddar. Tem também o Hot Dog Pizza.</p>
-          <p class="dog-preco">R$ 23,90</p>
+          <p class="dog-preco" data-preco-de="dog-doritos">R$ 23,90</p>
           <div class="s-ctas" style="margin-top:4px"><button type="button" class="btn btn-amarelo" data-abrir="dog-doritos"><svg class="ic" aria-hidden="true"><use href="#i-hotdog"/></svg>Pedir o dog com Doritos</button></div>
           <button type="button" class="mini-card" data-abrir="dog-pizza" id="mini-pizza"></button>
         </div>

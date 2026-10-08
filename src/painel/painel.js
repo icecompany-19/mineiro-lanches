@@ -1001,10 +1001,15 @@
     const a = document.activeElement;
     if (!a || a === document.body) q('[data-titulo]').focus({ preventScroll: true });
   }
+  // sessão expirada (acesso.js): nada com dados de cliente fica por cima do login. O modal (comanda, CSV) vive
+  // no body, fora do quadro escondido; o detalhe lateral e os avisos também saem
   function esconder() {
     S.visivel = false;
     if (S.tickId) { clearInterval(S.tickId); S.tickId = null; }
     qa('[data-kpi]').forEach(k => { if (k._raf) { cancelAnimationFrame(k._raf); k._raf = null; } });
+    fecharModal();
+    fecharDetalhe();
+    if (S.toasts) S.toasts.textContent = '';
   }
 
   window.MLPainel = { montar, mostrar, esconder };

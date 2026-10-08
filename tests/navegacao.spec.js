@@ -2,7 +2,7 @@
 // do site se volta ao cardápio e à bio. Links diretos, voltar do navegador, console limpo, nada de domínio externo
 // (fora o próprio Supabase), nenhum texto de prévia e o painel em /painel/, com login da equipe.
 // Uso: npx playwright test tests/navegacao.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
-/* global document, location, innerHeight, scrollTo */
+/* global document, location, innerHeight, scrollTo, window, requestAnimationFrame */
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -145,6 +145,83 @@ test('links diretos #bio, #cardapio e #site, e #painel leva a /painel/', async (
   expect(v.externas, 'requisições a outros domínios').toEqual([]);
 });
 
+// O app (módulo) roda depois da primeira pintura. Aqui ele chega atrasado de propósito (rede lenta) e um laço de
+// requestAnimationFrame anota o que cada quadro mostra até ele rodar; também soma os layout shifts da carga.
+async function quadrosAntesDoApp(page, url) {
+  await page.addInitScript(() => {
+    window.__quadros = [];
+    window.__shift = 0;
+    new PerformanceObserver((l) => l.getEntries().forEach((e) => (window.__shift += e.value))).observe({
+      type: 'layout-shift',
+      buffered: true
+    });
+    const ve = (s) => {
+      const el = document.querySelector(s);
+      return !!el && el.checkVisibility() && el.getBoundingClientRect().height > 0;
+    };
+    const olhar = () => {
+      if (window.MLApp) return;
+      if (document.body)
+        window.__quadros.push({
+          bio: ve('[data-screen="bio"]'),
+          menu: ve('[data-screen="menu"]'),
+          site: ve('#view-site'),
+          pedido: ve('[data-screen="pedido"]')
+        });
+      requestAnimationFrame(olhar);
+    };
+    requestAnimationFrame(olhar);
+  });
+  await page.route(/\/_app\/[^?]*\.js(\?|$)/, async (r) => {
+    await new Promise((ok) => setTimeout(ok, 700));
+    await r.continue().catch(() => {}); // a página pode ter fechado nesse meio-tempo
+  });
+  await page.goto(url);
+  await page.waitForFunction(() => !!window.MLApp);
+  return page.evaluate(() => window.__quadros);
+}
+
+test('QR e links diretos: a tela pedida já é a primeira pintada, sem a bio piscar antes', async ({ browser }) => {
+  for (const [url, tela] of [
+    ['/?origem=qrcode', 'menu'],
+    ['/?origem=qrcode&mesa=3', 'menu'],
+    ['/#cardapio', 'menu'],
+    ['/#site', 'site'],
+    ['/#pedido/00000000-0000-4000-8000-00000000abcd', 'pedido']
+  ]) {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    const quadros = await quadrosAntesDoApp(page, url);
+    expect(quadros.length, `${url}: quadros pintados antes do app`).toBeGreaterThan(0);
+    expect(quadros.filter((q) => q.bio).length, `${url}: quadros com a bio antes do app`).toBe(0);
+    expect(
+      quadros.some((q) => q[tela]),
+      `${url}: ${tela} na tela antes do app`
+    ).toBe(true);
+    // depois que o app roda, só a tela certa
+    await expect(page.locator('[data-screen="bio"]')).toBeHidden();
+    if (tela === 'site') await expect(page.locator('#view-site')).toBeVisible();
+    else await expect(page.locator(`[data-screen="${tela}"]`)).toBeVisible();
+    await ctx.close();
+  }
+});
+
+test('bio: chips e stories entram sem empurrar o "Fazer pedido" (CLS < 0,1) e o selo começa neutro', async ({ page }) => {
+  const quadros = await quadrosAntesDoApp(page, '/');
+  expect(
+    quadros.some((q) => q.bio),
+    'a bio pintada antes do app'
+  ).toBe(true);
+  // antes do app o selo de horário não diz aberto nem fechado
+  const html = await (await page.request.get('/')).text();
+  expect(html).toMatch(/<p class="status" data-status role="status">/);
+  await expect(page.locator('#chips-bio li')).toHaveCount(4);
+  await page.waitForTimeout(800); // fontes e estado do cardápio
+  const cls = await page.evaluate(() => window.__shift);
+  expect(cls, 'layout shift da carga da bio').toBeLessThan(0.1);
+  await expect(page.locator('.bio-id [data-status]')).toHaveClass(/\b(aberto|fechado)\b/);
+});
+
 test('nenhum texto de prévia, console limpo e nada de fora em todas as telas', async ({ page, baseURL }) => {
   const v = vigiar(page, baseURL);
   for (const h of ['#bio', '#cardapio', '#site']) {
@@ -211,6 +288,12 @@ test('head de produção: SEO na página do cliente, noindex só no painel, sem 
       ([, attrs, corpo]) => !/\bsrc=/.test(attrs) && !/application\/ld\+json/.test(attrs) && corpo.trim()
     );
     expect(inline.length, `script inline em ${nome}`).toBe(0);
+    if (nome === 'cliente') {
+      // public/rota.js é clássico e síncrono, antes do módulo: marca a tela inicial antes da primeira pintura
+      const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)].map((m) => m[1]);
+      expect(scripts[0], 'rota.js antes do app').toBe('/rota.js');
+      expect(html).not.toMatch(/<script[^>]*src="\/rota\.js"[^>]*(defer|async|type="module")/);
+    }
     expect(html, `favicon em ${nome}`).toContain('<link rel="icon" href="/favicon.svg" type="image/svg+xml">');
     expect(html).not.toMatch(/fonts\.googleapis|fonts\.gstatic/);
     expect(html).not.toContain('%VITE_');

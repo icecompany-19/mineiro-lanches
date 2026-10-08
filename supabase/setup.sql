@@ -993,7 +993,8 @@ to authenticated;
 
 -- Cardápio do Mineiro Lanche: gerado por scripts/gerar-seed.mjs a partir do CONFIG de src/core.js. Não edite à mão.
 -- 55 produtos e 5 adicionais. Idempotente: atualiza nome, preço, categoria, ordem,
--- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia nem em ativo.
+-- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia. O CONFIG manda no ativo: quem está nele fica
+-- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo.
 
 insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingredientes, ordem) values
   ('gran-burger', 'artesanais', 'Gran Burger', 25.90, 'lanche', 'gran-burger', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue']::text[], 1),
@@ -1058,7 +1059,8 @@ on conflict (id) do update set
   tipo = excluded.tipo,
   foto = excluded.foto,
   ingredientes = excluded.ingredientes,
-  ordem = excluded.ordem;
+  ordem = excluded.ordem,
+  ativo = true;
 
 -- o que saiu do CONFIG fica inativo (pedidos antigos continuam apontando para ele)
 update public.produtos set ativo = false
@@ -1072,7 +1074,8 @@ insert into public.adicionais (id, nome, preco) values
   ('pizza', 'Pizza', 7.50)
 on conflict (id) do update set
   nome = excluded.nome,
-  preco = excluded.preco;
+  preco = excluded.preco,
+  ativo = true;
 
 update public.adicionais set ativo = false
 where ativo and id not in ('catupiry', 'bacon', 'doritos', 'queijo', 'pizza');

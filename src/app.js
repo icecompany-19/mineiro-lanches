@@ -113,7 +113,15 @@ export function iniciarApp() {
   if (origemQR && origemQR.mesa) st.modo = 'local';
   // item que não dá para pedir agora: esgotado hoje ou fora do cardápio (estado_cardapio do banco)
   function indisponivel(id) { var p = ML.produtos[id]; return !p || !!p.inativo || !!ML.store.esgotados()[id]; }
+  // adicionais da linha que saíram do cardápio (o servidor recusaria o pedido com eles)
+  function adicionaisFora(sel) { return Object.keys((sel && sel.adicionais) || {}).filter(function (id) { return !ML.adicionais[id] || ML.adicionais[id].inativo; }); }
+  function linhaIndisponivel(sel) { return indisponivel(sel.produtoId) || adicionaisFora(sel).length > 0; }
   function comboTxt() { return brl(C.regras.combo.preco); }
+  // textos fixos do HTML com preço: seguem o banco (combo_preco e preço dos produtos) quando o estado chega
+  function atualizarPrecosFixos() {
+    $$('[data-combo-preco]').forEach(function (el) { el.textContent = comboTxt(); });
+    $$('[data-preco-de]').forEach(function (el) { var p = ML.produtos[el.getAttribute('data-preco-de')]; if (p) el.textContent = brl(p.preco); });
+  }
   function totaisSacola() { var n = 0, v = 0; sacola.forEach(function (l) { var it = ML.precos.item(l.sel); n += it.qtd; v += it.subtotal; }); return { n: n, v: Math.round(v * 100) / 100 }; }
   function addSacola(sel) {
     var n = ML.precos.normalizar(sel), k = ML.precos.chave(n);
@@ -130,7 +138,8 @@ export function iniciarApp() {
   // ================= horário e status =================
   function atualizarStatus() {
     var s = ML.horario.situacao();
-    $$('[data-status]').forEach(function (el) { el.textContent = s.txt; el.classList.toggle('fechado', !s.aberto); });
+    // o HTML chega neutro (sem verde nem vermelho): só aqui o selo diz se está aberto
+    $$('[data-status]').forEach(function (el) { el.textContent = s.txt; el.classList.toggle('fechado', !s.aberto); el.classList.toggle('aberto', s.aberto); });
     $$('[data-status-curto]').forEach(function (el) { el.textContent = (s.aberto ? 'Aberto · ' : 'Fechado · ') + C.nome; });
     $$('[data-semana]').forEach(renderSemana);
     return s;
@@ -225,6 +234,8 @@ export function iniciarApp() {
     ficha.editar = opcoes.editar || null;
     ficha.origem = opcoes.origem || null;
     ficha.sel = opcoes.sel ? JSON.parse(JSON.stringify(opcoes.sel)) : { produtoId: id, completo: true, removidos: [], prensado: false, combo: { ativo: !!opcoes.combo, refri: '' }, adicionais: {}, sabor: '', qtd: 1 };
+    // editar uma linha com adicional que saiu do cardápio: ele sai da escolha (a ficha nem mostra o botão dele)
+    adicionaisFora(ficha.sel).forEach(function (a) { delete ficha.sel.adicionais[a]; });
     renderFicha();
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
     $('#ficha-corpo').scrollTop = 0;
@@ -346,12 +357,16 @@ export function iniciarApp() {
   });
 
   // ================= sacola =================
-  function tagsHTML(sel) {
+  // naSacola: marca o adicional que saiu do cardápio (num pedido já feito ele não importa mais)
+  function tagsHTML(sel, naSacola) {
     var p = ML.produtos[sel.produtoId], t = [];
     if (p.tipo === 'lanche' || p.tipo === 'combo') t.push(sel.completo === false && sel.removidos && sel.removidos.length ? '<span class="tag sem">Sem ' + esc(sel.removidos.join(', ').toLowerCase()) + '</span>' : '<span class="tag">Completo</span>');
     if (ML.regras.podePrensar(p)) t.push(sel.prensado ? '<span class="tag prensado">Prensado</span>' : '<span class="tag">Não prensado</span>');
     if (sel.combo && sel.combo.ativo) t.push('<span class="tag combo">Combo +' + comboTxt() + (sel.combo.refri ? ' · ' + esc(sel.combo.refri) : '') + '</span>');
-    Object.keys(sel.adicionais || {}).forEach(function (id) { var q = sel.adicionais[id]; t.push('<span class="tag adic">+ ' + (q > 1 ? q + '× ' : '') + esc(ML.adicionais[id].nome) + '</span>'); });
+    Object.keys(sel.adicionais || {}).forEach(function (id) {
+      var q = sel.adicionais[id], a = ML.adicionais[id], fora = naSacola && (!a || a.inativo);
+      t.push('<span class="tag adic' + (fora ? ' esgotado' : '') + '">+ ' + (q > 1 ? q + '× ' : '') + esc(a ? a.nome : id) + (fora ? ' · fora do cardápio' : '') + '</span>');
+    });
     if (sel.sabor) t.push('<span class="tag">' + esc(sel.sabor) + '</span>');
     return t.join('');
   }
@@ -361,12 +376,12 @@ export function iniciarApp() {
     $('#sacola-resumo').hidden = vazia;
     $('#btn-continuar').setAttribute('aria-disabled', String(vazia));
     $('#sacola-linhas').innerHTML = sacola.map(function (l) {
-      var p = ML.produtos[l.sel.produtoId], it = ML.precos.item(l.sel), fora = indisponivel(p.id);
+      var p = ML.produtos[l.sel.produtoId], it = ML.precos.item(l.sel), fora = linhaIndisponivel(l.sel);
       var upsell = !fora && ML.regras.podeCombo(p) && !(l.sel.combo && l.sel.combo.ativo)
         ? '<div class="upsell"><span>Vira combo por +' + comboTxt() + '? Batata 140 g + lata 350 ml</span><button type="button" data-upsell="' + esc(l.chave) + '">Quero combo</button></div>' : '';
       // item que esgotou depois de entrar na sacola: fica marcado até sair (o servidor recusaria o pedido)
-      var selo = fora ? '<span class="tag esgotado">' + (p.inativo ? 'Fora do cardápio' : 'Esgotado hoje') + '</span>' : '';
-      return '<article class="linha' + (fora ? ' esgotado' : '') + '" data-card>' + visual(p, 'q') + '<div><div class="linha-nome"><span>' + esc(p.nome) + '</span><span class="preco" style="font-size:16px">' + brl(it.subtotal) + '</span></div><div class="linha-esc">' + selo + tagsHTML(l.sel) + '</div>' +
+      var selo = indisponivel(p.id) ? '<span class="tag esgotado">' + (p.inativo ? 'Fora do cardápio' : 'Esgotado hoje') + '</span>' : '';
+      return '<article class="linha' + (fora ? ' esgotado' : '') + '" data-card>' + visual(p, 'q') + '<div><div class="linha-nome"><span>' + esc(p.nome) + '</span><span class="preco" style="font-size:16px">' + brl(it.subtotal) + '</span></div><div class="linha-esc">' + selo + tagsHTML(l.sel, true) + '</div>' +
         '<div class="linha-pe"><div class="stepper" role="group" aria-label="Quantidade de ' + esc(p.nome) + '"><button type="button" data-sq="' + esc(l.chave) + '" data-d="-1" aria-label="Menos um ' + esc(p.nome) + '">' + ic(l.sel.qtd > 1 ? 'menos' : 'lixo') + '</button><output>' + l.sel.qtd + '</output><button type="button" data-sq="' + esc(l.chave) + '" data-d="1" aria-label="Mais um ' + esc(p.nome) + '">' + ic('mais') + '</button></div>' +
         '<div class="linha-acoes"><button type="button" class="mini" data-editar="' + esc(l.chave) + '">' + ic('lapis') + 'Editar</button></div></div></div>' + upsell + '</article>';
     }).join('');
@@ -383,7 +398,7 @@ export function iniciarApp() {
     campo.id = 'c-tel';
     $('label', campo).textContent = 'Telefone com DDD (WhatsApp)';
     tel.required = true; tel.setAttribute('autocomplete', 'tel-national');
-    campo.insertAdjacentHTML('beforeend', '<span class="msg-erro" hidden>Informe o telefone com DDD para o truck falar com você.</span>');
+    campo.insertAdjacentHTML('beforeend', '<span class="msg-erro" id="erro-tel" hidden>Informe o telefone com DDD para o truck falar com você.</span>');
     campo.insertAdjacentHTML('afterend', '<p class="nota-dados">' + ic('check') + 'Usamos seus dados só para preparar e entregar este pedido.</p>');
     $('.enviar-wrap').insertAdjacentHTML('afterend',
       '<div class="envio-erro" id="envio-erro" role="alert" tabindex="-1" hidden><strong id="envio-erro-tit"></strong><p id="envio-erro-txt"></p>' +
@@ -391,7 +406,7 @@ export function iniciarApp() {
       '<button type="button" class="btn btn-vermelho" data-go="sacola" data-ajustar hidden>Ajustar a sacola</button>' +
       '<a class="btn btn-borda" id="envio-wa" href="#" target="_blank" rel="noopener">' + ic('chat') + 'Enviar pelo WhatsApp</a></div>' +
       '<small>A sacola e os seus dados continuam aqui.</small></div>');
-    // rascunho do formulário: volta como estava (a observação some depois que o pedido é enviado)
+    // rascunho do formulário: volta como estava depois de um envio que falhou (some quando o pedido sai)
     var r = lerLocal(CHAVE_RASCUNHO, {});
     [['f-nome', 'nome'], ['f-tel', 'tel'], ['f-end', 'end'], ['f-ref', 'ref'], ['f-obs', 'obs']].forEach(function (c) { if (r[c[1]]) $('#' + c[0]).value = r[c[1]]; });
     // o modo escolhido também, a não ser que o QR da mesa mande "Comer no local"
@@ -458,8 +473,19 @@ export function iniciarApp() {
     dados_invalidos: ['Confira os seus dados', function () { return 'O truck não aceitou algum campo do pedido. Confira nome, telefone e endereço e tente de novo.'; }],
     rede: ['Não conseguimos falar com o truck', function () { return 'Sem conexão ou o servidor não respondeu. Tente de novo, ou envie o pedido completo pelo WhatsApp.'; }]
   };
+  // o que não dá para pedir na sacola: o lanche (esgotado ou fora do cardápio) ou um adicional que saiu do cardápio
   function nomesIndisponiveis() {
-    return sacola.filter(function (l) { return indisponivel(l.sel.produtoId); }).map(function (l) { return ML.produtos[l.sel.produtoId].nome; });
+    var nomes = [];
+    sacola.forEach(function (l) {
+      var p = ML.produtos[l.sel.produtoId];
+      if (indisponivel(l.sel.produtoId)) nomes.push(p ? p.nome : l.sel.produtoId);
+      else adicionaisFora(l.sel).forEach(function (id) { var a = ML.adicionais[id]; nomes.push((a ? a.nome : id) + ' (adicional do ' + p.nome + ')'); });
+    });
+    return nomes;
+  }
+  // esgotado hoje ou fora do cardápio (produto ou adicional): muda o texto do aviso
+  function codigoIndisponivel() {
+    return sacola.some(function (l) { var p = ML.produtos[l.sel.produtoId]; return !p || p.inativo || adicionaisFora(l.sel).length > 0; }) ? 'produto_invalido' : 'produto_esgotado';
   }
   function mostrarErroEnvio(codigo, dados, soTexto) {
     var e = ERRO_ENVIO[codigo] || ERRO_ENVIO.rede, nomes = nomesIndisponiveis();
@@ -487,8 +513,12 @@ export function iniciarApp() {
   function validar() {
     var nome = $('#f-nome').value.trim(), tel = digitosTel($('#f-tel').value), end = $('#f-end').value.trim(), ok = true;
     var erroNome = nome.length < 2, erroTel = !/^\d{10,11}$/.test(tel), erroEnd = st.modo === 'entrega' && end.length < 5;
-    [['#c-nome', erroNome], ['#c-tel', erroTel], ['#c-end', erroEnd]].forEach(function (c) {
+    // o erro também chega ao leitor de tela: aria-invalid no campo e a mensagem como descrição dele
+    [['#c-nome', erroNome, '#f-nome', 'erro-nome'], ['#c-tel', erroTel, '#f-tel', 'erro-tel'], ['#c-end', erroEnd, '#f-end', 'erro-end']].forEach(function (c) {
+      var campo = $(c[2]);
       $(c[0]).classList.toggle('erro', c[1]); $(c[0] + ' .msg-erro').hidden = !c[1]; if (c[1]) ok = false;
+      campo.setAttribute('aria-invalid', String(c[1]));
+      if (c[1]) campo.setAttribute('aria-describedby', c[3]); else campo.removeAttribute('aria-describedby');
     });
     if (!ok) { var prim = $('.campo.erro input'); if (prim) prim.focus(); }
     return ok;
@@ -500,7 +530,7 @@ export function iniciarApp() {
     if (!validar()) return;
     var dados = lerFormulario();
     // item que já se sabe esgotado nem vai ao servidor
-    if (nomesIndisponiveis().length) { renderSacola(); mostrarErroEnvio('produto_esgotado', dados); return; }
+    if (nomesIndisponiveis().length) { renderSacola(); mostrarErroEnvio(codigoIndisponivel(), dados); return; }
     var assinatura = JSON.stringify(dados);
     if (!envio.uuid || envio.assinatura !== assinatura) { envio.uuid = novoUuid(); envio.assinatura = assinatura; }
     dados.idempotencia = envio.uuid;
@@ -509,7 +539,10 @@ export function iniciarApp() {
     ML.store.criarPedido(dados).then(function (pedido) {
       envio.uuid = null; envio.assinatura = null;
       sacola = []; salvarSacola();
-      $('#f-obs').value = ''; salvarRascunho();
+      // dados pessoais não ficam no aparelho depois do envio (celular ou computador compartilhado):
+      // o rascunho só serve enquanto o pedido não sai. Fica o modo; o navegador ainda sugere nome e telefone.
+      ['#f-nome', '#f-tel', '#f-end', '#f-ref', '#f-obs'].forEach(function (s) { $(s).value = ''; });
+      gravarLocal(CHAVE_RASCUNHO, { modo: st.modo });
       travarEnvio(false);
       st.pedidoToken = pedido.token;
       // o checkout sai do histórico: voltar do acompanhamento leva à sacola, não ao formulário enviado
@@ -981,7 +1014,7 @@ export function iniciarApp() {
     var tipo = ev.tipo || '';
     if (tipo.indexOf('pedido') === 0) { if (st.aba === 'app' && st.tela === 'pedido') renderPedido(); atualizarContadores(); }
     if (tipo === 'cardapio:esgotados' || tipo === 'cardapio:estado') {
-      if (tipo === 'cardapio:estado') { montarBio(); marcarCarregadas($('#destaques')); atualizarStatus(); atualizarContadores(); }
+      if (tipo === 'cardapio:estado') { montarBio(); marcarCarregadas($('#destaques')); atualizarStatus(); atualizarPrecosFixos(); atualizarContadores(); }
       if (st.tela === 'menu') renderMenu();
       if (st.tela === 'sacola') renderSacola();
       if (st.tela === 'checkout') renderCheckout();
@@ -999,11 +1032,14 @@ export function iniciarApp() {
   // estado antes de montar: as imagens da tela inicial carregam já, as outras ficam para depois (lazy)
   st.aba = inicial === 'site' ? 'site' : 'app';
   st.tela = TELA_DA_ROTA[inicial] || 'bio';
-  // os recortes do palco do site ficam lazy no HTML (o site começa escondido); se ele é a primeira tela, carregam já
+  // os recortes da bio e do palco do site ficam lazy no HTML (quem chega pelo QR não baixa); na tela inicial carregam já
   if (st.aba === 'site') $$('#palco img[loading="lazy"]').forEach(function (i) { i.loading = 'eager'; });
+  if (st.aba === 'app' && st.tela === 'bio') $$('.bio-recorte[loading="lazy"]').forEach(function (i) { i.loading = 'eager'; });
   montarBio(); montarChips(); renderMenu(); montarSite();
-  atualizarStatus(); setInterval(atualizarStatus, 30000);
+  atualizarStatus(); atualizarPrecosFixos(); setInterval(atualizarStatus, 30000);
   aplicarRota(inicial, true);
+  // public/rota.js mostrou a tela pedida antes da primeira pintura; daqui em diante vale o hidden do app
+  document.documentElement.removeAttribute('data-tela-inicial');
   var mostrada = rotaAtual();
   if (location.hash || mostrada !== 'bio') gravarRota(mostrada, null, true);
   else try { history.replaceState({ rota: 'bio', de: null }, ''); } catch { /* sem histórico */ }

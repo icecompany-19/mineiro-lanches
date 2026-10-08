@@ -250,7 +250,7 @@
 
   // ================= store de partida =================
   // As entradas (main-cliente.js e main-painel.js) instalam a store do Supabase (src/lib/store-supabase.js),
-  // com o mesmo contrato (preview/CONTRATO-PAINEL.md). Esta é só a de partida: sem pedidos, nada esgotado e
+  // com o mesmo contrato (docs/CONTRATO-PAINEL.md). Esta é só a de partida: sem pedidos, nada esgotado e
   // loja pelo horário. É também o que os scripts em node:vm (gerar-seed, testar-paridade) enxergam.
   var ouvintes = [];
   var store = {

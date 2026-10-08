@@ -6,6 +6,8 @@
 
 const URL_SUPABASE = import.meta.env.VITE_SUPABASE_URL;
 const CHAVE = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// onde o login do painel fica guardado (o supabase-js grava também chaves com este prefixo)
+export const CHAVE_SESSAO = 'mineiro:v2:sessao';
 
 let promessa = null;
 
@@ -18,7 +20,7 @@ export function obterSupabase(opc) {
       .then(({ createClient }) =>
         createClient(URL_SUPABASE, CHAVE, {
           auth: sessao
-            ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'mineiro:v2:sessao' }
+            ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: CHAVE_SESSAO }
             : { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
           realtime: { params: { eventsPerSecond: 5 } }
         })

@@ -130,7 +130,7 @@ Entrada: o que o checkout já monta, com os itens no formato de `itemDoPedido` d
 - **`resumo` é gerado no servidor**, com o mesmo texto do `resumo()` do `core.js`. Exemplo: `Sem cebola roxa · Prensado · Combo +R$14,90 (Guaraná) · + Bacon`.
 - **Loja:** aberta = `modo = 'aberta'` ou (`modo = 'auto'` e dentro do turno de `horarios`, atravessando a meia-noite como em `ML.horario`). Fechada e `aceita_fechada = false` → `loja_fechada`. Quem é da equipe ignora essa regra e o limite de pedidos.
 - **Idempotência:** se já existe pedido com a mesma `idempotencia`, devolve esse pedido sem gravar outro e sem contar no limite. Isso protege contra reenvio por queda de rede.
-- Grava o pedido (`status = 'novo'`, `historico = [{status:'novo', em}]`) e faz upsert em `clientes`.
+- Grava o pedido (`status = 'novo'`, `historico = [{status:'novo', em}]`) e faz upsert em `clientes` (o último nome e endereço informados para o telefone vencem, sem verificação: `clientes` não é fonte de identidade).
 
 **Saída:** `pedido_json(pedido)`, no formato do contrato do painel mais `token` e `mesa`:
 
@@ -157,7 +157,7 @@ Devolve `{ numero, criadoEm, status, historico, modo, total, itens: [{ nome, qtd
   "adicionais": { "bacon": 7.5 }, "loja": { "modo": "auto", "aceitaFechada": false, "comboPreco": 14.9, "horarios": { } } }
 ```
 
-O front aplica isso sobre o `CONFIG` ao abrir. Repete quando chega aviso do Realtime em `produtos` ou `loja`, ou a cada 60 s como plano B.
+O front aplica isso sobre o `CONFIG` ao abrir. Repete quando chega aviso do Realtime em `produtos` ou `loja`, e a cada 60 s mesmo com o canal ligado (`adicionais` não está no Realtime: adicional desativado ou com preço novo chega por essa consulta). Adicional ausente de `adicionais` é inativo: a sacola marca a linha que o tem e o checkout não envia até ele sair.
 
 ### Funções só da equipe (`sem_permissao` se não for `is_equipe()`)
 
@@ -175,6 +175,9 @@ supabase.from('pedidos').select('*').gte('criado_em', <48 h atrás>).order('cria
 ```
 
 O RLS garante que só a equipe lê. O Realtime em `pedidos` entrega a linha crua (snake_case). O adaptador converte com `linhaParaPedido(row)` para o mesmo formato de `pedido_json` e aplica `Number()` em `total`, `precoUnit` e `subtotal`.
+
+- O canal do painel entra com o JWT da equipe (`realtime.setAuth()` antes do `subscribe`): sem ele o Realtime usa a apikey (anon) e o RLS de `pedidos` filtra todos os eventos.
+- `historico` só cresce (um item por mudança de status) e serve de versão: o adaptador nunca troca um pedido do cache por uma versão com `historico` menor, e a resposta de uma consulta não desfaz o que chegou pelo Realtime ou por RPC enquanto ela estava no ar.
 
 ## Ambiente local de teste
 
