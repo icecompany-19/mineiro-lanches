@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Cartaz do QR · Mineiro Lanche</title>
+<!-- Página estática (não passa pelo Vite). A6 por padrão; ?tamanho=a5 para A5; ?mesa=3 usa o QR mesa-3.svg.
+     Sem script inline (CSP script-src 'self'): a lógica está em cartaz.js.
+     PDFs: npm run qrcode (gera public/qr/cartaz-a6.pdf e cartaz-a5.pdf). -->
+<style id="pagina">@page{size:105mm 148mm;margin:0}</style>
+<script src="cartaz.js"></script>
+<style>
+@font-face{font-family:'Lilita One';src:url(fontes/lilita-one-latin-400-normal.woff2) format('woff2');font-weight:400;font-display:block}
+@font-face{font-family:'Oswald';src:url(fontes/oswald-latin-500-normal.woff2) format('woff2');font-weight:500;font-display:block}
+@font-face{font-family:'Oswald';src:url(fontes/oswald-latin-600-normal.woff2) format('woff2');font-weight:600;font-display:block}
+@font-face{font-family:'Oswald';src:url(fontes/oswald-latin-700-normal.woff2) format('woff2');font-weight:700;font-display:block}
+
+/* A folha é desenhada em A6, na unidade --u (1 mm). A5 é a mesma arte ampliada √2 vezes. */
+:root{
+  --vermelho:#C8102E; --vermelho-escuro:#9E0B23; --vinho:#7A1426; --amarelo:#F7C21B; --creme:#FFF6E0; --carvao:#1A1414;
+  --f-letreiro:'Lilita One','Arial Black',Impact,sans-serif;
+  --f-placa:'Oswald','Arial Narrow',sans-serif;
+  --u:1mm;
+}
+html.a5{--u:1.41421mm}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--carvao);color:var(--creme);font-family:var(--f-placa);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+img{display:block;max-width:100%;height:auto}
+
+/* ---------- barra da tela (não imprime) ---------- */
+.barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:14px 16px;font:600 15px/1.2 var(--f-placa);letter-spacing:.06em;text-transform:uppercase}
+.barra a,.barra button{border:2px solid var(--amarelo);border-radius:999px;padding:8px 16px;background:none;color:var(--amarelo);text-decoration:none;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer}
+.barra a[aria-current="page"],.barra button{background:var(--amarelo);color:var(--carvao)}
+.barra .dica{flex-basis:100%;text-align:center;font-weight:500;font-size:13px;color:rgba(255,246,224,.7);text-transform:none;letter-spacing:.02em}
+.palco{display:flex;justify-content:center;padding:0 16px 32px}
+
+/* ---------- folha ---------- */
+.folha{width:calc(105 * var(--u));height:calc(148 * var(--u));padding:calc(4 * var(--u));background:var(--creme);overflow:hidden;zoom:var(--zoom,1);box-shadow:0 18px 40px -18px rgba(0,0,0,.6)}
+.cartao{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-between;border-radius:calc(5 * var(--u));overflow:hidden;color:#fff;text-align:center;
+  background:radial-gradient(90% 60% at 50% 22%,#E0213C 0%,var(--vermelho) 48%,var(--vermelho-escuro) 100%)}
+.cartao::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 calc(5 * var(--u)),transparent calc(5 * var(--u)) calc(10 * var(--u)));pointer-events:none}
+.cartao > *{position:relative}
+
+.logo{width:calc(27 * var(--u));margin-top:calc(4 * var(--u));filter:drop-shadow(0 calc(1.2 * var(--u)) calc(1.6 * var(--u)) rgba(0,0,0,.35))}
+.titulo{margin:0;padding:0 calc(3 * var(--u));font:400 calc(8.1 * var(--u))/1 var(--f-letreiro);color:var(--amarelo);letter-spacing:.01em;white-space:nowrap;
+  text-shadow:0 calc(.5 * var(--u)) 0 var(--vinho),0 calc(1 * var(--u)) 0 var(--vinho)}
+
+.moldura{position:relative;padding:calc(1.4 * var(--u));background:var(--creme);border:calc(1.2 * var(--u)) solid var(--amarelo);border-radius:calc(4 * var(--u));box-shadow:0 calc(1.5 * var(--u)) 0 var(--vinho)}
+.qr{width:calc(60 * var(--u));height:calc(60 * var(--u))}
+.aviso{width:calc(60 * var(--u));height:calc(60 * var(--u));margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(2 * var(--u));padding:calc(4 * var(--u));color:var(--vinho);font:600 calc(4 * var(--u))/1.3 var(--f-placa)}
+.aviso code{font:inherit;font-weight:700;white-space:nowrap}
+/* Cartaz de mesa: selo "Mesa N" entre o título e o QR; o QR encolhe um pouco (continua acima de 4 cm). */
+.mesa{margin:0;padding:calc(1 * var(--u)) calc(4 * var(--u));border-radius:999px;background:var(--vinho);color:var(--amarelo);border:calc(.6 * var(--u)) solid var(--amarelo);
+  font:700 calc(4.6 * var(--u))/1 var(--f-placa);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.com-mesa .logo{width:calc(24 * var(--u))}
+.com-mesa .qr,.com-mesa .aviso{width:calc(54 * var(--u));height:calc(54 * var(--u))}
+
+.sub{margin:0;padding:0 calc(6 * var(--u));font:600 calc(4.1 * var(--u))/1.25 var(--f-placa);letter-spacing:.06em;text-transform:uppercase;color:var(--creme);text-wrap:balance}
+
+.rodape{align-self:stretch;display:flex;justify-content:center;gap:calc(4 * var(--u));padding:calc(3 * var(--u)) calc(3 * var(--u)) calc(3.4 * var(--u));background:var(--vinho);border-top:calc(.8 * var(--u)) solid var(--amarelo);
+  font:600 calc(3.7 * var(--u))/1 var(--f-placa);letter-spacing:.03em;white-space:nowrap}
+.contato{display:flex;align-items:center;gap:calc(1.4 * var(--u));text-align:left}
+.contato small{display:block;margin-bottom:calc(.7 * var(--u));font-size:calc(2.5 * var(--u));font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,246,224,.75)}
+.ic{width:calc(5.4 * var(--u));height:calc(5.4 * var(--u));flex:none;color:var(--amarelo)}
+
+@media print{
+  body{background:none;overflow:hidden}
+  .barra{display:none}
+  .palco{display:block;padding:0}
+  .folha{zoom:1;box-shadow:none}
+}
+</style>
+</head>
+<body>
+<nav class="barra" aria-label="Tamanho do cartaz">
+  <a href="?tamanho=a6" data-tamanho="a6">A6 · 10,5 × 14,8 cm</a>
+  <a href="?tamanho=a5" data-tamanho="a5">A5 · 14,8 × 21 cm</a>
+  <button type="button" id="imprimir">Imprimir</button>
+  <span class="dica">Na impressão: tamanho real (100%), sem margens e com "gráficos de fundo" ligado. Ou use cartaz-a6.pdf / cartaz-a5.pdf.</span>
+</nav>
+
+<div class="palco">
+  <main class="folha">
+    <div class="cartao">
+      <img class="logo" src="/assets/logo.svg" alt="Mineiro Lanche food truck" width="600" height="600">
+      <h1 class="titulo">Aponte a câmera e peça</h1>
+      <p class="mesa" id="mesa" hidden></p>
+      <div class="moldura">
+        <img class="qr" id="qr" src="cardapio.svg" alt="QR code do cardápio do Mineiro Lanche" width="1024" height="1024">
+      </div>
+      <p class="sub">Cardápio completo, monte seu lanche e acompanhe o pedido</p>
+      <footer class="rodape">
+        <span class="contato"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.6a8.5 8.5 0 0 1-12.4 7.6L3.5 20.5l1.4-4.4A8.5 8.5 0 1 1 20.5 11.6z" fill="rgba(247,194,27,.25)"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg><span><small>WhatsApp</small>(11) 98572-0150</span></span>
+        <span class="contato"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="rgba(247,194,27,.25)"/><circle cx="12" cy="12" r="4"/><path d="M17.3 6.7h.01"/></svg><span><small>Instagram</small>@mineirolanchesuzano</span></span>
+      </footer>
+    </div>
+  </main>
+</div>
+
+</body>
+</html>
