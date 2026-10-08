@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /painel/
+
+Sitemap: https://mineiro-lanches.vercel.app/sitemap.xml
