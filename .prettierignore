@@ -1,0 +1,5 @@
+preview/
+dist/
+public/
+supabase/
+*.md

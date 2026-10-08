@@ -1,0 +1,39 @@
+{
+  "name": "mineiro-lanches",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Bio, cardápio, site e painel de pedidos do Mineiro Lanche",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "seed": "node scripts/gerar-seed.mjs",
+    "setup-sql": "node scripts/montar-setup.mjs",
+    "db:local": "bash scripts/supabase-local/iniciar.sh",
+    "qrcode": "node scripts/qrcode.mjs",
+    "test": "playwright test"
+  },
+  "dependencies": {
+    "@fontsource/lilita-one": "^5.2.6",
+    "@fontsource/oswald": "^5.2.6",
+    "@fontsource/rubik": "^5.2.6",
+    "@supabase/supabase-js": "^2.57.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@playwright/test": "^1.56.1",
+    "eslint": "^9.35.0",
+    "globals": "^16.4.0",
+    "jsqr": "^1.4.0",
+    "prettier": "^3.6.2",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.3",
+    "vite": "^6.3.6"
+  }
+}
