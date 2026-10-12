@@ -4,9 +4,9 @@
 .painel[hidden] { display: none; }
 .painel *, .painel *::before, .painel *::after { box-sizing: border-box; }
 .painel [hidden] { display: none; }
-.painel button, .painel input, .painel select, .painel textarea { font: inherit; color: inherit; }
-.painel h2, .painel h3, .painel p, .painel ul, .painel ol, .painel dl, .painel dd { margin: 0; padding: 0; }
-.painel ul, .painel ol { list-style: none; }
+.painel :where(button, input, select, textarea) { font: inherit; color: inherit; }
+.painel :where(h2, h3, p, ul, ol, dl, dd) { margin: 0; padding: 0; }
+.painel :where(ul, ol) { list-style: none; }
 .painel :focus-visible, .pn-modal :focus-visible, .pn-toasts :focus-visible { outline: 3px solid var(--fio); outline-offset: 3px; }
 .pn-ic { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; flex: none; }
 .pn-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -284,7 +284,7 @@
 .pn-linha small { color: var(--cinza-quente); }
 
 /* mobile */
-.painel .pn-aviso-m { padding: .85rem 1rem; border-radius: var(--r-md); background: var(--fio); color: var(--grafite); margin-bottom: 1rem; }
+.pn-aviso-m { padding: .85rem 1rem; border-radius: var(--r-md); background: var(--fio); color: var(--grafite); margin-bottom: 1rem; }
 .pn-m-lista { display: flex; flex-direction: column; gap: .75rem; }
 .pn-m-item { padding: .85rem 1rem; background: var(--carvao-2); border: 1px solid var(--borda-escura); border-radius: var(--r-lg); display: flex; flex-direction: column; gap: .4rem; }
 .pn-m-t { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
