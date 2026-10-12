@@ -2,7 +2,7 @@
 // Cada cena confere o que o aceite do plano pede (docs/PLANO-FASE-2.md, B11 a B13). O estado do banco (estado_cardapio)
 // vem do Supabase local, alterado no caminho (page.route), sem mexer no banco.
 // Uso: npx playwright test tests/site-ii.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
-/* global document, window, requestAnimationFrame, getComputedStyle, localStorage */
+/* global document, window, requestAnimationFrame, getComputedStyle, localStorage, DOMMatrix */
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -397,5 +397,147 @@ test.describe('S4 · hot dog: 1, 2 ou 3 salsichas', () => {
       };
     });
     expect(r).toEqual({ texto: brl(dogs['dog-super'].preco), colunas: 0, animacoes: 0, salsichas: 3 });
+  });
+});
+
+test.describe('S5 · vira combo + pilha de combos', () => {
+  const FOTOS = JSON.parse(readFileSync(resolve(RAIZ, 'public/assets/fotos.json'), 'utf8'));
+  const itens = CONFIG.categorias.flatMap((c) => c.itens);
+  const porId = Object.fromEntries(itens.map((p) => [p.id, p]));
+  // os lanches de foto 'nova' com preço, um por foto (o dono da foto: dog-max serve os três tamanhos)
+  const lanches = () => {
+    const vistos = new Set();
+    const nomes = [];
+    for (const p of itens) {
+      if (!p.foto || vistos.has(p.foto) || !(FOTOS.fotos || FOTOS)[p.foto] || (FOTOS.fotos || FOTOS)[p.foto].origem !== 'nova') continue;
+      vistos.add(p.foto);
+      const d = porId[p.foto] || p;
+      if (d.tipo === 'lanche' && typeof d.preco === 'number') nomes.push(d.nome);
+    }
+    return nomes;
+  };
+  const NOMES = ['Combo Gran Bacon Onion', 'Combo Dilúvio', 'Gran Bacon + Coca 350 ml + Maionese da casa', 'Combo 2 Hot Dog com Doritos'];
+  const cartas = (page) => page.locator('.s-combos .carta');
+  async function abrir(page) {
+    await page.goto('/#site');
+    await expect(page.locator('#view-site')).toBeVisible();
+    await page.locator('#combo-escolher').scrollIntoViewIfNeeded();
+  }
+
+  test('neon do combo e o que vem incluso do CONFIG, chips dos lanches de foto nova e as quatro cartas sem o Casal', async ({ page }) => {
+    // o HTML pronto (antes de qualquer JS) já traz o neon, os chips e as cartas
+    expect(html).toContain(`<p class="combo-neon rv">Qualquer lanche vira combo +<span data-neon-preco>${brl(CONFIG.regras.combo.preco)}</span></p>`);
+    const doHtml = [...html.matchAll(/data-combo-de="[^"]+">([^<]+)<\/button>/g)].map((m) => m[1]);
+    expect(doHtml).toEqual(lanches());
+    await abrir(page);
+    await expect(page.locator('.combo-neon')).toHaveText('Qualquer lanche vira combo +' + brl(CONFIG.regras.combo.preco));
+    await expect(page.locator('.s-combos [data-combo-inclui]')).toHaveText(CONFIG.regras.combo.inclui.join(' + ').toLowerCase());
+    await expect(page.locator('#combo-chips .chip')).toHaveText(lanches());
+    expect(lanches()).toEqual(expect.arrayContaining(['Gran Bacon Onion', 'Gran Crispy', 'Hot Dog Max', 'X-Churrasco']));
+    expect(lanches()).not.toContain('Hot Dog CBO Turbo'); // sem preço não vira combo
+    await expect(page.locator('#combo-chips .chip[aria-pressed="true"]')).toHaveCount(1);
+    await expect(cartas(page).locator('.carta-nome')).toHaveText(NOMES);
+    expect(await page.locator('.s-combos').textContent()).not.toContain('Casal');
+    // o primeiro é o Combo Gran Bacon Onion, de foto nova; os outros, de foto antiga, em moldura
+    await expect(cartas(page).first().locator('.foto')).toHaveClass(/nova/);
+    for (const i of [1, 2, 3]) await expect(cartas(page).nth(i).locator('.foto')).toHaveClass(/antiga/);
+    // o preço de cada carta é o do CONFIG
+    for (const id of ['combo-gran-bacon-onion', 'combo-diluvio', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos'])
+      await expect(page.locator(`.s-combos [data-preco-de="${id}"]`)).toHaveText(brl(porId[id].preco));
+  });
+
+  test('o combo do banco troca o preço do neon', async ({ page }) => {
+    await mudarEstado(page, (j) => {
+      j.loja.comboPreco = 16.5;
+      j.precos['combo-diluvio'] = 51.5;
+    });
+    await abrir(page);
+    await expect(page.locator('.combo-neon')).toHaveText('Qualquer lanche vira combo +R$ 16,50');
+    await expect(page.locator('.s-combos [data-preco-de="combo-diluvio"]')).toHaveText('R$ 51,50');
+    expect(await page.locator('.s-combos').textContent()).not.toContain('R$ 14,90');
+  });
+
+  test('"Escolher e virar combo" abre a ficha do chip escolhido com o combo ligado', async ({ page }) => {
+    await abrir(page);
+    await page.locator('#combo-chips .chip', { hasText: 'Gran Crispy' }).click();
+    await expect(page.locator('#combo-chips .chip[aria-pressed="true"]')).toHaveText('Gran Crispy');
+    await page.getByRole('button', { name: 'Escolher e virar combo' }).click();
+    await expect(page.locator('#ficha')).toBeVisible();
+    await expect(page.locator('#ficha-nome')).toHaveText('Gran Crispy');
+    await expect(page.locator('#ficha [data-combo]')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#ficha-total')).toHaveText(brl(porId['gran-crispy'].preco + CONFIG.regras.combo.preco));
+  });
+
+  test('"Pedir" na carta abre a ficha do combo', async ({ page }) => {
+    await abrir(page);
+    await cartas(page).nth(1).getByRole('button', { name: 'Pedir' }).click();
+    await expect(page.locator('#ficha')).toBeVisible();
+    await expect(page.locator('#ficha-nome')).toHaveText('Combo Dilúvio');
+  });
+
+  test('cartas presas em 72 px + 8 px por carta, sem filter em nenhuma delas', async ({ page }) => {
+    await abrir(page);
+    const r = await page.evaluate(() =>
+      [...document.querySelectorAll('.s-combos .carta')].map((c, i) => ({
+        i,
+        posicao: getComputedStyle(c).position,
+        topo: getComputedStyle(c).top,
+        filtros: [c, ...c.querySelectorAll('*')].map((e) => getComputedStyle(e).filter).filter((f) => f !== 'none'),
+        sombra: !!c.querySelector('.carta-sombra')
+      }))
+    );
+    expect(r).toHaveLength(4);
+    for (const c of r) {
+      expect(c.posicao).toBe('sticky');
+      expect(c.topo).toBe(72 + c.i * 8 + 'px');
+      expect(c.filtros, 'nenhum filter na carta ' + c.i).toEqual([]);
+      expect(c.sombra).toBe(true);
+    }
+  });
+
+  test('rolando a pilha a carta coberta encolhe (scale) e escurece por uma camada de opacidade', async ({ page }) => {
+    await abrir(page);
+    const medir = () =>
+      page.evaluate(() => {
+        const c = document.querySelector('.s-combos .carta');
+        return { escala: new DOMMatrix(getComputedStyle(c).transform).a, sombra: +getComputedStyle(c.querySelector('.carta-sombra')).opacity, filtro: getComputedStyle(c).filter };
+      });
+    // com a primeira carta solta o --sob é 0
+    await page.evaluate(() => window.scrollTo(0, document.querySelector('#pilha').getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.6));
+    await expect.poll(medir).toMatchObject({ escala: 1, sombra: 0 });
+    // a segunda carta sobe sobre a primeira
+    await page.evaluate(() => {
+      const c = document.querySelectorAll('.s-combos .carta')[0];
+      window.scrollTo(0, c.getBoundingClientRect().top + window.scrollY + c.offsetHeight * 1.2 - 72);
+    });
+    await expect.poll(async () => (await medir()).escala, { timeout: 5000 }).toBeLessThan(0.95);
+    const fim = await medir();
+    expect(fim.escala).toBeGreaterThan(0.92);
+    expect(fim.sombra).toBeGreaterThan(0.3);
+    expect(fim.filtro).toBe('none');
+  });
+
+  test('a parede acende ao entrar e o véu nunca fica abaixo de .70 sob o texto', async ({ page }) => {
+    await page.goto('/#site');
+    await expect(page.locator('#view-site')).toBeVisible();
+    // apagada até entrar (o chunk acabou de chegar: espera a transição curta de um estado para o outro)
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector('.s-combos'), '::before').opacity), { timeout: 5000 }).toBe('0');
+    await page.locator('.s-combos .s-h2').scrollIntoViewIfNeeded();
+    // acesa = a luz do truck (html[data-luz="apagada"] deixa a parede em .35)
+    const luz = () => page.evaluate(() => (document.documentElement.dataset.luz === 'apagada' ? '0.35' : '1'));
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector('.s-combos'), '::before').opacity), { timeout: 5000 }).toBe(await luz());
+    const veu = await page.evaluate(() => getComputedStyle(document.querySelector('.s-combos'), '::after').backgroundImage);
+    const alfas = [...veu.matchAll(/rgba\(18, 11, 9, ([\d.]+)\)/g)].map((m) => +m[1]);
+    expect(alfas.length).toBeGreaterThan(0);
+    for (const a of alfas) expect(a).toBeGreaterThanOrEqual(0.7);
+  });
+
+  test('com movimento reduzido a pilha é uma lista comum, sem transform e com a parede acesa', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await abrir(page);
+    const r = await page.evaluate(() => [...document.querySelectorAll('.s-combos .carta')].map((c) => [getComputedStyle(c).position, getComputedStyle(c).transform]));
+    expect(r).toEqual(Array(4).fill(['relative', 'none']));
+    const luz = await page.evaluate(() => (document.documentElement.dataset.luz === 'apagada' ? '0.35' : '1'));
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector('.s-combos'), '::before').opacity)).toBe(luz);
   });
 });

@@ -455,12 +455,56 @@
     <!-- [S4] fim -->
 
     <!-- [S5] inicio: section.s-combos (dono: site-II) -->
-    <section class="s-combos" aria-labelledby="comb-tit">
+    <section class="s-combos parede" id="s-combos" aria-labelledby="comb-tit">
+      <div class="grao" aria-hidden="true"></div>
       <div class="s-wrap">
         <p class="s-olho rv">Combos</p>
-        <h2 class="s-h2 rv" id="comb-tit">Pra quem chega com fome</h2>
-        <p class="s-p rv">Dilúvio e Casal com mais de um lanche, e o Gran Bacon com Coca e maionese artesanal da casa.</p>
-        <div class="pilha" id="pilha"></div>
+        <h2 class="s-h2 rv" id="comb-tit">Vira combo</h2>
+        <p class="combo-neon rv">Qualquer lanche vira combo +<span data-neon-preco>R$ 14,90</span></p>
+        <p class="combo-inclui rv" data-combo-inclui>batata frita 140 g + refrigerante lata 350 ml</p>
+        <div class="combo-escolha rv">
+          <div class="combo-chips" id="combo-chips" role="group" aria-label="Lanche para virar combo"><button type="button" class="chip" aria-pressed="true" data-combo-de="gran-salada">Gran Salada</button><button type="button" class="chip" aria-pressed="false" data-combo-de="gran-bacon-onion">Gran Bacon Onion</button><button type="button" class="chip" aria-pressed="false" data-combo-de="gran-crispy">Gran Crispy</button><button type="button" class="chip" aria-pressed="false" data-combo-de="x-salada">X-Salada</button><button type="button" class="chip" aria-pressed="false" data-combo-de="ultra-x-salada-bacon">Ultra X-Salada Bacon</button><button type="button" class="chip" aria-pressed="false" data-combo-de="exagerado-x-salada-egg-bacon">Exagerado X-Salada Egg Bacon</button><button type="button" class="chip" aria-pressed="false" data-combo-de="big-mineiro">Big Mineiro</button><button type="button" class="chip" aria-pressed="false" data-combo-de="dog-max">Hot Dog Max</button><button type="button" class="chip" aria-pressed="false" data-combo-de="x-churrasco">X-Churrasco</button></div>
+          <button type="button" class="btn btn-vermelho" id="combo-escolher"><svg class="ic" aria-hidden="true"><use href="#i-combo"/></svg>Escolher e virar combo</button>
+        </div>
+        <div class="pilha" id="pilha">
+          <article class="carta nova" data-carta="combo-gran-bacon-onion" style="--i:0">
+            <div class="carta-foto"><span class="foto nova" style="--cor:#a96e38;--foco:50% 60%"><img src="/assets/fotos/combo-gran-bacon-onion-1080.webp" srcset="/assets/fotos/combo-gran-bacon-onion-540.webp 540w, /assets/fotos/combo-gran-bacon-onion-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="1440" loading="lazy" decoding="async" alt="Foto do Combo Gran Bacon Onion"></span></div>
+            <div class="carta-corpo">
+              <h3 class="carta-nome">Combo Gran Bacon Onion</h3>
+              <ul class="carta-inclui"><li>Gran Bacon Onion (brioche, maionese, barbecue, 200 g de carne angus, mussarela, cheddar, bacon e 3 onion rings)</li><li>250 g de batata</li><li>Coca-Cola 350 ml</li></ul>
+              <div class="carta-pe"><span class="preco" data-preco-de="combo-gran-bacon-onion">R$ 48,90</span><button type="button" class="btn btn-vermelho" data-abrir="combo-gran-bacon-onion"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
+            </div>
+            <span class="carta-sombra" aria-hidden="true"></span>
+          </article>
+          <article class="carta antiga" data-carta="combo-diluvio" style="--i:1">
+            <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/combo-diluvio-1080.webp" srcset="/assets/fotos/combo-diluvio-540.webp 540w, /assets/fotos/combo-diluvio-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="1440" loading="lazy" decoding="async" alt="Foto do Combo Dilúvio"></span></div>
+            <div class="carta-corpo">
+              <h3 class="carta-nome">Combo Dilúvio</h3>
+              <ul class="carta-inclui"><li>Gran Burgers na piscininha de cheddar</li><li>Farofinha de bacon</li><li>140 g de batata frita</li><li>Refrigerante lata 350 ml (qualquer um)</li></ul>
+              <p class="carta-nota">Mais de um lanche (foto: 2 burgers). Quantidade exata a confirmar.</p>
+              <div class="carta-pe"><span class="preco" data-preco-de="combo-diluvio">R$ 49,90</span><button type="button" class="btn btn-vermelho" data-abrir="combo-diluvio"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
+            </div>
+            <span class="carta-sombra" aria-hidden="true"></span>
+          </article>
+          <article class="carta antiga" data-carta="gran-bacon-coca-maionese" style="--i:2">
+            <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/gran-bacon-maionese-1080.webp" srcset="/assets/fotos/gran-bacon-maionese-540.webp 540w, /assets/fotos/gran-bacon-maionese-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="989" loading="lazy" decoding="async" alt="Foto do Gran Bacon + Coca 350 ml + Maionese da casa"></span></div>
+            <div class="carta-corpo">
+              <h3 class="carta-nome">Gran Bacon + Coca 350 ml + Maionese da casa</h3>
+              <ul class="carta-inclui"><li>Gran Bacon</li><li>Coca-Cola 350 ml</li><li>Maionese artesanal da casa</li></ul>
+              <div class="carta-pe"><span class="preco" data-preco-de="gran-bacon-coca-maionese">R$ 42,90</span><button type="button" class="btn btn-vermelho" data-abrir="gran-bacon-coca-maionese"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
+            </div>
+            <span class="carta-sombra" aria-hidden="true"></span>
+          </article>
+          <article class="carta antiga" data-carta="combo-2-dog-doritos" style="--i:3">
+            <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/combo-2-dog-doritos-1080.webp" srcset="/assets/fotos/combo-2-dog-doritos-540.webp 540w, /assets/fotos/combo-2-dog-doritos-1080.webp 996w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="996" height="1239" loading="lazy" decoding="async" alt="Foto do Combo 2 Hot Dog com Doritos"></span></div>
+            <div class="carta-corpo">
+              <h3 class="carta-nome">Combo 2 Hot Dog com Doritos</h3>
+              <ul class="carta-inclui"><li>2 Hot Dog com Doritos</li><li>Coca-Cola 600 ml</li></ul>
+              <div class="carta-pe"><span class="preco" data-preco-de="combo-2-dog-doritos">R$ 57,80</span><button type="button" class="btn btn-vermelho" data-abrir="combo-2-dog-doritos"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
+            </div>
+            <span class="carta-sombra" aria-hidden="true"></span>
+          </article>
+        </div>
       </div>
     </section>
     <!-- [S5] fim -->
