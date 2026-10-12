@@ -16,3 +16,6 @@ fotos-originais/*.JPG
 fotos-originais/*.JPEG
 fotos-originais/*.PNG
 fotos-originais/*.HEIC
+
+# capturas e medidas geradas por scripts/capturas.mjs (PNG e JSON; não vão para o git)
+/capturas/
