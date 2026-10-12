@@ -261,7 +261,7 @@
     return `<div class="pn-app">
     <div class="pn-desktop">
       <aside class="pn-lado">
-        <div class="pn-marca"><img class="pn-selo-logo" src="/assets/logo-selo.svg" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-marca-t">Painel<br>de pedidos</span></div>
+        <div class="pn-marca"><img class="pn-selo-logo" src="/assets/logo/selo-128.webp" srcset="/assets/logo/selo-128.webp 1x, /assets/logo/selo-256.webp 2x" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-marca-t">Painel<br>de pedidos</span></div>
         <nav class="pn-nav" aria-label="Seções do painel">${nav}</nav>
         ${sairHTML()}
         <p class="pn-rodape">Mineiro Lanche · Painel de pedidos</p>
@@ -982,7 +982,10 @@
     document.addEventListener('pointerdown', marcarInteracao);
     document.addEventListener('keydown', marcarInteracao);
     window.addEventListener('focus', () => { if (S.visivel) limparNaoVistos(); });
-    document.addEventListener('visibilitychange', () => { if (!document.hidden && S.visivel) limparNaoVistos(); });
+    // aba oculta: o CSS pausa as animações infinitas (classe pn-aba-oculta no <html>)
+    const marcarAba = () => document.documentElement.classList.toggle('pn-aba-oculta', document.hidden);
+    document.addEventListener('visibilitychange', () => { marcarAba(); if (!document.hidden && S.visivel) limparNaoVistos(); });
+    marcarAba();
     ML.store.ouvir(aoEvento);
     S.cfg = ML.store.config();
     S.pedidos = ML.store.pedidos();

@@ -45,30 +45,40 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
   total, status: 'novo'|'preparo'|'pronto'|'rota'|'entregue'|'cancelado', historico: [{ status, em, motivo? }] }
 ```
 
+> Nota: o painel tolera `modo = retirada` legado (D7). O cliente não oferece mais retirada (`CONFIG.modos` só tem `entrega` e `local`), mas o banco ainda aceita o valor; o painel mostra esses pedidos com ícone próprio (`MODO_IC`, `painel.js:25`).
+
 ## 3. Identidade (tokens já definidos no `:root` da página; use as variáveis, não repita cores)
 - **Cores:**
 
-  | Variável | Valor |
-  |---|---|
-  | `--vermelho` | #C8102E |
-  | `--vermelho-escuro` | #9E0B23 |
-  | `--vinho` | #7A1426 |
-  | `--amarelo` | #F7C21B |
-  | `--ouro` | #E8B33A |
-  | `--carvao` | #1A1414 |
-  | `--carvao-2` | #231B1B |
-  | `--carvao-3` | #2E2424 |
-  | `--borda-escura` | #3E3131 |
-  | `--creme` | #FFF6E0 |
-  | `--cinza-quente` | #C9B9A6 |
-  | `--verde` | #2E7D4F |
-  | `--laranja` | #E8772E |
-  | `--papel` | #FFFDF6 |
-  | `--tinta` | #2A1F1A |
+  | Token | Valor | Uso |
+  |---|---|---|
+  | `--noite` | #120B09 | fundo do painel (nunca preto puro) |
+  | `--chapa` | #1D1310 | colunas, laterais e modais |
+  | `--chapa-2` | #281A15 | elevado: campos, segmentados, tempo |
+  | `--borda` | #3A2620 | divisória decorativa (não serve de limite de controle) |
+  | `--borda-campo` | #94705C | borda de campo e de controle (≥ 3:1) |
+  | `--osso` | #FFF3E0 | texto principal no escuro |
+  | `--osso-2` | #CDB8A3 | texto secundário no escuro |
+  | `--placa` | #C4060C | botão primário e faixa de atraso |
+  | `--placa-escura` | #96040A | `:active` do primário |
+  | `--branco` | #FFFFFF | texto sobre `--placa` e `--verde` |
+  | `--fio` | #FFCC00 | foco, destaque, chip ativo |
+  | `--letreiro` | #FFFF00 | títulos em grito (Lilita, ≥ 24 px) |
+  | `--grafite` | #1A0A04 | texto sobre `--fio`, ouro, neon, laranja e papel |
+  | `--vermelho-luz` | #FF6A5C | erro e fechado, sobre o escuro |
+  | `--neon-aberto` | #5BE38A | loja aberta |
+  | `--verde` | #2E7D4F | status entregue e selo de adicional `.pn-selo--mais` (texto `--branco`) |
+  | `--laranja` | #E8772E | status em preparo e selo de remoção `.pn-selo--sem` (texto `--grafite`) |
+  | `--papel` | #FBF6EC | fundo do card de pedido |
+  | `--tinta` | #2A1F1A | texto no papel |
+  | `--tinta-2` | #6E5B4E | texto secundário no papel |
+  | `--linha` | #EBDCC0 | divisória no papel |
+
+  Os nomes antigos de `base.css:44-47` continuam definidos com os valores novos e o painel atual ainda os usa (`--vermelho` = `--placa`, `--amarelo` = `--fio`, `--carvao` = `--noite`, `--creme` = `--osso`, `--cinza-quente` = `--osso-2`). Em tela nova, use os nomes da tabela.
 
 - **Fontes já carregadas:** `--f-letreiro` (Lilita One, títulos), `--f-placa` (Oswald, rótulos, números, colunas em caixa alta), `--f-corpo` (Rubik, texto).
-- **Tema do painel: escuro de cozinha** (fundo `--carvao`, cards `--carvao-2`, texto `--creme`, secundário `--cinza-quente`, destaque `--amarelo`, ação principal `--vermelho` com texto branco). Contraste ≥ 4,5:1 em todo texto.
-- **Easings e durações:** `--mola: cubic-bezier(.34,1.56,.64,1)`, `--suave: cubic-bezier(.2,.8,.2,1)`. Pressão 120 ms, interface 220 ms, painel lateral 320 ms. Respeitar `prefers-reduced-motion`.
+- **Tema do painel: escuro de cozinha** (fundo `--noite`, colunas e laterais `--chapa`, texto `--osso`, secundário `--osso-2`, destaque `--fio`, ação principal `--placa` com texto `--branco`). **Cards de pedido em papel** (`--papel`, texto `--tinta`, divisórias `--linha`); o resto segue escuro. Contraste ≥ 4,5:1 em todo texto.
+- **Easings e durações (por token, `base.css:72-76`):** `--mola: cubic-bezier(.34,1.56,.64,1)`, `--suave: cubic-bezier(.2,.8,.2,1)`. Pressão `--t-toque` (160 ms), interface `--t-ui` (280 ms), painel lateral e folha `--t-folha` (320 ms). Regra nova usa o token, não o número. Respeitar `prefers-reduced-motion`.
 - **Ícones:** sprite SVG já na página. Use `<svg class="pn-ic" aria-hidden="true"><use href="#i-NOME"/></svg>`. Disponíveis:
 
   | Grupo | Ícones |
@@ -82,7 +92,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
 ## 4. O que o painel precisa ter (para computador; a partir de 1024 px)
 1. **Estrutura.**
    - **Barra lateral fixa:**
-     - selo do logo: `<img src="assets/logo-selo.svg">` (a página fornece);
+     - selo do logo: `/assets/logo/selo-128.webp` (1x) e `selo-256.webp` (2x, em `srcset`), 64×64; no login (`acesso.js`), `selo-256.webp` em 84×84. É a arte oficial: sem recorte circular, `border-radius`, `filter` nem máscara;
      - navegação Pedidos (quadro), Histórico, Cardápio, Relatório, Configurações;
      - no rodapé, aviso de prévia: "Prévia GaspLab · pedidos guardados neste navegador".
    - **Barra superior:**
@@ -144,7 +154,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
 ## 5. Qualidade
 - JS clássico (sem módulos/bundler), num IIFE, em ES2018 (arrow functions e template strings OK), sem dependências externas.
 - Delegação de eventos, sem `innerHTML` com dado não escapado (use `ML.fmt.esc`).
-- Botões com 44 px no mínimo, `aria-label` nos que só têm ícone, foco visível (`outline` amarelo), `aria-live="polite"` no toast e nos contadores.
+- Alvos de toque com 48 px no mínimo no painel (botões, campos, segmentados, células da tabela), `aria-label` nos que só têm ícone, foco visível (`outline` amarelo), `aria-live="polite"` no toast e nos contadores.
 - Arrastar tem alternativa por botão.
 - Nada de `alert`/`confirm`/`prompt`.
 - Timers parados em `esconder()`.

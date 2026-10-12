@@ -19,7 +19,7 @@ export function iniciarAcesso(opc) {
   tela.className = 'painel pn-acesso';
   tela.setAttribute('aria-labelledby', 'pn-acesso-tit');
   tela.innerHTML = `<div class="pn-acesso-caixa">
-      <img class="pn-acesso-logo" src="/assets/logo-selo.svg" alt="" width="84" height="84">
+      <img class="pn-acesso-logo" src="/assets/logo/selo-256.webp" alt="" width="84" height="84">
       <h1 class="pn-acesso-tit" id="pn-acesso-tit">Painel de pedidos</h1>
       <p class="pn-acesso-sub">${esc(ML.CONFIG.nome)} · acesso da equipe</p>
       <div class="pn-acesso-corpo" data-corpo></div>
