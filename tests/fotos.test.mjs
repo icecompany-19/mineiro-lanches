@@ -122,11 +122,11 @@ before(async () => {
       ]
     })
   );
-  // fotos.json de partida: uma provisória sem origem, uma antiga e um recorte (o app ignora "recorte:*")
+  // fotos.json de partida: uma provisória sem origem e uma antiga
   writeFileSync(
     json,
     JSON.stringify(
-      { 'combo-casal': { w: 1600, h: 1372, cor: '#e8e8d8' }, 'dog-doritos': { w: 481, h: 643, cor: '#485858', origem: 'antiga' }, 'recorte:gran-chicken': { w: 720, h: 665 } },
+      { 'combo-casal': { w: 1600, h: 1372, cor: '#e8e8d8' }, 'dog-doritos': { w: 481, h: 643, cor: '#485858', origem: 'antiga' } },
       null,
       1
     )
@@ -269,13 +269,12 @@ test('só recorte e redimensionamento: cor média igual e -q recortado no foco',
   if (top !== Math.round((h - lado) / 2)) assert.ok(noFoco < (await diferenca(q, centro)), 'e não com o recorte do centro');
 });
 
-test('fotos.json: formato que src/app.js e o virtual:fotos leem, ordem mantida e recortes intactos', () => {
+test('fotos.json: formato que src/app.js e o virtual:fotos leem e ordem mantida', () => {
   const fotos = JSON.parse(readFileSync(json, 'utf8'));
   const chaves = Object.keys(fotos);
-  assert.deepEqual(chaves.slice(0, 3), ['combo-casal', 'dog-doritos', 'recorte:gran-chicken']);
-  assert.deepEqual(fotos['recorte:gran-chicken'], { w: 720, h: 665 });
+  assert.deepEqual(chaves.slice(0, 2), ['combo-casal', 'dog-doritos']);
   assert.deepEqual(fotos['combo-casal'], { w: 1600, h: 1372, cor: '#e8e8d8', origem: 'antiga' });
-  for (const k of chaves.filter((c) => !c.startsWith('recorte:'))) {
+  for (const k of chaves) {
     const f = fotos[k];
     assert.ok(Number.isInteger(f.w) && f.w > 0 && Number.isInteger(f.h) && f.h > 0, `${k}: w e h`);
     assert.match(f.cor, /^#[0-9a-f]{6}$/, `${k}: cor`);
@@ -360,4 +359,10 @@ test('tijolinho desenhado em código: SVG válido, ladrilho fixo e sem imagem em
   assert.ok(!/<image|href=|data:/.test(svg));
   for (const c of svg.match(/<!--[\s\S]*?-->/g) || []) assert.ok(!c.slice(4, -3).includes('--'), 'comentário XML não aceita "--"');
   assert.equal(readFileSync(join(RAIZ, 'public', 'assets', 'texturas', 'tijolo.svg'), 'utf8'), svg, 'public/assets/texturas/tijolo.svg está atualizado');
+});
+
+test('legado: o fotos.json do repositório só tem fotos de produto e a pasta de recortes não existe mais', () => {
+  const fotos = JSON.parse(readFileSync(join(RAIZ, 'public', 'assets', 'fotos.json'), 'utf8'));
+  assert.deepEqual(Object.keys(fotos).filter((k) => k.includes(':')), [], 'chave com ":" (recorte:*) sobrou no fotos.json');
+  assert.ok(!existsSync(join(RAIZ, 'public', 'assets', 'recortes')), 'public/assets/recortes foi apagada (D10)');
 });

@@ -30,7 +30,7 @@
 //   { slug: { w, h, cor, foco, origem, arquivo } }
 // w e h são do original já girado (o app monta o srcset com eles), cor é a média da foto (fundo enquanto carrega),
 // foco é o ponto focal ("x% y%" da foto: o centro do lanche), origem é 'nova' (cenário de tijolinho) ou 'antiga' e arquivo é o
-// original. As chaves "recorte:*" e as fotos que não estão na pasta ficam como estão (sem origem ganham 'antiga').
+// original. As fotos que não estão na pasta ficam como estão (sem origem ganham 'antiga').
 // Foco: o do mapa.json; senão o que já está no fotos.json, se a foto é a mesma (mesmo nome de arquivo); senão
 // foco_padrao.
 //
@@ -355,7 +355,7 @@ export function juntarFotosJson(atual, novas) {
   const saida = {};
   for (const k of Object.keys(atual)) {
     if (novas[k]) saida[k] = novas[k];
-    else saida[k] = k.startsWith('recorte:') || atual[k].origem ? atual[k] : { ...atual[k], origem: 'antiga' };
+    else saida[k] = atual[k].origem ? atual[k] : { ...atual[k], origem: 'antiga' };
   }
   for (const k of Object.keys(novas)) if (!saida[k]) saida[k] = novas[k];
   return saida;

@@ -19,9 +19,8 @@ export function iniciarApp() {
   if (/^#painel(\/|$)/.test(location.hash)) { location.replace('/painel/'); return; }
 
   // fotos reais: tamanho original, cor média, foco e origem ('nova' = cenário de tijolinho; 'antiga' = provisória)
-  // (public/assets/fotos.json, gerado por scripts/fotos.mjs); "recorte:*" são os PNG sem fundo do site
-  var FOTOS = {};
-  Object.keys(FOTOS_JSON).forEach(function (k) { if (k.indexOf('recorte:') !== 0) FOTOS[k] = FOTOS_JSON[k]; });
+  // (public/assets/fotos.json, gerado por scripts/fotos.mjs)
+  var FOTOS = FOTOS_JSON;
   function ehNova(slug) { return !!FOTOS[slug] && FOTOS[slug].origem === 'nova'; }
   // a foto compartilhada (dog-max serve a Médio, Max e Super) fica com o produto do mesmo nome
   var produtoDaFoto = {};
