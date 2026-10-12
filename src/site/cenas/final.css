@@ -1,0 +1,8 @@
+/* S9 · final (dono: site-I). Logo sem filtro. */
+.s-final{position:relative;padding-block:90px 110px;background:var(--carvao);text-align:center;overflow:hidden}
+.s-final .rabisco-fundo{color:rgba(247,194,27,.05)}
+.s-final img.logo-final{width:min(60vw,240px);height:auto;margin:0 auto;filter:none}
+.s-final .s-h2{max-width:14ch;margin-inline:auto;color:var(--amarelo)}
+.s-final .s-ctas{justify-content:center;max-width:540px;margin-inline:auto}
+.s-final .rodape{max-width:560px;margin-inline:auto;color:var(--cinza-quente);border-color:var(--borda-escura)}
+.s-final .rodape strong{color:var(--creme)}

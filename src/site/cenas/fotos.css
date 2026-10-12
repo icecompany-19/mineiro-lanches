@@ -1,0 +1,15 @@
+/* S7 · parede de fotos e foto ampliada (dono: site-I) */
+.s-galeria{padding-block:80px 70px;background:var(--carvao)}
+.mosaico{margin-top:26px;columns:2 160px;column-gap:12px}
+.mosaico button{display:block;width:100%;margin:0 0 12px;padding:0;border:0;border-radius:18px;overflow:hidden;break-inside:avoid;background:var(--carvao-2);transition:transform .3s var(--mola)}
+.mosaico button:hover{transform:scale(1.02)}
+.mosaico img{width:100%;height:auto}
+.luz-caixa{width:min(96vw,720px);max-height:94vh;padding:0;border:0;border-radius:20px;background:#000;overflow:hidden}
+.luz-caixa::backdrop{background:rgba(0,0,0,.85)}
+.luz-caixa[open]{animation:aparece .25s ease}
+.luz-caixa img{width:100%;max-height:82vh;object-fit:contain}
+.luz-caixa .pe{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;color:#fff}
+.luz-caixa .pe strong{font-family:var(--f-placa);font-size:18px;text-transform:uppercase}
+@media (min-width:880px){
+  .mosaico{columns:4 200px}
+}

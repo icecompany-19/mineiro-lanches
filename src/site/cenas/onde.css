@@ -1,0 +1,7 @@
+/* S8 · onde (dono: site-II) */
+.s-onde{padding-block:80px 70px;background:var(--vermelho);color:#fff;position:relative;overflow:hidden}
+.s-onde .rabisco-fundo{color:rgba(255,255,255,.07)}
+.s-onde .s-olho{color:var(--amarelo-claro)}
+.s-onde .s-p{color:#FFE3E7}
+.onde-grid{position:relative;margin-top:28px;display:grid;gap:18px;max-width:640px}
+.onde-grid>*{min-width:0}

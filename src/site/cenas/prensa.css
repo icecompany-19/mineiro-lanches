@@ -1,0 +1,23 @@
+/* S3 · prensado ou não? (dono: site-II) */
+.s-prensa{position:relative;padding-block:80px 70px;background:var(--carvao);overflow:hidden}
+.prensa-grid{margin-top:28px;display:grid;gap:22px;align-items:center}
+.prensa-grid>*{min-width:0}
+.prensa-ilustra{width:min(100%,460px);height:auto;margin:0 auto;display:block;overflow:visible;touch-action:none;cursor:grab}
+.prensa-ilustra .placa-cima{transition:transform .25s var(--suave)}
+.prensa-ilustra .lanche{transform-box:fill-box;transform-origin:center bottom;transition:transform .25s var(--suave)}
+.prensa-ilustra .vapor path{fill:none;stroke:rgba(255,246,224,.6);stroke-width:4;stroke-linecap:round;opacity:0}
+.prensa-ilustra.prensado .vapor path{animation:vapor 1.6s ease-out infinite}
+.prensa-ilustra.prensado .vapor path:nth-child(2){animation-delay:.5s}
+.prensa-regua{max-width:420px;margin:0 auto;display:grid;gap:8px}
+.prensa-regua label{font-weight:600}
+.prensa-regua input{width:100%;accent-color:var(--amarelo);height:32px}
+.prensa-estado{font-family:var(--f-letreiro);font-size:34px;color:var(--amarelo);text-align:center;margin:0}
+@media (min-width:880px){
+  .prensa-grid{grid-template-columns:1fr 1fr}
+}
+
+@keyframes vapor{0%{opacity:0;transform:translateY(8px)}30%{opacity:.8}100%{opacity:0;transform:translateY(-24px)}}
+
+@media (prefers-reduced-motion:reduce){
+  .prensa-ilustra.prensado .vapor path{animation:none}
+}

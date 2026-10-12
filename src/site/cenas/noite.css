@@ -1,0 +1,4 @@
+/* S6 · letreiro da noite: o horário da semana (dono: site-I). As 7 lâmpadas ([data-semana]) e o status são
+   escritos por src/app.js (atualizarStatus, a cada minuto); o estilo do cartão .horario é o da bio (app.css). */
+.s-noite{position:relative;padding-block:70px;background:var(--carvao)}
+.s-noite .horario{max-width:640px;margin-inline:auto}

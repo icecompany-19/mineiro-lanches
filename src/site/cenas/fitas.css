@@ -1,0 +1,17 @@
+/* S1 · fitas de letreiro (dono: site-II) */
+.fitas{position:relative;z-index:2;padding-block:16px 30px;overflow:hidden;background:var(--carvao)}
+.fita{width:calc(100% + 60px);margin-left:-30px;padding-block:10px;overflow:hidden;background:var(--amarelo);color:var(--vinho);transform:rotate(-2.5deg);box-shadow:0 20px 40px -20px rgba(0,0,0,.9)}
+.fita.b{margin-top:-6px;background:var(--vermelho);color:#fff;transform:rotate(1.8deg)}
+.fita__trilho{display:flex;width:max-content;animation:corre 34s linear infinite}
+.fita.b .fita__trilho{animation-direction:reverse;animation-duration:40s}
+.fita__item{display:inline-flex;align-items:center;gap:18px;padding-right:18px;font-family:var(--f-letreiro);font-size:30px;line-height:1.15;white-space:nowrap}
+.fita__item svg{width:22px;height:22px}
+@media (min-width:880px){
+  .fita__item{font-size:40px}
+}
+
+@keyframes corre{to{transform:translateX(-50%)}}
+
+@media (prefers-reduced-motion:reduce){
+  .fita__trilho{animation:none}
+}

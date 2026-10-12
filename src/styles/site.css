@@ -1,0 +1,22 @@
+/* Mineiro Lanche · site imersivo (#site): base comum das cenas (docs/DIRECAO-VISUAL.md 6.1).
+   Vem no chunk site-*.css junto com src/site/cenas/*.css (src/site/site.js importa todos, por import() em app.js).
+   O layout mínimo do herói e as classes comuns que a S0 usa na primeira pintura (.site, .s-wrap, .s-olho, .s-ctas,
+   .rabisco-fundo) ficam em src/styles/app.css, no bloco "site S0". Só animam transform, opacity e clip-path. */
+
+/* títulos e texto das seções */
+.s-h2{margin:10px 0 0;font-family:var(--f-letreiro);font-weight:400;font-size:clamp(42px,11vw,92px);line-height:.95}
+.s-p{margin:14px 0 0;max-width:40ch;font-size:17px;line-height:1.55;color:var(--cinza-quente)}
+
+/* título letra por letra (base.js, embrulharLetras): a palavra não quebra no meio */
+.palavra{white-space:nowrap}
+
+/* fora da tela (base.js, observar): as animações da seção param */
+.site .pausa *,.site .pausa *::before,.site .pausa *::after{animation-play-state:paused!important}
+
+/* revelação (base.js, revelar): o que está abaixo da dobra sobe quando entra */
+.rv{transition:transform .9s var(--suave),opacity .9s var(--suave)}
+.rv.fora{transform:translateY(36px);opacity:.001}
+
+@media (prefers-reduced-motion:reduce){
+  .rv.fora{transform:none;opacity:1}
+}
