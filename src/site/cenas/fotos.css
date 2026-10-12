@@ -1,15 +1,76 @@
-/* S7 · parede de fotos e foto ampliada (dono: site-I) */
-.s-galeria{padding-block:80px 70px;background:var(--carvao)}
-.mosaico{margin-top:26px;columns:2 160px;column-gap:12px}
-.mosaico button{display:block;width:100%;margin:0 0 12px;padding:0;border:0;border-radius:18px;overflow:hidden;break-inside:avoid;background:var(--carvao-2);transition:transform .3s var(--mola)}
-.mosaico button:hover{transform:scale(1.02)}
-.mosaico img{width:100%;height:auto}
-.luz-caixa{width:min(96vw,720px);max-height:94vh;padding:0;border:0;border-radius:20px;background:#000;overflow:hidden}
-.luz-caixa::backdrop{background:rgba(0,0,0,.85)}
-.luz-caixa[open]{animation:aparece .25s ease}
-.luz-caixa img{width:100%;max-height:82vh;object-fit:contain}
-.luz-caixa .pe{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;color:#fff}
-.luz-caixa .pe strong{font-family:var(--f-placa);font-size:18px;text-transform:uppercase}
-@media (min-width:880px){
-  .mosaico{columns:4 200px}
+/* S7 · parede de fotos e foto ampliada (dono: site-I). Seção: section.s-galeria e dialog#luz-caixa, entre os marcadores [S7] do index.html.
+   O mosaico (#mosaico) é montado por fotos.js: cada quadro é um button.quadro com a foto (só origem 'nova') e o nome e o preço no pé.
+   - alvenaria por columns (2 no celular, 3 de 600 px, 4 de 880 px); a proporção de cada quadro gira em --ar (inline) para não virar grade;
+   - foco de luz por cima da foto (.gal-luz: radial-gradient claro a 10%), rotação estática de ±1,2° alternada, sombra --sombra-foto
+     com a cor média da foto (--cor); a foto não leva filter, saturate nem brilho: ela nunca muda de cor;
+   - paralaxe de ±24 px na foto DENTRO do quadro (a moldura recorta, então os quadros nunca se encostam), por animation-timeline: view()
+     só dentro de @supports e com movimento permitido; sem suporte ou com movimento reduzido a foto fica parada, sem reserva em JS;
+   - content-visibility: auto, então a seção (e as fotos, todas lazy) só custa quando chega perto. Só opacity e transform animam. */
+
+.s-galeria{position:relative;padding-block:72px 84px;background:radial-gradient(70% 340px at 50% 0,rgba(255,200,120,.06),transparent),var(--noite);
+  content-visibility:auto;contain-intrinsic-size:auto 1670px}
+.s-galeria .s-olho{color:var(--fio)}
+.s-galeria .s-h2{margin-top:6px;font-size:clamp(38px,10vw,76px);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg);transform-origin:0 60%}
+
+/* ---------- alvenaria ---------- */
+.mosaico{margin-top:30px;columns:2;column-gap:12px}
+.quadro{--r:-1.2deg;display:block;width:100%;margin:0 0 14px;padding:6px 6px 0;border:0;border-radius:14px;background:var(--chapa);box-shadow:var(--sombra-foto);
+  break-inside:avoid;text-align:left;color:var(--osso);transform:rotate(var(--r))}
+.quadro:nth-child(even){--r:1.2deg}
+.quadro:focus-visible{border-radius:14px}
+.gal-foto{aspect-ratio:var(--ar,3/4);border-radius:10px}
+/* a foto preenche o quadro (cover, foco do fotos.json); absoluta para a altura vir só do aspect-ratio */
+.gal-foto img{position:absolute;inset:0;width:100%;height:100%}
+.gal-luz{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(75% 55% at 50% 24%,rgba(255,243,224,.1),transparent 72%)}
+
+/* ---------- nome e preço no pé ---------- */
+.gal-pe{display:grid;gap:1px;padding:9px 4px 11px}
+.gal-pe strong{font:600 13px/1.2 var(--f-placa);letter-spacing:.05em;text-transform:uppercase;color:var(--osso)}
+.gal-preco{font:700 16px/1.2 var(--f-placa);letter-spacing:.02em;font-variant-numeric:tabular-nums;color:var(--fio)}
+
+@media (min-width:600px){
+  .mosaico{columns:3}
+  .s-galeria{contain-intrinsic-size:auto 1500px}
 }
+@media (min-width:880px){
+  .mosaico{columns:4}
+  .s-galeria{contain-intrinsic-size:auto 1040px}
+  .gal-pe strong{font-size:14px}
+}
+@media (min-width:1024px){
+  .s-galeria{padding-block:120px 130px;contain-intrinsic-size:auto 1140px}
+  .s-galeria .s-h2{font-size:clamp(56px,6vw,76px)}
+}
+@media (min-width:1180px){
+  .s-galeria{contain-intrinsic-size:auto 1300px}
+}
+
+/* ---------- movimento (só com movimento permitido) ---------- */
+@media (prefers-reduced-motion:no-preference){
+  .quadro{transition:transform .3s var(--mola)}
+  @media (hover:hover){.quadro:hover{transform:rotate(0deg) scale(1.02)}}
+  .quadro:active{transform:rotate(0deg) scale(.98)}
+}
+/* paralaxe: a foto anda ±24 px dentro da moldura (ela é 48 px mais alta que o quadro, então nunca mostra o fundo).
+   A linha do tempo é a do quadro; o override do play-state é porque .pausa (site.css) pausa as animações da seção fora da tela,
+   e uma animação presa à rolagem não precisa disso (pausada, ela travaria no meio do caminho) */
+@media (prefers-reduced-motion:no-preference){
+  @supports (animation-timeline:view()){
+    .gal-foto{view-timeline:--gal block}
+    .gal-foto img{inset:auto 0 auto 0;top:-24px;height:calc(100% + 48px);animation:gal-par linear both;animation-timeline:--gal;animation-range:cover}
+    .quadro:nth-child(even) .gal-foto img{animation-direction:reverse}
+    .site .s-galeria.pausa .gal-foto img{animation-play-state:running!important}
+  }
+}
+@keyframes gal-par{from{transform:translateY(24px)}to{transform:translateY(-24px)}}
+
+/* ---------- foto ampliada (dialog#luz-caixa): a caixa de antes, com a pele da chapa ---------- */
+.luz-caixa{width:min(96vw,720px);max-height:94vh;padding:0;border:1px solid var(--borda);border-radius:var(--r-xl);background:var(--chapa);color:var(--osso);overflow:hidden}
+.luz-caixa::backdrop{background:rgba(8,5,4,.8)}
+.luz-caixa[open]{animation:aparece .25s ease}
+.luz-caixa img{width:100%;max-height:78vh;object-fit:contain;background:var(--noite)}
+.luz-caixa .pe{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 14px;padding:12px 14px 14px}
+.luz-caixa .pe strong{font:600 18px/1.2 var(--f-placa);letter-spacing:.04em;text-transform:uppercase;color:var(--osso)}
+.luz-preco{color:var(--fio)}
+.luz-acoes{display:flex;gap:8px}
+.luz-acoes .btn{min-height:48px}

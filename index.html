@@ -504,6 +504,9 @@
     <!-- [S6] fim -->
 
     <!-- [S7] inicio: section.s-galeria e dialog#luz-caixa (dono: site-I) -->
+    <!-- Parede de fotos (6.2, S7): o #mosaico nasce de src/site/cenas/fotos.js só com as fotos de origem 'nova' (fotos.json), uma por
+         arquivo, em alvenaria por columns (2 no celular, 3 de 600 px, 4 de 880 px); o toque em button[data-ampliar] abre #luz-caixa com a foto
+         grande, o nome, o preço e "Pedir" (abre a ficha) -->
     <section class="s-galeria" aria-labelledby="gal-tit">
       <div class="s-wrap">
         <p class="s-olho rv">Fotos do truck</p>
@@ -514,7 +517,7 @@
 
     <dialog class="luz-caixa" id="luz-caixa" aria-label="Foto ampliada">
       <img id="luz-img" alt="" decoding="async">
-      <div class="pe"><strong id="luz-nome"></strong><span style="display:flex;gap:8px"><button type="button" class="btn btn-amarelo" id="luz-pedir" style="min-height:44px">Pedir</button><button type="button" class="btn btn-claro" data-fechar-luz style="min-height:44px">Fechar</button></span></div>
+      <div class="pe"><strong id="luz-nome"></strong><span class="luz-acoes"><button type="button" class="btn btn-amarelo" id="luz-pedir">Pedir</button><button type="button" class="btn btn-claro" data-fechar-luz>Fechar</button></span></div>
     </dialog>
     <!-- [S7] fim -->
 

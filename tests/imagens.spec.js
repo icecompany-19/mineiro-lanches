@@ -113,7 +113,20 @@ test.describe('fotos sem distorção', () => {
     await page.goto('/#site');
     await expect(page.locator('#view-site')).toBeVisible();
     await rolarTudo(page);
-    expect(await conferir(page, 'site'), 'fotos da galeria e logo conferidas').toBeGreaterThanOrEqual(15);
+    await conferir(page, 'site');
+    // a parede de fotos (S7) só mostra foto 'nova', uma por arquivo: 11 quadros com object-fit cover, todos carregados e visíveis
+    const parede = await page.evaluate(() => {
+      const imgs = [...document.querySelectorAll('#mosaico img')];
+      const arquivos = imgs.map((i) => (i.currentSrc || i.src).split('/').pop().replace(/-(540|1080)\.webp$/, ''));
+      return {
+        total: imgs.length,
+        cover: imgs.filter((i) => i.complete && i.naturalWidth > 0 && i.checkVisibility() && getComputedStyle(i).objectFit === 'cover').length,
+        repetidas: arquivos.filter((a, n) => arquivos.indexOf(a) !== n)
+      };
+    });
+    expect(parede.repetidas, 'arquivo repetido na parede de fotos').toEqual([]);
+    expect(parede.cover, 'fotos cover da parede (S7) carregadas').toBeGreaterThanOrEqual(11);
+    expect(parede.total, 'só as 11 fotos novas').toBe(parede.cover);
 
     const foto = page.locator('#mosaico button').first();
     await foto.scrollIntoViewIfNeeded();
@@ -156,6 +169,8 @@ test('srcset usa a largura real dos arquivos (sem repetir largura)', async ({ pa
   expect(selo).toEqual({ src: '/assets/logo/selo-128.webp', srcset: null, w: 34 });
   const doritos = conjuntos.find((c) => c.srcset.includes('/dog-doritos-'));
   expect(doritos?.srcset).toBe('/assets/fotos/dog-doritos-540.webp 481w');
-  const burger = await page.evaluate(() => document.querySelector('img[srcset*="/gran-burger-540"]')?.getAttribute('srcset'));
-  expect(burger).toBe('/assets/fotos/gran-burger-540.webp 540w, /assets/fotos/gran-burger-1080.webp 720w');
+  // a parede de fotos (S7) só tem foto 'nova' (1200 px de largura): o srcset traz o -540 e o -1080 pela largura real, e a antiga gran-burger (720 px) já não aparece
+  const parede = await page.evaluate(() => document.querySelector('#mosaico img[srcset*="/big-mineiro-540"]')?.getAttribute('srcset'));
+  expect(parede).toBe('/assets/fotos/big-mineiro-540.webp 540w, /assets/fotos/big-mineiro-1080.webp 1080w');
+  expect(await page.locator('#mosaico img[srcset*="/gran-burger-"]').count(), 'foto antiga na parede de fotos').toBe(0);
 });
