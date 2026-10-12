@@ -94,11 +94,11 @@ export function iniciarApp() {
     opc = opc || {};
     if (p.foto && FOTOS[p.foto]) {
       var f = FOTOS[p.foto], estilo = estiloFoto(f, tam);
-      return '<span class="foto ' + (f.origem === 'nova' ? 'nova' : 'antiga') + (extra ? ' ' + extra : '') + '"' + (estilo ? ' style="' + estilo + '"' : '') + '><img ' + atrFoto(p.foto, tam, opc.uso, opc.carga) + ' alt="Foto do ' + esc(p.nome) + '"></span>';
+      return '<span class="foto ' + (f.origem === 'nova' ? 'nova' : 'antiga') + (extra ? ' ' + extra : '') + '"' + (estilo ? ' style="' + estilo + '"' : '') + '><img ' + atrFoto(p.foto, tam, opc.uso, opc.carga) + (opc.carga === 'lcp' || opc.carga === 'cedo' ? ' class="ok"' : '') + ' alt="Foto do ' + esc(p.nome) + '"></span>';
     }
     return '<span class="arte' + (extra ? ' ' + extra : '') + '" aria-hidden="true">' + ic(iconeDe(p)) + '</span>';
   }
-  // imagens aparecem com um fade quando carregam
+  // imagens lazy aparecem com um fade quando carregam; as 'lcp' e 'cedo' já nascem com class="ok" (sem fade: a foto principal não espera o load)
   document.addEventListener('load', function (e) { if (e.target.tagName === 'IMG' && e.target.parentNode && e.target.parentNode.classList.contains('foto')) e.target.classList.add('ok'); }, true);
   function marcarCarregadas(raiz) { $$('.foto img', raiz).forEach(function (i) { if (i.complete && i.naturalWidth) i.classList.add('ok'); }); }
   function ingTexto(p) { return p.inclui ? p.inclui.join(' · ') : [p.base].concat(p.ing || []).filter(Boolean).join(', '); }
@@ -231,6 +231,11 @@ export function iniciarApp() {
   }
   var ICONE_BIO = { 'Hambúrguer artesanal': 'burger', 'Hot dog com Doritos': 'hotdog', 'Consumo no local': 'mesa', 'Entregas': 'moto' };
   var ICONE_MODO = { entrega: 'moto', local: 'mesa' };
+  // texto da taxa de entrega: último trecho do desc da entrega no CONFIG.modos; o HTML nasce vazio e o JS preenche
+  function taxaEntregaTxt() {
+    var ent = C.modos.filter(function (m) { return m.id === 'entrega'; })[0];
+    return ent ? ent.desc.split(' · ').pop() : 'sem taxa';
+  }
   function montarBio() {
     var naBio = st.aba === 'app' && st.tela === 'bio';
     $('#chips-bio').innerHTML = C.bio.map(function (b) { return '<li>' + ic(ICONE_BIO[b] || 'estrela') + esc(b) + '</li>'; }).join('');
@@ -254,9 +259,8 @@ export function iniciarApp() {
       modosBio.innerHTML = C.modos.map(function (m) { return '<li>' + ic(ICONE_MODO[m.id] || 'truck') + '<span><strong>' + esc(m.label) + '</strong> · ' + esc(m.desc) + '</span></li>'; }).join('') +
         '<li>' + ic('prensa') + '<span><strong>Prensado</strong> · ' + esc(textoPrensado()) + '</span></li>';
     }
-    // "Entrega: taxa combinada" da comanda da sacola (CONFIG.modos)
-    var ent = C.modos.filter(function (m) { return m.id === 'entrega'; })[0];
-    $$('[data-taxa-entrega]').forEach(function (el) { el.textContent = ent ? ent.desc.split(' · ').pop() : 'sem taxa'; });
+    // taxa de entrega da comanda da sacola (CONFIG.modos)
+    $$('[data-taxa-entrega]').forEach(function (el) { el.textContent = taxaEntregaTxt(); });
     atualizarPedirDeNovo();
   }
 
@@ -639,7 +643,7 @@ export function iniciarApp() {
       : '<p class="aviso">A forma de pagamento é combinada com o ' + esc(C.nome) + ' na entrega ou no truck.</p>';
     var t = totaisSacola();
     $('#chk-itens').textContent = plural(t.n);
-    $('#chk-taxa').textContent = st.modo === 'entrega' ? 'taxa combinada' : 'sem taxa';
+    $('#chk-taxa').textContent = st.modo === 'entrega' ? taxaEntregaTxt() : 'sem taxa';
     // a comanda (que recolhe) lista os itens com o que foi escolhido
     $('#chk-lista').innerHTML = sacola.map(function (l) {
       var it = ML.precos.item(l.sel);
