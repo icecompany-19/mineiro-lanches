@@ -252,7 +252,7 @@
   var STATUS = {
     novo: { label: 'Recebido', painel: 'Novo' },
     preparo: { label: 'Em preparo', painel: 'Em preparo' },
-    pronto: { label: 'Pronto para retirar', painel: 'Pronto' },
+    pronto: { label: 'Pronto', painel: 'Pronto' },
     rota: { label: 'Saiu para entrega', painel: 'Em rota' },
     entregue: { label: 'Entregue', painel: 'Concluído' },
     cancelado: { label: 'Cancelado', painel: 'Cancelado' }
@@ -282,7 +282,7 @@
 
   // ================= mensagem de WhatsApp =================
   function mensagem(pedido) {
-    var modoTxt = ({ entrega: 'Entrega', retirada: 'Retirada no truck', local: 'Comer no local' }[pedido.modo] || pedido.modo) + (pedido.modo === 'local' && pedido.mesa ? ' · Mesa ' + pedido.mesa : '');
+    var modoTxt = ({ entrega: 'Entrega', local: 'Comer no local' }[pedido.modo] || pedido.modo) + (pedido.modo === 'local' && pedido.mesa ? ' · Mesa ' + pedido.mesa : '');
     var out = ['Olá, ' + CONFIG.nome + '! ' + (pedido.origem === 'qrcode' ? 'Vim pelo QR code do truck' : 'Vim pelo link da bio') + ' e quero fazer um pedido.'];
     // sem número quando o pedido não chegou ao servidor (plano B do checkout)
     if (pedido.numero) out.push('Pedido ' + numeroTxt(pedido.numero));

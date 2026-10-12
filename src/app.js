@@ -230,7 +230,7 @@ export function iniciarApp() {
     return lista.slice(0, 10);
   }
   var ICONE_BIO = { 'Hambúrguer artesanal': 'burger', 'Hot dog com Doritos': 'hotdog', 'Consumo no local': 'mesa', 'Entregas': 'moto' };
-  var ICONE_MODO = { entrega: 'moto', retirada: 'sacola', local: 'mesa' };
+  var ICONE_MODO = { entrega: 'moto', local: 'mesa' };
   function montarBio() {
     var naBio = st.aba === 'app' && st.tela === 'bio';
     $('#chips-bio').innerHTML = C.bio.map(function (b) { return '<li>' + ic(ICONE_BIO[b] || 'estrela') + esc(b) + '</li>'; }).join('');
@@ -596,13 +596,12 @@ export function iniciarApp() {
   }
 
   // ================= checkout =================
-  // peças do checkout que não estão no index.html: telefone obrigatório (o servidor exige), aviso de privacidade
-  // (LGPD) e o bloco de erro do envio com "Tentar de novo" e "Enviar pelo WhatsApp" (acima do botão fixo)
+  // peças do checkout que não estão no index.html: aviso de privacidade (LGPD), a mensagem de erro do telefone
+  // e o bloco de erro do envio com "Tentar de novo" e "Enviar pelo WhatsApp" (acima do botão fixo)
   (function () {
     var tel = $('#f-tel'), campo = tel.closest('.campo');
     campo.id = 'c-tel';
-    $('label', campo).textContent = 'Telefone com DDD (WhatsApp)';
-    tel.required = true; tel.setAttribute('autocomplete', 'tel-national');
+    tel.setAttribute('autocomplete', 'tel-national');
     campo.insertAdjacentHTML('beforeend', '<span class="msg-erro" id="erro-tel" hidden>Informe o telefone com DDD para o truck falar com você.</span>');
     campo.insertAdjacentHTML('afterend', '<p class="nota-dados">' + ic('check') + 'Usamos seus dados só para preparar e entregar este pedido.</p>');
     $('.enviar-wrap').insertAdjacentHTML('beforebegin',
@@ -773,7 +772,6 @@ export function iniciarApp() {
   // ================= acompanhar pedido =================
   var PASSOS = {
     entrega: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['rota', 'Saiu para entrega', 'moto'], ['entregue', 'Entregue', 'check']],
-    retirada: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['pronto', 'Pronto para retirar', 'sacola'], ['entregue', 'Retirado', 'check']],
     local: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['pronto', 'Pronto para servir', 'mesa'], ['entregue', 'Servido', 'check']]
   };
   var MSG = { novo: 'Pedido recebido pelo Mineiro Lanche', preparo: 'Seu lanche está na chapa', pronto: 'Pronto!', rota: 'Saiu para entrega', entregue: 'Bom apetite!', cancelado: 'Pedido cancelado' };
@@ -810,7 +808,7 @@ export function iniciarApp() {
     }
     $('#ped-num').textContent = ML.fmt.numero(p.numero);
     var msg = MSG[p.status] || '';
-    if (p.status === 'pronto') msg = p.modo === 'retirada' ? 'Pronto! Pode retirar no truck' : 'Pronto para servir';
+    if (p.status === 'pronto') msg = 'Pronto para servir';
     if (p.status === 'cancelado') { var u = p.historico[p.historico.length - 1]; msg += u && u.motivo ? ' · ' + u.motivo : ''; }
     $('#ped-msg').textContent = msg;
     // para leitor de tela: o status muda sozinho (consulta a cada 10 s)
