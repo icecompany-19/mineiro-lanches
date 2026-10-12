@@ -1,17 +1,29 @@
-/* S1 · fitas de letreiro (dono: site-II) */
-.fitas{position:relative;z-index:2;padding-block:16px 30px;overflow:hidden;background:var(--carvao)}
-.fita{width:calc(100% + 60px);margin-left:-30px;padding-block:10px;overflow:hidden;background:var(--amarelo);color:var(--vinho);transform:rotate(-2.5deg);box-shadow:0 20px 40px -20px rgba(0,0,0,.9)}
-.fita.b{margin-top:-6px;background:var(--vermelho);color:#fff;transform:rotate(1.8deg)}
-.fita__trilho{display:flex;width:max-content;animation:corre 34s linear infinite}
-.fita.b .fita__trilho{animation-direction:reverse;animation-duration:40s}
-.fita__item{display:inline-flex;align-items:center;gap:18px;padding-right:18px;font-family:var(--f-letreiro);font-size:30px;line-height:1.15;white-space:nowrap}
-.fita__item svg{width:22px;height:22px}
+/* S1 · fitas de letreiro (dono: site-II). Duas faixas inclinadas que se cruzam: a (-3°) é a placa vermelha com fios e
+   os nomes em Lilita; b (+2°) é osso com texto grafite em Oswald. Cada trilho tem dois grupos iguais (o 2º é cópia
+   aria-hidden): o laço anda -50%, um grupo exato. Sem JS (ou antes dele) ficam paradas, com a lista de reserva do HTML. */
+.fitas{position:relative;z-index:2;padding-block:40px 46px;overflow:hidden;background:var(--carvao)}
+.fita{position:relative;width:calc(100% + 80px);margin-left:-40px;overflow:hidden;transform:rotate(-3deg);background:var(--placa);color:var(--letreiro);border-block:3px solid var(--fio);box-shadow:0 20px 40px -20px rgba(0,0,0,.9)}
+.fita.b{z-index:1;margin-top:-4px;transform:rotate(2deg);background:var(--osso);color:var(--grafite);border-block:0;box-shadow:0 18px 36px -18px rgba(0,0,0,.9)}
+.fita__trilho{display:flex;width:max-content}
+.fitas.pronta .fita__trilho{animation:fita-corre 55s linear infinite}
+.fitas.pronta .fita.b .fita__trilho{animation-direction:reverse;animation-duration:45s}
+.fita__grupo{display:flex;flex:none}
+.fita__item{display:inline-flex;align-items:center;gap:18px;padding:10px 18px 10px 0;font-family:var(--f-letreiro);font-size:30px;line-height:1.15;white-space:nowrap}
+.fita.b .fita__item{padding-block:8px;font:700 22px/1.2 var(--f-placa);letter-spacing:.08em;text-transform:uppercase}
+/* a estrela que separa os itens: recorte do clip-path, no fio (a) ou na placa (b) */
+.fita__item::after{content:"";flex:none;width:20px;height:20px;background:var(--fio);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.fita.b .fita__item::after{background:var(--placa)}
 @media (min-width:880px){
-  .fita__item{font-size:40px}
+  .fitas{padding-block:56px 64px}
+  .fita__item{font-size:40px;padding-block:12px}
+  .fita.b .fita__item{font-size:28px;padding-block:10px}
+  .fita__item::after{width:24px;height:24px}
+  .fita.b{margin-top:-10px}
 }
 
-@keyframes corre{to{transform:translateX(-50%)}}
+@keyframes fita-corre{to{transform:translateX(-50%)}}
 
+/* movimento reduzido: faixas paradas */
 @media (prefers-reduced-motion:reduce){
-  .fita__trilho{animation:none}
+  .fitas.pronta .fita__trilho{animation:none}
 }
