@@ -2,7 +2,7 @@
 // Cada cena confere o que o aceite do plano pede (docs/PLANO-FASE-2.md, B11 a B13). O estado do banco (estado_cardapio)
 // vem do Supabase local, alterado no caminho (page.route), sem mexer no banco.
 // Uso: npx playwright test tests/site-ii.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
-/* global document, window, requestAnimationFrame */
+/* global document, window, requestAnimationFrame, getComputedStyle */
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -167,5 +167,102 @@ test.describe('S1b · placa do cardápio', () => {
     await expect(preco('porcoes')).toHaveText('Esgotado hoje');
     await expect(preco('artesanais')).toHaveText('a partir de R$ 24,90');
     expect(await page.locator('.s-placa .placa-lista').textContent()).not.toMatch(/confirmar|R\$ 0,00/i);
+  });
+});
+
+test.describe('S3 · prensado ou não?', () => {
+  const regua = (page) => page.locator('#f-prensa');
+  const estado = (page) => page.locator('#prensa-estado');
+  // a foto do quadro interativo e a posição da chapa na tela
+  const foto = (page) => page.locator('#prensa-palco .prensa-foto img');
+  const topoDaChapa = (page) => page.locator('#prensa-palco .prensa-chapa').evaluate((e) => e.getBoundingClientRect().top);
+  async function abrir(page) {
+    await page.goto('/#site');
+    await expect(page.locator('#view-site')).toBeVisible();
+    await page.locator('#prensa-palco').scrollIntoViewIfNeeded();
+    await expect(foto(page)).toHaveJSProperty('complete', true);
+  }
+
+  test('foto nova do X-Churrasco, o texto vem do CONFIG e a régua desce a prensa', async ({ page }) => {
+    await abrir(page);
+    await expect(foto(page)).toHaveAttribute('src', /\/assets\/fotos\/x-churrasco-540\.webp$/);
+    await expect(foto(page)).toHaveAttribute('alt', 'Foto do X-Churrasco');
+    await expect(page.locator('#prensa-aviso')).toHaveText('Avise antes: ' + CONFIG.regras.prensado.texto.replace(/^./, (c) => c.toLowerCase()) + '.');
+    await expect(estado(page)).toHaveText('Não prensado');
+    const alto = await topoDaChapa(page);
+    await regua(page).fill('50');
+    await expect(estado(page)).toHaveText('Prensando…');
+    await expect(page.locator('#prensa-palco')).not.toHaveClass(/prensado/);
+    await regua(page).fill('100');
+    await expect(estado(page)).toHaveText('Prensado!');
+    await expect(page.locator('#prensa-palco')).toHaveClass(/prensado/);
+    // a chapa desce (21% da altura do quadro, 98 px num quadro de 467) e o vapor e o Tsss entram
+    await expect.poll(async () => (await topoDaChapa(page)) - alto).toBeGreaterThan(60);
+    await expect(page.locator('#prensa-palco .prensa-tsss')).toHaveCSS('animation-name', 'prensa-tsss');
+    // volta ao começo
+    await regua(page).fill('0');
+    await expect(estado(page)).toHaveText('Não prensado');
+    await expect.poll(async () => Math.abs((await topoDaChapa(page)) - alto)).toBeLessThan(2);
+  });
+
+  test('com a prensa descida a foto nunca é deformada: sem transform e na proporção natural', async ({ page }) => {
+    await abrir(page);
+    await regua(page).fill('100');
+    await expect(estado(page)).toHaveText('Prensado!');
+    await page.waitForTimeout(400); // a chapa pousa (transição de .2 s)
+    const r = await foto(page).evaluate((img) => {
+      const cs = getComputedStyle(img);
+      const dono = [];
+      for (let e = img; e && e !== document.body; e = e.parentElement) if (getComputedStyle(e).transform !== 'none') dono.push(e.className);
+      return { transform: cs.transform, w: img.clientWidth, h: img.clientHeight, nw: img.naturalWidth, nh: img.naturalHeight, comTransform: dono };
+    });
+    expect(r.transform).toBe('none');
+    expect(r.comTransform, 'nenhum elemento da foto ao quadro leva transform').toEqual([]);
+    expect(Math.abs(r.w / r.h / (r.nw / r.nh) - 1)).toBeLessThan(0.03);
+  });
+
+  test('arrastar a chapa pelo cabo desce a prensa junto com a régua', async ({ page }) => {
+    await abrir(page);
+    const cabo = await page.locator('#prensa-palco .prensa-cabo').boundingBox();
+    const quadro = await page.locator('#prensa-palco').boundingBox();
+    await page.mouse.move(cabo.x + cabo.width / 2, cabo.y + cabo.height / 2);
+    await page.mouse.down();
+    // 21% da altura do quadro é o curso todo; passa um pouco para garantir o fim
+    await page.mouse.move(cabo.x + cabo.width / 2, cabo.y + cabo.height / 2 + quadro.height * 0.1, { steps: 4 });
+    await expect.poll(async () => +(await regua(page).inputValue())).toBeGreaterThan(30);
+    await page.mouse.move(cabo.x + cabo.width / 2, cabo.y + cabo.height / 2 + quadro.height * 0.3, { steps: 4 });
+    await page.mouse.up();
+    await expect(regua(page)).toHaveValue('100');
+    await expect(estado(page)).toHaveText('Prensado!');
+  });
+
+  test('pelo teclado: a régua é um controle comum', async ({ page }) => {
+    await abrir(page);
+    await regua(page).focus();
+    await page.keyboard.press('End');
+    await expect(estado(page)).toHaveText('Prensado!');
+    await page.keyboard.press('Home');
+    await expect(estado(page)).toHaveText('Não prensado');
+  });
+
+  test('com movimento reduzido os dois estados ficam lado a lado, parados', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/#site');
+    await page.locator('.prensa-par').scrollIntoViewIfNeeded();
+    const cenas = page.locator('.prensa-cena');
+    await expect(cenas).toHaveCount(2);
+    await expect(cenas.nth(0)).toBeVisible();
+    await expect(cenas.nth(1)).toBeVisible();
+    await expect(page.locator('.prensa-controle')).toBeHidden();
+    await expect(cenas.nth(0).locator('.prensa-rotulo')).toHaveText('Não prensado');
+    await expect(cenas.nth(1).locator('.prensa-rotulo')).toHaveText('Prensado!');
+    await expect(cenas.nth(1).locator('img')).toHaveJSProperty('complete', true);
+    const [a, b] = await Promise.all([cenas.nth(0).boundingBox(), cenas.nth(1).boundingBox()]);
+    expect(b.x).toBeGreaterThan(a.x + a.width - 1); // lado a lado
+    // a chapa do segundo está mais baixa que a do primeiro (relativa ao quadro)
+    const chapa = (i) => cenas.nth(i).locator('.prensa-chapa').evaluate((e) => e.getBoundingClientRect().top - e.closest('.prensa-palco').getBoundingClientRect().top);
+    expect((await chapa(1)) - (await chapa(0))).toBeGreaterThan(40);
+    expect(await page.evaluate(() => document.getAnimations().filter((x) => x.effect && x.effect.target && x.effect.target.closest && x.effect.target.closest('.s-prensa')).length)).toBe(0);
+    for (const i of [0, 1]) await expect(cenas.nth(i).locator('img')).toHaveCSS('transform', 'none');
   });
 });

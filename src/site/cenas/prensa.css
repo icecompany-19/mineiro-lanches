@@ -1,23 +1,71 @@
-/* S3 · prensado ou não? (dono: site-II) */
-.s-prensa{position:relative;padding-block:80px 70px;background:var(--carvao);overflow:hidden}
+/* S3 · prensado ou não? (dono: site-II). A foto fica inteira (sem transform); a prensa é CSS por cima dela: chapa de
+   inox em degradê e cabo, que desce por translateY conforme --v (0 a 1, escrito pelo JS). Vapor e "Tsss…" aparecem
+   em .prensado. Só animam transform e opacity. As medidas da prensa são em cqw (largura do quadro), então ela escala
+   com a foto. Movimento reduzido: os dois estados lado a lado, parados. */
+.s-prensa{position:relative;padding-block:72px 64px;background:var(--carvao);overflow:hidden}
 .prensa-grid{margin-top:28px;display:grid;gap:22px;align-items:center}
 .prensa-grid>*{min-width:0}
-.prensa-ilustra{width:min(100%,460px);height:auto;margin:0 auto;display:block;overflow:visible;touch-action:none;cursor:grab}
-.prensa-ilustra .placa-cima{transition:transform .25s var(--suave)}
-.prensa-ilustra .lanche{transform-box:fill-box;transform-origin:center bottom;transition:transform .25s var(--suave)}
-.prensa-ilustra .vapor path{fill:none;stroke:rgba(255,246,224,.6);stroke-width:4;stroke-linecap:round;opacity:0}
-.prensa-ilustra.prensado .vapor path{animation:vapor 1.6s ease-out infinite}
-.prensa-ilustra.prensado .vapor path:nth-child(2){animation-delay:.5s}
-.prensa-regua{max-width:420px;margin:0 auto;display:grid;gap:8px}
+.s-prensa.sem-foto .prensa-grid{display:none}
+.prensa-par{width:min(100%,440px);margin:0 auto}
+.prensa-cena--fixa,.prensa-rotulo{display:none}
+
+/* o quadro: a foto 3:4 e, por cima, a prensa, o vapor e o Tsss */
+.prensa-palco{position:relative;container-type:inline-size;--v:0}
+.prensa-foto{aspect-ratio:3/4;border-radius:var(--r-2xl);box-shadow:var(--sombra-foto)}
+
+/* a prensa: o bloco mede 42% do quadro e a chapa fica no pé dele; com --v = 1 a chapa pousa em 42% da altura (o topo
+   do pão) e com --v = 0 sobe 21% (translateY de -50% do próprio bloco). Só a chapa e o cabo pegam o ponteiro. */
+.prensa-prensa{position:absolute;z-index:3;left:8%;width:84%;top:0;height:42%;pointer-events:none;transform:translateY(calc((var(--v) - 1) * 50%));transition:transform .2s var(--suave)}
+.prensa-palco.arrasta .prensa-prensa{transition:none}
+.prensa-chapa{position:absolute;left:0;right:0;bottom:0;height:8.6cqw;border-radius:2.6cqw;pointer-events:auto;touch-action:none;cursor:grab;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.4) 16%,rgba(255,255,255,0) 38%,rgba(255,255,255,.3) 68%,rgba(0,0,0,.2)),
+    linear-gradient(180deg,#F4F5F7 0%,#BCC1C8 30%,#E9ECEF 50%,#8A919A 80%,#5D636B 100%);
+  box-shadow:0 4cqw 6cqw -2cqw rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.85),inset 0 -2px 0 rgba(0,0,0,.4)}
+.prensa-chapa::after{content:"";position:absolute;inset:-2.3cqw 0} /* alvo de toque de uns 46 px */
+.prensa-cabo{position:absolute;left:50%;bottom:8.6cqw;width:34%;height:12.6cqw;transform:translateX(-50%);pointer-events:auto;touch-action:none;cursor:grab}
+.prensa-cabo::before{content:"";position:absolute;left:50%;bottom:0;width:4cqw;height:8.5cqw;transform:translateX(-50%);border-radius:1cqw 1cqw 0 0;background:linear-gradient(90deg,#6F767E,#D5D9DE 45%,#7A818A)}
+.prensa-cabo::after{content:"";position:absolute;left:0;right:0;top:0;height:5.2cqw;border-radius:2.6cqw;background:var(--placa);box-shadow:inset 0 0 0 2px var(--fio),0 2cqw 3cqw -1cqw rgba(0,0,0,.6)}
+
+/* vapor: três manchas que sobem do pão, por cima da chapa, sem passar das laterais do quadro; só com ela em baixo */
+.prensa-vapor{position:absolute;z-index:4;left:10%;right:10%;top:33%;height:12%;pointer-events:none;clip-path:inset(-40cqw 0 0 0)}
+.prensa-vapor i{position:absolute;bottom:0;width:20cqw;height:20cqw;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.9),rgba(255,248,235,.4) 55%,rgba(255,248,235,0));opacity:0}
+.prensa-vapor i:nth-child(1){left:0}
+.prensa-vapor i:nth-child(2){left:36%}
+.prensa-vapor i:nth-child(3){left:70%}
+.prensa-palco.prensado .prensa-vapor i{animation:prensa-vapor 2.4s ease-out infinite}
+.prensa-palco.prensado .prensa-vapor i:nth-child(2){animation-delay:.8s}
+.prensa-palco.prensado .prensa-vapor i:nth-child(3){animation-delay:1.6s}
+.prensa-tsss{position:absolute;z-index:4;right:5%;top:22%;margin:0;font-family:var(--f-letreiro);font-size:9.7cqw;line-height:1;color:var(--osso);text-shadow:0 .06em 0 var(--placa);opacity:0;pointer-events:none;transform:rotate(-7deg)}
+.prensa-palco.prensado .prensa-tsss{animation:prensa-tsss 2.2s var(--suave) both}
+
+/* estado e régua */
+.prensa-controle{display:grid;gap:14px}
+.prensa-estado{margin:0;font-family:var(--f-letreiro);font-size:34px;line-height:1.05;color:var(--letreiro);text-align:center}
+.prensa-regua{width:100%;max-width:420px;margin:0 auto;display:grid;gap:8px}
 .prensa-regua label{font-weight:600}
-.prensa-regua input{width:100%;accent-color:var(--amarelo);height:32px}
-.prensa-estado{font-family:var(--f-letreiro);font-size:34px;color:var(--amarelo);text-align:center;margin:0}
+.prensa-regua input{width:100%;height:44px;accent-color:var(--fio)}
 @media (min-width:880px){
-  .prensa-grid{grid-template-columns:1fr 1fr}
+  .s-prensa{padding-block:112px}
+  .prensa-grid{grid-template-columns:minmax(0,440px) 1fr;gap:64px}
+  .prensa-par{margin:0}
+  .prensa-estado{text-align:left;font-size:44px}
+  .prensa-regua{margin:0}
 }
 
-@keyframes vapor{0%{opacity:0;transform:translateY(8px)}30%{opacity:.8}100%{opacity:0;transform:translateY(-24px)}}
+@keyframes prensa-vapor{0%{opacity:0;transform:translateY(2cqw) scale(.6)}30%{opacity:.8}100%{opacity:0;transform:translateY(-26cqw) scale(1.8)}}
+@keyframes prensa-tsss{0%{opacity:0;transform:translateY(3cqw) rotate(-7deg) scale(.8)}22%,70%{opacity:1;transform:rotate(-7deg)}100%{opacity:0;transform:translateY(-2cqw) rotate(-7deg)}}
 
+/* movimento reduzido: os dois estados lado a lado, parados (a cena fixa do HTML já nasce prensada), sem régua */
 @media (prefers-reduced-motion:reduce){
-  .prensa-ilustra.prensado .vapor path{animation:none}
+  .prensa-par{width:min(100%,540px);display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .prensa-cena--fixa{display:block}
+  .prensa-rotulo{display:block;margin:12px 0 0;font-family:var(--f-letreiro);font-size:24px;line-height:1.1;color:var(--letreiro);text-align:center}
+  .prensa-controle{display:none}
+  .prensa-prensa{transition:none}
+  .prensa-palco{--v:0!important}
+  .prensa-cena--fixa .prensa-palco{--v:1!important}
+  .prensa-cena:not(.prensa-cena--fixa) .prensa-vapor,.prensa-cena:not(.prensa-cena--fixa) .prensa-tsss{display:none}
+  .prensa-cena--fixa .prensa-palco.prensado .prensa-vapor i{animation:none;opacity:.55;transform:translateY(-10cqw) scale(1.4)}
+  .prensa-cena--fixa .prensa-palco.prensado .prensa-tsss{animation:none;opacity:1}
 }

@@ -389,27 +389,19 @@
       <div class="s-wrap">
         <p class="s-olho rv">Do seu jeito</p>
         <h2 class="s-h2 rv" id="prensa-tit">Prensado ou não?</h2>
-        <p class="s-p rv">Você escolhe em cada lanche. Não cobramos para prensar.</p>
+        <p class="s-p rv" id="prensa-aviso">Avise antes: não cobramos para prensar.</p>
         <div class="prensa-grid">
-          <svg class="prensa-ilustra" id="prensa-ilustra" viewBox="0 0 400 300" aria-hidden="true">
-            <rect x="40" y="250" width="320" height="22" rx="8" fill="#3E3131"/>
-            <rect x="52" y="236" width="296" height="16" rx="6" fill="#6E5B4E"/>
-            <g class="lanche">
-              <path d="M80 236c0-18 10-30 30-34h180c20 4 30 16 30 34z" fill="#E6A94A"/>
-              <path d="M84 206c10-8 30 4 46-4s28 6 44-2 28 6 44-2 30 6 46-2 26 4 34 2l-2 10H86z" fill="#F7C21B"/>
-              <path d="M86 200c12-4 24 4 36 0s24 4 36 0 24 4 36 0 24 4 36 0 24 4 36 0 20 2 26 0v6H86z" fill="#7A3B1C"/>
-              <path d="M82 196c0-34 30-56 118-56s118 22 118 56z" fill="#E9A64A"/>
-              <path d="M110 170c20-14 50-20 80-20" stroke="#FFE6B8" stroke-width="7" stroke-linecap="round" fill="none" opacity=".7"/>
-            </g>
-            <g class="placa-cima">
-              <rect x="190" y="18" width="20" height="60" rx="6" fill="#8A7D72"/>
-              <rect x="150" y="10" width="100" height="18" rx="9" fill="#C8102E"/>
-              <rect x="52" y="76" width="296" height="18" rx="6" fill="#6E5B4E"/>
-              <rect x="40" y="62" width="320" height="22" rx="8" fill="#3E3131"/>
-            </g>
-            <g class="vapor"><path d="M150 140c-10-12 8-18 0-30"/><path d="M200 136c-10-12 10-20 0-34"/><path d="M250 140c-10-12 8-18 0-30"/></g>
-          </svg>
-          <div>
+          <div class="prensa-par">
+            <div class="prensa-cena">
+              <div class="prensa-palco" id="prensa-palco" data-prensa-de="x-churrasco"><span class="foto nova prensa-foto" style="--cor:#a57745;--foco:50% 68%"><img src="/assets/fotos/x-churrasco-540.webp" srcset="/assets/fotos/x-churrasco-540.webp 540w, /assets/fotos/x-churrasco-1080.webp 1080w" sizes="(min-width:880px) 440px, 90vw" width="540" height="720" loading="lazy" decoding="async" alt="Foto do X-Churrasco"></span><span class="prensa-prensa" aria-hidden="true"><span class="prensa-cabo"></span><span class="prensa-chapa"></span></span><span class="prensa-vapor" aria-hidden="true"><i></i><i></i><i></i></span><span class="prensa-tsss" aria-hidden="true">Tsss…</span></div>
+              <p class="prensa-rotulo" aria-hidden="true">Não prensado</p>
+            </div>
+            <div class="prensa-cena prensa-cena--fixa" aria-hidden="true">
+              <div class="prensa-palco prensado" data-prensa-de="x-churrasco"><span class="foto nova prensa-foto" style="--cor:#a57745;--foco:50% 68%"><img src="/assets/fotos/x-churrasco-540.webp" srcset="/assets/fotos/x-churrasco-540.webp 540w, /assets/fotos/x-churrasco-1080.webp 1080w" sizes="(min-width:880px) 440px, 90vw" width="540" height="720" loading="lazy" decoding="async" alt=""></span><span class="prensa-prensa" aria-hidden="true"><span class="prensa-cabo"></span><span class="prensa-chapa"></span></span><span class="prensa-vapor" aria-hidden="true"><i></i><i></i><i></i></span><span class="prensa-tsss" aria-hidden="true">Tsss…</span></div>
+              <p class="prensa-rotulo">Prensado!</p>
+            </div>
+          </div>
+          <div class="prensa-controle">
             <p class="prensa-estado" id="prensa-estado" aria-live="polite">Não prensado</p>
             <div class="prensa-regua"><label for="f-prensa">Arraste para prensar</label><input id="f-prensa" type="range" min="0" max="100" value="0"></div>
           </div>
