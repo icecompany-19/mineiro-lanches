@@ -71,7 +71,9 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   await expect(page.locator('#prod-gran-burger .selo-combo')).toHaveText('Vira combo +R$ 16,50');
   expect(await page.locator('body').innerText()).not.toContain('+R$ 14,90');
   await page.goto('/#site');
-  await expect(page.locator('#monte-switch')).toContainText('Vira combo +R$ 16,50');
+  // a S2 (Pão seladinho na chapa): o preço do botão "Pedir este" é o do banco e a nota do combo também
+  await expect(page.locator('.s-monte [data-preco-de="gran-bacon-onion"]')).toHaveText('R$ 35,50');
+  await expect(page.locator('.s-monte .s2-combo')).toContainText('+R$ 16,50');
   await expect(page.locator('.dog-preco')).toHaveText('R$ 24,50');
   // o herói do site: a próxima abertura sai dos turnos que o banco mandou (todos os dias às 20h)
   await expect(page.locator('.s-hero [data-abre]')).toHaveText('20h');

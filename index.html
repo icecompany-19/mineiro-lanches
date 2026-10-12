@@ -364,27 +364,42 @@
     <!-- [S1b] fim -->
 
     <!-- [S2] inicio: section.s-monte (dono: site-I) -->
+    <!-- "Pão seladinho na chapa" (6.2, S2): seção presa à rolagem (200vh; 240vh em 1024+). O palco fica colado sob a barra e
+         src/site/cenas/monte.js escreve --p (0 a 1) na seção: a foto se revela de baixo para cima, os chips acendem em sequência e,
+         em p = 1, sobe o vapor e aparece "Pedir este". Só entram os lanches de ROTEIRO.monte com foto 'nova' (hoje Gran Bacon Onion,
+         Gran Salada e Gran Crispy; o Gran Bacon entra na frente quando ganhar foto nova). Este HTML é o estado completo e o JS refaz
+         o mesmo markup se o roteiro mudar. As composições ficam empilhadas na mesma célula: a mais alta dá a altura (sem CLS ao trocar). -->
     <section class="s-monte" aria-labelledby="monte-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco)"/></svg>
-      <div class="s-wrap" style="position:relative">
-        <p class="s-olho rv">Regra da casa</p>
-        <h2 class="s-h2 rv" id="monte-tit">Monte seu combo</h2>
-        <p class="s-p rv">Qualquer lanche do cardápio vira combo por +<span data-combo-preco>R$ 14,90</span>, com batata frita 140 g e refrigerante lata 350 ml.</p>
-        <div class="monte" id="monte">
-          <div>
-            <div class="monte-escolha" id="monte-escolha" role="group" aria-label="Escolha o lanche"></div>
-            <div class="monte-palco" aria-hidden="true">
-              <div class="bandeja"></div>
-              <svg class="monte-batata" viewBox="0 0 120 140"><g stroke="#B07A12" stroke-width="2"><rect x="28" y="8" width="11" height="70" rx="3" fill="#FFD95A" transform="rotate(-10 33 43)"/><rect x="44" y="2" width="11" height="76" rx="3" fill="#FFE27A" transform="rotate(-3 49 40)"/><rect x="60" y="0" width="11" height="78" rx="3" fill="#FFD95A" transform="rotate(4 65 39)"/><rect x="76" y="6" width="11" height="72" rx="3" fill="#FFE27A" transform="rotate(11 81 42)"/></g><path d="M16 56h88l-10 80H26z" fill="#C8102E"/><path d="M16 56h88l-2 14H18z" fill="#9E0B23"/><text x="60" y="108" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="17" fill="#F7C21B">140 g</text></svg>
-              <div class="monte-lanche" id="monte-lanche"><img id="monte-img" alt="" loading="lazy" decoding="async"></div>
-              <svg class="monte-lata" viewBox="0 0 90 150"><path d="M14 18 20 6h50l6 12v116l-6 10H20l-6-10z" fill="#E9E4DA"/><path d="M14 30h62v94H14z" fill="#C8102E"/><path d="M14 54h62v8H14zM14 92h62v8H14z" fill="#F7C21B"/><text x="45" y="84" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="15" fill="#fff">LATA</text><text x="45" y="118" text-anchor="middle" font-family="Oswald, sans-serif" font-size="12" fill="#fff">350 ml</text><path d="M24 10h42" stroke="#B9B2A6" stroke-width="3"/></svg>
-            </div>
+      <div class="s2-palco">
+        <div class="s-wrap s2-grade">
+          <div class="s2-cab">
+            <p class="s-olho">Hambúrguer artesanal</p>
+            <h2 class="s-h2" id="monte-tit">Pão seladinho na chapa</h2>
+            <p class="s-p s2-regra">Qualquer lanche do cardápio vira combo por +<span data-combo-preco>R$ 14,90</span>, com batata frita 140 g e refrigerante lata 350 ml.</p>
           </div>
-          <div class="monte-painel">
-            <p class="monte-conta" id="monte-conta"></p>
-            <p class="monte-preco" id="monte-preco" aria-live="polite">R$ 0,00</p>
-            <button type="button" class="interruptor" role="switch" aria-checked="false" id="monte-switch"><span>Vira combo +<span data-combo-preco>R$ 14,90</span></span><span class="trilho" aria-hidden="true"></span></button>
-            <button type="button" class="btn btn-vermelho" id="monte-add"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Escolher e adicionar</button>
+          <div class="s2-quadro" data-monte-quadro>
+            <span class="s2-luz" aria-hidden="true"></span>
+            <div class="s2-moldura">
+              <figure class="s2-foto foto nova" style="--cor:#ac7d47;--foco:50% 60%"><img src="/assets/fotos/gran-bacon-onion-540.webp" srcset="/assets/fotos/gran-bacon-onion-540.webp 540w, /assets/fotos/gran-bacon-onion-1080.webp 1080w" sizes="(min-width:1024px) 480px, 90vw" width="540" height="720" loading="lazy" decoding="async" alt="Foto do Gran Bacon Onion"></figure>
+              <span class="s2-fio" aria-hidden="true"></span>
+            </div>
+            <span class="fumaca s2-vapor" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+          <div class="s2-resto">
+            <div class="s2-pilha">
+              <ol class="s2-comp" data-comp="gran-bacon-onion" data-ativo style="--n:9" aria-label="Composição: Gran Bacon Onion"><li style="--k:0">Pão seladinho na chapa e hambúrguer angus 200 g</li><li style="--k:1">Maionese grill</li><li style="--k:2">Barbecue</li><li style="--k:3">Cheddar cremoso</li><li style="--k:4">Bacon em fatias</li><li style="--k:5">3 onion rings</li><li style="--k:6">Alface americana</li><li style="--k:7">Tomate em rodelas</li><li style="--k:8">Cebola roxa</li></ol>
+              <ol class="s2-comp" data-comp="gran-salada" style="--n:8" aria-label="Composição: Gran Salada"><li style="--k:0">Pão seladinho na chapa e hambúrguer angus 200 g</li><li style="--k:1">Maionese grill</li><li style="--k:2">Cheddar cremoso</li><li style="--k:3">Mussarela</li><li style="--k:4">Barbecue</li><li style="--k:5">Alface americana</li><li style="--k:6">Tomate em rodelas</li><li style="--k:7">Cebola roxa</li></ol>
+              <ol class="s2-comp" data-comp="gran-crispy" style="--n:6" aria-label="Composição: Gran Crispy"><li style="--k:0">Pão de brioche e hambúrguer 200 g</li><li style="--k:1">Maionese</li><li style="--k:2">Barbecue</li><li style="--k:3">Cheddar cremoso</li><li style="--k:4">Cebola caramelizada</li><li style="--k:5">Cebola crispy</li></ol>
+            </div>
+            <div class="seg s2-seg" role="group" aria-label="Escolha o lanche" style="--n:3;--i:0">
+              <button type="button" class="opt" data-monte="gran-bacon-onion" aria-pressed="true">Gran Bacon Onion</button>
+              <button type="button" class="opt" data-monte="gran-salada" aria-pressed="false">Gran Salada</button>
+              <button type="button" class="opt" data-monte="gran-crispy" aria-pressed="false">Gran Crispy</button>
+            </div>
+            <div class="s2-pedir">
+              <button type="button" class="btn btn-vermelho" data-monte-pedir><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span>Pedir este</span><span class="btn-valor" data-preco-de="gran-bacon-onion">R$ 34,90</span></button>
+              <p class="s2-combo">Vira combo na ficha do lanche: +<span data-combo-preco>R$ 14,90</span></p>
+            </div>
           </div>
         </div>
       </div>
