@@ -541,3 +541,93 @@ test.describe('S5 · vira combo + pilha de combos', () => {
     await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector('.s-combos'), '::before').opacity)).toBe(luz);
   });
 });
+
+test.describe('S8 · onde', () => {
+  const rota = (page) => page.locator('#onde-rota');
+  const mapa = (page) => page.locator('.onde-mapa');
+  // o deslocamento do traço (0 = rota inteira, 1 = nada) e a posição do truck (a translação do transform)
+  const medir = (page) =>
+    page.evaluate(() => {
+      const r = document.querySelector('#onde-rota');
+      const m = new DOMMatrix(getComputedStyle(document.querySelector('#onde-truck')).transform);
+      return { traco: parseFloat(getComputedStyle(r).strokeDashoffset.replace('calc(', '')), x: m.e, y: m.f };
+    });
+  // rola até o topo do mapa ficar a `frac` da altura da janela
+  const rolar = (page, frac) =>
+    page.evaluate((f) => {
+      const m = document.querySelector('.onde-mapa');
+      window.scrollTo(0, m.getBoundingClientRect().top + window.scrollY - window.innerHeight * f);
+    }, frac);
+  async function abrir(page) {
+    await page.goto('/#site');
+    await expect(page.locator('#view-site')).toBeVisible();
+    await expect(rota(page)).toBeAttached();
+  }
+
+  test('cartão do endereço, modos do CONFIG e "Abrir no mapa" com a busca do Google Maps; sem texto circular nem iframe', async ({ page }) => {
+    // o HTML pronto (antes de qualquer JS) já traz os modos do CONFIG e o link do mapa
+    const modos = [...html.match(/<ul class="onde-modos">(.*?)<\/ul>/)[1].matchAll(/<span>(.*?)<small>(.*?)<\/small>/g)].map((m) => [m[1], m[2]]);
+    expect(modos).toEqual(CONFIG.modos.map((m) => [m.label, m.desc]));
+    const mapaHtml = html.match(/id="onde-mapa" href="([^"]+)"/)[1].replace(/&amp;/g, '&');
+    expect(mapaHtml).toBe('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(CONFIG.endereco));
+    await abrir(page);
+    const e = CONFIG.enderecoPartes;
+    await expect(page.locator('#onde-end')).toHaveText([e.rua, e.bairro, e.cidade + '/' + e.uf].join(' · '));
+    await expect(page.locator('.onde-modos li')).toHaveCount(CONFIG.modos.length);
+    for (const m of CONFIG.modos) await expect(page.locator('.onde-modos li', { hasText: m.label })).toContainText(m.desc);
+    const mapaLink = page.getByRole('link', { name: 'Abrir no mapa' });
+    await expect(mapaLink).toHaveAttribute('href', mapaHtml);
+    await expect(mapaLink).toHaveAttribute('target', '_blank');
+    await expect(mapaLink).toHaveAttribute('rel', /noopener/);
+    await expect(page.locator('.s-onde iframe, .s-onde textPath, .s-onde animateTransform')).toHaveCount(0);
+    // WhatsApp, Instagram, o cardápio e o link da bio continuam na seção
+    await expect(page.locator('.s-onde [data-wa]')).toHaveAttribute('href', /^https:\/\/wa\.me\/5511985720150/);
+    await expect(page.locator('.s-onde [data-insta]')).toHaveAttribute('href', CONFIG.instagram);
+    await expect(page.locator('.s-onde').getByRole('link', { name: /Link da bio/ })).toHaveAttribute('href', '#bio');
+  });
+
+  test('a rota se desenha ao rolar e o truck anda por ela até o fim', async ({ page }) => {
+    await abrir(page);
+    await rolar(page, 0.5); // o mapa entra na tela (o laço de --p liga) e sai por baixo: a rota volta ao começo
+    await rolar(page, 0.97);
+    await expect.poll(() => medir(page)).toMatchObject({ traco: 1, x: 28, y: 200 });
+    await rolar(page, 0.55);
+    await expect.poll(async () => (await medir(page)).traco).toBeLessThan(0.95); // o laço roda no quadro seguinte à rolagem
+    const meio = await medir(page);
+    expect(meio.traco).toBeGreaterThan(0.05);
+    expect(meio.traco).toBeLessThan(0.95);
+    expect(meio.x).toBeGreaterThan(28);
+    await rolar(page, 0.2); // o mapa chegou ao alto: rota inteira e o truck no fim
+    await expect.poll(() => medir(page)).toMatchObject({ traco: 0, x: 320, y: 56 });
+    // volta: a rota some de novo (é o --p do mapa, não um efeito de uma vez)
+    await rolar(page, 0.97);
+    await expect.poll(async () => (await medir(page)).traco).toBe(1);
+  });
+
+  test('o cartão do endereço mede até 420 px e a parede nítida (35 KB) só vem quando a seção entra, com véu .75', async ({ page }) => {
+    const pedidos = [];
+    page.on('request', (r) => {
+      if (/tijolo-real-1\.webp/.test(r.url())) pedidos.push(r.url());
+    });
+    await abrir(page);
+    await page.waitForTimeout(500);
+    expect(pedidos, 'a textura nítida não é pedida antes da seção entrar').toEqual([]);
+    const cartao = page.locator('.onde-cartao');
+    await cartao.scrollIntoViewIfNeeded();
+    expect((await cartao.boundingBox()).width).toBeLessThanOrEqual(420);
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.querySelector('.onde-cartao'), '::before').backgroundImage)).toContain('tijolo-real-1.webp');
+    const fundo = await page.evaluate(() => getComputedStyle(document.querySelector('.onde-cartao'), '::before').backgroundImage);
+    expect(fundo).toContain('rgba(18, 11, 9, 0.75)');
+    expect(pedidos).toHaveLength(1);
+  });
+
+  test('com movimento reduzido a rota fica completa, o truck no fim e nada anima', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await abrir(page);
+    await rolar(page, 0.97);
+    await page.waitForTimeout(300);
+    expect(await medir(page)).toMatchObject({ traco: 0, x: 320, y: 56 });
+    await mapa(page).scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.getAnimations().filter((a) => a.effect && a.effect.getTiming().duration > 1 && a.effect.target.closest('.s-onde')).length)).toBe(0);
+  });
+});

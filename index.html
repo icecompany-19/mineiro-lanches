@@ -538,18 +538,33 @@
 
     <!-- [S8] inicio: section.s-onde (dono: site-II) -->
     <section class="s-onde" aria-labelledby="onde-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
-      <div class="s-wrap" style="position:relative">
-        <p class="s-olho rv">Onde e quando</p>
+      <div class="s-wrap">
+        <p class="s-olho rv">Onde</p>
         <h2 class="s-h2 rv" id="onde-tit">Centro de Suzano</h2>
         <p class="s-p rv">Entregas em Suzano e região e consumo no truck.</p>
         <div class="onde-grid">
-          <nav class="links rv" aria-label="Contato">
-            <a class="link-linha" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg><span>WhatsApp<small>(11) 98572-0150</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
-            <a class="link-linha" data-insta href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-insta"/></svg><span>Instagram<small>@mineirolanchesuzano</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
-            <button type="button" class="link-linha" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span>Fazer pedido<small>Cardápio completo com preços</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></button>
-            <a class="link-linha" href="#bio"><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><span>Link da bio<small>Destaques, horário e contatos</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
-          </nav>
+          <div class="onde-mapa" aria-hidden="true">
+            <svg viewBox="0 0 360 246" focusable="false">
+              <path class="rota-fundo" d="M28 200C84 200 92 140 152 140S208 200 256 188 288 92 320 56"/>
+              <path class="rota" id="onde-rota" pathLength="1" d="M28 200C84 200 92 140 152 140S208 200 256 188 288 92 320 56"/>
+              <circle class="voce" cx="28" cy="200" r="8"/>
+              <text class="voce-txt" x="12" y="240">Você</text>
+              <g class="truck" id="onde-truck" transform="translate(320 56)"><circle r="22"/><use href="#i-truck" x="-14" y="-14" width="28" height="28"/></g>
+            </svg>
+          </div>
+          <div class="onde-lado">
+            <div class="onde-cartao rv">
+              <p class="onde-end"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg><span id="onde-end">Rua Eliziel Alves Costa, 300 · Centro · Suzano/SP</span></p>
+              <ul class="onde-modos"><li><svg class="ic" aria-hidden="true"><use href="#i-moto"/></svg><span>Entrega<small>Suzano e região · taxa combinada</small></span></li><li><svg class="ic" aria-hidden="true"><use href="#i-mesa"/></svg><span>Comer no local<small>Consumo no truck</small></span></li></ul>
+              <a class="btn btn-vermelho" id="onde-mapa" href="https://www.google.com/maps/search/?api=1&amp;query=Rua%20Eliziel%20Alves%20Costa%2C%20300%2C%20Centro%2C%20Suzano%2FSP" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg>Abrir no mapa</a>
+            </div>
+            <nav class="links rv" aria-label="Contato">
+              <a class="link-linha" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg><span>WhatsApp<small>(11) 98572-0150</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
+              <a class="link-linha" data-insta href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-insta"/></svg><span>Instagram<small>@mineirolanchesuzano</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
+              <button type="button" class="link-linha" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span>Fazer pedido<small>Cardápio completo com preços</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></button>
+              <a class="link-linha" href="#bio"><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><span>Link da bio<small>Destaques, horário e contatos</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
+            </nav>
+          </div>
         </div>
       </div>
     </section>
