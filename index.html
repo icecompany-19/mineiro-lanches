@@ -294,7 +294,14 @@
   </div>
 
   <!-- ================= SITE ================= -->
+  <!-- Site imersivo (docs/DIRECAO-VISUAL.md 6): uma cena por bloco, na ordem do roteiro. Cada cena tem o JS e o CSS
+       dela em src/site/cenas/<cena>.js|.css (carregados por import() em src/site/site.js). Cada bloco fica entre os
+       marcadores [Sx] inicio/fim, com o dono da cena; só o dono edita o que está entre os marcadores dele. -->
   <div class="site" id="view-site" hidden>
+    <!-- [BARRA] inicio (dono: site-I) -->
+    <!-- [BARRA] fim -->
+
+    <!-- [S0] inicio: section.s-hero (dono: site-I) -->
     <section class="s-hero" aria-labelledby="s-tit">
       <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
       <div class="s-wrap s-hero__grid">
@@ -321,12 +328,24 @@
         </div>
       </div>
     </section>
+    <!-- [S0] fim -->
 
+    <!-- [S1] inicio: div.fitas (dono: site-II) -->
     <div class="fitas" aria-hidden="true">
       <div class="fita"><div class="fita__trilho" data-fita="a"></div></div>
       <div class="fita b"><div class="fita__trilho" data-fita="b"></div></div>
     </div>
+    <!-- [S1] fim -->
 
+    <!-- [S1b] inicio: section.s-placa (dono: site-II) -->
+    <section class="s-placa" aria-labelledby="placa-tit">
+      <div class="s-wrap">
+        <h2 class="s-h2 rv" id="placa-tit">O que tem na chapa</h2>
+      </div>
+    </section>
+    <!-- [S1b] fim -->
+
+    <!-- [S2] inicio: section.s-monte (dono: site-I) -->
     <section class="s-monte" aria-labelledby="monte-tit">
       <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco)"/></svg>
       <div class="s-wrap" style="position:relative">
@@ -352,7 +371,9 @@
         </div>
       </div>
     </section>
+    <!-- [S2] fim -->
 
+    <!-- [S3] inicio: section.s-prensa (dono: site-II) -->
     <section class="s-prensa" aria-labelledby="prensa-tit">
       <div class="s-wrap">
         <p class="s-olho rv">Do seu jeito</p>
@@ -384,15 +405,9 @@
         </div>
       </div>
     </section>
+    <!-- [S3] fim -->
 
-    <section class="s-art" aria-labelledby="art-tit">
-      <div class="s-wrap">
-        <p class="s-olho rv">Hambúrguer artesanal de 200 g</p>
-        <h2 class="s-h2 rv" id="art-tit">Os Gran</h2>
-        <div class="art-trilho" id="art-trilho"></div>
-      </div>
-    </section>
-
+    <!-- [S4] inicio: section.s-dog (dono: site-II) -->
     <section class="s-dog" id="s-dog" aria-labelledby="dog-tit">
       <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
       <div class="s-wrap dog-grid">
@@ -407,7 +422,9 @@
         </div>
       </div>
     </section>
+    <!-- [S4] fim -->
 
+    <!-- [S5] inicio: section.s-combos (dono: site-II) -->
     <section class="s-combos" aria-labelledby="comb-tit">
       <div class="s-wrap">
         <p class="s-olho rv">Combos</p>
@@ -416,7 +433,21 @@
         <div class="pilha" id="pilha"></div>
       </div>
     </section>
+    <!-- [S5] fim -->
 
+    <!-- [S6] inicio: section.s-noite (dono: site-I) -->
+    <section class="s-noite" aria-labelledby="noite-tit">
+      <div class="s-wrap">
+        <div class="horario rv">
+          <div class="horario__cab"><h2 id="noite-tit">Horário</h2><span class="status" data-status></span></div>
+          <ul class="semana" data-semana></ul>
+          <div class="escala" aria-hidden="true"><span>18h</span><span>22h</span><span>2h</span></div>
+        </div>
+      </div>
+    </section>
+    <!-- [S6] fim -->
+
+    <!-- [S7] inicio: section.s-galeria e dialog#luz-caixa (dono: site-I) -->
     <section class="s-galeria" aria-labelledby="gal-tit">
       <div class="s-wrap">
         <p class="s-olho rv">Fotos do truck</p>
@@ -425,6 +456,13 @@
       </div>
     </section>
 
+    <dialog class="luz-caixa" id="luz-caixa" aria-label="Foto ampliada">
+      <img id="luz-img" alt="" decoding="async">
+      <div class="pe"><strong id="luz-nome"></strong><span style="display:flex;gap:8px"><button type="button" class="btn btn-amarelo" id="luz-pedir" style="min-height:44px">Pedir</button><button type="button" class="btn btn-claro" data-fechar-luz style="min-height:44px">Fechar</button></span></div>
+    </dialog>
+    <!-- [S7] fim -->
+
+    <!-- [S8] inicio: section.s-onde (dono: site-II) -->
     <section class="s-onde" aria-labelledby="onde-tit">
       <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
       <div class="s-wrap" style="position:relative">
@@ -432,11 +470,6 @@
         <h2 class="s-h2 rv" id="onde-tit">Centro de Suzano</h2>
         <p class="s-p rv">Entregas em Suzano e região e consumo no truck.</p>
         <div class="onde-grid">
-          <div class="horario rv">
-            <div class="horario__cab"><strong>Horário</strong><span class="status" data-status></span></div>
-            <ul class="semana" data-semana></ul>
-            <div class="escala" aria-hidden="true"><span>18h</span><span>22h</span><span>2h</span></div>
-          </div>
           <nav class="links rv" aria-label="Contato">
             <a class="link-linha" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg><span>WhatsApp<small>(11) 98572-0150</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
             <a class="link-linha" data-insta href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-insta"/></svg><span>Instagram<small>@mineirolanchesuzano</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
@@ -446,7 +479,9 @@
         </div>
       </div>
     </section>
+    <!-- [S8] fim -->
 
+    <!-- [S9] inicio: section.s-final (dono: site-I) -->
     <section class="s-final" aria-labelledby="fim-tit">
       <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
       <div class="s-wrap" style="position:relative">
@@ -459,11 +494,7 @@
         <footer class="rodape"><strong>Mineiro Lanche</strong> · food truck no Centro de Suzano · <a href="#bio">Link da bio</a></footer>
       </div>
     </section>
-
-    <dialog class="luz-caixa" id="luz-caixa" aria-label="Foto ampliada">
-      <img id="luz-img" alt="" decoding="async">
-      <div class="pe"><strong id="luz-nome"></strong><span style="display:flex;gap:8px"><button type="button" class="btn btn-amarelo" id="luz-pedir" style="min-height:44px">Pedir</button><button type="button" class="btn btn-claro" data-fechar-luz style="min-height:44px">Fechar</button></span></div>
-    </dialog>
+    <!-- [S9] fim -->
   </div>
 
 </main>

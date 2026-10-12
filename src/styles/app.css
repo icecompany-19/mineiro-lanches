@@ -630,6 +630,9 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .fita__item{display:inline-flex;align-items:center;gap:18px;padding-right:18px;font-family:var(--f-letreiro);font-size:30px;line-height:1.15;white-space:nowrap}
 .fita__item svg{width:22px;height:22px}
 
+/* placa do cardápio (S1b) */
+.s-placa{padding-block:50px 30px;background:var(--carvao)}
+
 /* monte seu combo */
 .s-monte{position:relative;padding-block:80px 70px;background:var(--amarelo);color:var(--vinho);overflow:hidden}
 .s-monte .rabisco-fundo{color:rgba(122,20,38,.1)}
@@ -672,17 +675,6 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .prensa-regua input{width:100%;accent-color:var(--amarelo);height:32px}
 .prensa-estado{font-family:var(--f-letreiro);font-size:34px;color:var(--amarelo);text-align:center;margin:0}
 
-/* artesanais */
-.s-art{padding-block:80px 40px;background:var(--carvao)}
-.art-trilho{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;margin:26px -20px 0;padding:8px 20px 24px;scrollbar-width:none}
-.art-trilho::-webkit-scrollbar{display:none}
-.art-card{flex:none;width:min(78vw,320px);scroll-snap-align:center;border:0;padding:0;border-radius:24px;overflow:hidden;background:var(--carvao-2);color:var(--creme);text-align:left;box-shadow:0 30px 50px -30px rgba(0,0,0,.9);transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .3s var(--suave)}
-.art-card .foto{aspect-ratio:4/5}
-.art-corpo{padding:14px 16px 18px;display:grid;gap:4px}
-.art-corpo strong{font-family:var(--f-letreiro);font-weight:400;font-size:26px;line-height:1}
-.art-corpo small{font-size:13px;color:var(--cinza-quente);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.art-corpo span{font-family:var(--f-placa);font-size:20px;color:var(--amarelo)}
-
 /* dog com doritos */
 .s-dog{position:relative;padding-block:90px 80px;background:linear-gradient(180deg,var(--vermelho-escuro),var(--vermelho));overflow:hidden}
 .s-dog .rabisco-fundo{color:rgba(255,255,255,.07)}
@@ -713,6 +705,10 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .carta-pe{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
 .carta-pe .preco{font-size:26px;color:var(--placa)}
 
+/* letreiro da noite (S6): o horário da semana */
+.s-noite{position:relative;padding-block:70px;background:var(--carvao)}
+.s-noite .horario{max-width:640px;margin-inline:auto}
+
 /* galeria */
 .s-galeria{padding-block:80px 70px;background:var(--carvao)}
 .mosaico{margin-top:26px;columns:2 160px;column-gap:12px}
@@ -731,8 +727,7 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .s-onde .rabisco-fundo{color:rgba(255,255,255,.07)}
 .s-onde .s-olho{color:var(--amarelo-claro)}
 .s-onde .s-p{color:#FFE3E7}
-.onde-grid{position:relative;margin-top:28px;display:grid;gap:18px}
-.s-onde .horario{background:rgba(26,20,20,.88)}
+.onde-grid{position:relative;margin-top:28px;display:grid;gap:18px;max-width:640px}
 .s-final{position:relative;padding-block:90px 110px;background:var(--carvao);text-align:center;overflow:hidden}
 .s-final .rabisco-fundo{color:rgba(247,194,27,.05)}
 .s-final img.logo-final{width:min(60vw,240px);height:auto;margin:0 auto;filter:none}
@@ -745,7 +740,7 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
   .s-hero{padding-block:60px 70px}
   .s-hero__grid{grid-template-columns:1.05fr 1fr;gap:30px}
   .monte{grid-template-columns:1.1fr .9fr}
-  .prensa-grid,.dog-grid,.onde-grid{grid-template-columns:1fr 1fr}
+  .prensa-grid,.dog-grid{grid-template-columns:1fr 1fr}
   .carta{grid-template-columns:1.1fr 1fr}
   .carta .foto{aspect-ratio:auto;height:100%;min-height:360px}
   .mosaico{columns:4 200px}

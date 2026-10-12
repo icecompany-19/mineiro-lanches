@@ -52,7 +52,6 @@ export function iniciarApp() {
     dest: '(min-width: 440px) 250px, 62vw',
     ficha: '(min-width: 1024px) 560px, (min-width: 440px) 440px, 100vw',
     carta: '(min-width: 1180px) 600px, (min-width: 880px) 52vw, calc(100vw - 40px)',
-    art: '(min-width: 411px) 320px, 78vw',
     dog: '(min-width: 460px) 420px, calc(100vw - 40px)',
     mosaico: '(min-width: 1180px) 276px, (min-width: 880px) calc(25vw - 19px), calc(50vw - 26px)',
     monte: '(min-width: 520px) 300px, 58vw',
@@ -1151,9 +1150,6 @@ export function iniciarApp() {
       return '<button type="button" data-monte="' + id + '" aria-pressed="' + (id === monte.id) + '"><img ' + atrFoto(p.foto, 'q') + ' alt="">' + esc(p.nome) + '</button>';
     }).join('');
     renderMonte(true);
-    $('#art-trilho').innerHTML = C.categorias[0].itens.slice().sort(function (a, b) { return (b.foto ? 1 : 0) - (a.foto ? 1 : 0); }).map(function (p) {
-      return '<button type="button" class="art-card" data-abrir="' + p.id + '">' + visual(p, '540', null, { uso: 'art' }) + '<span class="art-corpo"><strong>' + esc(p.nome) + '</strong><small>' + esc(ingTexto(p)) + '</small><span>' + brl(p.preco) + '</span></span></button>';
-    }).join('');
     var dog = ML.produtos['dog-doritos'];
     $('.dog-foto').insertAdjacentHTML('afterbegin', visual(dog, '1080', null, { uso: 'dog' }));
     var tri = '';
@@ -1207,14 +1203,6 @@ export function iniciarApp() {
         palco.style.setProperty('--my', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
         pedirQuadro();
       });
-      $('#art-trilho').addEventListener('pointermove', function (e) {
-        if (e.pointerType !== 'mouse') return;
-        var card = e.target.closest('.art-card'); if (!card) return;
-        var r = card.getBoundingClientRect();
-        card.style.setProperty('--ry', (((e.clientX - r.left) / r.width - 0.5) * 10).toFixed(2) + 'deg');
-        card.style.setProperty('--rx', (((e.clientY - r.top) / r.height - 0.5) * -8).toFixed(2) + 'deg');
-      });
-      $('#art-trilho').addEventListener('pointerout', function (e) { var c = e.target.closest('.art-card'); if (c && !c.contains(e.relatedTarget)) { c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); } });
       // prensa: régua e arraste na ilustração
       var regua = $('#f-prensa');
       regua.addEventListener('input', function () { aplicarPrensa(+regua.value); });
