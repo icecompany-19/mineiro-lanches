@@ -541,16 +541,35 @@
     <!-- [S8] fim -->
 
     <!-- [S9] inicio: section.s-final (dono: site-I) -->
-    <section class="s-final" aria-labelledby="fim-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
-      <div class="s-wrap" style="position:relative">
-        <img class="logo-final rv" src="/assets/logo.svg" alt="Mineiro Lanche food truck" width="240" height="240" loading="lazy" decoding="async">
-        <h2 class="s-h2 rv" id="fim-tit">Quando bater aquela fome, chama o Mineiro Lanche!</h2>
-        <div class="s-ctas rv" style="margin-top:26px">
+    <!-- Final (6.2, S9): parede com a placa de 240 px (o markup da bio, sem data-placa: não balança nem pisca ao toque), que reacende
+         uma vez ao entrar na tela (src/site/cenas/final.js, IntersectionObserver); a frase vem do CONFIG (CONFIG.frases.fome); o neon
+         ([data-fim-status], escrito por final.js) diz "O Mineiro tá aceso" ou "Volta às {hh}h. A chapa espera."; o endereço e o
+         horário do rodapé são escritos por src/app.js a partir do CONFIG ([data-endereco] e [data-horario-txt]) -->
+    <section class="s-final parede" aria-labelledby="fim-tit">
+      <span class="grao" aria-hidden="true"></span>
+      <span class="hero-cone" aria-hidden="true"></span>
+      <span class="arandela" aria-hidden="true"></span>
+      <div class="s-wrap fim__grade">
+        <div class="placa fim__placa">
+          <span class="placa-correntes" aria-hidden="true"></span>
+          <span class="placa-halo" aria-hidden="true"></span>
+          <span class="placa-anel" aria-hidden="true"></span>
+          <img class="placa-arte" src="/assets/logo/logo-256.webp" srcset="/assets/logo/logo-256.webp 1x, /assets/logo/logo-512.webp 2x" width="256" height="209" alt="Mineiro Lanche food truck" loading="lazy" decoding="async">
+          <span class="placa-brilho" aria-hidden="true" hidden><i></i></span>
+        </div>
+        <h2 class="s-h2 fim__tit rv" id="fim-tit">Quando bater aquela fome, chama o Mineiro Lanche!</h2>
+        <p class="status fim__neon" data-fim-status role="status"></p>
+        <div class="s-ctas fim__ctas rv">
           <button type="button" class="btn btn-vermelho" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-burger"/></svg>Fazer pedido</button>
+          <a class="btn btn-borda" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>WhatsApp</a>
           <a class="btn btn-claro" data-insta href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-insta"/></svg>Instagram</a>
         </div>
-        <footer class="rodape"><strong>Mineiro Lanche</strong> · food truck no Centro de Suzano · <a href="#bio">Link da bio</a></footer>
+        <footer class="rodape fim__rodape">
+          <p class="fim__marca"><strong>Mineiro Lanche</strong> · food truck no Centro de Suzano</p>
+          <p class="fim__linha"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg><span data-endereco>Rua Eliziel Alves Costa, 300 · Centro · Suzano/SP</span></p>
+          <p class="fim__linha"><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg><span data-horario-txt>Domingo a quinta, das 19h à meia-noite · Sexta e sábado, das 19h à 1h</span></p>
+          <a class="fim__bio" href="#bio">Link da bio</a>
+        </footer>
       </div>
     </section>
     <!-- [S9] fim -->
