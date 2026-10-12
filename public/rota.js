@@ -4,7 +4,8 @@
    #site, #sacola, #checkout ou #pedido/<token>. Aqui a tela pedida é marcada em <html data-tela-inicial> e o
    CSS (app.css) mostra só ela. O app tira a marca logo depois de aplicar a rota (mesma tarefa, sem quadro no
    meio); se o módulo falhar, ela sai no DOMContentLoaded e a página fica como antes (bio).
-   Mesmas regras do início do app.js: checkout sem sacola e #pedido sem pedido caem no cardápio. */
+   Mesmas regras do início do app.js: checkout sem sacola e #pedido sem pedido caem no cardápio.
+   Na bio, pré-carrega a logo (a placa) com o mesmo imagesrcset do <img>. */
 (function (d) {
   var hash = location.hash.replace(/^#/, '').split('/');
   var h = hash[0];
@@ -27,7 +28,16 @@
   else if (h === 'checkout') tela = lista('sacola').length ? 'checkout' : 'menu';
   else if (h === 'pedido') tela = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(hash[1] || '') || lista('meus').length ? 'pedido' : 'menu';
   else if (!location.hash && /[?&]origem=qrcode(&|$)/.test(location.search)) tela = 'menu';
-  if (!tela) return;
+  if (!tela) {
+    // bio: a placa (logo oficial) é a candidata a LCP; o preload tem o mesmo imagesrcset do <img> (sem baixar duas vezes)
+    var p = d.createElement('link');
+    p.rel = 'preload';
+    p.as = 'image';
+    p.setAttribute('imagesrcset', '/assets/logo/logo-256.webp 1x, /assets/logo/logo-512.webp 2x');
+    p.setAttribute('fetchpriority', 'high');
+    d.head.appendChild(p);
+    return;
+  }
   d.documentElement.setAttribute('data-tela-inicial', tela);
   // os recortes do palco são lazy no HTML (quem chega pelo QR não baixa); quem abre o site já busca o principal
   if (tela === 'site') {

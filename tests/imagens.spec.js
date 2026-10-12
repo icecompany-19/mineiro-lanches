@@ -80,7 +80,8 @@ test.describe('fotos sem distorção', () => {
     await page.goto('/#bio');
     await expect(page.locator('[data-screen="bio"]')).toBeVisible();
     await rolarTudo(page);
-    expect(await conferir(page, 'bio'), 'recortes da bio conferidos').toBeGreaterThanOrEqual(2);
+    // a bio não tem mais recortes soltos (docs/DIRECAO-VISUAL.md 5.1): a imagem "fill" dela é a logo oficial
+    expect(await conferir(page, 'bio'), 'logo da bio conferida').toBeGreaterThanOrEqual(1);
 
     await page.locator('.story-btn').first().click();
     await expect(page.locator('#story')).toBeVisible();
@@ -135,7 +136,13 @@ test('srcset usa a largura real dos arquivos (sem repetir largura)', async ({ pa
     }))
   );
   expect(conjuntos.length).toBeGreaterThan(10);
-  for (const c of conjuntos) {
+  // a logo (placa) usa srcset por densidade, 1x e 2x, e nunca o logo-1024 (docs/DIRECAO-VISUAL.md 3.1 e 3.3)
+  const logos = conjuntos.filter((c) => c.srcset.includes('/assets/logo/'));
+  for (const c of logos) {
+    expect(c.srcset).toBe('/assets/logo/logo-256.webp 1x, /assets/logo/logo-512.webp 2x');
+    expect(c.w * c.h, `width/height em ${c.srcset}`).toBeGreaterThan(0);
+  }
+  for (const c of conjuntos.filter((x) => !logos.includes(x))) {
     expect(c.sizes, c.srcset).toBeTruthy();
     expect(c.w * c.h, `width/height em ${c.srcset}`).toBeGreaterThan(0);
     const larguras = c.srcset.split(',').map((p) => p.trim().split(/\s+/)[1]);

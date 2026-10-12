@@ -1,6 +1,6 @@
 // Cardápio e checkout com o estado do banco (estado_cardapio) diferente do CONFIG: preço do combo nos textos
 // fixos do HTML, adicional que saiu do cardápio com o item já na sacola, erros do checkout acessíveis e o foco
-// visível nas telas claras. O estado vem do Supabase local, alterado no caminho (page.route), sem mexer no banco.
+// visível nas telas escuras (anel --fio). O estado vem do Supabase local, alterado no caminho (page.route), sem mexer no banco.
 // Uso: npx playwright test tests/cardapio.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
 /* global window, localStorage, document */
 import { test, expect } from '@playwright/test';
@@ -132,7 +132,7 @@ test('checkout: o erro de cada campo chega ao leitor de tela (aria-invalid e des
   await expect(page.locator('#f-tel')).toBeFocused();
 });
 
-test('foco do teclado visível nas telas claras: anel vinho, não amarelo sobre o creme', async ({ page }) => {
+test('foco do teclado visível nas telas escuras: anel fio dourado (#FFCC00, 12,9:1 sobre a noite)', async ({ page }) => {
   await page.goto('/#cardapio');
   await page.locator('#prod-gran-burger').focus();
   await page.keyboard.press('Enter');
@@ -148,5 +148,5 @@ test('foco do teclado visível nas telas claras: anel vinho, não amarelo sobre 
         return { cor: c.outlineColor, estilo: c.outlineStyle, visivel: el.matches(':focus-visible') };
       })
     )
-    .toEqual({ cor: 'rgb(122, 20, 38)', estilo: 'solid', visivel: true });
+    .toEqual({ cor: 'rgb(255, 204, 0)', estilo: 'solid', visivel: true });
 });
