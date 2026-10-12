@@ -107,7 +107,7 @@
         { id: 'combo-gran-bacon', nome: 'Combo Gran Bacon', preco: 45.90, tipo: 'combo', inclui: ['Gran Bacon (brioche, 200 g de carne angus, mussarela, cheddar, bacon, maionese, barbecue, alface americano e tomate)', 'Coca-Cola 350 ml', '250 g de batata'], ing: ['Mussarela', 'Cheddar', 'Bacon', 'Maionese', 'Barbecue', 'Alface americano', 'Tomate'] },
         { id: 'combo-gran-salada', nome: 'Combo Gran Salada', preco: 42.90, tipo: 'combo', inclui: ['Gran Salada (brioche, 200 g de carne angus, mussarela, cheddar, alface americano, tomate, cebola roxa, maionese e barbecue)', 'Coca-Cola 350 ml', '250 g de batata'], ing: ['Mussarela', 'Cheddar', 'Alface americano', 'Tomate', 'Cebola roxa', 'Maionese', 'Barbecue'] },
         { id: 'combo-gran-bacon-onion', nome: 'Combo Gran Bacon Onion', preco: 48.90, tipo: 'combo', foto: 'combo-gran-bacon-onion', inclui: ['Gran Bacon Onion (brioche, maionese, barbecue, 200 g de carne angus, mussarela, cheddar, bacon e 3 onion rings)', '250 g de batata', 'Coca-Cola 350 ml'], ing: ['Maionese', 'Barbecue', 'Mussarela', 'Cheddar', 'Bacon', '3 onion rings'] },
-        { id: 'combo-hot-dog-max', nome: 'Combo Hot Dog Max', preco: 29.90, tipo: 'combo', inclui: ['Hot dog médio com 2 salsichas, alface, purê, batata palha, ketchup, cheddar e catupiri', '250 g de batata frita', 'Coca-Cola 350 ml'], ing: ['Alface', 'Purê', 'Batata palha', 'Ketchup', 'Cheddar', 'Catupiri'] },
+        { id: 'combo-hot-dog-max', nome: 'Combo Hot Dog Max', preco: 29.90, tipo: 'combo', inclui: ['Hot dog médio com 2 salsichas, alface, purê, batata palha, ketchup, cheddar e catupiry', '250 g de batata frita', 'Coca-Cola 350 ml'], ing: ['Alface', 'Purê', 'Batata palha', 'Ketchup', 'Cheddar', 'Catupiry'] },
         { id: 'combo-x-frango', nome: 'Combo X-Frango', preco: 39.90, tipo: 'combo', inclui: ['X-Frango na baguete (filé de frango, mussarela, maionese, barbecue, vinagrete, purê, batata palha, cheddar e catupiry)', '250 g de batata', 'Coca-Cola 350 ml'], ing: ['Mussarela', 'Maionese', 'Barbecue', 'Vinagrete', 'Purê', 'Batata palha', 'Cheddar', 'Catupiry'] },
         { id: 'combo-gran-chicken', nome: 'Combo Gran Chicken', preco: 38.90, tipo: 'combo', inclui: ['Gran Chicken (brioche, frango empanado, maionese, barbecue, alface americano, tomate e cebola roxa)', '250 g de batata', 'Coca-Cola 350 ml'], ing: ['Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa'] }
       ] },
@@ -126,7 +126,7 @@
         { id: 'h2o', nome: 'H2O', preco: 8.00, tipo: 'bebida', sabor: true }
       ] }
     ],
-    destaques: ['gran-bacon-onion', 'gran-crispy', 'combo-diluvio', 'dog-doritos', 'gran-chicken', 'combo-casal']
+    destaques: ['gran-bacon-onion', 'gran-crispy', 'x-churrasco', 'big-mineiro', 'dog-max', 'combo-gran-bacon-onion']
   };
 
   // ================= utilidades =================
