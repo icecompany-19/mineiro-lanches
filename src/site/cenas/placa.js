@@ -3,9 +3,7 @@
    rolado até a categoria (o clique é do app). O HTML traz a lista pronta, com o menor preço do CONFIG; aqui o preço é
    refeito em tempo de execução (preço do banco e itens esgotados: evento cardapio:esgotados). Nunca "a confirmar" nem R$ 0,00:
    item sem preço fica de fora da conta, e categoria toda esgotada diz "Esgotado hoje".
-   Rolagem até a categoria: com a transição de visualização (sem movimento reduzido) o app troca de tela no quadro
-   seguinte e o irCategoria() dele roda antes disso, com o cardápio ainda escondido. Por isso, depois do clique, esta
-   cena espera o site sair de cena e pede o irCategoria() de novo. */
+   A rolagem até a categoria é do app: irCategoria() espera o cardápio aparecer (também com transição de tela). */
 
 let montada = false;
 
@@ -32,25 +30,11 @@ function atualizar(ctx, lista) {
   });
 }
 
-// depois do clique o app troca de tela (talvez numa transição de visualização): rola quando o cardápio já está na tela
-function rolarQuandoAbrir(ctx, id) {
-  let quadros = 0;
-  const espera = () => {
-    if (ctx.raiz.hidden) ctx.app.irCategoria(id);
-    else if (++quadros < 60) requestAnimationFrame(espera);
-  };
-  requestAnimationFrame(espera);
-}
-
 export function iniciar(ctx) {
   const lista = ctx.$('.s-placa .placa-lista');
   if (!lista || montada) return;
   montada = true;
   atualizar(ctx, lista);
-  lista.addEventListener('click', (e) => {
-    const a = e.target.closest('a[href^="#cardapio/"]');
-    if (a && !(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)) rolarQuandoAbrir(ctx, a.getAttribute('href').split('/')[1]);
-  });
   ctx.ML.store.ouvir((ev) => {
     if (ev.tipo === 'cardapio:esgotados' || ev.tipo === 'cardapio:estado') atualizar(ctx, lista);
   });

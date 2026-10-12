@@ -343,7 +343,14 @@ export function iniciarApp() {
   }
   function irCategoria(id) {
     if (!id) return;
-    requestAnimationFrame(function () { var cat = $('#cat-' + id); if (cat) cat.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'start' }); });
+    // com transição de tela a troca para o cardápio roda num quadro seguinte (e zera a rolagem): espera a
+    // categoria estar na tela antes de rolar até ela
+    var quadros = 0;
+    (function tentar() {
+      var cat = $('#cat-' + id);
+      if (!cat || !cat.getClientRects().length) { if (++quadros < 60) requestAnimationFrame(tentar); return; }
+      requestAnimationFrame(function () { cat.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'start' }); });
+    })();
   }
 
   // ================= adição rápida pelo "+" =================

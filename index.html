@@ -268,18 +268,6 @@
       </section>
     </div>
 
-    <!-- FICHA DO LANCHE -->
-    <dialog class="ficha" id="ficha" aria-labelledby="ficha-nome">
-      <div class="ficha-arraste" data-arraste aria-hidden="true"></div>
-      <span class="ficha-alca" aria-hidden="true"></span>
-      <button type="button" class="ficha-fechar" data-fechar-ficha aria-label="Fechar"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
-      <div class="ficha-rolar" id="ficha-corpo"></div>
-      <div class="ficha-pe">
-        <div class="stepper" role="group" aria-label="Quantidade"><button type="button" data-fq="-1" aria-label="Menos um"><svg class="ic" aria-hidden="true"><use href="#i-menos"/></svg></button><output id="ficha-qtd">1</output><button type="button" data-fq="1" aria-label="Mais um"><svg class="ic" aria-hidden="true"><use href="#i-mais"/></svg></button></div>
-        <button type="button" class="btn btn-vermelho" id="ficha-add"><span id="ficha-add-txt">Adicionar</span><span class="total" id="ficha-total">R$ 0,00</span></button>
-      </div>
-    </dialog>
-
     <!-- STORIES -->
     <dialog class="story" id="story" aria-label="Destaques do Mineiro Lanche">
       <div class="story-palco">
@@ -292,6 +280,19 @@
       </div>
     </dialog>
   </div>
+
+  <!-- FICHA DO LANCHE: fora de #view-app porque o site (#view-site) também a abre ("Pedir este", S4, S5);
+       dentro de um ancestral escondido o <dialog> abriria com tamanho zero -->
+  <dialog class="ficha" id="ficha" aria-labelledby="ficha-nome">
+    <div class="ficha-arraste" data-arraste aria-hidden="true"></div>
+    <span class="ficha-alca" aria-hidden="true"></span>
+    <button type="button" class="ficha-fechar" data-fechar-ficha aria-label="Fechar"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+    <div class="ficha-rolar" id="ficha-corpo"></div>
+    <div class="ficha-pe">
+      <div class="stepper" role="group" aria-label="Quantidade"><button type="button" data-fq="-1" aria-label="Menos um"><svg class="ic" aria-hidden="true"><use href="#i-menos"/></svg></button><output id="ficha-qtd">1</output><button type="button" data-fq="1" aria-label="Mais um"><svg class="ic" aria-hidden="true"><use href="#i-mais"/></svg></button></div>
+      <button type="button" class="btn btn-vermelho" id="ficha-add"><span id="ficha-add-txt">Adicionar</span><span class="total" id="ficha-total">R$ 0,00</span></button>
+    </div>
+  </dialog>
 
   <!-- ================= SITE ================= -->
   <!-- Site imersivo (docs/DIRECAO-VISUAL.md 6): uma cena por bloco, na ordem do roteiro. Cada cena tem o JS e o CSS

@@ -18,9 +18,6 @@ export function iniciar(ctx) {
   const sec = ctx.$('.s-combos');
   if (!sec || montada) return;
   montada = true;
-  // a gaveta #ficha mora dentro de #view-app, que fica escondido no site (e a gaveta com ele): sai de lá para aparecer
-  const gaveta = document.getElementById('ficha');
-  if (gaveta && gaveta.closest('#view-app')) document.body.append(gaveta);
   const P = ctx.ML.produtos;
   const $ = (s) => ctx.$(s, sec);
   const box = $('#combo-chips');
