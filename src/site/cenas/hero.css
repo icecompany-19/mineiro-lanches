@@ -1,0 +1,15 @@
+/* S0 · herói "Acende" (dono: site-I). O layout (grade, placa, título por estado, apoio, status, CTAs, cone) fica em
+   src/styles/app.css, no bloco "site S0", para a rota direta #site; aqui ficam o movimento: letras que acendem em
+   sequência, brasas que sobem da chapa e o brilho do cone. Só transform e opacity animam. */
+.hero-tit .letra{display:inline-block;animation:hero-acende .6s var(--suave) both;animation-delay:calc(.1s + var(--i) * 26ms)}
+/* as brasas sobem até 62% da altura da tela (a keyframe comum, brasa, sobe 300 px: pensada para a bio) */
+.s-hero .brasas i{bottom:-6px;animation-name:hero-brasa}
+
+@keyframes hero-acende{from{opacity:.2;transform:translateY(.1em)}to{opacity:1;transform:none}}
+@keyframes hero-brasa{0%{opacity:0;transform:translate(0,0) scale(1)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx,12px),-62svh) scale(.4)}}
+
+@media (prefers-reduced-motion:reduce){
+  .hero-tit .letra{animation:none}
+  .hero-cone{transition:none}
+  .hero-tit__e{transition:none}
+}

@@ -1,0 +1,69 @@
+/* S6 · Letreiro da noite (dono: site-I). Seção comum (não presa; sem content-visibility: ao rolar até ela o Chrome contou CLS 1,0
+   porque a parede (::before e ::after) nascia de 0×0, e a seção é leve demais para compensar): section.s-noite.parede, entre os marcadores [S6] do index.html.
+   A parede acende e apaga com o truck (html[data-luz], em app.css). A régua "Simule um horário" (noite.js) põe --luz direto
+   na seção e data-sim="aberto|fechado"; isso só muda esta seção. As 7 lâmpadas ([data-semana]), o status e [data-horario-txt]
+   são escritos por src/app.js; o cartão .horario e as linhas .semana são os da bio (app.css). Só opacity e transform animam. */
+
+.s-noite{--cx:50%;--cy:34%;--vx:62%;--vy:60%;position:relative;padding-block:72px 80px;overflow:hidden}
+/* sem o tijolo desenhado (plano B) por baixo, como o herói: a textura real é opaca e o plano B custaria 9,5 KB */
+.s-noite.parede::before{background:var(--parede-desfocada) center/cover no-repeat,linear-gradient(rgba(199,137,85,.85),rgba(199,137,85,.85)),var(--tijolo);-webkit-mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%);mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%)}
+/* o cone (hero-cone) já vem de app.css e segue --luz; aqui só o véu, mais fechado no meio porque há texto amarelo sobre a parede */
+.s-noite.parede::after{background:radial-gradient(var(--vx) var(--vy) at var(--cx) var(--cy),rgba(18,11,9,.58),var(--veu) 90%)}
+.s-noite .arandela{left:var(--cx)}
+
+.noite__grade{position:relative;z-index:1;display:grid;gap:24px;justify-items:center}
+.noite__grade>*{min-width:0;width:100%;max-width:460px}
+
+/* ---------- título e horário do CONFIG ---------- */
+.noite__cab{display:grid;justify-items:center;gap:4px;text-align:center}
+.s-noite .s-olho{color:var(--fio)}
+.s-noite .s-h2{font-size:clamp(38px,10vw,76px);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg);transform-origin:50% 60%}
+.noite__txt{margin:10px 0 0;max-width:34ch;text-wrap:balance;font:500 15px/1.5 var(--f-placa);letter-spacing:.06em;text-transform:uppercase;color:var(--osso);text-shadow:0 0 14px rgba(18,11,9,.95),0 0 4px rgba(18,11,9,.8)}
+
+/* ---------- relógio de Suzano ---------- */
+.noite__relogio{display:grid;justify-items:center;gap:8px}
+.noite__rotulo{margin:0;font:600 13px/1 var(--f-placa);letter-spacing:.22em;text-transform:uppercase;color:var(--osso);text-shadow:0 0 10px rgba(18,11,9,.95)}
+.noite__hora{display:block;min-width:4.6ch;text-align:center;font:400 clamp(64px,14vw,120px)/1 var(--f-letreiro);font-variant-numeric:tabular-nums;color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg)}
+
+/* ---------- as 7 lâmpadas: hoje com anel --letreiro ---------- */
+.s-noite .horario{max-width:460px}
+.s-noite .semana li.hoje .lampada{box-shadow:0 0 0 2px var(--chapa),0 0 0 4px var(--letreiro),0 0 14px rgba(255,255,0,.55)}
+/* parede apagada (de verdade ou só na simulação): o anel fica, o brilho some; a simulação manda sobre o estado real */
+html[data-luz="apagada"] .s-noite:not([data-sim]) .semana li.hoje .lampada,
+.s-noite[data-sim="fechado"] .semana li.hoje .lampada{box-shadow:0 0 0 2px var(--chapa),0 0 0 4px var(--letreiro)}
+
+/* ---------- régua "Simule um horário" ---------- */
+.noite__regua{display:grid;gap:4px;padding:14px 16px 12px;border-radius:var(--r-lg);background:var(--chapa);border:1px solid var(--borda);box-shadow:var(--sombra-card)}
+.noite__lbl{font:700 14px/1.2 var(--f-placa);letter-spacing:.12em;text-transform:uppercase;color:var(--fio)}
+/* o trilho mostra os turnos do dia (--faixas, escrito por noite.js): verde onde abre */
+.regua{-webkit-appearance:none;appearance:none;display:block;width:100%;height:44px;margin:0;padding:0;background:transparent;cursor:pointer}
+.regua:disabled{opacity:.5;cursor:default}
+.regua::-webkit-slider-runnable-track{height:10px;border-radius:5px;background:var(--faixas,rgba(255,243,224,.14))}
+.regua::-moz-range-track{height:10px;border-radius:5px;background:var(--faixas,rgba(255,243,224,.14))}
+.regua::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:30px;height:30px;margin-top:-10px;border-radius:50%;border:3px solid var(--grafite);background:var(--letreiro);box-shadow:0 0 0 2px var(--fio),0 4px 10px rgba(0,0,0,.5)}
+.regua::-moz-range-thumb{width:24px;height:24px;border-radius:50%;border:3px solid var(--grafite);background:var(--letreiro);box-shadow:0 0 0 2px var(--fio),0 4px 10px rgba(0,0,0,.5)}
+.regua:focus-visible{outline:3px solid var(--fio);outline-offset:2px;border-radius:8px}
+.regua__escala{display:flex;justify-content:space-between;margin-top:-6px;font:500 11.5px var(--f-placa);letter-spacing:.06em;color:var(--osso-2);font-variant-numeric:tabular-nums}
+.noite__sim{margin:4px 0 0;min-height:1.5em;font:600 14px/1.5 var(--f-placa);letter-spacing:.06em;text-transform:uppercase;color:var(--osso-2)}
+.noite__sim.aberto{color:var(--neon-aberto)}
+.noite__sim.fechado{color:var(--vermelho-luz)}
+.noite__volta{justify-self:start;min-height:44px;padding:0 4px;margin-top:-2px}
+/* ocupa o lugar desde o início (sem CLS ao simular); fora da simulação fica invisível e fora da ordem de Tab */
+.noite__volta:not(.on){visibility:hidden}
+
+@media (min-width:1024px){
+  .s-noite{--cx:30%;--cy:46%;--vx:46%;--vy:62%;padding-block:120px}
+  .noite__grade{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);column-gap:64px;row-gap:28px;justify-items:stretch;align-items:start}
+  .noite__grade>*{max-width:none}
+  .noite__cab,.noite__relogio{justify-items:start;text-align:left}
+  .noite__cab{grid-column:1;grid-row:1}
+  .noite__relogio{grid-column:1;grid-row:2}
+  .noite__regua{grid-column:1;grid-row:3;max-width:520px}
+  .s-noite .horario{grid-column:2;grid-row:1 / span 3;align-self:center;max-width:520px;justify-self:end}
+  .s-noite .s-h2{transform-origin:0 60%}
+  .noite__txt{max-width:44ch}
+}
+@media (forced-colors:active){
+  .regua::-webkit-slider-runnable-track{background:CanvasText}
+  .regua::-moz-range-track{background:CanvasText}
+}

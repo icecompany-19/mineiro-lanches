@@ -1,0 +1,96 @@
+/* S2 · "Pão seladinho na chapa" (dono: site-I). Seção: section.s-monte, entre os marcadores [S2] do index.html.
+   Presa à rolagem: seção de 200vh (240vh em 1024+) com o palco sticky logo abaixo da barra de 56 px. src/site/cenas/monte.js
+   (e base.js) escreve --p (0 a 1) na seção; aqui o CSS faz o resto, só com opacity, transform e clip-path:
+     --q  foto: revela de baixo para cima em p de 0 a .6 (clip-path) e a linha de luz --fio sobe na borda;
+     --on cada chip/linha da composição: acende em sequência de p .12 a .84 (--k é o índice, --n o total);
+     --c  "Pedir este" e a nota do combo: aparecem de p .88 a .96; em p = 1 (data-pronto) sobe o vapor.
+   Sem JS, --p vale 1 (estado completo). Movimento reduzido: sem prender a tela, foto inteira e tudo aceso. */
+
+.s-monte{--q:clamp(0,calc(var(--p,1) / .6),1);--c:clamp(0,calc((var(--p,1) - .88) * 12),1);position:relative;background:var(--noite);color:var(--osso);
+  --foto-h:min(calc((100vw - 40px) * 1.3333),560px)}
+.s2-palco{padding-block:64px}
+.s2-grade{display:grid;gap:8px;justify-items:center;align-content:center}
+.s2-grade>*{min-width:0}
+
+/* ---------- cabeçalho ---------- */
+.s2-cab{display:grid;justify-items:center;text-align:center;gap:2px}
+/* o sobretítulo só entra com espaço (1024+): no celular o palco é todo da foto, da composição e do botão */
+.s-monte .s-olho{display:none;font-size:14px}
+.s-monte .s-h2{margin-top:0;font-size:clamp(32px,8.8vw,64px);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg);transform-origin:50% 60%}
+.s2-regra{display:none;margin:12px 0 0}
+
+/* ---------- quadro da foto: moldura escura que a foto preenche de baixo para cima ---------- */
+.s2-quadro{position:relative;width:calc(var(--foto-h) * .75);height:var(--foto-h);max-width:100%}
+.s2-luz{position:absolute;inset:0;border-radius:var(--r-lg);box-shadow:var(--sombra-foto);opacity:var(--q)}
+.s2-luz::before{content:"";position:absolute;inset:-14% -22%;z-index:-1;background:radial-gradient(closest-side,color-mix(in srgb,var(--cor,var(--tijolo)) 38%,transparent),transparent);pointer-events:none}
+.s2-moldura{position:absolute;inset:0;overflow:hidden;border-radius:var(--r-lg);background:var(--chapa);box-shadow:inset 0 0 0 1px var(--borda)}
+/* a foto nunca muda de cor nem de escala: só o recorte sobe (o quadro é 3:4 e a foto também) */
+.s2-foto{position:absolute;inset:0;width:100%;height:100%;margin:0;clip-path:inset(calc((1 - var(--q)) * 100%) 0 0 0 round var(--r-lg))}
+/* linha de luz na borda de cima da parte revelada: o elemento tem a altura do quadro e a linha fica no topo dele */
+.s2-fio{position:absolute;inset:0;z-index:3;pointer-events:none;transform:translateY(calc((1 - var(--q)) * 100%));opacity:clamp(0,calc((1 - var(--q)) * 20),1)}
+.s2-fio::before{content:"";position:absolute;left:0;right:0;top:-1px;height:3px;background:linear-gradient(90deg,transparent,var(--fio) 14%,var(--anel-claro) 50%,var(--fio) 86%,transparent);box-shadow:0 0 16px 3px rgba(255,204,0,.55)}
+.s2-vapor{z-index:4}
+.s2-vapor i{bottom:68%;width:120px;height:120px;margin-left:-60px}
+
+/* ---------- composição: chips no celular, linhas numeradas em 1024+ ---------- */
+.s2-resto{display:grid;gap:8px;justify-items:center;width:100%}
+.s2-pilha{display:grid;width:100%}
+/* as composições dos lanches ficam na mesma célula; a mais alta dá a altura, então trocar de lanche não mexe em nada abaixo */
+.s2-comp{grid-area:1/1;display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:5px;margin:0;padding:0;list-style:none;counter-reset:c}
+.s2-comp:not([data-ativo]){visibility:hidden}
+.s2-comp li{--t:calc(.12 + var(--k,0) / var(--n,8) * .72);--on:clamp(0,calc((var(--p,1) - var(--t)) * 10),1);counter-increment:c;position:relative;isolation:isolate;display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:var(--r-pill);background:var(--chapa-2);box-shadow:inset 0 0 0 1.5px var(--borda-campo);color:var(--osso);font:600 12px/1.2 var(--f-corpo);opacity:calc(.5 + var(--on) * .5)}
+.s2-comp li::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:rgba(255,204,0,.16);box-shadow:inset 0 0 0 1.5px var(--fio),0 0 14px rgba(255,204,0,.35);opacity:var(--on)}
+
+/* ---------- segmentado: a pele de .seg (app.css) com n colunas ---------- */
+.s-monte .s2-seg{width:100%;max-width:440px;grid-template-columns:repeat(var(--n,3),minmax(0,1fr))}
+.s-monte .s2-seg::before{width:calc((100% - 8px) / var(--n,3))}
+.s2-seg .opt{font-size:13px;letter-spacing:.03em}
+
+/* ---------- Pedir este ---------- */
+.s2-pedir{display:grid;justify-items:center;gap:4px;width:100%;max-width:440px}
+.s2-pedir .btn{width:100%;min-height:50px;opacity:var(--c);transform:translateY(calc((1 - var(--c)) * 10px));transition:background-color .2s,box-shadow .2s}
+.s2-pedir .btn:focus-visible{opacity:1;transform:none}
+.s2-combo{margin:0;font:500 13px/1.3 var(--f-corpo);color:var(--osso-2);text-align:center;opacity:var(--c)}
+/* celular baixo: o que não cabe no palco sai (a ficha mostra o combo de qualquer jeito) */
+@media (max-width:1023.98px) and (max-height:740px){
+  .s2-combo{display:none}
+}
+
+/* ---------- presa à rolagem (a tela só prende com movimento permitido) ---------- */
+@media (prefers-reduced-motion:no-preference){
+  .s-monte{height:200vh;--foto-h:clamp(190px,min(calc(100svh - var(--barra,56px) - 372px),calc((100vw - 40px) * 1.3333)),60svh)}
+  .s2-palco{position:sticky;top:var(--barra,56px);height:calc(100svh - var(--barra,56px));padding-block:8px 12px;display:grid;align-items:center}
+  /* o botão só aceita toque quando aparece por inteiro; pelo teclado ele sempre abre (o foco o mostra) */
+  .s-monte[data-anim] .s2-pedir .btn{pointer-events:none}
+  .s-monte[data-anim][data-pronto] .s2-pedir .btn{pointer-events:auto}
+}
+
+/* ---------- 1024+: foto à esquerda, composição numerada à direita ---------- */
+@media (min-width:1024px){
+  .s-monte{--foto-h:min(640px,calc(100vw * .5))}
+  .s2-palco{padding-block:96px}
+  .s2-grade{grid-template-columns:minmax(0,calc(var(--foto-h) * .75)) minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:64px;row-gap:18px;justify-items:stretch;align-content:center}
+  .s2-quadro{grid-column:1;grid-row:1 / span 2;width:100%;height:auto;aspect-ratio:3/4}
+  .s2-cab{grid-column:2;grid-row:1;justify-items:start;text-align:left;align-self:end}
+  .s2-resto{grid-column:2;grid-row:2;align-content:start;justify-items:start;gap:16px}
+  .s-monte .s-olho{display:block}
+  .s-monte .s-h2{transform-origin:0 60%}
+  .s2-regra{display:block;max-width:46ch;font-size:16px}
+  .s2-pilha{max-width:640px}
+  .s2-comp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 28px;justify-content:stretch}
+  .s2-comp li{display:flex;align-items:baseline;gap:12px;min-height:34px;padding:0;border-radius:0;background:none;box-shadow:none;font-size:clamp(15px,1.35vw,17px);line-height:1.3}
+  .s2-comp li:first-child{grid-column:1 / -1}
+  /* o número no lugar do halo do chip; o fio de luz embaixo de cada linha é o que acende */
+  .s2-comp li::before{content:counter(c,decimal-leading-zero);position:static;z-index:auto;flex:none;min-width:2ch;border-radius:0;background:none;box-shadow:none;opacity:1;color:var(--fio);font:700 14px/1 var(--f-placa);letter-spacing:.1em}
+  .s2-comp li::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1.5px;background:linear-gradient(90deg,var(--fio),transparent 85%);opacity:var(--on)}
+  .s-monte .s2-seg{max-width:520px}
+  .s2-pedir{justify-items:start;max-width:520px}
+  .s2-combo{text-align:left}
+}
+@media (min-width:1024px) and (prefers-reduced-motion:no-preference){
+  .s-monte{height:240vh;--foto-h:min(640px,calc(100svh - var(--barra,56px) - 64px))}
+  .s2-palco{padding-block:24px}
+}
+@media (forced-colors:active){
+  .s2-comp li{forced-color-adjust:none}
+}

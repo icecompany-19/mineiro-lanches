@@ -1,0 +1,52 @@
+/* S9 · final (dono: site-I). Seção: section.s-final.parede, entre os marcadores [S9] do index.html.
+   Parede de tijolo desfocada em poça de luz sobre a placa (a mesma pele do herói, sem o plano B desenhado: a textura real é opaca),
+   cone da arandela e véu mais fechado embaixo, onde há texto. A placa é o markup da bio com 240 px de largura (nunca mais) e a arte
+   sem filter, blend nem máscara (a garantia está em app.css, .placa-arte). Sem content-visibility: a parede nasce de 0×0 (CLS, como na S6).
+   A placa reacende UMA vez ao entrar na tela (.entra, adicionada por final.js): a arte chega e pisca 2 vezes, o halo sobe, o anel
+   aparece e o brilho passa; tudo termina em ~1,4 s e nada fica rodando nem por cima da arte (os keyframes são os de app.css, sem
+   fill-mode forwards, então getAnimations() da arte fica vazio). Sem .entra (movimento reduzido ou antes de chegar), a placa é
+   estática e acesa. Só opacity e transform animam. */
+
+.s-final{--cx:50%;--cy:25%;--vx:58%;--vy:44%;position:relative;padding-block:64px 100px;overflow:hidden;text-align:center}
+.s-final.parede::before{background:var(--parede-desfocada) center/cover no-repeat,linear-gradient(rgba(199,137,85,.85),rgba(199,137,85,.85)),var(--tijolo);-webkit-mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%);mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%)}
+/* o véu fecha no meio e embaixo, onde ficam a frase, os botões e o rodapé (texto só onde o escurecimento passa de .70) */
+.s-final.parede::after{background:radial-gradient(var(--vx) var(--vy) at var(--cx) var(--cy),rgba(18,11,9,.32),var(--veu) 78%,rgba(18,11,9,.94))}
+.s-final .arandela{left:var(--cx)}
+
+.fim__grade{position:relative;z-index:1;display:grid;justify-items:center;gap:22px}
+.fim__grade>*{min-width:0}
+
+/* ---------- a placa: 240 px, parada (sem balanço nem toque) ---------- */
+.s-final .placa{width:min(240px,64vw);cursor:default;touch-action:auto}
+.s-final .placa-correntes{height:900px}
+/* em repouso nada anima: o halo e o anel de app.css respiram e giram sem parar, aqui só entram */
+.s-final .placa-halo,.s-final .placa-anel{animation:none}
+html[data-luz="apagada"] .s-final .placa-halo{--ho:.45}
+.s-final .placa.entra .placa-arte{animation:placa-chega .4s var(--mola) backwards,placa-acende .9s linear .25s backwards}
+.s-final .placa.entra .placa-halo{animation:fim-halo .7s var(--suave) .3s backwards}
+.s-final .placa.entra .placa-anel{animation:anel-aparece .4s ease .6s backwards}
+@keyframes fim-halo{from{opacity:0;transform:scale(.7)}to{opacity:var(--ho,1);transform:none}}
+
+/* ---------- frase, neon, botões ---------- */
+.s-final .s-h2{max-width:17ch;margin:12px 0 0;font-size:clamp(40px,10.6vw,84px);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg);transform-origin:50% 60%}
+.s-final .s-h2.rv.fora{transform:translateY(36px) rotate(-2deg)}
+/* o neon aceita duas linhas em tela estreita; vazio (antes do JS) fica invisível mas ocupa o lugar */
+.fim__neon{height:auto;min-height:34px;max-width:100%;padding:6px 16px;white-space:normal;text-align:center;line-height:1.25}
+.fim__neon:empty{visibility:hidden}
+.fim__ctas{width:min(100%,520px);margin-top:6px;justify-content:center}
+.fim__ctas .btn:first-child{flex-basis:100%}
+.fim__ctas .btn{flex:1 1 150px}
+
+/* ---------- rodapé: endereço e horário do CONFIG ---------- */
+.fim__rodape{display:grid;justify-items:center;gap:6px;width:min(100%,560px);margin:18px 0 0;padding-top:18px;border-color:var(--borda-escura);color:var(--osso-2);font-size:14px;line-height:1.45}
+.fim__rodape p{margin:0}
+.fim__rodape strong{color:var(--osso)}
+.fim__linha{display:flex;align-items:flex-start;justify-content:center;gap:8px;max-width:44ch}
+.fim__linha .ic{width:18px;height:18px;margin-top:2px;color:var(--fio)}
+.fim__bio{display:inline-flex;align-items:center;min-height:44px;color:var(--osso-2);text-underline-offset:4px}
+.fim__bio:hover,.fim__bio:focus-visible{color:var(--osso)}
+
+@media (min-width:1024px){
+  .s-final{--cy:28%;padding-block:72px 120px}
+  .fim__grade{gap:26px}
+}

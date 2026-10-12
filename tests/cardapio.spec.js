@@ -49,6 +49,9 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   const noHtml = [...html.matchAll(/(?:combo por \+|data-combo-preco>)(R\$ \d+,\d\d)/g)].map((m) => m[1]);
   expect(noHtml.length, 'textos de combo no index.html (3 metas + 5 na página)').toBe(8);
   expect([...new Set(noHtml)], 'preço do combo escrito no HTML = CONFIG').toEqual([combo]);
+  // a hora de abertura do título "fechado" do herói do site é a do CONFIG (o JS refaz com os turnos que o banco mandar)
+  const [hh, mm] = CONFIG.horarios[0][0].split(':').map(Number);
+  expect(html, 'hora de abertura no herói do index.html = CONFIG').toContain(`<span data-abre>${hh}h${mm ? String(mm).padStart(2, '0') : ''}</span>`);
   expect((await (await request.get('/')).text()).match(/data-combo-preco/g).length).toBe(5);
 
   // o banco manda outro preço: todos os textos fixos da página trocam
@@ -56,6 +59,7 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
     j.loja.comboPreco = 16.5;
     j.precos['dog-doritos'] = 24.5;
     j.precos['gran-bacon-onion'] = 35.5;
+    j.loja.horarios = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, ['20:00', '01:00']]));
   });
   await page.goto('/');
   const textos = () => page.evaluate(() => [...document.querySelectorAll('[data-combo-preco]')].map((e) => e.textContent));
@@ -67,9 +71,12 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   await expect(page.locator('#prod-gran-burger .selo-combo')).toHaveText('Vira combo +R$ 16,50');
   expect(await page.locator('body').innerText()).not.toContain('+R$ 14,90');
   await page.goto('/#site');
-  await expect(page.locator('#monte-switch')).toContainText('Vira combo +R$ 16,50');
+  // a S2 (Pão seladinho na chapa): o preço do botão "Pedir este" é o do banco e a nota do combo também
+  await expect(page.locator('.s-monte [data-preco-de="gran-bacon-onion"]')).toHaveText('R$ 35,50');
+  await expect(page.locator('.s-monte .s2-combo')).toContainText('+R$ 16,50');
   await expect(page.locator('.dog-preco')).toHaveText('R$ 24,50');
-  expect(await page.locator('.palco__dica').textContent()).toBe('Gran Bacon Onion · R$ 35,50');
+  // o herói do site: a próxima abertura sai dos turnos que o banco mandou (todos os dias às 20h)
+  await expect(page.locator('.s-hero [data-abre]')).toHaveText('20h');
 });
 
 test('adicional que saiu do cardápio com o lanche na sacola: a linha acusa, o envio não sai e editar tira o adicional', async ({

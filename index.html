@@ -294,65 +294,119 @@
   </div>
 
   <!-- ================= SITE ================= -->
+  <!-- Site imersivo (docs/DIRECAO-VISUAL.md 6): uma cena por bloco, na ordem do roteiro. Cada cena tem o JS e o CSS
+       dela em src/site/cenas/<cena>.js|.css (carregados por import() em src/site/site.js). Cada bloco fica entre os
+       marcadores [Sx] inicio/fim, com o dono da cena; só o dono edita o que está entre os marcadores dele. -->
   <div class="site" id="view-site" hidden>
-    <section class="s-hero" aria-labelledby="s-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
+    <!-- [BARRA] inicio (dono: site-I) -->
+    <!-- Barra do site (6.1): 56 px, sempre visível. Selo de 34 px SEM srcset (o selo-128 cobre até 42 px CSS em DPR 3) com o ponto de
+         status (cor por html[data-luz]), abas Bio · Cardápio · Site em 1024+ (em 390 só a pílula "Cardápio") e a sacola -->
+    <header class="barra-site">
+      <a class="barra-site__selo" href="#bio" aria-label="Mineiro Lanche, início"><img src="/assets/logo/selo-128.webp" width="34" height="34" alt="" decoding="async"><i class="barra-site__ponto" aria-hidden="true"></i></a>
+      <nav class="barra-site__abas" aria-label="Telas do Mineiro Lanche">
+        <button type="button" class="aba" data-go="bio">Bio</button>
+        <button type="button" class="aba" data-go="menu">Cardápio</button>
+        <a class="aba" href="#site" aria-current="page">Site</a>
+      </nav>
+      <button type="button" class="ibtn ibtn-sacola" data-go="sacola" aria-label="Ver a sacola" data-sacola-btn><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span class="badge" data-contador hidden>0</span></button>
+    </header>
+    <!-- [BARRA] fim -->
+
+    <!-- [S0] inicio: section.s-hero (dono: site-I) -->
+    <!-- Herói "Acende" (6.2, S0): 3 títulos na mesma célula; o CSS mostra o do estado da luz e src/site/cenas/hero.js cuida do resto -->
+    <section class="s-hero parede" aria-labelledby="s-tit">
+      <span class="grao" aria-hidden="true"></span>
+      <span class="hero-cone" aria-hidden="true"></span>
+      <span class="arandela" aria-hidden="true"></span>
+      <span class="brasas" aria-hidden="true"><i style="--x:14%;--s:4px;--d:7s;--a:-1s;--dx:10px"></i><i style="--x:27%;--s:3px;--d:9s;--a:-5s;--dx:-8px"></i><i style="--x:38%;--s:5px;--d:6s;--a:-2.5s;--dx:14px"></i><i style="--x:52%;--s:3px;--d:8s;--a:-6s;--dx:-12px"></i><i style="--x:63%;--s:4px;--d:10s;--a:-3s;--dx:9px"></i><i style="--x:74%;--s:3px;--d:7.5s;--a:-7s;--dx:-6px"></i><i style="--x:85%;--s:5px;--d:9.5s;--a:-4s;--dx:-14px"></i><i style="--x:93%;--s:3px;--d:6.5s;--a:-1.8s;--dx:-10px"></i><i class="d" style="--x:5%;--s:4px;--d:8.5s;--a:-2s;--dx:12px"></i><i class="d" style="--x:20%;--s:3px;--d:6.8s;--a:-4.4s;--dx:-10px"></i><i class="d" style="--x:32%;--s:4px;--d:9.2s;--a:-6.5s;--dx:8px"></i><i class="d" style="--x:45%;--s:5px;--d:7.2s;--a:-.6s;--dx:-14px"></i><i class="d" style="--x:58%;--s:3px;--d:10.5s;--a:-8s;--dx:11px"></i><i class="d" style="--x:68%;--s:4px;--d:6.2s;--a:-3.4s;--dx:-9px"></i><i class="d" style="--x:79%;--s:3px;--d:8.8s;--a:-5.6s;--dx:13px"></i><i class="d" style="--x:88%;--s:4px;--d:7.8s;--a:-.2s;--dx:-12px"></i><i class="d" style="--x:97%;--s:5px;--d:9.8s;--a:-7.4s;--dx:-8px"></i><i class="d" style="--x:10%;--s:5px;--d:10.2s;--a:-9s;--dx:9px"></i></span>
       <div class="s-wrap s-hero__grid">
-        <div>
-          <p class="s-olho">Hambúrguer artesanal · Hot dog com Doritos</p>
-          <h1 class="s-letreiro" id="s-tit" aria-label="Mineiro Lanche"><span class="l1" data-letras="MINEIRO">MINEIRO</span><span class="l2" data-letras="LANCHE" data-desloc="7">LANCHE</span></h1>
-          <p class="s-sub"><span class="estrelas" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg></span>food truck · Suzano</p>
-          <p class="s-lead"><strong>Lanche de rua feito na chapa</strong>, com entrega em Suzano e região e consumo no truck.</p>
+        <div class="hero-txt">
+          <h1 class="hero-tit" id="s-tit">
+            <span class="hero-tit__e" data-estado="aberto">Acendeu: a chapa tá quente.</span>
+            <span class="hero-tit__e" data-estado="fechado">A chapa acende às <span class="junto"><span data-abre>19h</span>.</span></span>
+            <span class="hero-tit__e" data-estado="pausa">Pausa na chapa.</span>
+          </h1>
+          <p class="hero-apoio">Hambúrguer artesanal, tradicional e hot dog</p>
+          <p class="hero-horario" data-hero-horario><span>Domingo a quinta, das 19h à meia-noite</span><span>Sexta e sábado, das 19h à 1h</span></p>
           <p class="status" data-status role="status"></p>
           <div class="s-ctas">
             <button type="button" class="btn btn-vermelho" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-burger"/></svg>Fazer pedido</button>
-            <a class="btn btn-claro" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>WhatsApp</a>
+            <a class="btn btn-borda" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>WhatsApp</a>
           </div>
         </div>
-        <div class="palco" id="palco">
-          <div class="disco" aria-hidden="true"></div>
-          <svg class="ic estrela-s" style="left:12%;top:8%" aria-hidden="true"><use href="#i-estrela"/></svg>
-          <svg class="ic estrela-s" style="right:10%;top:14%;animation-delay:-1s" aria-hidden="true"><use href="#i-estrela"/></svg>
-          <svg class="ic estrela-s" style="left:4%;top:52%;animation-delay:-1.6s" aria-hidden="true"><use href="#i-estrela"/></svg>
-          <div class="recorte r-esq" data-prof="1.4"><img src="/assets/recortes/gran-chicken.webp" alt="" width="720" height="665" loading="lazy" decoding="async" style="--d:-2s"></div>
-          <div class="recorte r-dir" data-prof="-1.2"><img src="/assets/recortes/gran-egg-bacon.webp" alt="" width="661" height="720" loading="lazy" decoding="async" style="--d:-4s"></div>
-          <div class="recorte r-principal" data-prof=".6"><img src="/assets/recortes/gran-bacon-onion.webp" alt="Gran Bacon Onion, foto do Mineiro Lanche" width="554" height="720" loading="lazy" decoding="async"></div>
-          <p class="palco__dica" aria-hidden="true">Gran Bacon Onion · <span data-preco-de="gran-bacon-onion">R$ 34,90</span></p>
+        <div class="hero-placa">
+          <div class="placa" data-placa>
+            <span class="placa-correntes" aria-hidden="true"></span>
+            <span class="placa-halo" aria-hidden="true"></span>
+            <span class="placa-anel" aria-hidden="true"></span>
+            <img class="placa-arte" src="/assets/logo/logo-256.webp" srcset="/assets/logo/logo-256.webp 1x, /assets/logo/logo-512.webp 2x" width="256" height="209" alt="Mineiro Lanche food truck" fetchpriority="high" decoding="async">
+            <span class="placa-brilho" aria-hidden="true" hidden><i></i></span>
+            <span class="fumaca" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
         </div>
       </div>
     </section>
+    <!-- [S0] fim -->
 
+    <!-- [S1] inicio: div.fitas (dono: site-II) -->
     <div class="fitas" aria-hidden="true">
       <div class="fita"><div class="fita__trilho" data-fita="a"></div></div>
       <div class="fita b"><div class="fita__trilho" data-fita="b"></div></div>
     </div>
+    <!-- [S1] fim -->
 
+    <!-- [S1b] inicio: section.s-placa (dono: site-II) -->
+    <section class="s-placa" aria-labelledby="placa-tit">
+      <div class="s-wrap">
+        <h2 class="s-h2 rv" id="placa-tit">O que tem na chapa</h2>
+      </div>
+    </section>
+    <!-- [S1b] fim -->
+
+    <!-- [S2] inicio: section.s-monte (dono: site-I) -->
+    <!-- "Pão seladinho na chapa" (6.2, S2): seção presa à rolagem (200vh; 240vh em 1024+). O palco fica colado sob a barra e
+         src/site/cenas/monte.js escreve --p (0 a 1) na seção: a foto se revela de baixo para cima, os chips acendem em sequência e,
+         em p = 1, sobe o vapor e aparece "Pedir este". Só entram os lanches de ROTEIRO.monte com foto 'nova' (hoje Gran Bacon Onion,
+         Gran Salada e Gran Crispy; o Gran Bacon entra na frente quando ganhar foto nova). Este HTML é o estado completo e o JS refaz
+         o mesmo markup se o roteiro mudar. As composições ficam empilhadas na mesma célula: a mais alta dá a altura (sem CLS ao trocar). -->
     <section class="s-monte" aria-labelledby="monte-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco)"/></svg>
-      <div class="s-wrap" style="position:relative">
-        <p class="s-olho rv">Regra da casa</p>
-        <h2 class="s-h2 rv" id="monte-tit">Monte seu combo</h2>
-        <p class="s-p rv">Qualquer lanche do cardápio vira combo por +<span data-combo-preco>R$ 14,90</span>, com batata frita 140 g e refrigerante lata 350 ml.</p>
-        <div class="monte" id="monte">
-          <div>
-            <div class="monte-escolha" id="monte-escolha" role="group" aria-label="Escolha o lanche"></div>
-            <div class="monte-palco" aria-hidden="true">
-              <div class="bandeja"></div>
-              <svg class="monte-batata" viewBox="0 0 120 140"><g stroke="#B07A12" stroke-width="2"><rect x="28" y="8" width="11" height="70" rx="3" fill="#FFD95A" transform="rotate(-10 33 43)"/><rect x="44" y="2" width="11" height="76" rx="3" fill="#FFE27A" transform="rotate(-3 49 40)"/><rect x="60" y="0" width="11" height="78" rx="3" fill="#FFD95A" transform="rotate(4 65 39)"/><rect x="76" y="6" width="11" height="72" rx="3" fill="#FFE27A" transform="rotate(11 81 42)"/></g><path d="M16 56h88l-10 80H26z" fill="#C8102E"/><path d="M16 56h88l-2 14H18z" fill="#9E0B23"/><text x="60" y="108" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="17" fill="#F7C21B">140 g</text></svg>
-              <div class="monte-lanche" id="monte-lanche"><img id="monte-img" alt="" loading="lazy" decoding="async"></div>
-              <svg class="monte-lata" viewBox="0 0 90 150"><path d="M14 18 20 6h50l6 12v116l-6 10H20l-6-10z" fill="#E9E4DA"/><path d="M14 30h62v94H14z" fill="#C8102E"/><path d="M14 54h62v8H14zM14 92h62v8H14z" fill="#F7C21B"/><text x="45" y="84" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="15" fill="#fff">LATA</text><text x="45" y="118" text-anchor="middle" font-family="Oswald, sans-serif" font-size="12" fill="#fff">350 ml</text><path d="M24 10h42" stroke="#B9B2A6" stroke-width="3"/></svg>
-            </div>
+      <div class="s2-palco">
+        <div class="s-wrap s2-grade">
+          <div class="s2-cab">
+            <p class="s-olho">Hambúrguer artesanal</p>
+            <h2 class="s-h2" id="monte-tit">Pão seladinho na chapa</h2>
+            <p class="s-p s2-regra">Qualquer lanche do cardápio vira combo por +<span data-combo-preco>R$ 14,90</span>, com batata frita 140 g e refrigerante lata 350 ml.</p>
           </div>
-          <div class="monte-painel">
-            <p class="monte-conta" id="monte-conta"></p>
-            <p class="monte-preco" id="monte-preco" aria-live="polite">R$ 0,00</p>
-            <button type="button" class="interruptor" role="switch" aria-checked="false" id="monte-switch"><span>Vira combo +<span data-combo-preco>R$ 14,90</span></span><span class="trilho" aria-hidden="true"></span></button>
-            <button type="button" class="btn btn-vermelho" id="monte-add"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Escolher e adicionar</button>
+          <div class="s2-quadro" data-monte-quadro>
+            <span class="s2-luz" aria-hidden="true"></span>
+            <div class="s2-moldura">
+              <figure class="s2-foto foto nova" style="--cor:#ac7d47;--foco:50% 60%"><img src="/assets/fotos/gran-bacon-onion-540.webp" srcset="/assets/fotos/gran-bacon-onion-540.webp 540w, /assets/fotos/gran-bacon-onion-1080.webp 1080w" sizes="(min-width:1024px) 480px, 90vw" width="540" height="720" loading="lazy" decoding="async" alt="Foto do Gran Bacon Onion"></figure>
+              <span class="s2-fio" aria-hidden="true"></span>
+            </div>
+            <span class="fumaca s2-vapor" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+          <div class="s2-resto">
+            <div class="s2-pilha">
+              <ol class="s2-comp" data-comp="gran-bacon-onion" data-ativo style="--n:9" aria-label="Composição: Gran Bacon Onion"><li style="--k:0">Pão seladinho na chapa e hambúrguer angus 200 g</li><li style="--k:1">Maionese grill</li><li style="--k:2">Barbecue</li><li style="--k:3">Cheddar cremoso</li><li style="--k:4">Bacon em fatias</li><li style="--k:5">3 onion rings</li><li style="--k:6">Alface americana</li><li style="--k:7">Tomate em rodelas</li><li style="--k:8">Cebola roxa</li></ol>
+              <ol class="s2-comp" data-comp="gran-salada" style="--n:8" aria-label="Composição: Gran Salada"><li style="--k:0">Pão seladinho na chapa e hambúrguer angus 200 g</li><li style="--k:1">Maionese grill</li><li style="--k:2">Cheddar cremoso</li><li style="--k:3">Mussarela</li><li style="--k:4">Barbecue</li><li style="--k:5">Alface americana</li><li style="--k:6">Tomate em rodelas</li><li style="--k:7">Cebola roxa</li></ol>
+              <ol class="s2-comp" data-comp="gran-crispy" style="--n:6" aria-label="Composição: Gran Crispy"><li style="--k:0">Pão de brioche e hambúrguer 200 g</li><li style="--k:1">Maionese</li><li style="--k:2">Barbecue</li><li style="--k:3">Cheddar cremoso</li><li style="--k:4">Cebola caramelizada</li><li style="--k:5">Cebola crispy</li></ol>
+            </div>
+            <div class="seg s2-seg" role="group" aria-label="Escolha o lanche" style="--n:3;--i:0">
+              <button type="button" class="opt" data-monte="gran-bacon-onion" aria-pressed="true">Gran Bacon Onion</button>
+              <button type="button" class="opt" data-monte="gran-salada" aria-pressed="false">Gran Salada</button>
+              <button type="button" class="opt" data-monte="gran-crispy" aria-pressed="false">Gran Crispy</button>
+            </div>
+            <div class="s2-pedir">
+              <button type="button" class="btn btn-vermelho" data-monte-pedir><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span>Pedir este</span><span class="btn-valor" data-preco-de="gran-bacon-onion">R$ 34,90</span></button>
+              <p class="s2-combo">Vira combo na ficha do lanche: +<span data-combo-preco>R$ 14,90</span></p>
+            </div>
           </div>
         </div>
       </div>
     </section>
+    <!-- [S2] fim -->
 
+    <!-- [S3] inicio: section.s-prensa (dono: site-II) -->
     <section class="s-prensa" aria-labelledby="prensa-tit">
       <div class="s-wrap">
         <p class="s-olho rv">Do seu jeito</p>
@@ -384,15 +438,9 @@
         </div>
       </div>
     </section>
+    <!-- [S3] fim -->
 
-    <section class="s-art" aria-labelledby="art-tit">
-      <div class="s-wrap">
-        <p class="s-olho rv">Hambúrguer artesanal de 200 g</p>
-        <h2 class="s-h2 rv" id="art-tit">Os Gran</h2>
-        <div class="art-trilho" id="art-trilho"></div>
-      </div>
-    </section>
-
+    <!-- [S4] inicio: section.s-dog (dono: site-II) -->
     <section class="s-dog" id="s-dog" aria-labelledby="dog-tit">
       <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
       <div class="s-wrap dog-grid">
@@ -407,7 +455,9 @@
         </div>
       </div>
     </section>
+    <!-- [S4] fim -->
 
+    <!-- [S5] inicio: section.s-combos (dono: site-II) -->
     <section class="s-combos" aria-labelledby="comb-tit">
       <div class="s-wrap">
         <p class="s-olho rv">Combos</p>
@@ -416,7 +466,47 @@
         <div class="pilha" id="pilha"></div>
       </div>
     </section>
+    <!-- [S5] fim -->
 
+    <!-- [S6] inicio: section.s-noite (dono: site-I) -->
+    <!-- Letreiro da noite (6.2, S6): a parede acende ou apaga com o truck (html[data-luz]); o horário vem do CONFIG
+         ([data-horario-txt], as 7 lâmpadas [data-semana] e o status [data-status] são escritos por src/app.js); o relógio de Suzano
+         anda por minuto e a régua "Simule um horário" (src/site/cenas/noite.js) mexe só na luz (--luz) desta seção: nunca no status
+         real nem em html[data-luz]. A régua nasce desabilitada e o JS a liga. -->
+    <section class="s-noite parede" aria-labelledby="noite-tit">
+      <span class="grao" aria-hidden="true"></span>
+      <span class="hero-cone" aria-hidden="true"></span>
+      <span class="arandela" aria-hidden="true"></span>
+      <div class="s-wrap noite__grade">
+        <div class="noite__cab">
+          <p class="s-olho rv">Todo dia, inclusive domingo</p>
+          <h2 class="s-h2 rv" id="noite-tit">Horário</h2>
+          <p class="noite__txt rv" data-horario-txt>Domingo a quinta, das 19h à meia-noite · Sexta e sábado, das 19h à 1h</p>
+        </div>
+        <div class="noite__relogio rv">
+          <p class="noite__rotulo" id="noite-agora">Agora em Suzano</p>
+          <time class="noite__hora" data-relogio aria-labelledby="noite-agora">--:--</time>
+          <span class="status" data-status role="status"></span>
+        </div>
+        <div class="horario rv">
+          <ul class="semana" data-semana></ul>
+          <div class="escala" aria-hidden="true"><span>18h</span><span>22h</span><span>2h</span></div>
+        </div>
+        <div class="noite__regua rv">
+          <label class="noite__lbl" for="noite-regua">Simule um horário</label>
+          <input class="regua" id="noite-regua" type="range" min="0" max="1435" step="5" value="1200" disabled>
+          <div class="regua__escala" aria-hidden="true"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span></div>
+          <p class="noite__sim" data-sim-txt>Mova a régua: a parede acende ou apaga.</p>
+          <button type="button" class="btn btn-fantasma noite__volta" data-sim-volta>Voltar para agora</button>
+        </div>
+      </div>
+    </section>
+    <!-- [S6] fim -->
+
+    <!-- [S7] inicio: section.s-galeria e dialog#luz-caixa (dono: site-I) -->
+    <!-- Parede de fotos (6.2, S7): o #mosaico nasce de src/site/cenas/fotos.js só com as fotos de origem 'nova' (fotos.json), uma por
+         arquivo, em alvenaria por columns (2 no celular, 3 de 600 px, 4 de 880 px); o toque em button[data-ampliar] abre #luz-caixa com a foto
+         grande, o nome, o preço e "Pedir" (abre a ficha) -->
     <section class="s-galeria" aria-labelledby="gal-tit">
       <div class="s-wrap">
         <p class="s-olho rv">Fotos do truck</p>
@@ -425,6 +515,13 @@
       </div>
     </section>
 
+    <dialog class="luz-caixa" id="luz-caixa" aria-label="Foto ampliada">
+      <img id="luz-img" alt="" decoding="async">
+      <div class="pe"><strong id="luz-nome"></strong><span class="luz-acoes"><button type="button" class="btn btn-amarelo" id="luz-pedir">Pedir</button><button type="button" class="btn btn-claro" data-fechar-luz>Fechar</button></span></div>
+    </dialog>
+    <!-- [S7] fim -->
+
+    <!-- [S8] inicio: section.s-onde (dono: site-II) -->
     <section class="s-onde" aria-labelledby="onde-tit">
       <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
       <div class="s-wrap" style="position:relative">
@@ -432,11 +529,6 @@
         <h2 class="s-h2 rv" id="onde-tit">Centro de Suzano</h2>
         <p class="s-p rv">Entregas em Suzano e região e consumo no truck.</p>
         <div class="onde-grid">
-          <div class="horario rv">
-            <div class="horario__cab"><strong>Horário</strong><span class="status" data-status></span></div>
-            <ul class="semana" data-semana></ul>
-            <div class="escala" aria-hidden="true"><span>18h</span><span>22h</span><span>2h</span></div>
-          </div>
           <nav class="links rv" aria-label="Contato">
             <a class="link-linha" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg><span>WhatsApp<small>(11) 98572-0150</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
             <a class="link-linha" data-insta href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-insta"/></svg><span>Instagram<small>@mineirolanchesuzano</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
@@ -446,24 +538,41 @@
         </div>
       </div>
     </section>
+    <!-- [S8] fim -->
 
-    <section class="s-final" aria-labelledby="fim-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
-      <div class="s-wrap" style="position:relative">
-        <img class="logo-final rv" src="/assets/logo.svg" alt="Mineiro Lanche food truck" width="240" height="240" loading="lazy" decoding="async">
-        <h2 class="s-h2 rv" id="fim-tit">Quando bater aquela fome, chama o Mineiro Lanche!</h2>
-        <div class="s-ctas rv" style="margin-top:26px">
+    <!-- [S9] inicio: section.s-final (dono: site-I) -->
+    <!-- Final (6.2, S9): parede com a placa de 240 px (o markup da bio, sem data-placa: não balança nem pisca ao toque), que reacende
+         uma vez ao entrar na tela (src/site/cenas/final.js, IntersectionObserver); a frase vem do CONFIG (CONFIG.frases.fome); o neon
+         ([data-fim-status], escrito por final.js) diz "O Mineiro tá aceso" ou "Volta às {hh}h. A chapa espera."; o endereço e o
+         horário do rodapé são escritos por src/app.js a partir do CONFIG ([data-endereco] e [data-horario-txt]) -->
+    <section class="s-final parede" aria-labelledby="fim-tit">
+      <span class="grao" aria-hidden="true"></span>
+      <span class="hero-cone" aria-hidden="true"></span>
+      <span class="arandela" aria-hidden="true"></span>
+      <div class="s-wrap fim__grade">
+        <div class="placa fim__placa">
+          <span class="placa-correntes" aria-hidden="true"></span>
+          <span class="placa-halo" aria-hidden="true"></span>
+          <span class="placa-anel" aria-hidden="true"></span>
+          <img class="placa-arte" src="/assets/logo/logo-256.webp" srcset="/assets/logo/logo-256.webp 1x, /assets/logo/logo-512.webp 2x" width="256" height="209" alt="Mineiro Lanche food truck" loading="lazy" decoding="async">
+          <span class="placa-brilho" aria-hidden="true" hidden><i></i></span>
+        </div>
+        <h2 class="s-h2 fim__tit rv" id="fim-tit">Quando bater aquela fome, chama o Mineiro Lanche!</h2>
+        <p class="status fim__neon" data-fim-status role="status"></p>
+        <div class="s-ctas fim__ctas rv">
           <button type="button" class="btn btn-vermelho" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-burger"/></svg>Fazer pedido</button>
+          <a class="btn btn-borda" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>WhatsApp</a>
           <a class="btn btn-claro" data-insta href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-insta"/></svg>Instagram</a>
         </div>
-        <footer class="rodape"><strong>Mineiro Lanche</strong> · food truck no Centro de Suzano · <a href="#bio">Link da bio</a></footer>
+        <footer class="rodape fim__rodape">
+          <p class="fim__marca"><strong>Mineiro Lanche</strong> · food truck no Centro de Suzano</p>
+          <p class="fim__linha"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg><span data-endereco>Rua Eliziel Alves Costa, 300 · Centro · Suzano/SP</span></p>
+          <p class="fim__linha"><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg><span data-horario-txt>Domingo a quinta, das 19h à meia-noite · Sexta e sábado, das 19h à 1h</span></p>
+          <a class="fim__bio" href="#bio">Link da bio</a>
+        </footer>
       </div>
     </section>
-
-    <dialog class="luz-caixa" id="luz-caixa" aria-label="Foto ampliada">
-      <img id="luz-img" alt="" decoding="async">
-      <div class="pe"><strong id="luz-nome"></strong><span style="display:flex;gap:8px"><button type="button" class="btn btn-amarelo" id="luz-pedir" style="min-height:44px">Pedir</button><button type="button" class="btn btn-claro" data-fechar-luz style="min-height:44px">Fechar</button></span></div>
-    </dialog>
+    <!-- [S9] fim -->
   </div>
 
 </main>

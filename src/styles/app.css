@@ -1,4 +1,5 @@
-/* Mineiro Lanche · telas do cliente: link da bio, cardápio, ficha, sacola, checkout e acompanhamento (e o site).
+/* Mineiro Lanche · telas do cliente: link da bio, cardápio, ficha, sacola, checkout e acompanhamento (o site imersivo
+   tem CSS próprio, no chunk do site; aqui fica só o layout mínimo do herói, no bloco "site S0").
    Direção "Parede Acesa" (docs/DIRECAO-VISUAL.md): noite quente sobre a parede de tijolinho das fotos, placa vermelha
    com fio dourado e a logo oficial como placa luminosa. Tokens e reset em base.css.
    Só animam transform e opacity (e clip-path nas revelações); os ciclos pausam fora da tela e com a aba oculta. */
@@ -590,175 +591,73 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .toast button:hover{background:rgba(255,204,0,.08)}
 .fab{position:fixed;z-index:30;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));min-height:56px;padding:0 18px 0 16px;border-radius:var(--r-pill);border:0;background:var(--placa);color:var(--branco);font:700 16px var(--f-placa);letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:10px;box-shadow:var(--sombra-placa);animation:barra-in .45s var(--mola)}
 .fab .ic{--ic-d:rgba(255,255,255,.2)}
-/* ---------- site de apresentação ----------
-   O site (#view-site) é do implementador B (src/site/*, em breve): aqui fica só o que já existia, com os tokens novos.
-   Compatibilidade: preço sobre o papel das cartas em vermelho da placa (o --fio some no papel); logo sem filtro. */
+/* site S0: layout mínimo para a rota direta #site (dono: trilha site-I) */
+/* O site imersivo (#view-site) vem no chunk site-*.css (src/styles/site.css e src/site/cenas/*.css), carregado por
+   import() em src/app.js. Aqui fica só o que segura a primeira pintura de quem abre direto em #site: o herói "Acende"
+   (grade, placa, título por estado da luz, apoio, status e CTAs) e as classes comuns que ele usa (.site, .s-wrap,
+   .s-olho, .s-ctas, .rabisco-fundo). A pele e o movimento (letras, brasas, cone) vêm no chunk (cenas/hero.css). */
 .site{position:relative;background:var(--carvao);color:var(--creme);overflow:clip}
 .s-wrap{max-width:1180px;margin:0 auto;padding-inline:20px}
 .s-olho{margin:0;font-family:var(--f-placa);font-size:15px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--amarelo)}
-.s-h2{margin:10px 0 0;font-family:var(--f-letreiro);font-weight:400;font-size:clamp(42px,11vw,92px);line-height:.95}
-.s-p{margin:14px 0 0;max-width:40ch;font-size:17px;line-height:1.55;color:var(--cinza-quente)}
 .rabisco-fundo{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-
-.s-hero{position:relative;padding-block:30px 40px;background:radial-gradient(70% 55% at 70% 45%,rgba(200,16,46,.55),transparent 70%),var(--carvao);overflow:hidden}
-.s-hero .rabisco-fundo{color:rgba(247,194,27,.05)}
-.s-hero__grid{position:relative;display:grid;gap:10px;align-items:center}
-.s-letreiro{margin:26px 0 0;font-family:var(--f-letreiro);font-weight:400;line-height:.86;font-size:clamp(58px,16.5vw,128px);transform:rotate(-5deg);transform-origin:0 50%}
-.s-letreiro .l1,.s-letreiro .l2{white-space:nowrap}
-.s-letreiro .l1{display:block;color:var(--amarelo);text-shadow:0 2px 0 #C99400,0 4px 0 #A87C00,0 6px 0 var(--vinho),0 8px 0 var(--vinho),0 18px 30px rgba(0,0,0,.5)}
-.s-letreiro .l2{display:block;color:#fff;margin-left:.3em;text-shadow:0 2px 0 #E6DCD2,0 4px 0 #CFC3B8,0 6px 0 var(--vinho),0 8px 0 var(--vinho),0 18px 30px rgba(0,0,0,.5)}
-.s-letreiro .letra{display:inline-block;animation:letra-cai .7s var(--mola) both;animation-delay:calc(.1s + var(--i) * 45ms)}
-.s-sub{margin:20px 0 0;display:flex;align-items:center;gap:10px;font-family:var(--f-placa);font-size:17px;letter-spacing:.16em;text-transform:uppercase;color:var(--cinza-quente)}
-.s-sub .estrelas{display:inline-flex;gap:2px;color:var(--amarelo)}
-.s-sub .estrelas .ic{width:16px;height:16px;--ic-d:var(--amarelo)}
-.s-lead{margin:14px 0 0;max-width:36ch;font-size:18px;line-height:1.5;color:var(--cinza-quente)}
-.s-lead strong{color:var(--creme)}
-.s-hero .status{margin-top:16px}
 .s-ctas{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px}
 .s-ctas .btn{flex:1 1 210px}
-.palco{position:relative;width:min(100%,520px);aspect-ratio:1/1;margin:0 auto;--mx:0;--my:0}
-.palco .disco{position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#E8233F,var(--vermelho) 55%,#6E0A1A);box-shadow:0 0 0 10px rgba(232,179,58,.6),0 0 0 22px rgba(232,179,58,.12),0 40px 80px -30px rgba(0,0,0,.8)}
-.palco .disco::before{content:"";position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.06) 0 6deg,transparent 6deg 18deg);animation:gira 60s linear infinite}
-.palco .estrela-s{position:absolute;width:26px;height:26px;color:var(--amarelo);--ic-d:var(--amarelo);animation:cintila 2.4s ease-in-out infinite}
-.recorte{position:absolute;will-change:transform;filter:drop-shadow(0 30px 26px rgba(0,0,0,.55))}
-.recorte img{width:100%;height:auto;animation:boia 6s ease-in-out infinite;animation-delay:var(--d,0s)}
-.palco .r-principal{left:18%;top:8%;width:64%}
-.palco .r-esq{left:-4%;bottom:6%;width:36%}
-.palco .r-dir{right:-6%;bottom:2%;width:38%}
-.palco__dica{position:absolute;left:50%;bottom:-6%;transform:translateX(-50%);margin:0;font-family:var(--f-placa);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--amarelo);white-space:nowrap}
-
-.fitas{position:relative;z-index:2;padding-block:16px 30px;overflow:hidden;background:var(--carvao)}
-.fita{width:calc(100% + 60px);margin-left:-30px;padding-block:10px;overflow:hidden;background:var(--amarelo);color:var(--vinho);transform:rotate(-2.5deg);box-shadow:0 20px 40px -20px rgba(0,0,0,.9)}
-.fita.b{margin-top:-6px;background:var(--vermelho);color:#fff;transform:rotate(1.8deg)}
-.fita__trilho{display:flex;width:max-content;animation:corre 34s linear infinite}
-.fita.b .fita__trilho{animation-direction:reverse;animation-duration:40s}
-.fita__item{display:inline-flex;align-items:center;gap:18px;padding-right:18px;font-family:var(--f-letreiro);font-size:30px;line-height:1.15;white-space:nowrap}
-.fita__item svg{width:22px;height:22px}
-
-/* monte seu combo */
-.s-monte{position:relative;padding-block:80px 70px;background:var(--amarelo);color:var(--vinho);overflow:hidden}
-.s-monte .rabisco-fundo{color:rgba(122,20,38,.1)}
-.s-monte .s-olho{color:var(--vermelho)}
-.s-monte .s-p{color:var(--vinho)}
-.monte{position:relative;margin-top:28px;display:grid;gap:22px;align-items:center}
-.monte>*,.s-hero__grid>*,.prensa-grid>*,.dog-grid>*,.onde-grid>*{min-width:0}
-.monte-escolha{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none}
-.monte-escolha::-webkit-scrollbar{display:none}
-.monte-escolha button{flex:none;display:flex;align-items:center;gap:8px;min-height:48px;padding:0 14px 0 6px;border-radius:999px;border:2px solid rgba(122,20,38,.25);background:rgba(255,255,255,.55);font-family:var(--f-placa);font-weight:600;font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:var(--vinho);transition:all .2s}
-.monte-escolha button img{width:38px;height:38px;border-radius:50%;object-fit:cover}
-.monte-escolha button[aria-pressed="true"]{background:var(--vinho);border-color:var(--vinho);color:#fff}
-.monte-palco{position:relative;height:340px;max-width:560px;margin:0 auto;width:100%}
-.monte-palco .bandeja{position:absolute;left:4%;right:4%;bottom:10px;height:46px;border-radius:50%;background:radial-gradient(closest-side,rgba(122,20,38,.35),transparent)}
-.monte-lanche{position:absolute;left:50%;bottom:28px;width:58%;max-width:300px;transform:translateX(-50%);transition:transform .5s var(--mola)}
-.monte-lanche img{width:100%;height:auto;max-height:280px;object-fit:contain;filter:drop-shadow(0 24px 20px rgba(0,0,0,.35));border-radius:18px}
-.monte-lanche.foto img{aspect-ratio:1/1;object-fit:cover;box-shadow:0 24px 40px -18px rgba(0,0,0,.6)}
-.monte-batata,.monte-lata{position:absolute;bottom:26px;width:26%;max-width:140px;transition:transform .6s var(--mola),opacity .4s ease;opacity:0}
-.monte-batata{left:2%;transform:translate(-120%,20px) rotate(-20deg)}
-.monte-lata{right:2%;transform:translate(120%,20px) rotate(20deg)}
-.monte.combo .monte-batata{opacity:1;transform:translate(0,0) rotate(-6deg)}
-.monte.combo .monte-lata{opacity:1;transform:translate(0,0) rotate(5deg)}
-.monte.combo .monte-lanche{transform:translateX(-50%) scale(.92)}
-.monte-painel{display:grid;gap:12px;justify-items:center;text-align:center}
-.monte-preco{font-family:var(--f-letreiro);font-size:56px;line-height:1;color:var(--vermelho);font-variant-numeric:tabular-nums}
-.monte-conta{font-family:var(--f-placa);font-size:16px;letter-spacing:.04em;color:var(--vinho)}
-.monte .interruptor{width:auto;gap:14px;min-height:56px;padding:6px 18px;border-radius:999px;background:var(--papel);box-shadow:0 10px 20px -14px rgba(0,0,0,.4);font-family:var(--f-placa);font-weight:600;font-size:17px;text-transform:uppercase;letter-spacing:.04em}
-
-/* prensado ou não */
-.s-prensa{position:relative;padding-block:80px 70px;background:var(--carvao);overflow:hidden}
-.prensa-grid{margin-top:28px;display:grid;gap:22px;align-items:center}
-.prensa-ilustra{width:min(100%,460px);height:auto;margin:0 auto;display:block;overflow:visible;touch-action:none;cursor:grab}
-.prensa-ilustra .placa-cima{transition:transform .25s var(--suave)}
-.prensa-ilustra .lanche{transform-box:fill-box;transform-origin:center bottom;transition:transform .25s var(--suave)}
-.prensa-ilustra .vapor path{fill:none;stroke:rgba(255,246,224,.6);stroke-width:4;stroke-linecap:round;opacity:0}
-.prensa-ilustra.prensado .vapor path{animation:vapor 1.6s ease-out infinite}
-.prensa-ilustra.prensado .vapor path:nth-child(2){animation-delay:.5s}
-.prensa-regua{max-width:420px;margin:0 auto;display:grid;gap:8px}
-.prensa-regua label{font-weight:600}
-.prensa-regua input{width:100%;accent-color:var(--amarelo);height:32px}
-.prensa-estado{font-family:var(--f-letreiro);font-size:34px;color:var(--amarelo);text-align:center;margin:0}
-
-/* artesanais */
-.s-art{padding-block:80px 40px;background:var(--carvao)}
-.art-trilho{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;margin:26px -20px 0;padding:8px 20px 24px;scrollbar-width:none}
-.art-trilho::-webkit-scrollbar{display:none}
-.art-card{flex:none;width:min(78vw,320px);scroll-snap-align:center;border:0;padding:0;border-radius:24px;overflow:hidden;background:var(--carvao-2);color:var(--creme);text-align:left;box-shadow:0 30px 50px -30px rgba(0,0,0,.9);transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .3s var(--suave)}
-.art-card .foto{aspect-ratio:4/5}
-.art-corpo{padding:14px 16px 18px;display:grid;gap:4px}
-.art-corpo strong{font-family:var(--f-letreiro);font-weight:400;font-size:26px;line-height:1}
-.art-corpo small{font-size:13px;color:var(--cinza-quente);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.art-corpo span{font-family:var(--f-placa);font-size:20px;color:var(--amarelo)}
-
-/* dog com doritos */
-.s-dog{position:relative;padding-block:90px 80px;background:linear-gradient(180deg,var(--vermelho-escuro),var(--vermelho));overflow:hidden}
-.s-dog .rabisco-fundo{color:rgba(255,255,255,.07)}
-.dog-grid{position:relative;margin-top:28px;display:grid;gap:22px;align-items:center}
-.dog-foto{position:relative;width:min(100%,420px);margin:0 auto;border-radius:26px;overflow:hidden;box-shadow:0 40px 70px -30px rgba(0,0,0,.8);transform:rotate(-3deg)}
-.dog-foto .foto{aspect-ratio:3/4}
-.doritos{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.doritos svg{position:absolute;width:34px;height:34px;will-change:transform}
-.dog-info{display:grid;gap:12px}
-.dog-preco{font-family:var(--f-letreiro);font-size:48px;color:var(--amarelo);line-height:1}
-.mini-card{display:flex;align-items:center;gap:12px;padding:10px;border-radius:18px;background:rgba(0,0,0,.25);border:0;color:#fff;text-align:left}
-.mini-card .foto{width:72px;height:72px;border-radius:12px;flex:none}
-.mini-card strong{display:block;font-family:var(--f-placa);font-size:18px;text-transform:uppercase}
-.mini-card span{font-family:var(--f-placa);color:var(--amarelo)}
-
-/* combos empilhados */
-.s-combos{padding-block:80px 30px;background:var(--creme);color:var(--tinta)}
-.s-combos .s-olho{color:var(--vermelho)}
-.s-combos .s-h2{color:var(--vinho)}
-.s-combos .s-p{color:var(--tinta-2)}
-.pilha{margin-top:28px;display:grid;gap:22px;padding-bottom:30px}
-.carta{position:sticky;top:calc(var(--top) + 16px + var(--i) * 12px);display:grid;gap:0;border-radius:28px;overflow:hidden;background:var(--papel);box-shadow:0 -14px 34px -16px rgba(42,31,26,.4);transform-origin:50% 0;will-change:transform}
-.carta .foto{aspect-ratio:16/11}
-.carta-corpo{padding:18px 20px 22px;display:grid;gap:8px}
-.carta-corpo strong{font-family:var(--f-letreiro);font-weight:400;font-size:clamp(28px,7.5vw,44px);line-height:1;color:var(--vinho)}
-.carta-corpo ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
-.carta-corpo li{padding:3px 10px;border-radius:999px;background:var(--creme);border:1px solid var(--linha);font-size:13px;font-weight:500}
-.carta-pe{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
-.carta-pe .preco{font-size:26px;color:var(--placa)}
-
-/* galeria */
-.s-galeria{padding-block:80px 70px;background:var(--carvao)}
-.mosaico{margin-top:26px;columns:2 160px;column-gap:12px}
-.mosaico button{display:block;width:100%;margin:0 0 12px;padding:0;border:0;border-radius:18px;overflow:hidden;break-inside:avoid;background:var(--carvao-2);transition:transform .3s var(--mola)}
-.mosaico button:hover{transform:scale(1.02)}
-.mosaico img{width:100%;height:auto}
-.luz-caixa{width:min(96vw,720px);max-height:94vh;padding:0;border:0;border-radius:20px;background:#000;overflow:hidden}
-.luz-caixa::backdrop{background:rgba(0,0,0,.85)}
-.luz-caixa[open]{animation:aparece .25s ease}
-.luz-caixa img{width:100%;max-height:82vh;object-fit:contain}
-.luz-caixa .pe{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;color:#fff}
-.luz-caixa .pe strong{font-family:var(--f-placa);font-size:18px;text-transform:uppercase}
-
-/* horário e onde */
-.s-onde{padding-block:80px 70px;background:var(--vermelho);color:#fff;position:relative;overflow:hidden}
-.s-onde .rabisco-fundo{color:rgba(255,255,255,.07)}
-.s-onde .s-olho{color:var(--amarelo-claro)}
-.s-onde .s-p{color:#FFE3E7}
-.onde-grid{position:relative;margin-top:28px;display:grid;gap:18px}
-.s-onde .horario{background:rgba(26,20,20,.88)}
-.s-final{position:relative;padding-block:90px 110px;background:var(--carvao);text-align:center;overflow:hidden}
-.s-final .rabisco-fundo{color:rgba(247,194,27,.05)}
-.s-final img.logo-final{width:min(60vw,240px);height:auto;margin:0 auto;filter:none}
-.s-final .s-h2{max-width:14ch;margin-inline:auto;color:var(--amarelo)}
-.s-final .s-ctas{justify-content:center;max-width:540px;margin-inline:auto}
-.s-final .rodape{max-width:560px;margin-inline:auto;color:var(--cinza-quente);border-color:var(--borda-escura)}
-.s-final .rodape strong{color:var(--creme)}
-
-@media (min-width:880px){
-  .s-hero{padding-block:60px 70px}
-  .s-hero__grid{grid-template-columns:1.05fr 1fr;gap:30px}
-  .monte{grid-template-columns:1.1fr .9fr}
-  .prensa-grid,.dog-grid,.onde-grid{grid-template-columns:1fr 1fr}
-  .carta{grid-template-columns:1.1fr 1fr}
-  .carta .foto{aspect-ratio:auto;height:100%;min-height:360px}
-  .mosaico{columns:4 200px}
-  .fita__item{font-size:40px}
+/* herói: 100svh (menos a barra do site, quando ela existe); --cx e --cy são o centro da poça de luz e da arandela */
+.s-hero{--cx:50%;--cy:22%;--vx:52%;--vy:26%;position:relative;min-height:calc(100svh - var(--barra,0px));display:grid;align-items:center;overflow:hidden}
+/* sem o tijolo desenhado (plano B) por baixo: a textura real é opaca e o plano B custaria 9,5 KB na primeira vista; se ela faltar, fica a cor do tijolo sob o véu */
+.s-hero.parede::before{background:var(--parede-desfocada) center/cover no-repeat,linear-gradient(rgba(199,137,85,.85),rgba(199,137,85,.85)),var(--tijolo);-webkit-mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%);mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%)}
+.s-hero.parede::after{background:radial-gradient(var(--vx) var(--vy) at var(--cx) var(--cy),rgba(18,11,9,.28),var(--veu) 100%)}
+.s-hero .arandela{left:var(--cx)}
+.s-hero__grid{position:relative;z-index:1;display:grid;gap:18px;justify-items:center;padding-block:56px 40px}
+.s-hero__grid>*{min-width:0}
+.hero-placa{order:-1;display:grid;justify-items:center}
+.s-hero .placa{width:clamp(168px,22vw,280px);view-transition-name:placa}
+.s-hero .placa-correntes{height:min(100vh,900px)}
+.hero-txt{position:relative;display:grid;justify-items:center;gap:14px;text-align:center}
+/* os 3 títulos na mesma célula: só o do estado da luz aparece (html[data-luz] e [data-luz-motivo], de src/app.js);
+   antes de o app dizer o estado, vale "fechado", que nunca afirma o que não é verdade */
+.hero-tit{margin:0 0 .1em;display:grid;font:400 clamp(44px,12vw,104px)/.92 var(--f-letreiro);font-kerning:none;font-variant-ligatures:none;color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-3deg);transform-origin:50% 60%}
+.hero-tit__e{grid-area:1/1;align-self:center;visibility:hidden;opacity:0}
+html[data-luz="acesa"] .hero-tit__e[data-estado="aberto"],
+html[data-luz="apagada"][data-luz-motivo="pausa"] .hero-tit__e[data-estado="pausa"],
+html:not([data-luz="acesa"]):not([data-luz-motivo="pausa"]) .hero-tit__e[data-estado="fechado"]{visibility:visible;opacity:1;transition:opacity var(--t-ui) var(--suave)}
+.hero-tit .junto{white-space:nowrap}
+.hero-horario span{white-space:nowrap}
+.hero-apoio{margin:0;text-wrap:balance;font:400 clamp(16px,4.6vw,20px)/1.4 var(--f-corpo);color:var(--osso);text-shadow:0 0 14px rgba(18,11,9,.95),0 0 4px rgba(18,11,9,.8)}
+.hero-horario{margin:0;display:grid;gap:2px;font:600 clamp(11.5px,3.5vw,14px)/1.3 var(--f-placa);letter-spacing:.1em;text-transform:uppercase;color:var(--osso-2);text-shadow:0 0 14px rgba(18,11,9,.95),0 0 4px rgba(18,11,9,.8)}
+.hero-txt .s-ctas{margin-top:8px;width:min(100%,420px);justify-content:center}
+.hero-cone{position:absolute;inset:0;z-index:-1;pointer-events:none;background:conic-gradient(from 180deg at var(--cx) -8%,transparent 0 152deg,rgba(255,200,120,.16) 168deg 192deg,transparent 208deg);opacity:var(--luz,1);transform:translateX(calc(var(--mx,0) * 56px));transition:transform .5s var(--suave),opacity var(--t-cena) var(--suave)}
+.s-hero .brasas i.d{display:none}
+@media (min-width:960px){
+  .s-hero{--cx:calc(50% + min(25%,320px));--cy:42%;--vx:38%;--vy:48%}
+  .s-hero__grid{grid-template-columns:1.1fr .9fr;gap:30px;justify-items:stretch;align-items:center;padding-block:56px}
+  .hero-placa{order:0}
+  .hero-txt{justify-items:start;text-align:left}
+  .hero-tit{transform-origin:0 60%}
+  .hero-txt .s-ctas{justify-content:flex-start;width:min(100%,520px)}
 }
-.rv{transition:transform .9s var(--suave),opacity .9s var(--suave)}
-.rv.fora{transform:translateY(36px);opacity:.001}
-
+@media (min-width:1024px){.s-hero .brasas i.d{display:block}}
+/* barra do site (6.1): 56 px, sempre visível; selo de 34 px com o ponto de status, abas Bio · Cardápio · Site em 1024+ (em
+   390 só a pílula "Cardápio") e a sacola. Todo alvo tem 44 px ou mais. --barra é o que o herói desconta dos 100svh */
+.site{--barra:calc(56px + var(--top))}
+.barra-site{position:sticky;top:var(--top);z-index:20;height:56px;display:flex;align-items:center;gap:8px;padding:0 var(--calha);background:rgba(18,11,9,.92);border-bottom:1px solid var(--borda)}
+.barra-site__selo{position:relative;flex:none;width:44px;height:44px;margin-left:-5px;display:grid;place-items:center}
+.barra-site__selo img{width:34px;height:34px}
+.barra-site__ponto{position:absolute;right:2px;bottom:7px;width:10px;height:10px;border-radius:50%;background:var(--osso-2);box-shadow:0 0 0 2px var(--noite)}
+html[data-luz="acesa"] .barra-site__ponto{background:var(--neon-aberto);box-shadow:0 0 0 2px var(--noite),0 0 8px var(--neon-aberto)}
+html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-shadow:0 0 0 2px var(--noite)}
+.barra-site__abas{margin-left:auto;display:flex;isolation:isolate}
+.aba{position:relative;display:none;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:0;background:none;color:var(--osso);font:700 13px/1 var(--f-placa);letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
+.aba[data-go="menu"]{display:inline-flex;border:1.5px solid var(--fio);border-radius:var(--r-pill);color:var(--fio)}
+.barra-site .ibtn-sacola{flex:none}
+@media (min-width:1024px){
+  .barra-site__abas{margin-left:8px;background:var(--chapa-2);border-radius:var(--r-pill)}
+  .aba,.aba[data-go="menu"]{display:inline-flex;border:0;border-radius:0;color:var(--osso)}
+  .aba::before{content:"";position:absolute;inset:4px 2px;z-index:-1;border-radius:var(--r-pill)}
+  .aba[aria-current="page"]{color:var(--grafite)}
+  .aba[aria-current="page"]::before{background:var(--fio)}
+  .barra-site .ibtn-sacola{margin-left:auto}
+}
 
 /* ---------- animações ---------- */
 @keyframes placa-chega{from{transform:translateY(6px) scale(.97)}to{transform:none}}
@@ -781,28 +680,20 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 @keyframes selo-pisca{0%{opacity:1}50%{opacity:.25}100%{opacity:1}}
 @keyframes aparece-centro{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
 @keyframes some-centro{to{opacity:0;transform:translateY(12px) scale(.98)}}
-@keyframes letra-cai{0%{opacity:0;transform:translateY(-60%) rotate(-6deg)}100%{opacity:1;transform:none}}
-@keyframes cintila{0%,100%{opacity:.25;transform:scale(.6)}50%{opacity:1;transform:scale(1.15)}}
-@keyframes gira{to{transform:rotate(360deg)}}
-@keyframes boia{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-10px) rotate(2deg)}}
 @keyframes pula{0%{transform:scale(.85)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes aparece{from{opacity:0}to{opacity:1}}
 @keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes barra-in{from{transform:translate(var(--bx,0),130%)}to{transform:translate(var(--bx,0),0)}}
 @keyframes destaca{0%{box-shadow:0 0 0 3px var(--fio)}100%{box-shadow:var(--sombra-card)}}
-@keyframes corre{to{transform:translateX(-50%)}}
 @keyframes voa-entra{0%{opacity:0;transform:translateY(16px) scale(.8)}100%{opacity:1;transform:none}}
 @keyframes sobe-gaveta{from{transform:translateY(100%)}to{transform:none}}
 @keyframes desce-gaveta{to{transform:translateY(100%)}}
 @keyframes progresso{to{width:100%}}
 @keyframes anda{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
-@keyframes vapor{0%{opacity:0;transform:translateY(8px)}30%{opacity:.8}100%{opacity:0;transform:translateY(-24px)}}
 
 /* movimento reduzido: placa estática e acesa, sem halo pulsando, sem anel girando, sem brasas nem fumaça */
 @media (prefers-reduced-motion:reduce){
   .brasas,.fumaca{display:none}
   .placa-halo,.placa-anel,.status::after{animation:none!important}
   .placa-arte{animation:none!important;opacity:1!important}
-  .carta{position:relative;top:auto}
-  .rv.fora{transform:none;opacity:1}
 }

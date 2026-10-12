@@ -3,7 +3,8 @@
    O painel é outra página (/painel/).
    Pele: docs/DIRECAO-VISUAL.md ("Parede Acesa"). A luz do site segue o truck: html[data-luz="acesa|apagada"] e
    html[data-luz-motivo="turno|antes|pausa"], refeitos no carregamento, a cada minuto e no evento loja:modo.
-   Contrato com o site imersivo (src/site/*): ML.app.abrirFicha(id, { combo: true }) e ML.app.adicionarRapido(id). */
+   Site imersivo (#site): src/site/site.js e as cenas entram por import() em carregarSite() (chunk próprio, com o
+   CSS dele); o contrato com ele é o ML.app (montado no início, mais abaixo). */
 import FOTOS_JSON from 'virtual:fotos'; // public/assets/fotos.json (plugin em vite.config.js)
 
 export function iniciarApp() {
@@ -46,18 +47,13 @@ export function iniciarApp() {
     });
     return lista;
   }
-  // Tamanho exibido de cada uso (para o navegador escolher o arquivo do srcset).
+  // Tamanho exibido de cada uso (para o navegador escolher o arquivo do srcset). O site passa o texto do sizes
+  // direto (uso que não é chave daqui vale como o próprio sizes).
   var SIZES = {
     card: '180px',
     dest: '(min-width: 440px) 250px, 62vw',
     ficha: '(min-width: 1024px) 560px, (min-width: 440px) 440px, 100vw',
-    carta: '(min-width: 1180px) 600px, (min-width: 880px) 52vw, calc(100vw - 40px)',
-    art: '(min-width: 411px) 320px, 78vw',
-    dog: '(min-width: 460px) 420px, calc(100vw - 40px)',
-    mosaico: '(min-width: 1180px) 276px, (min-width: 880px) calc(25vw - 19px), calc(50vw - 26px)',
-    monte: '(min-width: 520px) 300px, 58vw',
-    story: '(min-width: 480px) 480px, 100vw',
-    luz: '(min-width: 750px) 720px, 96vw'
+    story: '(min-width: 480px) 480px, 100vw'
   };
   // carga: 'lcp' (imagem principal da tela: sem lazy, prioridade alta), 'cedo' (acima da dobra) ou 'lazy' (padrão)
   function atrCarga(carga) {
@@ -71,12 +67,12 @@ export function iniciarApp() {
     if (tam === 'q') return 'src="' + src(slug, 'q') + '" width="360" height="360"' + atrCarga(carga);
     var lista = arquivos(slug), base = lista.filter(function (a) { return a.tam === tam; })[0] || lista[lista.length - 1];
     return 'src="' + src(slug, base.tam) + '" srcset="' + srcsetDe(slug) + '"' +
-      ' sizes="' + SIZES[uso] + '" width="' + base.w + '" height="' + base.h + '"' + atrCarga(carga);
+      ' sizes="' + (SIZES[uso] || uso) + '" width="' + base.w + '" height="' + base.h + '"' + atrCarga(carga);
   }
-  // o mesmo para um <img> que troca de foto (story, foto ampliada, monte seu combo)
+  // o mesmo para um <img> que troca de foto (story e, no site, foto ampliada e cenas)
   function trocarFoto(img, slug, tam, uso) {
     var lista = arquivos(slug), base = lista.filter(function (a) { return a.tam === tam; })[0] || lista[lista.length - 1];
-    img.sizes = SIZES[uso];
+    img.sizes = SIZES[uso] || uso;
     img.srcset = srcsetDe(slug);
     img.width = base.w; img.height = base.h;
     img.src = src(slug, base.tam);
@@ -1055,7 +1051,7 @@ export function iniciarApp() {
     st.aba = qual;
     $('#view-app').hidden = qual !== 'app';
     $('#view-site').hidden = qual !== 'site';
-    if (qual === 'site') iniciarSite();
+    if (qual === 'site') carregarSite(); else pararSite();
   }
   function focarTitulo(raiz) {
     var h = raiz.querySelector('h1:not(.sr)') || raiz.querySelector('h1');
@@ -1073,7 +1069,7 @@ export function iniciarApp() {
       if (tela === 'checkout') renderCheckout();
       if (tela === 'pedido') { renderPedido(); acompanhar(); } else pararAcompanhar();
       if (tela === 'checkout') esconderErroEnvio();
-      if (tela === 'bio') { animarFaixas(); atualizarPedirDeNovo(); acenderPlaca(); }
+      if (tela === 'bio') { animarFaixas(); atualizarPedirDeNovo(); acenderPlaca(); adiantarSite(); }
       atualizarContadores();
       if (inicial) return;
       window.scrollTo(0, 0);
@@ -1096,7 +1092,6 @@ export function iniciarApp() {
     if (rota === 'checkout' && !sacola.length) rota = 'cardapio';
     if (dlg.open) dlg.close();
     fecharStory();
-    if ($('#luz-caixa').open) $('#luz-caixa').close();
     fecharToast();
     if (rota === 'site') irSite(inicial); else irTela(TELA_DA_ROTA[rota] || 'bio', inicial);
     return rota;
@@ -1133,139 +1128,40 @@ export function iniciarApp() {
   }
   function animarFaixas() { $$('[data-faixa-combo]').forEach(function (f) { f.classList.remove('anima'); void f.offsetWidth; f.classList.add('anima'); }); }
 
-  // ================= site =================
-  // (o site imersivo do implementador B substitui esta parte; até lá ela continua como estava)
-  var LANCHES_MONTE = ['gran-bacon-onion', 'gran-crispy', 'gran-egg-bacon', 'gran-chicken', 'gran-burger', 'gran-burger-bacon', 'gran-salada', 'dog-doritos', 'dog-pizza'];
-  var monte = { id: 'gran-burger', combo: false };
-  var siteIniciado = false, rafPend = false, ultimoY = 0, velocidade = 0;
-  function montarSite() {
-    if (!$('#monte-escolha')) return;
-    $$('[data-letras]').forEach(function (el) {
-      var off = +(el.getAttribute('data-desloc') || 0);
-      el.innerHTML = el.getAttribute('data-letras').split('').map(function (ch, i) { return '<span class="letra" aria-hidden="true" style="--i:' + (i + off) + '">' + esc(ch) + '</span>'; }).join('');
+  // ================= site imersivo (chunk próprio) =================
+  // src/site/site.js (e o CSS das cenas) só vem por import(): na primeira visita a #site ou, depois da bio, no ocioso
+  // (fora do modo economia de dados). A bio e o cardápio não pagam nada pelo site. iniciar() monta as cenas uma vez
+  // e liga; parar() desliga quando a view do site sai de cena (docs/DIRECAO-VISUAL.md 6.1).
+  var site = { modulo: null, carga: null, adiantado: false };
+  function carregarSite() {
+    if (!site.carga) {
+      site.carga = import('./site/site.js').then(function (m) { site.modulo = m; return m; }, function (err) {
+        site.carga = null; // sem rede: tenta de novo na próxima visita
+        console.warn('site: o chunk não carregou', err);
+        return null;
+      });
+    }
+    return site.carga.then(function (m) {
+      if (!m) return;
+      m.iniciar();
+      if (st.aba !== 'site') m.parar(); // carregou no ocioso ou o visitante já saiu: monta e fica desligado
     });
-    var estrela = '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-estrela"/></svg>';
-    var faixa = function (l) { var b = l.map(function (n) { return '<span class="fita__item">' + esc(n) + estrela + '</span>'; }).join(''); return b + b + b; };
-    $('[data-fita="a"]').innerHTML = faixa(['Hambúrguer artesanal', 'Hot dog com Doritos', 'Consumo no local', 'Entregas em Suzano e região', 'Prensado sem custo']);
-    $('[data-fita="b"]').innerHTML = faixa(['Gran Bacon Onion', 'Gran Crispy', 'Combo Dilúvio', 'Dog com Doritos', 'Hot Dog Pizza', 'Combo Casal']);
-    $('#monte-escolha').innerHTML = LANCHES_MONTE.map(function (id) {
-      var p = ML.produtos[id];
-      return '<button type="button" data-monte="' + id + '" aria-pressed="' + (id === monte.id) + '"><img ' + atrFoto(p.foto, 'q') + ' alt="">' + esc(p.nome) + '</button>';
-    }).join('');
-    renderMonte(true);
-    $('#art-trilho').innerHTML = C.categorias[0].itens.slice().sort(function (a, b) { return (b.foto ? 1 : 0) - (a.foto ? 1 : 0); }).map(function (p) {
-      return '<button type="button" class="art-card" data-abrir="' + p.id + '">' + visual(p, '540', null, { uso: 'art' }) + '<span class="art-corpo"><strong>' + esc(p.nome) + '</strong><small>' + esc(ingTexto(p)) + '</small><span>' + brl(p.preco) + '</span></span></button>';
-    }).join('');
-    var dog = ML.produtos['dog-doritos'];
-    $('.dog-foto').insertAdjacentHTML('afterbegin', visual(dog, '1080', null, { uso: 'dog' }));
-    var tri = '';
-    for (var i = 0; i < 14; i++) tri += '<svg viewBox="0 0 30 28" data-dorito="' + i + '" style="left:' + (Math.random() * 90).toFixed(1) + '%"><path d="M15 2 28 26H2z" fill="#F08A1E" stroke="#B4560E" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="17" r="1" fill="#C4600F"/><circle cx="17" cy="20" r="1" fill="#C4600F"/><circle cx="15" cy="12" r=".9" fill="#C4600F"/></svg>';
-    $('#doritos').innerHTML = tri;
-    var pz = ML.produtos['dog-pizza'];
-    $('#mini-pizza').innerHTML = visual(pz, 'q') + '<span><strong>' + esc(pz.nome) + '</strong><span>' + brl(pz.preco) + '</span></span>';
-    $('#pilha').innerHTML = ['combo-diluvio', 'combo-casal', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos'].map(function (id, i) {
-      var p = ML.produtos[id];
-      return '<article class="carta" style="--i:' + i + '">' + visual(p, '1080', null, { uso: 'carta' }) + '<div class="carta-corpo"><strong>' + esc(p.nome) + '</strong><ul>' + p.inclui.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' +
-        (p.nota ? '<small style="color:var(--tinta-2)">' + esc(p.nota) + '</small>' : '') +
-        '<div class="carta-pe"><span class="preco">' + brl(p.preco) + '</span><button type="button" class="btn btn-vermelho" data-abrir="' + id + '">' + ic('sacola') + 'Pedir</button></div></div></article>';
-    }).join('');
-    // data-ampliar (não data-luz: o <html> leva data-luz com o estado do truck)
-    $('#mosaico').innerHTML = Object.keys(FOTOS).map(function (slug) {
-      var p = produtoDaFoto[slug];
-      return '<button type="button" data-ampliar="' + slug + '" aria-label="Ampliar foto' + (p ? ' do ' + esc(p.nome) : '') + '"><img ' + atrFoto(slug, '540', 'mosaico') + ' alt="' + (p ? 'Foto do ' + esc(p.nome) : '') + '"></button>';
-    }).join('');
-    marcarCarregadas($('#view-site'));
   }
-  function renderMonte(primeira) {
-    var p = ML.produtos[monte.id];
-    trocarFoto($('#monte-img'), p.foto, '540', 'monte');
-    $('#monte-img').alt = 'Foto do ' + p.nome;
-    $('#monte-lanche').className = 'monte-lanche foto';
-    $('#monte').classList.toggle('combo', monte.combo);
-    $('#monte-switch').setAttribute('aria-checked', String(monte.combo));
-    $('#monte-conta').textContent = p.nome + ' ' + brl(p.preco) + (monte.combo ? ' + combo ' + brl(C.regras.combo.preco) : '');
-    var v = p.preco + (monte.combo ? C.regras.combo.preco : 0);
-    if (primeira) { $('#monte-preco').textContent = brl(v); $('#monte-preco').setAttribute('data-v', v); } else contar($('#monte-preco'), v);
-    $$('[data-monte]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-monte') === monte.id)); });
-  }
-  function aplicarPrensa(v) {
-    var t = v / 100 * 76, svg = $('#prensa-ilustra');
-    $('.placa-cima', svg).style.transform = 'translateY(' + t.toFixed(1) + 'px)';
-    var esmaga = t > 46 ? (236 - (94 + t)) / 96 : 1;
-    $('.lanche', svg).style.transform = 'scaleY(' + esmaga.toFixed(3) + ')';
-    var prensado = v >= 85;
-    svg.classList.toggle('prensado', prensado);
-    $('#prensa-estado').textContent = prensado ? 'Prensado! Não cobramos para prensar.' : (v > 10 ? 'Prensando…' : 'Não prensado');
-  }
-  function iniciarSite() {
-    if (!siteIniciado && $('#palco')) {
-      siteIniciado = true;
-      prepararRevelacoes($('#view-site'));
-      var palco = $('#palco');
-      palco.addEventListener('pointermove', function (e) {
-        if (e.pointerType !== 'mouse') return;
-        var r = palco.getBoundingClientRect();
-        palco.style.setProperty('--mx', ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
-        palco.style.setProperty('--my', ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
-        pedirQuadro();
-      });
-      $('#art-trilho').addEventListener('pointermove', function (e) {
-        if (e.pointerType !== 'mouse') return;
-        var card = e.target.closest('.art-card'); if (!card) return;
-        var r = card.getBoundingClientRect();
-        card.style.setProperty('--ry', (((e.clientX - r.left) / r.width - 0.5) * 10).toFixed(2) + 'deg');
-        card.style.setProperty('--rx', (((e.clientY - r.top) / r.height - 0.5) * -8).toFixed(2) + 'deg');
-      });
-      $('#art-trilho').addEventListener('pointerout', function (e) { var c = e.target.closest('.art-card'); if (c && !c.contains(e.relatedTarget)) { c.style.setProperty('--rx', '0deg'); c.style.setProperty('--ry', '0deg'); } });
-      // prensa: régua e arraste na ilustração
-      var regua = $('#f-prensa');
-      regua.addEventListener('input', function () { aplicarPrensa(+regua.value); });
-      var svg = $('#prensa-ilustra'), y0 = null, v0 = 0;
-      svg.addEventListener('pointerdown', function (e) { y0 = e.clientY; v0 = +regua.value; svg.setPointerCapture(e.pointerId); });
-      svg.addEventListener('pointermove', function (e) { if (y0 == null) return; var v = clamp(v0 + (e.clientY - y0) / svg.getBoundingClientRect().height * 160, 0, 100); regua.value = v; aplicarPrensa(v); });
-      svg.addEventListener('pointerup', function () { y0 = null; });
-      aplicarPrensa(0);
-    }
-    pedirQuadro();
-  }
-  function pedirQuadro() { if (!rafPend) { rafPend = true; requestAnimationFrame(quadro); } }
-  function quadro() {
-    rafPend = false;
-    if (st.aba !== 'site' || !$('#palco')) return;
-    var y = window.scrollY, vh = window.innerHeight;
-    velocidade = velocidade * 0.85 + Math.abs(y - ultimoY) * 0.15; ultimoY = y;
-    if (!reduz) {
-      $$('.fita__trilho').forEach(function (tr) { var an = tr.getAnimations && tr.getAnimations()[0]; if (an) an.playbackRate = 1 + Math.min(velocidade / 6, 5); });
-      var palco = $('#palco'), mx = +palco.style.getPropertyValue('--mx') || 0, my = +palco.style.getPropertyValue('--my') || 0;
-      $$('.recorte', palco).forEach(function (o) { var p = +o.getAttribute('data-prof'); o.style.transform = 'translate(' + (mx * 28 * p).toFixed(1) + 'px,' + (my * 28 * p - y * 0.1 * p).toFixed(1) + 'px)'; });
-      var dog = $('#s-dog'), rd = dog.getBoundingClientRect();
-      if (rd.bottom > 0 && rd.top < vh) {
-        var pd = clamp((vh - rd.top) / (vh + rd.height));
-        var box = $('#doritos'), alt = box.getBoundingClientRect().height;
-        $$('[data-dorito]', box).forEach(function (t, i) {
-          var fase = (pd * 1.6 + i / 14) % 1;
-          t.style.transform = 'translateY(' + ((fase * (alt + 80)) - 60).toFixed(1) + 'px) rotate(' + ((fase * 360 + i * 47) % 360).toFixed(0) + 'deg)';
-        });
-      }
-      var cartas = $$('.carta');
-      cartas.forEach(function (c, i) {
-        var prox = cartas[i + 1]; if (!prox) { c.style.transform = ''; c.style.filter = ''; return; }
-        var r1 = c.getBoundingClientRect(), rp = prox.getBoundingClientRect(), sob = clamp((r1.bottom - rp.top) / r1.height);
-        c.style.transform = 'scale(' + (1 - sob * 0.06).toFixed(3) + ')';
-        c.style.filter = 'brightness(' + (1 - sob * 0.3).toFixed(3) + ')';
-      });
-      if (velocidade > 0.5) pedirQuadro();
-    }
-  }
-  function prepararRevelacoes(raiz) {
-    if (reduz || !('IntersectionObserver' in window)) return;
-    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.remove('fora'); io.unobserve(e.target); } }); }, { threshold: 0.12 });
-    $$('.rv', raiz).forEach(function (el) { if (el.getBoundingClientRect().top > window.innerHeight) { el.classList.add('fora'); io.observe(el); } });
+  function pararSite() { if (site.modulo) site.modulo.parar(); }
+  // depois da bio: espera a carga da página e mais 2 s, e pede o chunk quando o navegador estiver ocioso
+  function adiantarSite() {
+    if (site.adiantado || site.carga) return;
+    site.adiantado = true;
+    var c = navigator.connection;
+    if (c && c.saveData) return;
+    var ocioso = window.requestIdleCallback || function (fn) { return setTimeout(fn, 1); };
+    var depois = function () { setTimeout(function () { ocioso(function () { carregarSite(); }, { timeout: 5000 }); }, 2000); };
+    if (document.readyState === 'complete') depois(); else window.addEventListener('load', depois, { once: true });
   }
 
   // ================= eventos =================
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('a[href^="#"],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre],[data-monte],#monte-switch,#monte-add,[data-ampliar],[data-fechar-luz],#luz-pedir');
+    var t = e.target.closest('a[href^="#"],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
     if (!t) return;
     var A = function (n) { return t.getAttribute(n); };
     // links internos (#bio, #site, #cardapio/<categoria>…): mesma navegação dos botões, com o histórico do app
@@ -1316,21 +1212,12 @@ export function iniciarApp() {
     else if (t.hasAttribute('data-novo-pedido')) navegar('cardapio');
     else if (t.hasAttribute('data-pedir-de-novo')) pedirDeNovo();
     else if (t.hasAttribute('data-comanda-abre')) { var aberta = A('aria-expanded') !== 'true'; t.setAttribute('aria-expanded', String(aberta)); t.textContent = aberta ? 'Recolher' : 'Ver itens'; $('#chk-lista').hidden = !aberta; }
-    else if (t.hasAttribute('data-monte')) { monte.id = A('data-monte'); renderMonte(); }
-    else if (t.id === 'monte-switch') { monte.combo = !monte.combo; renderMonte(); }
-    else if (t.id === 'monte-add') abrirFicha(monte.id, { combo: monte.combo, origem: $('#monte-lanche') });
-    else if (t.hasAttribute('data-ampliar')) { var slug = A('data-ampliar'), pp = produtoDaFoto[slug], lz = $('#luz-caixa'); trocarFoto($('#luz-img'), slug, '1080', 'luz'); $('#luz-img').alt = pp ? 'Foto do ' + pp.nome : ''; $('#luz-nome').textContent = pp ? pp.nome + ' · ' + brl(pp.preco) : ''; $('#luz-pedir').setAttribute('data-produto', pp ? pp.id : ''); $('#luz-pedir').hidden = !pp; lz.showModal ? lz.showModal() : lz.setAttribute('open', ''); }
-    else if (t.hasAttribute('data-fechar-luz')) $('#luz-caixa').close();
-    else if (t.id === 'luz-pedir') { var lp = A('data-produto'); $('#luz-caixa').close(); if (lp) abrirFicha(lp); }
   });
-  $('#luz-caixa').addEventListener('click', function (e) { if (e.target === e.currentTarget) e.currentTarget.close(); });
   $('#f-busca').addEventListener('input', function (e) { st.busca = e.target.value; renderMenu(); });
   window.addEventListener('scroll', function () {
-    if (st.aba === 'site') pedirQuadro();
-    else if (st.aba === 'app' && st.tela === 'menu') marcarChip();
+    if (st.aba === 'app' && st.tela === 'menu') marcarChip();
     else if (st.aba === 'app' && st.tela === 'bio') balancarPlaca();
   }, { passive: true });
-  window.addEventListener('resize', function () { if (st.aba === 'site') pedirQuadro(); });
   window.addEventListener('popstate', aoMudarEndereco);
   window.addEventListener('hashchange', aoMudarEndereco);
   // status do pedido, esgotados, preços e loja chegando do servidor (store do Supabase: Realtime ou consulta)
@@ -1356,9 +1243,30 @@ export function iniciarApp() {
   // estado antes de montar: as imagens da tela inicial carregam já, as outras ficam para depois (lazy)
   st.aba = inicial === 'site' ? 'site' : 'app';
   st.tela = TELA_DA_ROTA[inicial] || 'bio';
-  // os recortes do palco do site ficam lazy no HTML (quem chega pelo QR não baixa); na tela inicial carregam já
-  if (st.aba === 'site') $$('#palco img[loading="lazy"]').forEach(function (i) { i.loading = 'eager'; });
-  montarBio(); montarChips(); renderMenu(); montarSite();
+  // contrato com o site imersivo (docs/DIRECAO-VISUAL.md 0.4): o site só chama estas funções
+  ML.app = {
+    abrirFicha: function (id, opcoes) { abrirFicha(id, opcoes || {}); },
+    adicionarRapido: function (id, origem) { adicionarRapido(id, origem || null); },
+    irCategoria: irCategoria,
+    // fotos reais (fotos.json): atr/trocar/visual como no app; uso = chave de SIZES ou o texto do sizes
+    foto: {
+      atr: atrFoto, // (slug, tam "q"|"540"|"1080", uso, carga "lcp"|"cedo"|"lazy") → atributos do <img>
+      trocar: trocarFoto, // (img, slug, tam, uso)
+      visual: visual, // (produto, tam, classeExtra, { uso, carga }) → <span class="foto nova|antiga"><img></span> ou a arte
+      nova: ehNova, // (slug) → a foto é de origem 'nova'
+      marcarCarregadas: marcarCarregadas, // (raiz) → .ok nas fotos já carregadas
+      info: function (slug) { return FOTOS[slug] || null; }, // { w, h, cor, foco, origem }
+      slugs: function () { return Object.keys(FOTOS); },
+      produtoDe: function (slug) { return produtoDaFoto[slug] || null; } // o produto dono da foto (dog-max → Hot Dog Max)
+    },
+    ic: ic, // (nome, classe) → <svg class="ic"><use href="#i-nome"/></svg>
+    ingTexto: ingTexto, // (produto) → "Queijo, Cheddar, …" ou o inclui do combo
+    contar: contar, // (el, valor) → escreve o preço e rola o número (sem rolar com movimento reduzido)
+    soprarFumaca: soprarFumaca, // (el .fumaca)
+    passarBrilho: passarBrilho, // (el .placa com .placa-arte e .placa-brilho)
+    indisponivel: indisponivel // (id) → esgotado hoje ou fora do cardápio
+  };
+  montarBio(); montarChips(); renderMenu();
   atualizarStatus(); atualizarPrecosFixos(); agendarStatus();
   aplicarRota(inicial, true);
   irCategoria(catInicial);
@@ -1368,12 +1276,5 @@ export function iniciarApp() {
   if (location.hash || mostrada !== 'bio') gravarRota(mostrada, null, true);
   else try { history.replaceState({ rota: 'bio', de: null }, ''); } catch { /* sem histórico */ }
   marcarCarregadas(document);
-  prepararRevelacoes($('#view-app'));
-  // contrato com o site imersivo (docs/DIRECAO-VISUAL.md 0.4): o site só chama estas funções
-  ML.app = {
-    abrirFicha: function (id, opcoes) { abrirFicha(id, opcoes || {}); },
-    adicionarRapido: function (id, origem) { adicionarRapido(id, origem || null); },
-    irCategoria: irCategoria
-  };
   window.MLApp = { navegar: navegar, irTela: irTela };
 }

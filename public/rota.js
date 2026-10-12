@@ -5,7 +5,7 @@
    CSS (app.css) mostra só ela. O app tira a marca logo depois de aplicar a rota (mesma tarefa, sem quadro no
    meio); se o módulo falhar, ela sai no DOMContentLoaded e a página fica como antes (bio).
    Mesmas regras do início do app.js: checkout sem sacola e #pedido sem pedido caem no cardápio.
-   Na bio, pré-carrega a logo (a placa) com o mesmo imagesrcset do <img>. */
+   Na bio e no site, pré-carrega a logo (a placa) com o mesmo imagesrcset do <img>. */
 (function (d) {
   var hash = location.hash.replace(/^#/, '').split('/');
   var h = hash[0];
@@ -39,12 +39,12 @@
     return;
   }
   d.documentElement.setAttribute('data-tela-inicial', tela);
-  // os recortes do palco são lazy no HTML (quem chega pelo QR não baixa); quem abre o site já busca o principal
+  // site: a placa do herói é a logo oficial; o preload tem o mesmo imagesrcset da bio (sem baixar duas vezes)
   if (tela === 'site') {
     var l = d.createElement('link');
     l.rel = 'preload';
     l.as = 'image';
-    l.href = '/assets/recortes/gran-bacon-onion.webp';
+    l.setAttribute('imagesrcset', '/assets/logo/logo-256.webp 1x, /assets/logo/logo-512.webp 2x');
     l.setAttribute('fetchpriority', 'high');
     d.head.appendChild(l);
   }
