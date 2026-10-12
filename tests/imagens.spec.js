@@ -167,15 +167,13 @@ test('srcset usa a largura real dos arquivos (sem repetir largura)', async ({ pa
     return { src: i.getAttribute('src'), srcset: i.getAttribute('srcset'), w: i.getBoundingClientRect().width };
   });
   expect(selo).toEqual({ src: '/assets/logo/selo-128.webp', srcset: null, w: 34 });
-  const doritos = conjuntos.find((c) => c.srcset.includes('/dog-doritos-'));
-  expect(doritos?.srcset).toBe('/assets/fotos/dog-doritos-540.webp 481w');
   // a parede de fotos (S7) só tem foto 'nova' (1200 px de largura): o srcset traz o -540 e o -1080 pela largura real, e a antiga gran-burger (720 px) já não aparece
   const parede = await page.evaluate(() => document.querySelector('#mosaico img[srcset*="/big-mineiro-540"]')?.getAttribute('srcset'));
   expect(parede).toBe('/assets/fotos/big-mineiro-540.webp 540w, /assets/fotos/big-mineiro-1080.webp 1080w');
   expect(await page.locator('#mosaico img[srcset*="/gran-burger-"]').count(), 'foto antiga na parede de fotos').toBe(0);
+  // as fotos antigas mais estreitas (Dog com Doritos 481 px, Gran Burger 720 px) saíram do site novo (S4 e S7 só com foto nova);
+  // a largura real delas no srcset do cardápio segue coberta pela regra geral acima
   // o Dog Max (foto 'nova' da S4) tem 1200 px: o srcset traz o -540 e o -1080 pela largura real
   const dogMax = await page.evaluate(() => document.querySelector('.s-dog img[srcset*="/dog-max-"]')?.getAttribute('srcset'));
   expect(dogMax).toBe('/assets/fotos/dog-max-540.webp 540w, /assets/fotos/dog-max-1080.webp 1080w');
-  const burger = await page.evaluate(() => document.querySelector('img[srcset*="/gran-burger-540"]')?.getAttribute('srcset'));
-  expect(burger).toBe('/assets/fotos/gran-burger-540.webp 540w, /assets/fotos/gran-burger-1080.webp 720w');
 });

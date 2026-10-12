@@ -10,12 +10,6 @@ import sharp from 'sharp';
 
 const RAIZ = resolve(import.meta.dirname, '..');
 
-// Na integração das trilhas site e painel, apague as duas linhas "test.fixme(true, ...)" abaixo (testes de referência
-// aos SVGs da raiz) e estas duas constantes: os testes já estão escritos e viram testes normais.
-const MOTIVO_SITE = 'removido pelas trilhas site/painel (B10 tira o img.logo-final do #view-site); vira test normal na integração';
-const MOTIVO_PAINEL =
-  'removido pelas trilhas site/painel (P1 troca o selo do painel por selo-128/256.webp); vira test normal na integração';
-
 // arquivos permitidos em tela: logo-<n>.webp e selo-<n>.webp (o logo-1024 existe, mas nunca é pedido: ver o último teste)
 const ARQUIVO = /^\/assets\/logo\/(logo|selo)-\d+\.webp$/;
 // a arte em tela: a placa (bio, herói, final) e todo selo/logo vindo da pasta da logo
@@ -125,7 +119,8 @@ for (const rota of ROTAS) {
             .filter((img) => img.checkVisibility())
             .map((img) => ({
               quem: img.className || img.getAttribute('src'),
-              largura: Math.max(img.clientWidth, img.getBoundingClientRect().width)
+              // largura de layout: o balanço e o acender da placa giram e escalam a arte por transform
+              largura: img.offsetWidth
             }));
         }, LOGOS);
         if (rota.nome !== 'site') expect(larguras.length, 'há logo visível na tela').toBeGreaterThan(0);
@@ -144,13 +139,11 @@ test.describe('referências aos SVGs da raiz saem da tela', () => {
     );
 
   test('index.html não aponta para /assets/logo.svg nem logo-selo.svg', () => {
-    test.fixme(true, MOTIVO_SITE);
     const html = readFileSync(join(RAIZ, 'index.html'), 'utf8');
     expect(achar([['index.html', html]])).toEqual([]);
   });
 
   test('src/painel/*.js não aponta para /assets/logo.svg nem logo-selo.svg', () => {
-    test.fixme(true, MOTIVO_PAINEL);
     const pasta = join(RAIZ, 'src/painel');
     const arquivos = readdirSync(pasta)
       .filter((f) => f.endsWith('.js'))
