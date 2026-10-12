@@ -79,3 +79,41 @@ O dono pediu para desconsiderar as fotos antigas: "vou mandar todas no mesmo cen
 | 12/10 00:15 | (sem legenda) | identificar pela imagem |
 | 12/10 00:18 | Gran Crispy | `gran-crispy` |
 | 08/10 10:44 a 10:51 (antigas) | Hot Dog Super Pizza, Gran Salada, Gran Egg, Gran Bacon | só onde não houver foto nova (`dog-pizza`, `gran-egg`) |
+
+## ATUALIZAÇÃO 12/10: fotos novas recebidas
+
+> **Atenção, agentes:** as fotos novas CHEGARAM. Qualquer instrução que diga "as fotos ainda não chegaram" está desatualizada.
+
+- **Originais:** `design/fotos-cliente/`, 11 arquivos de 1200×1600 já com o nome do produto e sem EXIF.
+- **Variantes no padrão do app:** `public/assets/fotos/<slug>-q|540|1080.webp`. O `public/assets/fotos.json` marca cada uma com `origem: 'nova'` e traz o `foco` (object-position do lanche).
+- **Cenário:** parede de tijolinho **laranja-terracota com rejunte cinza-claro**, prato de inox e um vasinho de planta. É claro e quente; num visual escuro, a foto funciona como "parede iluminada".
+
+**Textura REAL da parede** (recortes das fotos, sem retoque), em `public/assets/texturas/`:
+
+| Arquivo | Origem |
+|---|---|
+| `tijolo-real-1.webp` | Parede nítida, do CBO Turbo |
+| `tijolo-real-2.webp` | Parede nítida, do Gran Crispy |
+| `tijolo-real-desfocado.webp` | Parede desfocada, do Gran Bacon Onion; bom para o fundo do hero |
+
+Use as texturas reais no lugar do tijolinho desenhado em código; o desenho fica só como plano B.
+
+| Arquivo do cliente | Produto (slug da foto) |
+|---|---|
+| big-mineiro | `big-mineiro` |
+| dog-max | `dog-max` (também `dog-medio` e `dog-super`) |
+| exagerado-x-egg-bacon | `exagerado-x-salada-egg-bacon` |
+| gran-bacon-onion | `gran-bacon-onion` |
+| gran-crispy | `gran-crispy` |
+| gran-onion-bacon | `combo-gran-bacon-onion` (com Coca lata e batata) |
+| gran-salada | `gran-salada` |
+| hotdog-cbo-turbo | `dog-cbo-turbo` |
+| ultra-x-salada-bacon | `ultra-x-salada-bacon` |
+| x-churrasco | `x-churrasco` |
+| x-salada-tradicional | `x-salada` |
+
+**Ainda faltam** (o cliente vai mandar mais):
+
+- Gran Bacon, Porção de batata turbinada, Combo Casal e Gran Egg.
+- Hot Dog Pizza, Gran Chicken, Dog com Doritos, Combo Dilúvio, Combo 2 Dog Doritos e Gran Bacon + Coca: hoje usam as fotos antigas (origem 'antiga').
+- Os demais itens não têm foto e aparecem com a arte da categoria.
