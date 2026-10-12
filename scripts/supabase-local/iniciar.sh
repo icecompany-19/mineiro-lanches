@@ -77,24 +77,40 @@ jwt-secret = "segredo-local-de-teste-com-mais-de-32-caracteres"
 server-port = $PORTA_POSTGREST
 db-channel-enabled = true
 CONF
-if ! curl -s -o /dev/null "http://localhost:$PORTA_POSTGREST/"; then
+# Espera a porta abrir sem curl: no Windows, um connect recusado leva ~2 s.
+escutando() {
+  if [[ $WIN ]]; then netstat -ano | grep -qE ":$1 +[^ ]+ +LISTENING"; else ss -ltnH "sport = :$1" 2> /dev/null | grep -q .; fi
+}
+esperar_porta() { # porta segundos
+  local i
+  for ((i = 0; i < $2 * 4; i++)); do escutando "$1" && return 0; sleep 0.25; done
+  return 1
+}
+iniciar_postgrest() {
   if [[ $WIN ]]; then
     node "$AQUI/soltar.mjs" "$(nativo "$PGHOME/postgrest.log")" "$(nativo "$POSTGREST")" "$(nativo "$PGHOME/postgrest.conf")"
   else
     nohup "$POSTGREST" "$PGHOME/postgrest.conf" > "$PGHOME/postgrest.log" 2>&1 &
   fi
-fi
-if ! curl -s -o /dev/null http://localhost:54321/; then
+}
+iniciar_proxy() {
   if [[ $WIN ]]; then
     node "$AQUI/soltar.mjs" "$(nativo "$PGHOME/proxy.log")" node "$(nativo "$AQUI/proxy.mjs")"
   else
     nohup node "$AQUI/proxy.mjs" > "$PGHOME/proxy.log" 2>&1 &
   fi
-fi
-for _ in $(seq 1 30); do
-  curl -s -o /dev/null "http://localhost:$PORTA_POSTGREST/" && curl -s -o /dev/null http://localhost:54321/ && break
-  sleep 0.5
+}
+# No Windows o PostgREST às vezes morre logo depois de "Starting" quando o anterior acabou de ser derrubado:
+# tenta de novo até 3 vezes.
+for tentativa in 1 2 3; do
+  escutando "$PORTA_POSTGREST" && break
+  iniciar_postgrest
+  esperar_porta "$PORTA_POSTGREST" 8 && break
+  echo "PostgREST não abriu a porta $PORTA_POSTGREST (tentativa $tentativa); veja $PGHOME/postgrest.log" >&2
 done
+escutando 54321 || iniciar_proxy
+esperar_porta "$PORTA_POSTGREST" 2 || { echo "PostgREST fora do ar" >&2; exit 1; }
+esperar_porta 54321 8 || { echo "proxy fora do ar" >&2; exit 1; }
 echo "Postgres: $PGURL"
 echo "API (supabase-js): http://localhost:54321  (chave: qualquer texto não-JWT => anon)"
 echo "Login equipe: equipe@teste.local / qualquer senha"
