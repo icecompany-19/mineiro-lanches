@@ -49,19 +49,21 @@ function fotos() {
   };
 }
 
-// No build, pré-carrega a Lilita One (letreiro do logo e títulos): é a fonte que mais aparece na primeira tela.
+// No build, pré-carrega a Lilita One (letreiro do logo e títulos) e o Oswald 600 (preços e rótulos da primeira tela).
 function preloadLetreiro() {
+  const FONTES = [/lilita-one-latin-400-normal[^/]*\.woff2$/, /oswald-latin-600-normal[^/]*\.woff2$/];
   return {
     name: 'ml-preload-letreiro',
     apply: 'build',
     transformIndexHtml: {
       order: 'post',
       handler(html, ctx) {
-        const fonte = Object.keys(ctx.bundle || {}).find((n) => /lilita-one-latin-400-normal[^/]*\.woff2$/.test(n));
-        if (!fonte) return html;
-        return [
-          { tag: 'link', attrs: { rel: 'preload', href: '/' + fonte, as: 'font', type: 'font/woff2', crossorigin: '' }, injectTo: 'head' }
-        ];
+        const nomes = Object.keys(ctx.bundle || {});
+        const fontes = FONTES.map((re) => nomes.find((n) => re.test(n))).filter(Boolean);
+        if (!fontes.length) return html;
+        return fontes.map((fonte) => ({
+          tag: 'link', attrs: { rel: 'preload', href: '/' + fonte, as: 'font', type: 'font/woff2', crossorigin: '' }, injectTo: 'head'
+        }));
       }
     }
   };
