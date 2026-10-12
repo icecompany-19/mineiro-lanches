@@ -482,14 +482,26 @@ test('preço adulterado no navegador: vale o total do servidor', async ({ browse
     window.ML.produtos['gran-burger'].preco = 1;
   });
   await montarPedido(celular, { produto: 'gran-burger', nome: 'Carla Teste', telefone: '11955554444', local: true });
+  // rascunho do checkout (D6): endereço digitado na entrega e observação; o pedido sai em "Comer no local" (não leva endereço)
+  await celular.locator('[data-modo="entrega"]').click();
+  await celular.locator('#f-end').fill('Rua das Flores, 100');
+  await celular.locator('[data-modo="local"]').click();
+  await celular.locator('#f-obs').fill('sem pressa');
   await expect(celular.locator('[data-screen="checkout"] .resumo .total [data-total]')).toHaveText('R$ 1,00');
   await celular.locator('#btn-enviar').click();
   await expect(celular.locator('[data-screen="pedido"]')).toBeVisible();
   const total = psql("select total from pedidos where cliente_nome = 'Carla Teste'");
   expect(Number(total)).toBe(25.9);
   await expect(celular.locator('#ped-total')).toHaveText('R$ 25,90');
-  // pedido enviado: nome, telefone e endereço não ficam guardados no aparelho (só o modo escolhido)
-  expect(await celular.evaluate(() => JSON.parse(localStorage.getItem('mineiro:v2:rascunho')))).toEqual({ modo: 'local' });
+  // pedido enviado (D6): nome, telefone e endereço ficam no aparelho para o próximo pedido; só a observação sai
+  expect(await celular.evaluate(() => JSON.parse(localStorage.getItem('mineiro:v2:rascunho')))).toEqual({
+    nome: 'Carla Teste',
+    tel: '11955554444',
+    end: 'Rua das Flores, 100',
+    ref: '',
+    obs: '',
+    modo: 'local'
+  });
   await celular.goto('about:blank');
   await celular.goto('/#cardapio');
   await celular.locator('#prod-x-burguer').click();
@@ -497,9 +509,15 @@ test('preço adulterado no navegador: vale o total do servidor', async ({ browse
   await celular.locator('#barra .btn').click();
   await celular.locator('#btn-continuar').click();
   await expect(celular.locator('[data-screen="checkout"]')).toBeVisible();
-  await expect(celular.locator('#f-nome')).toHaveValue('');
-  await expect(celular.locator('#f-tel')).toHaveValue('');
+  // depois de #pedido/<token>, o checkout reabre com nome, telefone e endereço preenchidos e a observação vazia
+  await expect(celular.locator('#f-nome')).toHaveValue('Carla Teste');
+  await expect(celular.locator('#f-tel')).toHaveValue('11955554444');
+  await expect(celular.locator('#f-end')).toHaveValue('Rua das Flores, 100');
+  await expect(celular.locator('#f-obs')).toHaveValue('');
   await expect(celular.locator('[data-modo="local"]')).toHaveAttribute('aria-pressed', 'true');
+  await celular.locator('[data-modo="entrega"]').click();
+  await expect(celular.locator('#f-end')).toBeVisible();
+  await expect(celular.locator('#f-end')).toHaveValue('Rua das Flores, 100');
   await cel.close();
 });
 

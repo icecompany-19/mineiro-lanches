@@ -614,7 +614,7 @@ export function iniciarApp() {
       '<button type="button" class="btn btn-vermelho" data-go="sacola" data-ajustar hidden>Ajustar a sacola</button>' +
       '<a class="btn btn-borda" id="envio-wa" href="#" target="_blank" rel="noopener">' + ic('chat') + 'Enviar pelo WhatsApp</a></div>' +
       '<small>A sacola e os seus dados continuam aqui.</small></div>');
-    // rascunho do formulário: volta como estava depois de um envio que falhou (some quando o pedido sai)
+    // rascunho do formulário: volta como estava depois de um envio que falhou e para o próximo pedido (só a observação sai quando o pedido sai)
     var r = lerLocal(CHAVE_RASCUNHO, {});
     [['f-nome', 'nome'], ['f-tel', 'tel'], ['f-end', 'end'], ['f-ref', 'ref'], ['f-obs', 'obs']].forEach(function (c) { if (r[c[1]]) $('#' + c[0]).value = r[c[1]]; });
     // o modo escolhido também, a não ser que o QR da mesa mande "Comer no local"
@@ -752,10 +752,10 @@ export function iniciarApp() {
     ML.store.criarPedido(dados).then(function (pedido) {
       envio.uuid = null; envio.assinatura = null;
       sacola = []; salvarSacola();
-      // dados pessoais não ficam no aparelho depois do envio (celular ou computador compartilhado):
-      // o rascunho só serve enquanto o pedido não sai. Fica o modo; o navegador ainda sugere nome e telefone.
-      ['#f-nome', '#f-tel', '#f-end', '#f-ref', '#f-obs'].forEach(function (s) { $(s).value = ''; });
-      gravarLocal(CHAVE_RASCUNHO, { modo: st.modo });
+      // o cliente que volta só confere: nome, telefone, endereço e referência continuam no aparelho (rascunho);
+      // sai apenas a observação, que valia para aquele pedido
+      $('#f-obs').value = '';
+      salvarRascunho();
       travarEnvio(false);
       st.pedidoToken = pedido.token;
       // o checkout sai do histórico: voltar do acompanhamento leva à sacola, não ao formulário enviado
