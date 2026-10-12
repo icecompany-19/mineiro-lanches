@@ -86,7 +86,7 @@ html.aba-oculta .brasas i,html.aba-oculta .placa-halo,html.aba-oculta .placa-ane
 .btn .ic{width:22px;height:22px}
 .btn-vermelho{background:var(--placa);color:var(--branco);box-shadow:var(--sombra-placa)}
 .btn-vermelho .ic{--ic-d:rgba(255,255,255,.22)}
-.btn-vermelho:hover{background:#D1070E}
+.btn-vermelho:hover{background:color-mix(in srgb, var(--placa) 92%, white)}
 .btn-vermelho:active{background:var(--placa-escura);transform:translateY(1px)}
 .btn-borda{min-height:48px;background:transparent;color:var(--fio);border:2px solid var(--fio);font-weight:600}
 .btn-borda .ic{--ic-d:rgba(255,204,0,.18)}

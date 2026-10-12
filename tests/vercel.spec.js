@@ -196,15 +196,15 @@ test('manifestos e ícones', async ({ request }) => {
       short_name: 'Mineiro',
       start_url: '/?origem=pwa',
       scope: '/',
-      theme_color: '#C8102E',
-      background_color: '#FFF6E0'
+      theme_color: '#120B09',
+      background_color: '#120B09'
     },
     '/painel/manifest.webmanifest': {
       name: 'Painel · Mineiro Lanche',
       short_name: 'Painel',
       start_url: '/painel/',
       scope: '/painel/',
-      background_color: '#1A1414'
+      background_color: '#120B09'
     }
   };
   for (const [rota, campos] of Object.entries(manifestos)) {
