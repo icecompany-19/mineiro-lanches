@@ -49,7 +49,6 @@ export function iniciarApp() {
   // Tamanho exibido de cada uso (para o navegador escolher o arquivo do srcset). O site passa o texto do sizes
   // direto (uso que não é chave daqui vale como o próprio sizes).
   var SIZES = {
-    card: '180px',
     dest: '(min-width: 440px) 250px, 62vw',
     ficha: '(min-width: 1024px) 560px, (min-width: 440px) 440px, 100vw',
     story: '(min-width: 480px) 480px, 100vw'

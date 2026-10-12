@@ -176,7 +176,7 @@ html[data-tela-inicial="pedido"] .pedido-num,html[data-tela-inicial="pedido"] .p
 
 .sec{padding:30px var(--calha) 0}
 .sec-cab{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
-.sec-cab h2,.tit{margin:0;font:400 28px/1.05 var(--f-letreiro);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-1.5deg);transform-origin:0 50%}
+.sec-cab h2{margin:0;font:400 28px/1.05 var(--f-letreiro);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-1.5deg);transform-origin:0 50%}
 
 /* "Saindo da chapa": destaques 3:4, só fotos novas */
 .carrossel{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(var(--calha) * -1);padding:6px var(--calha) 22px;scroll-padding-inline:var(--calha);scrollbar-width:none}
@@ -199,7 +199,6 @@ html[data-tela-inicial="pedido"] .pedido-num,html[data-tela-inicial="pedido"] .p
 .foto.antiga{box-shadow:inset 0 0 0 1px var(--borda)}
 .arte{position:relative;display:grid;place-items:center;width:100%;height:100%;background:var(--chapa-2);color:var(--anel);overflow:hidden;isolation:isolate}
 .arte::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--parede-desfocada) center/cover,var(--tijolo);opacity:.25}
-.arte svg.rabisco{display:none}
 .arte .ic{position:relative;width:46%;height:46%;max-width:64px;max-height:64px;--ic-d:rgba(216,168,72,.2)}
 
 /* horário: 7 lâmpadas e a régua de cada dia (18h → 2h) */
@@ -307,7 +306,6 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .selo-combo{display:inline-flex;align-items:center;height:24px;margin-top:7px;padding:0 10px;border-radius:var(--r-pill);border:1.5px dashed var(--fio);color:var(--fio);font:600 12px var(--f-placa);letter-spacing:.06em;text-transform:uppercase}
 .selo-esgotado{display:inline-flex;align-items:center;height:24px;margin-top:7px;padding:0 10px;border-radius:var(--r-pill);background:var(--chapa-2);border:1.5px solid var(--vermelho-luz);color:var(--vermelho-luz);font:600 12px var(--f-placa);letter-spacing:.06em;text-transform:uppercase}
 .prod.esgotado .prod-nome,.prod.esgotado .prod-ing,.prod.esgotado .prod-pe,.prod.esgotado .foto,.prod.esgotado .arte{opacity:.45}
-.prod.destaca{animation:destaca 1.4s ease}
 .vazio-busca{padding:40px 20px;text-align:center;color:var(--osso-2)}
 .vazio-busca .ic{width:46px;height:46px;color:var(--anel);margin:0 auto 10px}
 .nota{margin:22px var(--calha) 0;font-size:13px;color:var(--osso-2);text-align:center}
@@ -595,11 +593,10 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 /* O site imersivo (#view-site) vem no chunk site-*.css (src/styles/site.css e src/site/cenas/*.css), carregado por
    import() em src/app.js. Aqui fica só o que segura a primeira pintura de quem abre direto em #site: o herói "Acende"
    (grade, placa, título por estado da luz, apoio, status e CTAs) e as classes comuns que ele usa (.site, .s-wrap,
-   .s-olho, .s-ctas, .rabisco-fundo). A pele e o movimento (letras, brasas, cone) vêm no chunk (cenas/hero.css). */
+   .s-olho, .s-ctas). A pele e o movimento (letras, brasas, cone) vêm no chunk (cenas/hero.css). */
 .site{position:relative;background:var(--carvao);color:var(--creme);overflow:clip}
 .s-wrap{max-width:1180px;margin:0 auto;padding-inline:20px}
 .s-olho{margin:0;font-family:var(--f-placa);font-size:15px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--amarelo)}
-.rabisco-fundo{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .s-ctas{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px}
 .s-ctas .btn{flex:1 1 210px}
 /* herói: 100svh (menos a barra do site, quando ela existe); --cx e --cy são o centro da poça de luz e da arandela */
@@ -684,7 +681,6 @@ html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-s
 @keyframes aparece{from{opacity:0}to{opacity:1}}
 @keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes barra-in{from{transform:translate(var(--bx,0),130%)}to{transform:translate(var(--bx,0),0)}}
-@keyframes destaca{0%{box-shadow:0 0 0 3px var(--fio)}100%{box-shadow:var(--sombra-card)}}
 @keyframes voa-entra{0%{opacity:0;transform:translateY(16px) scale(.8)}100%{opacity:1;transform:none}}
 @keyframes sobe-gaveta{from{transform:translateY(100%)}to{transform:none}}
 @keyframes desce-gaveta{to{transform:translateY(100%)}}

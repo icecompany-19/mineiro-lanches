@@ -1,26 +1,6 @@
-<!-- Mineiro Lanche · sprite de ícones (<symbol id="i-…">) e padrões (<pattern id="p-…">).
+<!-- Mineiro Lanche · sprite de ícones (<symbol id="i-…">).
      O plugin do vite.config.js injeta este arquivo no marcador sprite de index.html e painel/index.html. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <defs>
-    <!-- rabiscos de lanche, como o fundo do cardápio impresso -->
-    <pattern id="p-rabisco" width="120" height="120" patternUnits="userSpaceOnUse">
-      <g fill="none" stroke="#3A0A12" stroke-opacity=".12" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 30c0-7 6-11 13-11s13 4 13 11z"/><path d="M13 34h28"/><path d="M15 39h24c0 3-2 5-5 5H20c-3 0-5-2-5-5z"/>
-        <path d="M70 18l26 14M68 23l26 14"/><path d="M71 20c4 2 8 0 12 2s6 6 10 7"/>
-        <path d="M78 74h18l-3 22h-12z"/><path d="M81 74v-9M86 74v-11M91 74v-8"/>
-        <path d="M22 82l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z"/>
-        <path d="M40 104h10M45 99v10"/><circle cx="104" cy="104" r="3"/><circle cx="56" cy="58" r="2"/>
-      </g>
-    </pattern><pattern id="p-rabisco-claro" width="120" height="120" patternUnits="userSpaceOnUse">
-      <g fill="none" stroke="#FFF6E0" stroke-opacity=".09" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 30c0-7 6-11 13-11s13 4 13 11z"/><path d="M13 34h28"/><path d="M15 39h24c0 3-2 5-5 5H20c-3 0-5-2-5-5z"/>
-        <path d="M70 18l26 14M68 23l26 14"/><path d="M71 20c4 2 8 0 12 2s6 6 10 7"/>
-        <path d="M78 74h18l-3 22h-12z"/><path d="M81 74v-9M86 74v-11M91 74v-8"/>
-        <path d="M22 82l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z"/>
-        <path d="M40 104h10M45 99v10"/><circle cx="104" cy="104" r="3"/><circle cx="56" cy="58" r="2"/>
-      </g>
-    </pattern>
-  </defs>
   <!-- grade 24 px, traço 2 px; a parte duotom usa a variável CSS ic-d, herdada pelo <use> -->
   <symbol id="i-burger" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5C4 6.5 7.6 4 12 4s8 2.5 8 6.5z" style="fill:var(--ic-d,transparent)"/><path d="M8.5 7.2h.01M12 6.4h.01M15.5 7.2h.01"/><rect x="3" y="12.5" width="18" height="3" rx="1.5"/><path d="M5 17.5h14c0 1.6-1.3 2.5-3 2.5H8c-1.7 0-3-.9-3-2.5z" style="fill:var(--ic-d,transparent)"/></symbol>
   <symbol id="i-hotdog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 16.4 15.9 5.1a3.2 3.2 0 0 1 4.5 4.5L9.1 20.9a3.2 3.2 0 0 1-4.5-4.5z" style="fill:var(--ic-d,transparent)"/><path d="M6.5 17.5 17.5 6.5"/><path d="M9 13l1 1 1-1 1 1 1-1 1 1"/></symbol>
