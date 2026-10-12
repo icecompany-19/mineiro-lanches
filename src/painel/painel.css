@@ -368,6 +368,9 @@
 @keyframes pn-cresce-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes pn-anel { from { stroke-dasharray: 0 400; } }
 
+/* aba oculta (classe posta no <html> pelo painel.js): as animações infinitas param de gastar bateria */
+.pn-aba-oculta .pn-vazio-ic, .pn-aba-oculta .pn-tempo[data-nivel="atraso"], .pn-aba-oculta .pn-loja-txt::after { animation-play-state: paused; }
+
 /* menos movimento: sem animação nem transição (o destaque do pedido novo vira borda fixa) */
 @media (prefers-reduced-motion: reduce) {
   .painel [class*="pn-"], .painel [class*="pn-"]::before, .painel [class*="pn-"]::after,

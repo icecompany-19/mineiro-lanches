@@ -982,7 +982,10 @@
     document.addEventListener('pointerdown', marcarInteracao);
     document.addEventListener('keydown', marcarInteracao);
     window.addEventListener('focus', () => { if (S.visivel) limparNaoVistos(); });
-    document.addEventListener('visibilitychange', () => { if (!document.hidden && S.visivel) limparNaoVistos(); });
+    // aba oculta: o CSS pausa as animações infinitas (classe pn-aba-oculta no <html>)
+    const marcarAba = () => document.documentElement.classList.toggle('pn-aba-oculta', document.hidden);
+    document.addEventListener('visibilitychange', () => { marcarAba(); if (!document.hidden && S.visivel) limparNaoVistos(); });
+    marcarAba();
     ML.store.ouvir(aoEvento);
     S.cfg = ML.store.config();
     S.pedidos = ML.store.pedidos();
