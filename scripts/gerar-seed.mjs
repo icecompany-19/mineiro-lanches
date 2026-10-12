@@ -164,7 +164,7 @@ on conflict (id) do update set
 function main() {
   const arquivo = caminhoCore(process.argv[2]);
   const { CONFIG } = carregarCore(arquivo);
-  const sql = montarSeed(CONFIG, path.relative(RAIZ, arquivo));
+  const sql = montarSeed(CONFIG, path.relative(RAIZ, arquivo).split(path.sep).join('/')); // mesmo cabeçalho no Windows e no Linux
   const destino = path.join(RAIZ, 'supabase/seed.sql');
   fs.mkdirSync(path.dirname(destino), { recursive: true });
   fs.writeFileSync(destino, sql);

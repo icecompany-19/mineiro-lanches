@@ -1,4 +1,4 @@
--- Cardápio do Mineiro Lanche: gerado por scripts/gerar-seed.mjs a partir do CONFIG de src\core.js. Não edite à mão.
+-- Cardápio do Mineiro Lanche: gerado por scripts/gerar-seed.mjs a partir do CONFIG de src/core.js. Não edite à mão.
 -- 56 produtos e 5 adicionais. Idempotente: atualiza nome, preço, categoria, ordem,
 -- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia. O CONFIG manda no ativo: quem está nele fica
 -- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo.
