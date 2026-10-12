@@ -1,2 +1,20 @@
-/* S1b · placa do cardápio (dono: site-II) */
-.s-placa{padding-block:50px 30px;background:var(--carvao)}
+/* S1b · placa do cardápio (dono: site-II). Card --chapa com fio --fio; linhas em Oswald 600, 20 px, caixa alta, com
+   pontilhado e o preço em --fio; hover e foco em --chapa-2. As linhas sobem escalonadas em 60 ms (a base põe .rv/.fora). */
+.s-placa{padding-block:56px;background:var(--carvao)}
+.placa-grid{display:grid;gap:26px;align-items:center}
+.placa-grid>*{min-width:0}
+.placa-card{width:100%;max-width:560px;padding:8px;background:var(--chapa);border:2px solid var(--fio);border-radius:var(--r-lg);box-shadow:var(--sombra-card)}
+.placa-lista{list-style:none;margin:0;padding:0}
+.placa-lista li{transition-delay:calc(var(--i,0) * 60ms)}
+.placa-lista li+li{border-top:1px solid var(--borda)}
+.placa-lista a{display:flex;align-items:baseline;gap:10px;min-height:56px;padding:14px;border-radius:var(--r-sm);color:var(--osso);font:600 20px/1.1 var(--f-placa);letter-spacing:.06em;text-transform:uppercase;text-decoration:none}
+.placa-lista a:hover,.placa-lista a:focus-visible{background:var(--chapa-2)}
+.placa-pontos{flex:1 1 16px;min-width:16px;border-bottom:2px dotted var(--borda-campo)}
+.placa-preco{flex:none;font:400 13px/1.2 var(--f-corpo);letter-spacing:0;text-transform:none;color:var(--osso-2);white-space:nowrap}
+.placa-valor{font:700 20px/1.1 var(--f-placa);letter-spacing:.04em;color:var(--fio)}
+.placa-preco.esgotado{color:var(--vermelho-luz)}
+@media (min-width:880px){
+  .s-placa{padding-block:96px}
+  .placa-grid{grid-template-columns:1fr minmax(0,520px);gap:56px}
+  .placa-card{max-width:none}
+}

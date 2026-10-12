@@ -6,9 +6,12 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { carregarCore } from '../scripts/gerar-seed.mjs';
 
 const RAIZ = resolve(import.meta.dirname, '..');
 const html = readFileSync(resolve(RAIZ, 'index.html'), 'utf8');
+const { CONFIG } = carregarCore(resolve(RAIZ, 'src/core.js'));
+const brl = (v) => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
 
 // estado_cardapio do servidor com uma mudança aplicada por cima
 async function mudarEstado(page, mudar) {
@@ -112,5 +115,57 @@ test.describe('S1 · fitas de letreiro', () => {
     await page.waitForTimeout(400);
     expect(await page.evaluate(() => document.getAnimations().filter((a) => a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest('.fitas')).length)).toBe(0);
     expect(await page.evaluate(() => document.querySelector('[data-fita="a"]').getAnimations().length)).toBe(0);
+  });
+});
+
+test.describe('S1b · placa do cardápio', () => {
+  // o menor preço (> 0) de cada categoria no CONFIG
+  const menores = () => CONFIG.categorias.map((c) => [c.id, c.label, brl(Math.min(...c.itens.filter((p) => p.preco > 0).map((p) => p.preco)))]);
+  const linhas = (page) => page.locator('.s-placa .placa-lista a');
+
+  test('uma linha por categoria com "a partir de" o menor preço, no HTML e na página; nada de "a confirmar" nem R$ 0,00', async ({ page }) => {
+    // a lista pronta do index.html (antes de qualquer JS)
+    const doHtml = [...html.matchAll(/<a href="#cardapio\/([a-z]+)"><span class="placa-nome">(.*?)<\/span>.*?placa-valor">(.*?)<\/span>/g)].map((m) => [m[1], m[2], m[3]]);
+    expect(doHtml).toEqual(menores());
+    await page.goto('/#site');
+    await expect(linhas(page)).toHaveCount(CONFIG.categorias.length);
+    for (const [id, label, preco] of menores()) {
+      const a = page.locator(`.s-placa a[href="#cardapio/${id}"]`);
+      await expect(a).toHaveText(new RegExp('^' + label + '\\s*a partir de ' + preco.replace('$', '\\$') + '$', 'i'));
+    }
+    const texto = await page.locator('.s-placa .placa-lista').textContent();
+    expect(texto).not.toMatch(/confirmar|R\$ 0,00/i);
+  });
+
+  test('clicar em "Combos" abre o cardápio rolado até a categoria', async ({ page }) => {
+    await page.goto('/#site');
+    const combos = page.locator('.s-placa a[href="#cardapio/combos"]');
+    await combos.scrollIntoViewIfNeeded();
+    await combos.click();
+    await expect(page.locator('[data-screen="menu"]')).toBeVisible();
+    await expect(page.locator('#view-site')).toBeHidden();
+    await expect
+      .poll(() => page.evaluate(() => Math.round(document.querySelector('#cat-combos').getBoundingClientRect().top)), { timeout: 8000 })
+      .toBeLessThan(260);
+    expect(await page.evaluate(() => document.querySelector('#cat-combos').getBoundingClientRect().top)).toBeGreaterThan(-20);
+    // o link direto também abre na categoria
+    await page.goto('about:blank');
+    await page.goto('/#cardapio/bebidas');
+    await expect(page.locator('[data-screen="menu"]')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => Math.round(document.querySelector('#cat-bebidas').getBoundingClientRect().top)), { timeout: 8000 }).toBeLessThan(260);
+  });
+
+  test('preço do banco e itens esgotados refazem o "a partir de"; categoria toda esgotada diz Esgotado hoje', async ({ page }) => {
+    await mudarEstado(page, (j) => {
+      j.precos['x-burguer'] = 18.5;
+      j.esgotados = ['dog-medio', 'porcao-batata', 'porcao-onion'];
+    });
+    await page.goto('/#site');
+    const preco = (id) => page.locator(`.s-placa a[href="#cardapio/${id}"] .placa-preco`);
+    await expect(preco('tradicionais')).toHaveText('a partir de R$ 18,50');
+    await expect(preco('hotdog')).toHaveText('a partir de R$ 15,90'); // o Médio (13,90) esgotou: vale o Max
+    await expect(preco('porcoes')).toHaveText('Esgotado hoje');
+    await expect(preco('artesanais')).toHaveText('a partir de R$ 24,90');
+    expect(await page.locator('.s-placa .placa-lista').textContent()).not.toMatch(/confirmar|R\$ 0,00/i);
   });
 });
