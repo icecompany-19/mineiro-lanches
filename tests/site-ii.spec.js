@@ -2,7 +2,7 @@
 // Cada cena confere o que o aceite do plano pede (docs/PLANO-FASE-2.md, B11 a B13). O estado do banco (estado_cardapio)
 // vem do Supabase local, alterado no caminho (page.route), sem mexer no banco.
 // Uso: npx playwright test tests/site-ii.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
-/* global document, window, requestAnimationFrame, getComputedStyle */
+/* global document, window, requestAnimationFrame, getComputedStyle, localStorage */
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -264,5 +264,138 @@ test.describe('S3 · prensado ou não?', () => {
     expect((await chapa(1)) - (await chapa(0))).toBeGreaterThan(40);
     expect(await page.evaluate(() => document.getAnimations().filter((x) => x.effect && x.effect.target && x.effect.target.closest && x.effect.target.closest('.s-prensa')).length)).toBe(0);
     for (const i of [0, 1]) await expect(cenas.nth(i).locator('img')).toHaveCSS('transform', 'none');
+  });
+});
+
+test.describe('S4 · hot dog: 1, 2 ou 3 salsichas', () => {
+  const dogs = Object.fromEntries(CONFIG.categorias.find((c) => c.id === 'hotdog').itens.map((p) => [p.id, p]));
+  const preco = (page) => page.locator('#dog-preco');
+  const sacola = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('mineiro:v2:sacola') || '[]'));
+  async function abrir(page) {
+    await page.goto('/#site');
+    await expect(page.locator('#view-site')).toBeVisible();
+    await page.locator('#dog-bandeja').scrollIntoViewIfNeeded();
+    await expect(page.locator('#dog-foto img')).toHaveJSProperty('complete', true);
+    // as salsichas caem uma vez na primeira vez que a bandeja aparece: espera acabar
+    await page.waitForFunction(() => ![...document.querySelectorAll('.dog-salsicha')].some((s) => s.getAnimations().length));
+  }
+
+  test('foto nova do Dog Max, radiogroup 1/2/3 com Médio, Max e Super e o preço do CONFIG (também no HTML)', async ({ page }) => {
+    // o HTML pronto (antes de qualquer JS) já traz o Dog Max e o preço dele
+    expect(html).toContain(`id="dog-preco" data-preco-de="dog-max">${brl(dogs['dog-max'].preco)}<`);
+    await abrir(page);
+    await expect(page.locator('#dog-foto img')).toHaveAttribute('src', /\/assets\/fotos\/dog-max-540\.webp$/);
+    const radios = page.locator('.s-dog [role="radiogroup"] [role="radio"]');
+    await expect(radios).toHaveCount(3);
+    await expect(radios.nth(0)).toHaveText('1Médio');
+    await expect(radios.nth(1)).toHaveText('2Max');
+    await expect(radios.nth(2)).toHaveText('3Super');
+    await expect(radios.nth(1)).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByRole('radiogroup', { name: 'Quantidade de salsichas' })).toBeVisible();
+    await expect(preco(page)).toHaveText(brl(dogs['dog-max'].preco));
+    await expect(page.locator('#dog-nome')).toHaveText('Hot Dog Max');
+    await expect(page.locator('#dog-base')).toHaveText(dogs['dog-max'].base);
+    // os chips da base e a dica vêm do CONFIG
+    await expect(page.locator('#dog-ings li')).toHaveText(dogs['dog-max'].ing);
+    await expect(page.locator('#dog-dica')).toHaveText(dogs['dog-max'].nota);
+    await expect(page.locator('.dog-salsicha.on')).toHaveCount(2);
+  });
+
+  test('trocar 1 para 3 rola os dígitos do preço (240 ms) e cai a terceira salsicha', async ({ page }) => {
+    await abrir(page);
+    await expect(page.locator('.dog-salsicha.on')).toHaveCount(2);
+    const logo = await page.evaluate(() => {
+      document.querySelector('[data-dog="dog-super"]').click();
+      return {
+        colunas: document.querySelectorAll('#dog-preco .odo').length,
+        anima: document.querySelector('#dog-preco .odo-f').getAnimations().length,
+        duracao: document.querySelector('#dog-preco .odo-f').getAnimations()[0].effect.getTiming().duration,
+        queda: [...document.querySelectorAll('.dog-salsicha.on')].map((s) => s.getAnimations().length)
+      };
+    });
+    expect(logo.colunas).toBeGreaterThan(0);
+    expect(logo.anima).toBe(1);
+    expect(logo.duracao).toBe(240);
+    expect(logo.queda).toEqual([0, 0, 1]); // só a que entrou cai
+    await expect(preco(page)).toHaveText(brl(dogs['dog-super'].preco));
+    await expect(preco(page)).toHaveAttribute('data-preco-de', 'dog-super');
+    await expect(page.locator('#dog-preco .odo')).toHaveCount(0); // no repouso o texto é plano
+    await expect(page.locator('.dog-salsicha.on')).toHaveCount(3);
+    await expect(page.locator('#dog-nome')).toHaveText('Hot Dog Super');
+    await expect(page.locator('#dog-base')).toContainText('3 salsichas');
+    await expect(page.locator('[data-dog="dog-super"]')).toHaveAttribute('aria-checked', 'true');
+    // de 3 para 1: o preço desce e sobra uma salsicha
+    await page.locator('[data-dog="dog-medio"]').click();
+    await expect(preco(page)).toHaveText(brl(dogs['dog-medio'].preco));
+    await expect(page.locator('.dog-salsicha.on')).toHaveCount(1);
+  });
+
+  test('pelo teclado: as setas trocam o tamanho (radiogroup)', async ({ page }) => {
+    await abrir(page);
+    await page.locator('[data-dog="dog-max"]').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('[data-dog="dog-super"]')).toBeFocused();
+    await expect(preco(page)).toHaveText(brl(dogs['dog-super'].preco));
+    await page.keyboard.press('Home');
+    await expect(page.locator('[data-dog="dog-medio"]')).toBeFocused();
+    await expect(preco(page)).toHaveText(brl(dogs['dog-medio'].preco));
+  });
+
+  test('"Adicionar" põe o Hot Dog Super completo na sacola com o toast; "Personalizar" abre a ficha do tamanho', async ({ page }) => {
+    await abrir(page);
+    await page.locator('[data-dog="dog-super"]').click();
+    await page.locator('.s-dog').getByRole('button', { name: 'Adicionar', exact: true }).click();
+    await expect(page.locator('#toast-txt')).toHaveText('Hot Dog Super na sacola');
+    const linhas = await sacola(page);
+    expect(linhas).toHaveLength(1);
+    expect(linhas[0].sel).toMatchObject({ produtoId: 'dog-super', completo: true, prensado: false, qtd: 1, combo: { ativo: false } });
+    await page.locator('[data-dog="dog-medio"]').click();
+    await page.locator('#dog-pers').click();
+    await expect(page.locator('#ficha')).toBeVisible();
+    await expect(page.locator('#ficha-nome')).toHaveText('Hot Dog Médio');
+  });
+
+  test('o preço do banco vale no tamanho escolhido', async ({ page }) => {
+    await mudarEstado(page, (j) => {
+      j.precos['dog-max'] = 24.5;
+      j.precos['dog-super'] = 29.9;
+    });
+    await abrir(page);
+    await expect(preco(page)).toHaveText('R$ 24,50');
+    await page.locator('[data-dog="dog-super"]').click();
+    await expect(preco(page)).toHaveText('R$ 29,90');
+    await expect(preco(page)).toHaveAttribute('data-preco-de', 'dog-super');
+  });
+
+  test('card do CBO Turbo: Preço a confirmar, sem botão de sacola e consulta no WhatsApp', async ({ page }) => {
+    await abrir(page);
+    const card = page.locator('#dog-cbo');
+    await card.scrollIntoViewIfNeeded();
+    await expect(card).toContainText('Hot Dog CBO Turbo');
+    await expect(card).toContainText('3 salsichas Perdigão');
+    await expect(card.locator('#dog-cbo-preco')).toHaveText('Preço a confirmar');
+    await expect(card.locator('img')).toHaveAttribute('src', /\/dog-cbo-turbo-540\.webp$/);
+    await expect(card.getByRole('button')).toHaveCount(0); // o "Pedir" só aparece com preço
+    const wa = card.getByRole('link', { name: 'Consultar no WhatsApp' });
+    await expect(wa).toHaveAttribute('target', '_blank');
+    const href = await wa.getAttribute('href');
+    expect(href).toMatch(/^https:\/\/wa\.me\/5511985720150\?text=/);
+    expect(decodeURIComponent(href.split('?text=')[1])).toBe('Olá, Mineiro Lanche! Vi o Hot Dog CBO Turbo no cardápio e quero saber o preço. Como faço para pedir?');
+    expect(await sacola(page)).toEqual([]);
+  });
+
+  test('com movimento reduzido a troca é direta: sem colunas, salsichas paradas', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await abrir(page);
+    const r = await page.evaluate(() => {
+      document.querySelector('[data-dog="dog-super"]').click();
+      return {
+        texto: document.querySelector('#dog-preco').textContent,
+        colunas: document.querySelectorAll('#dog-preco .odo').length,
+        animacoes: document.getAnimations().filter((a) => a.effect && a.effect.getTiming().duration > 1 && a.effect.target.closest('.s-dog')).length,
+        salsichas: document.querySelectorAll('.dog-salsicha.on').length
+      };
+    });
+    expect(r).toEqual({ texto: brl(dogs['dog-super'].preco), colunas: 0, animacoes: 0, salsichas: 3 });
   });
 });

@@ -54,7 +54,7 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   // o banco manda outro preço: todos os textos fixos da página trocam
   await mudarEstado(page, (j) => {
     j.loja.comboPreco = 16.5;
-    j.precos['dog-doritos'] = 24.5;
+    j.precos['dog-max'] = 24.5;
     j.precos['gran-bacon-onion'] = 35.5;
   });
   await page.goto('/');
@@ -68,7 +68,7 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   expect(await page.locator('body').innerText()).not.toContain('+R$ 14,90');
   await page.goto('/#site');
   await expect(page.locator('#monte-switch')).toContainText('Vira combo +R$ 16,50');
-  await expect(page.locator('.dog-preco')).toHaveText('R$ 24,50');
+  await expect(page.locator('[data-preco-de="dog-max"]')).toHaveText('R$ 24,50');
   expect(await page.locator('.palco__dica').textContent()).toBe('Gran Bacon Onion · R$ 35,50');
 });
 

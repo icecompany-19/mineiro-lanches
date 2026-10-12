@@ -412,17 +412,44 @@
 
     <!-- [S4] inicio: section.s-dog (dono: site-II) -->
     <section class="s-dog" id="s-dog" aria-labelledby="dog-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
-      <div class="s-wrap dog-grid">
-        <div class="dog-foto rv"><div class="doritos" id="doritos" aria-hidden="true"></div></div>
-        <div class="dog-info">
-          <p class="s-olho" style="color:var(--amarelo-claro)">Destaque do perfil</p>
-          <h2 class="s-h2" id="dog-tit">Hot dog com Doritos</h2>
-          <p class="s-p" style="color:#FFE3E7">O dog da casa com Doritos e cheddar. Tem também o Hot Dog Pizza.</p>
-          <p class="dog-preco" data-preco-de="dog-doritos">R$ 23,90</p>
-          <div class="s-ctas" style="margin-top:4px"><button type="button" class="btn btn-amarelo" data-abrir="dog-doritos"><svg class="ic" aria-hidden="true"><use href="#i-hotdog"/></svg>Pedir o dog com Doritos</button></div>
-          <button type="button" class="mini-card" data-abrir="dog-pizza" id="mini-pizza"></button>
+      <div class="s-wrap">
+        <p class="s-olho rv">Hot dog</p>
+        <h2 class="s-h2 rv" id="dog-tit">1, 2 ou 3 salsichas</h2>
+        <div class="dog-grid">
+          <div class="dog-cena rv">
+            <div class="dog-foto" id="dog-foto" data-dog-foto="dog-max"><span class="foto nova" style="--cor:#b6803a;--foco:50% 58%"><img src="/assets/fotos/dog-max-540.webp" srcset="/assets/fotos/dog-max-540.webp 540w, /assets/fotos/dog-max-1080.webp 1080w" sizes="(min-width:880px) 440px, 90vw" width="540" height="720" loading="lazy" decoding="async" alt="Foto do Hot Dog Max"></span></div>
+            <div class="dog-bandeja" id="dog-bandeja" aria-hidden="true"><span class="dog-salsicha on"></span><span class="dog-salsicha on"></span><span class="dog-salsicha"></span></div>
+          </div>
+          <div class="dog-info">
+            <div class="seg tres dog-seg rv" role="radiogroup" aria-label="Quantidade de salsichas" style="--i:1">
+              <button type="button" class="opt" role="radio" aria-checked="false" tabindex="-1" data-dog="dog-medio"><span class="dog-n">1</span><small>Médio</small></button>
+              <button type="button" class="opt" role="radio" aria-checked="true" data-dog="dog-max"><span class="dog-n">2</span><small>Max</small></button>
+              <button type="button" class="opt" role="radio" aria-checked="false" tabindex="-1" data-dog="dog-super"><span class="dog-n">3</span><small>Super</small></button>
+            </div>
+            <div class="dog-valor rv">
+              <p class="dog-nome" id="dog-nome">Hot Dog Max</p>
+              <p class="dog-preco" id="dog-preco" data-preco-de="dog-max">R$ 15,90</p>
+              <p class="dog-base" id="dog-base">Pão médio e 2 salsichas Perdigão</p>
+            </div>
+            <ul class="dog-ings rv" id="dog-ings"><li>Maionese</li><li>Ketchup</li><li>Alface</li><li>Purê de batata</li><li>Azeite e sal</li><li>Batata palha</li><li>Cheddar</li><li>Catupiry</li></ul>
+            <p class="dog-dica rv" id="dog-dica">Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.</p>
+            <div class="dog-acoes rv">
+              <button type="button" class="btn btn-vermelho" id="dog-add"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span id="dog-add-rot">Adicionar</span></button>
+              <button type="button" class="btn btn-borda" id="dog-pers">Personalizar</button>
+            </div>
+            <p class="sr" id="dog-fala" aria-live="polite"></p>
+          </div>
         </div>
+        <article class="dog-cbo rv" id="dog-cbo" aria-labelledby="cbo-nome">
+          <div class="dog-cbo__foto"><span class="foto nova" style="--cor:#b47944;--foco:50% 63%"><img src="/assets/fotos/dog-cbo-turbo-540.webp" srcset="/assets/fotos/dog-cbo-turbo-540.webp 540w, /assets/fotos/dog-cbo-turbo-1080.webp 1080w" sizes="(min-width:880px) 240px, 40vw" width="540" height="720" loading="lazy" decoding="async" alt="Foto do Hot Dog CBO Turbo"></span></div>
+          <div class="dog-cbo__txt">
+            <h3 class="dog-cbo__nome" id="cbo-nome">Hot Dog CBO Turbo</h3>
+            <p class="dog-cbo__base">Pão de dog e 3 salsichas Perdigão, Maionese, Ketchup, Alface, Azeite e sal, Purê de batata, Batata palha, Cheddar, Catupiry, Mussarela gratinada, Bacon</p>
+            <p class="dog-cbo__preco" id="dog-cbo-preco">Preço a confirmar</p>
+            <a class="btn btn-borda" id="dog-cbo-wa" href="https://wa.me/5511985720150" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>Consultar no WhatsApp</a>
+            <button type="button" class="btn btn-vermelho" data-abrir="dog-cbo-turbo" id="dog-cbo-pedir" hidden>Pedir</button>
+          </div>
+        </article>
       </div>
     </section>
     <!-- [S4] fim -->

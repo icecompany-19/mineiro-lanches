@@ -148,8 +148,9 @@ test('srcset usa a largura real dos arquivos (sem repetir largura)', async ({ pa
     const larguras = c.srcset.split(',').map((p) => p.trim().split(/\s+/)[1]);
     expect(new Set(larguras).size, `largura repetida em ${c.srcset}`).toBe(larguras.length);
   }
-  const doritos = conjuntos.find((c) => c.srcset.includes('/dog-doritos-'));
-  expect(doritos?.srcset).toBe('/assets/fotos/dog-doritos-540.webp 481w');
+  // o Dog Max (foto 'nova' da S4) tem 1200 px: o srcset traz o -540 e o -1080 pela largura real
+  const dogMax = await page.evaluate(() => document.querySelector('.s-dog img[srcset*="/dog-max-"]')?.getAttribute('srcset'));
+  expect(dogMax).toBe('/assets/fotos/dog-max-540.webp 540w, /assets/fotos/dog-max-1080.webp 1080w');
   const burger = await page.evaluate(() => document.querySelector('img[srcset*="/gran-burger-540"]')?.getAttribute('srcset'));
   expect(burger).toBe('/assets/fotos/gran-burger-540.webp 540w, /assets/fotos/gran-burger-1080.webp 720w');
 });
