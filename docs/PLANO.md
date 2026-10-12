@@ -94,7 +94,7 @@ mineiro-lanches/
   1. Valida tamanhos (nome com 2 a 80 caracteres; telefone com 10 ou 11 dígitos), `modo` e loja aberta, conforme `aceita_fechada`.
   2. Valida cada item: produto ativo e não esgotado hoje; `qtd` de 1 a 20; combo só se `tipo = 'lanche'`; adicionais existentes, com `qtd` de 0 a 5.
   3. Recalcula os preços: `(preco + Σ adicional × qtd + combo?14,90:0) × qtd`. Nome e preço vêm do banco; o `resumo` do cliente é cortado em 200 caracteres.
-  4. Limita a 3 pedidos por telefone a cada 10 minutos.
+  4. Limita a 5 pedidos por telefone a cada 10 minutos (o 6º é recusado com `muitos_pedidos`).
   5. Insere o pedido e faz upsert em `clientes`.
 - **`acompanhar_pedido(token uuid)`**, liberada para `anon`: devolve só `numero`, `status`, `historico`, `modo`, `itens` (nome, qtd e resumo) e `total`.
 - **`mudar_status(id, status, motivo)`**, só para `equipe`: valida a transição (`novo→preparo→pronto|rota→entregue`, cancelar a qualquer momento) e acrescenta ao `historico`.

@@ -14,6 +14,7 @@ Bio, cardápio, site e painel de pedidos do food truck Mineiro Lanche (Centro de
 **Documentação:**
 
 - [`docs/PLANO.md`](docs/PLANO.md): plano em microtarefas e roteiro da reunião (Bloco B).
+- [`docs/PLANO-FASE-2.md`](docs/PLANO-FASE-2.md): plano atual (12/10): fechar as telas do cliente, site imersivo, painel, bateria no Windows e go-live, com modelo de IA por tarefa.
 - [`docs/CONTRATO-API.md`](docs/CONTRATO-API.md): contrato banco ⇄ front.
 - [`docs/CONTRATO-PAINEL.md`](docs/CONTRATO-PAINEL.md): contrato do painel.
 - [`docs/PREVIA-DECISOES.md`](docs/PREVIA-DECISOES.md): respostas do cliente e decisões da prévia.
