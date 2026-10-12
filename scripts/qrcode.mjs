@@ -6,18 +6,19 @@
 /* global document */ // só dentro de pagina.evaluate (roda no navegador)
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { tmpdir } from 'node:os';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { inflateSync } from 'node:zlib';
 import QRCode from 'qrcode';
 import ECCode from 'qrcode/lib/core/error-correction-code.js';
 import Utils from 'qrcode/lib/core/utils.js';
+import sharp from 'sharp';
+import { LADO_SELO, lerDados, renderizarLogo } from './logo.mjs';
 
 export const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const PASTA_QR = join(RAIZ, 'public', 'qr');
-export const PORTA_CARTAZ = 4180;
+// Servidor temporário do cartaz (só para imprimir os PDFs): porta livre, ou QR_PORTA. Nunca a 4180 dos testes.
+export const PORTA_CARTAZ = Number(process.env.QR_PORTA) || 0;
 
 const CARVAO = '#1A1414';
 const CREME = '#FFF6E0';
@@ -25,74 +26,9 @@ const MARGEM = 4; // zona de silêncio, em módulos
 const FOLGA = 0.6; // respiro creme entre a borda do selo e o módulo mais próximo, em módulos
 const LIMITE_AREA = 0.2; // plano: o selo ocupa no máximo 20% da área do símbolo
 const LADO_PNG = 2048;
+// Selo do centro: a logo oficial (scripts/logo.mjs). No SVG entra o logo-selo.svg (vetor + bitmaps originais, a arte
+// inteira dentro do círculo inscrito); no PNG, a logo renderizada direto do PDF no tamanho final.
 const SELO = join(RAIZ, 'public', 'assets', 'logo-selo.svg');
-
-// O selo usa a Lilita One por @font-face embutido, que o librsvg (sharp) ignora.
-// Para o PNG sair com a fonte certa, a fonte do @fontsource vira TTF numa pasta temporária do fontconfig.
-const FONTCONFIG_ORIGINAL = process.env.FONTCONFIG_FILE;
-function prepararFonteDoSelo() {
-  if (process.env.FONTCONFIG_FILE) return;
-  const woff = join(RAIZ, 'node_modules', '@fontsource', 'lilita-one', 'files', 'lilita-one-latin-400-normal.woff');
-  if (!existsSync(woff)) return;
-  try {
-    const pasta = join(tmpdir(), 'mineiro-qr-fontes');
-    mkdirSync(pasta, { recursive: true });
-    const ttf = woffParaTtf(readFileSync(woff));
-    const arqTtf = join(pasta, 'lilita-one.ttf');
-    if (!existsSync(arqTtf) || statSync(arqTtf).size !== ttf.length) writeFileSync(arqTtf, ttf);
-    const sistema = existsSync('/etc/fonts/fonts.conf') ? '<include ignore_missing="yes">/etc/fonts/fonts.conf</include>' : '';
-    writeFileSync(
-      join(pasta, 'fonts.conf'),
-      `<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "fonts.dtd">\n<fontconfig>${sistema}<dir>${pasta}</dir><cachedir>${join(pasta, 'cache')}</cachedir></fontconfig>\n`
-    );
-    process.env.FONTCONFIG_FILE = join(pasta, 'fonts.conf');
-  } catch (e) {
-    console.warn('Aviso: sem a Lilita One no PNG (o selo sai com a fonte reserva):', e.message);
-  }
-}
-
-// WOFF 1 → TTF: cada tabela vem comprimida com zlib; basta descomprimir e remontar o diretório.
-function woffParaTtf(b) {
-  const num = b.readUInt16BE(12);
-  const tabelas = [];
-  for (let i = 0; i < num; i++) {
-    const o = 44 + i * 20;
-    tabelas.push({
-      tag: b.readUInt32BE(o),
-      off: b.readUInt32BE(o + 4),
-      comp: b.readUInt32BE(o + 8),
-      tam: b.readUInt32BE(o + 12),
-      soma: b.readUInt32BE(o + 16)
-    });
-  }
-  let exp = 0;
-  while (1 << (exp + 1) <= num) exp++;
-  const faixa = (1 << exp) * 16;
-  const cab = Buffer.alloc(12 + 16 * num);
-  cab.writeUInt32BE(b.readUInt32BE(4), 0);
-  cab.writeUInt16BE(num, 4);
-  cab.writeUInt16BE(faixa, 6);
-  cab.writeUInt16BE(exp, 8);
-  cab.writeUInt16BE(num * 16 - faixa, 10);
-  const partes = [];
-  let pos = cab.length;
-  tabelas.forEach((t, i) => {
-    let dados = b.subarray(t.off, t.off + t.comp);
-    if (t.comp < t.tam) dados = inflateSync(dados);
-    const o = 12 + i * 16;
-    cab.writeUInt32BE(t.tag, o);
-    cab.writeUInt32BE(t.soma, o + 4);
-    cab.writeUInt32BE(pos, o + 8);
-    cab.writeUInt32BE(t.tam, o + 12);
-    const enchimento = (4 - (dados.length % 4)) % 4;
-    partes.push(dados, Buffer.alloc(enchimento));
-    pos += dados.length + enchimento;
-  });
-  return Buffer.concat([cab, ...partes]);
-}
-
-prepararFonteDoSelo();
-const { default: sharp } = await import('sharp');
 
 // ---------- base e destino ----------
 
@@ -267,7 +203,13 @@ function caminhoModulos(q) {
 function seloInterno() {
   const svg = readFileSync(SELO, 'utf8');
   const abre = svg.indexOf('>', svg.indexOf('<svg')) + 1;
-  return { viewBox: svg.match(/viewBox="([^"]+)"/)[1], miolo: svg.slice(abre, svg.lastIndexOf('</svg>')) };
+  const miolo = svg
+    .slice(abre, svg.lastIndexOf('</svg>'))
+    .replace(/<title>[^<]*<\/title>/, '')
+    .trim();
+  const viewBox = svg.match(/viewBox="([^"]+)"/)[1];
+  if (viewBox !== `0 0 ${LADO_SELO} ${LADO_SELO}`) throw new Error(`logo-selo.svg fora do padrão (viewBox ${viewBox}): rode node scripts/logo.mjs`);
+  return { viewBox, miolo };
 }
 
 // SVG do QR. comSelo=false devolve só o fundo e os módulos (base do PNG, que recebe o selo via sharp).
@@ -281,7 +223,7 @@ export function svgDoQr(q, { comSelo = true, larguraPx = 1024 } = {}) {
     selo = `<svg x="${xSelo}" y="${xSelo}" width="${ladoSelo}" height="${ladoSelo}" viewBox="${viewBox}">${miolo}</svg>`;
   }
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${q.lado} ${q.lado}" width="${larguraPx}" height="${larguraPx}" role="img" aria-label="QR code: ${escapar(q.texto)}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${q.lado} ${q.lado}" width="${larguraPx}" height="${larguraPx}" role="img" aria-label="QR code: ${escapar(q.texto)}">` +
     `<title>Cardápio Mineiro Lanche: ${escapar(q.texto)}</title>` +
     `<rect width="${q.lado}" height="${q.lado}" fill="${CREME}"/>` +
     `<path fill="${CARVAO}" d="${caminhoModulos(q)}"/>` +
@@ -291,22 +233,26 @@ export function svgDoQr(q, { comSelo = true, larguraPx = 1024 } = {}) {
   );
 }
 
-// PNG: rasteriza os módulos e compõe o selo por cima com o sharp.
+// PNG: rasteriza os módulos e compõe por cima a logo renderizada direto do PDF, com o círculo que contém a arte
+// inteira do tamanho do selo (o mesmo enquadramento do logo-selo.svg).
 export async function pngDoQr(q, lado = LADO_PNG) {
   const base = await sharp(Buffer.from(svgDoQr(q, { comSelo: false, larguraPx: lado })))
     .flatten({ background: CREME })
     .png()
     .toBuffer();
-  const escala = lado / q.lado;
-  const diametro = Math.round(q.raioSelo * 2 * escala);
-  const larguraSelo = Number(seloInterno().viewBox.split(/[\s,]+/)[2]);
-  const selo = await sharp(readFileSync(SELO), { density: (72 * diametro) / larguraSelo })
-    .resize(diametro, diametro)
-    .png()
-    .toBuffer();
-  const pos = Math.round(q.centro * escala - diametro / 2);
+  const pxPorModulo = lado / q.lado;
+  const dados = await lerDados();
+  const escala = (q.raioSelo * pxPorModulo) / dados.raio; // px por pt
+  const logo = renderizarLogo(dados, escala);
+  const centro = q.centro * pxPorModulo;
   return sharp(base)
-    .composite([{ input: selo, left: pos, top: pos }])
+    .composite([
+      {
+        input: logo.png,
+        left: Math.round(centro - (dados.centro.x * escala - logo.x)),
+        top: Math.round(centro - (dados.centro.y * escala - logo.y))
+      }
+    ])
     .removeAlpha()
     .png({ compressionLevel: 9 })
     .toBuffer();
@@ -376,11 +322,7 @@ export function servirPasta(pasta = join(RAIZ, 'public'), porta = PORTA_CARTAZ, 
 
 export async function abrirNavegador() {
   const { chromium } = await import('@playwright/test');
-  // O navegador não herda o fontconfig do selo: o cartaz tem de achar as fontes pelo @font-face.
-  const env = { ...process.env };
-  if (FONTCONFIG_ORIGINAL === undefined) delete env.FONTCONFIG_FILE;
-  else env.FONTCONFIG_FILE = FONTCONFIG_ORIGINAL;
-  return chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined, env });
+  return chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });
 }
 
 // Abre o cartaz e espera fontes e imagens (o QR e o logo) antes de imprimir ou capturar.
@@ -445,8 +387,9 @@ ARQUIVOS
 ESPECIFICAÇÃO
   Correção de erro H · versão ${q.versao} (${q.n} x ${q.n} módulos) · máscara ${q.mascara} · margem de ${MARGEM} módulos
   Módulos carvão ${CARVAO} sobre creme ${CREME}
-  Selo (logo-selo.svg) no centro: ${pct(q.fracaoSelo)} da área do símbolo (limite do plano: 20%),
-  sobre um círculo creme sem módulos (${pct(q.fracaoLimpa)} da área).
+  Selo no centro: a logo oficial (design/logo/LOGOTIPO_MINEIRO.pdf, sem alteração), inteira dentro
+  de um círculo de ${pct(q.fracaoSelo)} da área do símbolo (limite do plano: 20%), sobre um círculo
+  creme sem módulos (${pct(q.fracaoLimpa)} da área).
   O tamanho do selo é calculado: ele estraga no máximo ${Math.max(...q.dano)} das ${q.corrige} palavras que cada
   bloco de correção consegue recuperar. O resto fica de reserva para luz fraca, reflexo
   e foco ruim. Selo maior que isso deixa o QR frágil.
@@ -459,8 +402,9 @@ IMPRESSÃO
     1 m, use 10 cm ou mais.
   - Não troque as cores nem tire a margem creme em volta: o leitor precisa do contraste
     e da zona de silêncio.
-  - O selo usa a fonte Lilita One embutida no SVG. Se o programa da gráfica trocar a fonte
-    do selo, mande o PDF do cartaz ou o PNG.
+  - O selo do SVG é a logo oficial: textos em vetor e o disco, o anel e as estrelas em
+    bitmap (JPEG/PNG embutidos). Nada depende de fonte instalada. Se o programa da gráfica
+    não abrir imagem embutida em SVG, mande o PDF do cartaz ou o PNG.
 
 COMO REGENERAR
   npm run qrcode -- --base https://dominio-final

@@ -1,0 +1,23 @@
+{
+ "_leia": "Mapa manual do scripts/fotos.mjs (veja fotos-originais/README.md). Chaves que começam com _ são comentários.",
+ "arquivos": {
+  "_como": "nome do arquivo (com ou sem extensão) → id do produto, ou { produto, papel, origem, foco }. null ignora o arquivo. Vale mais que o horário do WhatsApp.",
+  "_exemplo": { "WhatsApp Image 2026-10-10 at 18.03.41.jpeg": "gran-chicken" },
+  "_nomes": "Arquivos que já vêm com o nome do lanche: nome igual ao id do produto liga sozinho; os abaixo têm nome diferente do id (docs/CLIENTE-2026-10.md).",
+  "exagerado-x-egg-bacon": "exagerado-x-salada-egg-bacon",
+  "gran-onion-bacon": "combo-gran-bacon-onion",
+  "hotdog-cbo-turbo": "dog-cbo-turbo",
+  "x-salada-tradicional": "x-salada"
+ },
+ "compartilhadas": {
+  "_como": "produto → produto dono da foto. Os três tamanhos de hot dog usam a foto do Dog Max (docs/CLIENTE-2026-10.md).",
+  "dog-medio": "dog-max",
+  "dog-super": "dog-max"
+ },
+ "foco_padrao": "50% 50%",
+ "foco": {
+  "_como": "slug → ponto focal do recorte quadrado -q (object-position: \"x% y%\", 0 a 100) ou \"auto\" (região de interesse do sharp)."
+ },
+ "_paredes": "Trechos de parede de tijolinho sem lanche nem objeto: { arquivo, x, y, w, h, nome? } em pixels da foto já girada. Gera public/assets/texturas/<nome ou tijolo-N>.webp, sem retoque. Ex.: { \"arquivo\": \"WhatsApp Image 2026-10-09 at 21.03.10.jpeg\", \"x\": 320, \"y\": 0, \"w\": 880, \"h\": 660 }",
+ "paredes": []
+}

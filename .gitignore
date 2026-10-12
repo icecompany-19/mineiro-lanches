@@ -7,3 +7,12 @@ dist/
 supabase/.temp/
 test-results/
 playwright-report/
+# fotos originais do cliente (podem ter GPS no EXIF): no git só vão o README.md e o mapa.json
+fotos-originais/*.jpg
+fotos-originais/*.jpeg
+fotos-originais/*.png
+fotos-originais/*.heic
+fotos-originais/*.JPG
+fotos-originais/*.JPEG
+fotos-originais/*.PNG
+fotos-originais/*.HEIC

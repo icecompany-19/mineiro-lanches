@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="972" height="672" viewBox="0 0 972 672">
+<!-- Tijolinho desenhado em código (scripts/fotos.mjs, opção svg-tijolo): aparelho comum, rejunte salpicado, borda
+     irregular, superfície áspera, tom variando por tijolo, manchas largas e grão fino. Escuro, para ficar atrás de uma
+     camada escura. Plano B da textura real (public/assets/texturas/tijolo-*.webp, das fotos do cliente). -->
+<defs>
+<filter id="pintas-escuras" x="0" y="0" width="972" height="672" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  7 0 0 0 -4.2"/></filter>
+<filter id="pintas-claras" x="0" y="0" width="972" height="672" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" seed="17" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0.7  0 0 0 0 0.68  0 0 0 0 0.65  -7 0 0 0 2.8"/></filter>
+<filter id="manchas" x="0" y="0" width="972" height="672" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.005 0.009" numOctaves="3" seed="4" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2 0 0 0 -0.9"/></filter>
+<filter id="grao" x="0" y="0" width="972" height="672" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves="2" seed="9" stitchTiles="stitch"/><feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  3.2 0 0 0 -1.75"/></filter>
+<filter id="borda" x="-40" y="-10" width="1052" height="692" filterUnits="userSpaceOnUse">
+<feTurbulence type="fractalNoise" baseFrequency="0.045 0.09" numOctaves="2" seed="13" result="r"/>
+<feDisplacementMap in="SourceGraphic" in2="r" scale="4.5" xChannelSelector="R" yChannelSelector="G"/>
+</filter>
+<filter id="relevo" x="-40" y="-10" width="1052" height="692" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feGaussianBlur in="SourceAlpha" stdDeviation="1.4"/>
+<feOffset dx="0.6" dy="2.2" result="sombra"/>
+<feFlood flood-color="#000" flood-opacity="0.6"/>
+<feComposite in2="sombra" operator="in"/>
+<feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+</filter>
+<filter id="aspero" x="0" y="0" width="972" height="672" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feTurbulence type="fractalNoise" baseFrequency="0.16 0.32" numOctaves="4" seed="5" stitchTiles="stitch" result="ruido"/>
+<feDiffuseLighting in="ruido" surfaceScale="1.5" diffuseConstant="1" lighting-color="#fff" result="luz"><feDistantLight azimuth="250" elevation="58"/></feDiffuseLighting>
+<feComposite in="SourceGraphic" in2="luz" operator="arithmetic" k1="1.17" k2="0" k3="0" k4="0"/>
+</filter>
+</defs>
+<g filter="url(#aspero)">
+<rect width="972" height="672" fill="#46423f"/>
+<rect width="972" height="672" filter="url(#pintas-escuras)" opacity="0.75"/>
+<rect width="972" height="672" filter="url(#pintas-claras)" opacity="0.4"/>
+<g filter="url(#relevo)"><g filter="url(#borda)">
+<rect x="4.7" y="6.1" width="151.3" height="43.9" rx="2.7" fill="#3b2216"/>
+<rect x="167" y="5.2" width="150.5" height="44.4" rx="2.1" fill="#3a2316"/>
+<rect x="329.8" y="6.8" width="150.2" height="44" rx="3.1" fill="#372217"/>
+<rect x="493.4" y="5.5" width="147.8" height="44.6" rx="1.8" fill="#372116"/>
+<rect x="655" y="6.8" width="151.3" height="42.5" rx="2.3" fill="#392115"/>
+<rect x="816" y="6.6" width="149.9" height="42.9" rx="1.7" fill="#2b1a10"/>
+<rect x="86.9" y="61.6" width="151.9" height="43.5" rx="1.6" fill="#351e13"/>
+<rect x="250" y="61.2" width="150" height="43.2" rx="1.7" fill="#382216"/>
+<rect x="412.1" y="62.3" width="149.2" height="45.3" rx="2.3" fill="#3b2117"/>
+<rect x="574.1" y="61.5" width="149.8" height="42" rx="2.3" fill="#3b2217"/>
+<rect x="735.2" y="62.3" width="149.8" height="42.4" rx="3.3" fill="#351f14"/>
+<rect x="897.5" y="62.4" width="149.7" height="42.3" rx="3.5" fill="#4a2b1c"/>
+<rect x="-74.5" y="62.4" width="149.7" height="42.3" rx="3.5" fill="#4a2b1c"/>
+<rect x="7.3" y="117.7" width="151.9" height="43.2" rx="3" fill="#361d14"/>
+<rect x="167.2" y="118.5" width="149.7" height="44.2" rx="2.1" fill="#351d13"/>
+<rect x="330.8" y="116.8" width="151.2" height="45.3" rx="2.4" fill="#3a2218"/>
+<rect x="492" y="117.2" width="147.5" height="43.7" rx="3.1" fill="#3c2316"/>
+<rect x="655.3" y="119.2" width="150.7" height="44.9" rx="1.6" fill="#352114"/>
+<rect x="814.7" y="117.9" width="149.9" height="42.2" rx="2" fill="#3b2217"/>
+<rect x="88.4" y="173.5" width="150.1" height="43.3" rx="2.4" fill="#3c2318"/>
+<rect x="247.9" y="173.2" width="150.4" height="42" rx="3.1" fill="#3d2217"/>
+<rect x="411.9" y="173" width="151.2" height="44.6" rx="1.7" fill="#3f2217"/>
+<rect x="573.4" y="174.5" width="147.9" height="45.1" rx="2.7" fill="#361e15"/>
+<rect x="733.9" y="174.3" width="148.5" height="42.7" rx="1.5" fill="#3e2216"/>
+<rect x="897.1" y="174.6" width="151.4" height="42.2" rx="2" fill="#402718"/>
+<rect x="-74.9" y="174.6" width="151.4" height="42.2" rx="2" fill="#402718"/>
+<rect x="5.7" y="229.9" width="151.7" height="45.5" rx="2.4" fill="#472b1b"/>
+<rect x="168.2" y="229.4" width="151.7" height="43.9" rx="3.4" fill="#351e16"/>
+<rect x="328.9" y="229.7" width="149.5" height="43.3" rx="1.8" fill="#3d241a"/>
+<rect x="492.1" y="229.4" width="149.1" height="44" rx="2.5" fill="#3d2114"/>
+<rect x="654.4" y="228.9" width="148.1" height="42.8" rx="1.7" fill="#372015"/>
+<rect x="816.3" y="230.4" width="151" height="44.1" rx="2.3" fill="#361e15"/>
+<rect x="87.1" y="286.4" width="147.9" height="42.5" rx="1.7" fill="#412317"/>
+<rect x="249.2" y="286.7" width="149.2" height="44.5" rx="3.4" fill="#412216"/>
+<rect x="411.7" y="285.1" width="150.7" height="42.2" rx="2.4" fill="#371e14"/>
+<rect x="572" y="284.8" width="148.1" height="42.3" rx="3.4" fill="#3a2315"/>
+<rect x="735.3" y="287.1" width="150.7" height="44.6" rx="2.6" fill="#3b2218"/>
+<rect x="897.1" y="285.9" width="151.5" height="42.3" rx="2.8" fill="#3a2217"/>
+<rect x="-74.9" y="285.9" width="151.5" height="42.3" rx="2.8" fill="#3a2217"/>
+<rect x="7.2" y="341.8" width="148.9" height="42.3" rx="1.7" fill="#352015"/>
+<rect x="169.2" y="341.8" width="147.8" height="43.4" rx="3.3" fill="#382018"/>
+<rect x="330.9" y="342.5" width="149.2" height="43.9" rx="2.8" fill="#362217"/>
+<rect x="493.1" y="341.2" width="148.1" height="42.8" rx="1.8" fill="#48291e"/>
+<rect x="653.2" y="342.7" width="149.2" height="42" rx="2.4" fill="#3d261a"/>
+<rect x="817.1" y="343" width="149.8" height="42.1" rx="2" fill="#2a1711"/>
+<rect x="87.8" y="397.7" width="149.4" height="44.7" rx="3.2" fill="#341e16"/>
+<rect x="249.6" y="397.9" width="150.5" height="43.4" rx="2.3" fill="#382015"/>
+<rect x="409.9" y="398.3" width="147.8" height="44.2" rx="1.9" fill="#412418"/>
+<rect x="572.1" y="396.8" width="149.4" height="43.2" rx="3.3" fill="#3f2115"/>
+<rect x="734.7" y="398.1" width="148.2" height="45.2" rx="2.2" fill="#3c2315"/>
+<rect x="897.3" y="397.9" width="147.8" height="43" rx="2" fill="#341d15"/>
+<rect x="-74.7" y="397.9" width="147.8" height="43" rx="2" fill="#341d15"/>
+<rect x="4.9" y="454.5" width="148.4" height="43.5" rx="2.1" fill="#3e2315"/>
+<rect x="167.2" y="453.4" width="150.5" height="42.7" rx="1.5" fill="#3b2218"/>
+<rect x="330.7" y="454.5" width="149" height="45.4" rx="2.1" fill="#351d14"/>
+<rect x="491.2" y="455" width="150.9" height="42.6" rx="2.1" fill="#392316"/>
+<rect x="654" y="452.9" width="147.5" height="42.5" rx="2.9" fill="#3e2619"/>
+<rect x="816.5" y="453.1" width="151.7" height="45.4" rx="2.2" fill="#3b2318"/>
+<rect x="86.7" y="511.1" width="147.8" height="43" rx="2.7" fill="#3c2314"/>
+<rect x="248.9" y="511.1" width="149.3" height="45.1" rx="1.8" fill="#361f14"/>
+<rect x="410.5" y="510.8" width="148.7" height="42.2" rx="3.3" fill="#3b2417"/>
+<rect x="571.8" y="509.6" width="149.3" height="44.5" rx="2" fill="#392116"/>
+<rect x="736" y="510.5" width="148.5" height="42" rx="1.8" fill="#48261b"/>
+<rect x="898.3" y="510.9" width="147.7" height="42" rx="3.1" fill="#331d15"/>
+<rect x="-73.7" y="510.9" width="147.7" height="42" rx="3.1" fill="#331d15"/>
+<rect x="4.9" y="565.5" width="147.7" height="43.4" rx="2.3" fill="#3b2418"/>
+<rect x="166.9" y="566" width="151.5" height="44.5" rx="2.8" fill="#352014"/>
+<rect x="329.8" y="565.3" width="149.2" height="44.2" rx="2.6" fill="#2e1a10"/>
+<rect x="492.8" y="567.1" width="149.7" height="43.1" rx="2.3" fill="#47271c"/>
+<rect x="652.6" y="566.2" width="148.6" height="42.4" rx="1.9" fill="#352014"/>
+<rect x="815.7" y="565.5" width="148" height="43.2" rx="1.8" fill="#3a2214"/>
+<rect x="87.7" y="622" width="149.8" height="44.1" rx="2.5" fill="#352016"/>
+<rect x="249.7" y="622" width="150.9" height="44.1" rx="2.9" fill="#352015"/>
+<rect x="411.2" y="622.4" width="149.2" height="44.3" rx="3.1" fill="#2d1910"/>
+<rect x="572" y="622.1" width="150.1" height="42.6" rx="1.8" fill="#2f1c12"/>
+<rect x="735.5" y="622.8" width="149" height="44.7" rx="1.7" fill="#372017"/>
+<rect x="896.5" y="621.9" width="150.6" height="42.6" rx="1.7" fill="#361e12"/>
+<rect x="-75.5" y="621.9" width="150.6" height="42.6" rx="1.7" fill="#361e12"/>
+</g></g>
+</g>
+<rect width="972" height="672" filter="url(#manchas)" opacity="0.35"/>
+<rect width="972" height="672" filter="url(#grao)" opacity="0.4"/>
+</svg>

@@ -1,0 +1,89 @@
+{
+  "fonte": "design/logo/LOGOTIPO_MINEIRO.pdf",
+  "sha256": "79d022cb6812191dfbbf911ebd17ad0e0b3f3168f90ae912d50a1c3425aa7911",
+  "unidade": "pt (1/72 pol.), origem no canto superior esquerdo da página",
+  "caixa": {
+    "x": 91.56,
+    "y": 253.62,
+    "w": 412.14,
+    "h": 334.68
+  },
+  "centro": {
+    "x": 297.63,
+    "y": 420.96
+  },
+  "raio": 209.6012,
+  "bitmaps": [
+    {
+      "largura": 507,
+      "altura": 507,
+      "cor": "icc",
+      "formato": "jpeg",
+      "ppi": 109,
+      "quantidade": 1
+    },
+    {
+      "largura": 505,
+      "altura": 505,
+      "cor": "icc",
+      "formato": "jpeg",
+      "ppi": 121,
+      "quantidade": 1
+    },
+    {
+      "largura": 75,
+      "altura": 73,
+      "cor": "index",
+      "formato": "image",
+      "ppi": 199,
+      "quantidade": 5
+    }
+  ],
+  "larguraUtilPx": 624,
+  "rasters": {
+    "128": {
+      "escala": 0.30951579,
+      "x": 28,
+      "y": 78,
+      "largura": 128,
+      "altura": 105
+    },
+    "256": {
+      "escala": 0.61903158,
+      "x": 56,
+      "y": 156,
+      "largura": 256,
+      "altura": 209
+    },
+    "512": {
+      "escala": 1.24048952,
+      "x": 113,
+      "y": 314,
+      "largura": 512,
+      "altura": 416
+    },
+    "1024": {
+      "escala": 2.4834054,
+      "x": 227,
+      "y": 629,
+      "largura": 1024,
+      "altura": 832
+    }
+  },
+  "selos": {
+    "128": {
+      "escala": 0.30534176,
+      "x": 27,
+      "y": 65,
+      "largura": 128,
+      "altura": 128
+    },
+    "256": {
+      "escala": 0.61068353,
+      "x": 54,
+      "y": 129,
+      "largura": 256,
+      "altura": 256
+    }
+  }
+}

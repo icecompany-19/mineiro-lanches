@@ -16,8 +16,9 @@ ARQUIVOS
 ESPECIFICAÇÃO
   Correção de erro H · versão 5 (37 x 37 módulos) · máscara 2 · margem de 4 módulos
   Módulos carvão #1A1414 sobre creme #FFF6E0
-  Selo (logo-selo.svg) no centro: 5,7% da área do símbolo (limite do plano: 20%),
-  sobre um círculo creme sem módulos (8,8% da área).
+  Selo no centro: a logo oficial (design/logo/LOGOTIPO_MINEIRO.pdf, sem alteração), inteira dentro
+  de um círculo de 5,7% da área do símbolo (limite do plano: 20%), sobre um círculo
+  creme sem módulos (8,8% da área).
   O tamanho do selo é calculado: ele estraga no máximo 5 das 11 palavras que cada
   bloco de correção consegue recuperar. O resto fica de reserva para luz fraca, reflexo
   e foco ruim. Selo maior que isso deixa o QR frágil.
@@ -30,8 +31,9 @@ IMPRESSÃO
     1 m, use 10 cm ou mais.
   - Não troque as cores nem tire a margem creme em volta: o leitor precisa do contraste
     e da zona de silêncio.
-  - O selo usa a fonte Lilita One embutida no SVG. Se o programa da gráfica trocar a fonte
-    do selo, mande o PDF do cartaz ou o PNG.
+  - O selo do SVG é a logo oficial: textos em vetor e o disco, o anel e as estrelas em
+    bitmap (JPEG/PNG embutidos). Nada depende de fonte instalada. Se o programa da gráfica
+    não abrir imagem embutida em SVG, mande o PDF do cartaz ou o PNG.
 
 COMO REGENERAR
   npm run qrcode -- --base https://dominio-final
