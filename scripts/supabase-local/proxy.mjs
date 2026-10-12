@@ -1,5 +1,5 @@
 // Proxy local que imita o gateway do Supabase para o supabase-js:
-//   /rest/v1/*  -> PostgREST (porta 3000), convertendo a chave publishable em papel anon
+//   /rest/v1/*  -> PostgREST (porta 54323), convertendo a chave publishable em papel anon
 //   /auth/v1/*  -> login fake: qualquer senha para usuários de auth.users; devolve JWT assinado
 //   /realtime/* -> 404 (o app precisa cair no plano B de consulta periódica)
 // Uso: node proxy.mjs  (porta 54321)
@@ -66,7 +66,7 @@ http.createServer((req, res) => {
       delete headers.host; delete headers.apikey;
       const tok = (headers.authorization || '').replace(/^Bearer /, '');
       if (!validar(tok)) delete headers.authorization; // chave publishable (não JWT) => papel anon
-      const alvo = http.request({ host: 'localhost', port: 3000, path: url.pathname.slice('/rest/v1'.length) + url.search, method: req.method, headers }, (r) => {
+      const alvo = http.request({ host: 'localhost', port: Number(process.env.PORTA_POSTGREST || 54323), path: url.pathname.slice('/rest/v1'.length) + url.search, method: req.method, headers }, (r) => {
         res.writeHead(r.statusCode, { ...r.headers, ...cors }); r.pipe(res);
       });
       alvo.on('error', (e) => json(res, 502, { msg: 'PostgREST fora do ar: ' + e.message }));

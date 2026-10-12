@@ -112,7 +112,8 @@ test.beforeAll(async () => {
     pastaTmp = mkdtempSync(join(tmpdir(), 'ml-vercel-'));
     pasta = join(pastaTmp, 'dist');
     try {
-      execFileSync('npm', ['run', 'build', '--', '--outDir', pasta, '--emptyOutDir'], { cwd: RAIZ, stdio: 'pipe', encoding: 'utf8' });
+      // node + vite.js direto: no Windows 'npm' é npm.cmd e o execFileSync não o acha sem shell
+      execFileSync(process.execPath, [join(RAIZ, 'node_modules/vite/bin/vite.js'), 'build', '--outDir', pasta, '--emptyOutDir'], { cwd: RAIZ, stdio: 'pipe', encoding: 'utf8' });
     } catch (e) {
       const saida = `${e.stdout || ''}\n${e.stderr || ''}`.trim().slice(-2000);
       throw new Error('"npm run build" falhou (problema do front, não do vercel.json):\n' + saida);

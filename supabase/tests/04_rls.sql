@@ -25,7 +25,7 @@ select pg_temp.igual(pg_temp.erro($$update adicionais set preco = 0$$), '42501',
 select pg_temp.igual(pg_temp.erro($$delete from adicionais$$), '42501', 'anon não apaga adicional');
 select pg_temp.igual(pg_temp.erro($$update loja set modo = 'aberta'$$), '42501', 'anon não abre a loja');
 select pg_temp.igual(pg_temp.erro($$delete from loja$$), '42501', 'anon não apaga a loja');
-select pg_temp.igual(pg_temp.erro($$insert into pedidos (cliente_nome, cliente_telefone, modo, itens, total) values ('Ana', '11900000071', 'retirada', '[]', 0)$$), '42501', 'anon não insere pedido direto');
+select pg_temp.igual(pg_temp.erro($$insert into pedidos (cliente_nome, cliente_telefone, modo, itens, total) values ('Ana', '11900000071', 'local', '[]', 0)$$), '42501', 'anon não insere pedido direto');
 select pg_temp.igual(pg_temp.erro(format($$update pedidos set total = 0 where id = %L$$, :'pid')), '42501', 'anon não muda pedido');
 select pg_temp.igual(pg_temp.erro($$delete from pedidos$$), '42501', 'anon não apaga pedido');
 select pg_temp.igual(pg_temp.erro($$insert into clientes (telefone, nome) values ('11900000071', 'Ana')$$), '42501', 'anon não insere cliente');

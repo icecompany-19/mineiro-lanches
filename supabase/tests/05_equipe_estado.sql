@@ -6,7 +6,7 @@ begin;
 select pg_temp.sou(null);
 set local role anon;
 select criar_pedido(pg_temp.pedido('[{"produtoId":"gran-burger","qtd":1}]', pg_temp.cliente('11900000080', 'Carla Sigilo') || '{"modo":"entrega","endereco":"Rua Secreta, 99"}')) as ent \gset
-select criar_pedido(pg_temp.pedido('[{"produtoId":"x-salada","qtd":2,"prensado":true}]', pg_temp.cliente('11900000081') || '{"modo":"retirada"}')) as ret \gset
+select criar_pedido(pg_temp.pedido('[{"produtoId":"x-salada","qtd":2,"prensado":true}]', pg_temp.cliente('11900000081') || '{"modo":"local"}')) as ret \gset
 select criar_pedido(pg_temp.pedido('[{"produtoId":"agua"}]', pg_temp.cliente('11900000082') || '{"modo":"local","mesa":"4"}')) as loc \gset
 select criar_pedido(pg_temp.pedido('[{"produtoId":"agua"}]', pg_temp.cliente('11900000083'))) as canc \gset
 reset role;
@@ -34,11 +34,11 @@ select pg_temp.ok(:'r'::jsonb ->> 'status' = 'entregue'
                   and (select array_agg(h ->> 'status' order by n) from jsonb_array_elements(:'r'::jsonb -> 'historico') with ordinality x(h, n)) = array['novo', 'preparo', 'rota', 'entregue'],
   'rota → entregue; histórico novo, preparo, rota, entregue');
 select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'cancelado', 'tarde demais')$$, :'ent_id')), 'transicao_invalida', 'entregue → cancelado: transicao_invalida (status final)');
--- retirada: preparo → pronto → entregue
-select pg_temp.igual(mudar_status(:'ret_id', 'preparo') ->> 'status', 'preparo', 'retirada: novo → preparo');
-select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'rota')$$, :'ret_id')), 'transicao_invalida', 'retirada: preparo → rota: transicao_invalida');
-select pg_temp.igual(mudar_status(:'ret_id', 'pronto') ->> 'status', 'pronto', 'retirada: preparo → pronto');
-select pg_temp.igual(mudar_status(:'ret_id', 'entregue') ->> 'status', 'entregue', 'retirada: pronto → entregue');
+-- local (comer no truck): preparo → pronto → entregue
+select pg_temp.igual(mudar_status(:'ret_id', 'preparo') ->> 'status', 'preparo', 'local: novo → preparo');
+select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'rota')$$, :'ret_id')), 'transicao_invalida', 'local: preparo → rota: transicao_invalida');
+select pg_temp.igual(mudar_status(:'ret_id', 'pronto') ->> 'status', 'pronto', 'local: preparo → pronto');
+select pg_temp.igual(mudar_status(:'ret_id', 'entregue') ->> 'status', 'entregue', 'local: pronto → entregue');
 -- local: preparo → pronto; cancelar com motivo
 select pg_temp.igual(mudar_status(:'loc_id', 'preparo') ->> 'status', 'preparo', 'local: novo → preparo');
 select pg_temp.igual(mudar_status(:'loc_id', 'pronto') ->> 'status', 'pronto', 'local: preparo → pronto');

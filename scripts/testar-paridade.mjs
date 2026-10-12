@@ -195,7 +195,7 @@ async function main() {
   const criados = [];
   try {
     for (const ped of pedidos) {
-      const modo = escolher(['entrega', 'retirada', 'local']);
+      const modo = escolher(['entrega', 'local', 'local']);
       const payload = {
         cliente: { nome: 'Paridade ' + ped.idx, telefone: ped.telefone },
         modo,
@@ -267,7 +267,7 @@ async function main() {
         corpo: {
           p: {
             cliente: { nome: 'Paridade sem preço', telefone: telefones[0] },
-            modo: 'retirada',
+            modo: 'local',
             obs: 'paridade',
             itens: [{ produtoId: p.id, qtd: 1, precoUnit: 30, subtotal: 30 }]
           }

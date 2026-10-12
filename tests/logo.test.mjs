@@ -16,7 +16,16 @@ import sharp from 'sharp';
 
 // O Playwright (testDir: tests) também importa *.test.mjs: lá estes testes do node:test não rodam.
 const NODE_TEST = Boolean(process.env.NODE_TEST_CONTEXT) || resolve(process.argv[1] || '') === fileURLToPath(import.meta.url);
-const test = NODE_TEST ? teste : () => {};
+// Sem o poppler (pdftocairo/pdfimages) no PATH, os testes ficam como pulados em vez de quebrar a bateria.
+const temPoppler = (() => {
+  try {
+    execFileSync('pdfimages', ['-v'], { stdio: 'ignore' });
+    return true;
+  } catch (e) {
+    return e.code !== 'ENOENT';
+  }
+})();
+const test = !NODE_TEST ? () => {} : temPoppler ? teste : (nome) => teste(nome, { skip: 'poppler (pdftocairo/pdfimages) não instalado' }, () => {});
 const L = NODE_TEST ? await import('../scripts/logo.mjs') : {};
 const I = NODE_TEST ? await import('../scripts/icones.mjs') : {};
 

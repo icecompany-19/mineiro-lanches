@@ -36,7 +36,8 @@ Bio, cardápio, site e painel de pedidos do food truck Mineiro Lanche (Centro de
 
 ```bash
 npm ci
-npm run db:local                 # Supabase local de teste: Postgres :54322, API :54321 (sem Realtime)
+source scripts/supabase-local/ambiente-windows.sh   # só no Windows (Git Bash): PATH do Postgres 17 e do PostgREST
+npm run db:local                 # Supabase local de teste: Postgres :54322, PostgREST :54323, API :54321 (sem Realtime)
 psql postgresql://postgres@localhost:54322/postgres -f supabase/setup.sql
 npm run dev                      # http://localhost:5173 (usa o Supabase local; login do painel: equipe@teste.local)
 

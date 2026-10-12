@@ -131,7 +131,7 @@ select pg_temp.ok(jsonb_array_length(pg_temp.novo((select jsonb_agg(pg_temp.item
 select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido('{"produtoId":"agua"}', pg_temp.cliente(pg_temp.tel_novo()))), 'dados_invalidos', 'itens que não é lista: dados_invalidos');
 select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido('["agua"]', pg_temp.cliente(pg_temp.tel_novo()))), 'dados_invalidos', 'item que não é objeto: dados_invalidos');
 select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido('[{"qtd":1}]', pg_temp.cliente(pg_temp.tel_novo()))), 'dados_invalidos', 'item sem produtoId: dados_invalidos');
-select pg_temp.igual(pg_temp.erro_pedido(pg_temp.cliente(pg_temp.tel_novo()) || '{"modo":"retirada"}'), 'dados_invalidos', 'sem o campo itens: dados_invalidos');
+select pg_temp.igual(pg_temp.erro_pedido(pg_temp.cliente(pg_temp.tel_novo()) || '{"modo":"local"}'), 'dados_invalidos', 'sem o campo itens: dados_invalidos');
 select pg_temp.igual(pg_temp.erro_item('pizza-calabresa'), 'produto_invalido', 'produto inexistente: produto_invalido');
 reset role;
 update produtos set ativo = false where id = 'gran-egg';
@@ -198,6 +198,7 @@ select pg_temp.igual(pg_temp.novo('[{"produtoId":"agua"}]', '{"origem":"qrcode",
 
 -- ================= clientes (upsert) =================
 select criar_pedido(pg_temp.pedido('[{"produtoId":"agua"}]', pg_temp.cliente('11900000020', 'Bia') || '{"modo":"entrega","endereco":"Rua A, 1","referencia":"Casa azul"}')) is not null as x \gset
+-- 'retirada' continua aceito pelo RPC (D7); só não aparece no front. Este é o caso que mantém a cobertura.
 select criar_pedido(pg_temp.pedido('[{"produtoId":"agua"}]', pg_temp.cliente('11900000020', 'Beatriz') || '{"modo":"retirada"}')) is not null as x \gset
 reset role;
 select pg_temp.ok((select nome = 'Beatriz' and endereco = 'Rua A, 1' and referencia = 'Casa azul' and pedidos = 2 from clientes where telefone = '11900000020'),

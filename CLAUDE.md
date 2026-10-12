@@ -28,12 +28,12 @@ node --test tests/*.test.mjs
 npx playwright test
 ```
 
-Última execução verde (`0ffe541`, antes do WIP `690fed3`): 65 Playwright, 331 SQL, 292 paridade, 48 node:test (os 48 incluem `tests/logo.test.mjs`, que precisa do poppler). Enquanto o N2 não existir nesta máquina, vale o N1 do plano: lint, build, `tests/fotos.test.mjs`, `tests/qrcode.test.mjs` e os specs sem banco com a API de mentira (`scripts/supabase-local/mock-api.mjs`, tarefa E11).
+Última execução verde (`0ffe541`, antes do WIP `690fed3`): 65 Playwright, 331 SQL, 292 paridade, 48 node:test (os 48 incluem `tests/logo.test.mjs`, que precisa do poppler). O N2 já roda nesta máquina (ver Ambiente).
 
 ## Ambiente desta máquina (Windows 11, conferido em 12/10/2026)
 
 - Node 24, npm 11, git 2.54, `gh` logado como `icecompany-19`. Shell: Git Bash (`bash`) ou PowerShell 5.1. `npm ci` feito; `npm run lint` e `npm run build` passam.
 - Fim de linha: `.gitattributes` força LF (commit de 12/10). Se a árvore voltar a CRLF, `git rm --cached -r -q . && git reset --hard -q`.
-- **Não há** `psql`, PostgreSQL, PostgREST, poppler, Docker nem WSL (sem distro). Os scripts `scripts/supabase-local/*` foram escritos para o sandbox Linux (`/home/user/.pg`, `su postgres`, `/usr/lib/postgresql/16/bin`) e ganham um ramo Windows nas tarefas E7a/E7b do plano.
+- **Banco local no Windows (12/10):** PostgreSQL 17.6 e PostgREST 16.4 em `%LOCALAPPDATA%/mineiro-ferramentas`; `source scripts/supabase-local/ambiente-windows.sh` antes da bateria. `iniciar.sh` tem ramo Windows (banco em `%LOCALAPPDATA%/mineiro-pg`; processos em segundo plano via `scripts/supabase-local/soltar.mjs`, senão o pipe de quem chamou nunca fecha). Verde no Windows em 12/10: 331 SQL e 292 paridade. **Não há** poppler, Docker nem WSL: `tests/logo.test.mjs` e um caso de `tests/qrcode.test.mjs` ficam pulados (48 node:test = 26 ok + 22 pulados).
 - Chromium do Playwright: **instalado em 12/10** (chromium, headless shell, ffmpeg e winldd em `%LOCALAPPDATA%/ms-playwright`). O instalador oficial trava na extração nesta máquina; o contorno (zip pelo espelho `https://playwright.download.prss.microsoft.com/dbazure/download/playwright` + `tar.exe -xf` + `INSTALLATION_COMPLETE`) está na tarefa E3 do plano. `tests/qrcode.test.mjs` passa 13/15 até existir o poppler (E9) ou o `--sem-pdf` deixar de exigir `pdftocairo` (E16).
 - O projeto Supabase de `.env.production` (`xroiumwewrijwlcwghyq`) está **pausado** (o DNS nem resolve) e **não pertence** à conta Supabase conectada ao MCP desta sessão (essa conta tem dois projetos de outros negócios). `setup.sql` nunca foi aplicado no projeto real. `mineiro-lanches.vercel.app` nunca recebeu deploy.

@@ -73,7 +73,7 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | `mesa` | `text` null |
 | `cliente_nome` | |
 | `cliente_telefone` | |
-| `modo` | `entrega` · `retirada` · `local` |
+| `modo` | `entrega` · `local` (o RPC ainda aceita `retirada`, que não aparece no front nem no `CONFIG.modos`; o painel continua sabendo exibir pedidos antigos com esse modo) |
 | `endereco` | |
 | `referencia` | |
 | `pagamento` | |
@@ -197,7 +197,7 @@ O RLS garante que só a equipe lê. O Realtime em `pedidos` entrega a linha crua
 ## Ambiente local de teste
 
 ```bash
-bash scripts/supabase-local/iniciar.sh   # Postgres 16 :54322 + PostgREST :3000 + proxy :54321
+bash scripts/supabase-local/iniciar.sh   # Postgres 16/17 :54322 + PostgREST :54323 + proxy :54321 (Linux ou Git Bash no Windows)
 ```
 
 - Para aplicar o SQL: `psql postgresql://postgres@localhost:54322/postgres -f supabase/setup.sql`; em seguida, `notify pgrst, 'reload schema'`.

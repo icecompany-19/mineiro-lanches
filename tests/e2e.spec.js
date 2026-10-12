@@ -5,11 +5,20 @@
 /* global window, localStorage, location */
 import { test, expect, devices } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const RAIZ = resolve(import.meta.dirname, '..');
-const PG = 'postgresql://postgres@localhost:54322/postgres';
-const API = 'http://localhost:54321';
+const ENV_DEV = Object.fromEntries(
+  readFileSync(resolve(RAIZ, '.env.development'), 'utf8')
+    .split('\n')
+    .filter((l) => /^\w+=/.test(l))
+    .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim()])
+);
+const PG = process.env.PG_URL || 'postgresql://postgres@localhost:54322/postgres';
+const API = process.env.API_URL || ENV_DEV.VITE_SUPABASE_URL || 'http://localhost:54321';
+const CHAVE = ENV_DEV.VITE_SUPABASE_ANON_KEY || 'sb_publishable_local';
+const BASH = process.env.BASH || 'bash';
 const EQUIPE = 'equipe@teste.local';
 const FORA = 'fora@teste.local';
 const CELULAR = { ...devices['Pixel 7'] };
@@ -32,9 +41,9 @@ function vigiar(page, nome, erros) {
 async function criarPedidoApi(nome, telefone) {
   const r = await fetch(API + '/rest/v1/rpc/criar_pedido', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', apikey: 'sb_publishable_local' },
+    headers: { 'content-type': 'application/json', apikey: CHAVE },
     body: JSON.stringify({
-      p: { cliente: { nome, telefone }, modo: 'retirada', origem: 'cardapio', itens: [{ produtoId: 'x-burguer', qtd: 1 }] }
+      p: { cliente: { nome, telefone }, modo: 'local', origem: 'cardapio', itens: [{ produtoId: 'x-burguer', qtd: 1 }] }
     })
   });
   if (!r.ok) throw new Error('criar_pedido: ' + r.status + ' ' + (await r.text()));
@@ -125,7 +134,7 @@ test.describe.configure({ mode: 'serial' });
 
 test.beforeAll(async () => {
   test.setTimeout(180_000);
-  execFileSync('bash', ['scripts/supabase-local/iniciar.sh', '--reset'], { cwd: RAIZ, stdio: 'pipe' });
+  execFileSync(BASH, ['scripts/supabase-local/iniciar.sh', '--reset'], { cwd: RAIZ, stdio: 'pipe' });
   execFileSync('psql', [PG, '-X', '-q', '-v', 'ON_ERROR_STOP=1', '-f', 'supabase/setup.sql'], { cwd: RAIZ, stdio: 'pipe' });
   psql(`insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000002', '${FORA}') on conflict do nothing;
         insert into equipe (user_id, nome) select id, 'Equipe teste' from auth.users where email = '${EQUIPE}' on conflict do nothing;

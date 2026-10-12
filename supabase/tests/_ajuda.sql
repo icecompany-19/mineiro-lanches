@@ -62,7 +62,7 @@ $$;
 -- telefones de teste: 119000xxxxx (apagados no começo de cada teste, dentro da transação)
 create function pg_temp.pedido(p_itens jsonb, p_extra jsonb default '{}') returns jsonb language sql as $$
   select jsonb_build_object('cliente', jsonb_build_object('nome', 'Cliente Teste', 'telefone', '11900000000'),
-                            'modo', 'retirada', 'endereco', '', 'referencia', '', 'pagamento', null, 'troco', '', 'obs', '',
+                            'modo', 'local', 'endereco', '', 'referencia', '', 'pagamento', null, 'troco', '', 'obs', '',
                             'origem', 'cardapio', 'mesa', null, 'itens', p_itens) || p_extra;
 $$;
 
