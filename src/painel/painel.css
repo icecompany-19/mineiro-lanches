@@ -38,16 +38,25 @@
 .pn-titulo { font-family: var(--f-letreiro); font-weight: 400; font-size: 1.9rem; line-height: 1; color: var(--creme); margin-right: auto; }
 .pn-titulo:focus-visible { outline-offset: 6px; }
 .pn-loja { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
-.pn-seg { display: inline-flex; border: 1.5px solid var(--borda-campo); border-radius: var(--r-md); overflow: hidden; background: var(--carvao-2); }
-.pn-seg-b { min-height: 48px; padding: 0 .9rem; border: 0; background: transparent; color: var(--cinza-quente); font: 600 .85rem var(--f-placa); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; transition: background var(--t-ui) var(--suave), color var(--t-ui) var(--suave); }
-.pn-seg-b:hover { color: var(--creme); }
-.pn-seg-b[aria-pressed="true"] { background: var(--fio); color: var(--grafite); }
-.pn-seg-b[data-loja="fechada"][aria-pressed="true"] { background: var(--vermelho); color: var(--papel); }
-.pn-seg-b[data-loja="aberta"][aria-pressed="true"] { background: var(--verde); color: var(--papel); }
-.pn-loja-txt { display: inline-flex; align-items: center; gap: .45rem; font-size: .9rem; color: var(--creme); }
-.pn-loja-txt::before { content: ''; width: .7rem; height: .7rem; border-radius: 50%; background: var(--cinza-quente); }
-.pn-loja-txt--on::before { background: var(--verde); box-shadow: 0 0 0 3px color-mix(in srgb, var(--verde) 35%, transparent); }
-.pn-loja-txt--off::before { background: var(--vermelho); box-shadow: 0 0 0 3px color-mix(in srgb, var(--vermelho) 35%, transparent); }
+/* modo da loja: segmentado (4.2) e status neon (4.4). O texto vem de ML.horario.situacao().txt; a classe --on/--off vem do JS */
+.pn-seg { position: relative; display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px; border: 1.5px solid var(--borda-campo); border-radius: var(--r-md); background: var(--chapa-2); }
+.pn-seg-b { position: relative; z-index: 1; min-height: 48px; padding: 0 .9rem; border: 0; border-radius: calc(var(--r-md) - 4px); background: transparent; color: var(--osso-2); font: 600 .85rem var(--f-placa); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; transition: background var(--t-ui) var(--suave), color var(--t-ui) var(--suave); }
+.pn-seg-b:hover { color: var(--osso); }
+.pn-seg-b[aria-pressed="true"] { background: var(--osso); color: var(--grafite); }
+/* com :has() a opção ativa desliza (transform); sem ele, o fundo vai direto na opção */
+@supports selector(:has(*)) {
+  .pn-seg::before { content: ''; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3); border-radius: calc(var(--r-md) - 4px); background: var(--osso); opacity: 0; transition: transform var(--t-ui) var(--suave), opacity var(--t-toque) var(--suave); }
+  .pn-seg:has([aria-pressed="true"])::before { opacity: 1; }
+  .pn-seg:has([data-loja="aberta"][aria-pressed="true"])::before { transform: translateX(100%); }
+  .pn-seg:has([data-loja="fechada"][aria-pressed="true"])::before { transform: translateX(200%); }
+  .pn-seg-b[aria-pressed="true"] { background: transparent; }
+}
+.pn-loja-txt { --neon: var(--osso-2); --brilho: none; position: relative; display: inline-flex; align-items: center; gap: .5rem; min-width: 16ch; min-height: 32px; padding: 0 .9rem; border: 1.5px solid var(--borda-campo); border-radius: var(--r-pill); background: var(--chapa-2); color: var(--neon); font: 600 .85rem/1 var(--f-placa); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
+.pn-loja-txt::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+/* o brilho vive só no ::after; o zumbido a cada 7 s mexe na opacidade dele e o texto fica sólido */
+.pn-loja-txt::after { content: ''; position: absolute; inset: -1.5px; border-radius: inherit; box-shadow: var(--brilho); pointer-events: none; animation: pn-zumbido 7s linear infinite; }
+.pn-loja-txt--on { --neon: var(--neon-aberto); --brilho: var(--brilho-neon); border-color: color-mix(in srgb, var(--neon-aberto) 60%, var(--borda-campo)); background: rgba(91, 227, 138, .12); text-shadow: 0 0 8px currentColor, 0 0 22px color-mix(in srgb, currentColor 45%, transparent); }
+.pn-loja-txt--off { --neon: var(--vermelho-luz); --brilho: 0 0 10px rgba(255, 106, 92, .5), inset 0 0 10px rgba(255, 106, 92, .3); border-color: color-mix(in srgb, var(--vermelho-luz) 60%, var(--borda-campo)); background: rgba(255, 106, 92, .1); text-shadow: 0 0 8px currentColor, 0 0 22px color-mix(in srgb, currentColor 45%, transparent); }
 .pn-relogio { font: 500 1.35rem var(--f-placa); font-variant-numeric: tabular-nums; letter-spacing: .05em; color: var(--amarelo); min-width: 5.6rem; text-align: center; }
 
 /* ---------- botões ---------- */
@@ -334,6 +343,7 @@
 @keyframes pn-flutua { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 @keyframes pn-toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 @keyframes pn-toast-out { to { opacity: 0; transform: translateX(30px); } }
+@keyframes pn-zumbido { 0%, 85%, 100% { opacity: 1; } 87% { opacity: .5; } 89% { opacity: 1; } 92% { opacity: .65; } 94% { opacity: 1; } }
 @keyframes pn-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pn-cresce { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes pn-cresce-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
@@ -344,6 +354,14 @@
   .painel [class*="pn-"], .painel [class*="pn-"]::before, .painel [class*="pn-"]::after,
   .pn-toast, .pn-modal, .pn-modal [class*="pn-"] { animation: none; transition: none; }
   .painel .pn-destaque { box-shadow: inset 5px 0 0 var(--nv), 0 0 0 3px var(--amarelo); }
+}
+
+/* contraste forçado: o status vira borda e texto; o brilho e o deslizar saem */
+@media (forced-colors: active) {
+  .pn-seg::before, .pn-loja-txt::after { display: none; }
+  .pn-loja-txt { border-color: CanvasText; background: Canvas; color: CanvasText; text-shadow: none; }
+  .pn-loja-txt::before { background: CanvasText; }
+  .pn-seg-b[aria-pressed="true"] { background: Highlight; color: HighlightText; forced-color-adjust: none; }
 }
 
 /* ---------- impressão: só a comanda ---------- */
