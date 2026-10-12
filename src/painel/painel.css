@@ -130,8 +130,9 @@
 .pn-card[data-nivel="atraso"] { --nv: var(--placa); }
 .pn-card[data-status="entregue"] { cursor: default; opacity: .94; }
 .pn-arrastando { opacity: .4; transform: rotate(1.5deg) scale(.97); }
-.pn-entra { animation: pn-entra 460ms var(--mola) both; }
-.pn-destaque { border-color: var(--amarelo); animation: pn-entra 460ms var(--mola) both, pn-pulso 900ms ease-in-out 3; }
+.pn-entra { animation: pn-entra 400ms var(--mola) both; }
+/* pedido novo: entra de -12 px com 1 quique (400 ms) e a borda --fio pisca 3 vezes em 1,5 s (2 piscadas por segundo, abaixo do limite de 3) */
+.pn-destaque { border-color: var(--fio); animation: pn-entra 400ms var(--mola) both, pn-pisca 500ms steps(1, end) 3; }
 .pn-treme { animation: pn-treme 380ms var(--suave); }
 .pn-card-topo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .35rem .5rem; }
 .pn-num { font: 700 32px/1 var(--f-placa); letter-spacing: 0; color: var(--pn-tinta); }
@@ -353,8 +354,8 @@
 .pn-c-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 18px; margin-top: 4px; }
 
 /* ---------- animações ---------- */
-@keyframes pn-entra { from { opacity: 0; transform: translateY(-14px) scale(.96); } to { opacity: 1; transform: none; } }
-@keyframes pn-pulso { 0%, 100% { box-shadow: inset 5px 0 0 var(--nv), 0 0 0 2px var(--amarelo); } 50% { box-shadow: inset 5px 0 0 var(--nv), 0 0 0 7px color-mix(in srgb, var(--amarelo) 40%, transparent), 0 0 0 2px var(--amarelo); } }
+@keyframes pn-entra { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+@keyframes pn-pisca { 0% { box-shadow: inset 5px 0 0 var(--nv), 0 0 0 3px var(--fio), var(--sombra-card); } 50%, 100% { box-shadow: inset 5px 0 0 var(--nv), 0 0 0 0 var(--fio), var(--sombra-card); } }
 @keyframes pn-treme { 0%, 100% { transform: none; } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
 @keyframes pn-bump { 0% { transform: scale(1); } 45% { transform: scale(1.35); } 100% { transform: scale(1); } }
 @keyframes pn-respira { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--vermelho) 45%, transparent); } }
@@ -371,7 +372,7 @@
 @media (prefers-reduced-motion: reduce) {
   .painel [class*="pn-"], .painel [class*="pn-"]::before, .painel [class*="pn-"]::after,
   .pn-toast, .pn-modal, .pn-modal [class*="pn-"] { animation: none; transition: none; }
-  .painel .pn-destaque { box-shadow: inset 5px 0 0 var(--nv), 0 0 0 3px var(--amarelo); }
+  .painel .pn-destaque { box-shadow: inset 5px 0 0 var(--nv), 0 0 0 3px var(--fio), var(--sombra-card); }
 }
 
 /* contraste forçado: o status vira borda e texto; o brilho e o deslizar saem */
