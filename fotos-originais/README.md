@@ -22,7 +22,7 @@ não leva EXIF nenhum (nem GPS) e a foto não é retocada: só girada pela orien
 2. **Simule** e leia o relatório (nada é gravado):
 
    ```bash
-   node scripts/fotos.mjs --simular
+   npm run fotos -- --simular      # lê design/fotos-cliente com o mapa fotos-originais/mapa.json
    ```
 
 3. **Revise o relatório** e ajuste o `mapa.json` (seção abaixo) até ficar certo:
@@ -41,7 +41,7 @@ não leva EXIF nenhum (nem GPS) e a foto não é retocada: só girada pela orien
 4. **Rode de verdade**, confira as fotos no app e só então faça o commit (variantes, `fotos.json`, texturas e `mapa.json`):
 
    ```bash
-   node scripts/fotos.mjs
+   npm run fotos
    npm run build && npx playwright test tests/imagens.spec.js
    ```
 

@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "seed": "node scripts/gerar-seed.mjs",
     "setup-sql": "node scripts/montar-setup.mjs",
+    "fotos": "node scripts/fotos.mjs design/fotos-cliente --mapa fotos-originais/mapa.json",
     "db:local": "bash scripts/supabase-local/iniciar.sh",
     "qrcode": "node scripts/qrcode.mjs",
     "test": "playwright test"

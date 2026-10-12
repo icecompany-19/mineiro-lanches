@@ -908,7 +908,7 @@ export const ROTEIRO = {
 **Situação em 12/10:** 11 fotos novas já estão processadas (`fotos.json` com `origem: 'nova'`, mais as 3 texturas reais). Faltam:
 
 - Gran Bacon, Porção de batata turbinada, Combo Casal e Gran Egg;
-- as substitutas das 'antiga': Hot Dog Pizza, Gran Chicken, Dog com Doritos, Combo Dilúvio, Combo 2 Dog Doritos e Gran Bacon + Coca.
+- as substitutas das 10 'antiga': gran-burger, gran-burger-bacon, gran-egg-bacon, gran-chicken, dog-doritos, dog-pizza, combo-diluvio, combo-casal, gran-bacon-coca-maionese e combo-2-dog-doritos (conferido com `npm run fotos -- --simular` em 12/10).
 
 Se, por qualquer motivo, nenhuma foto 'nova' existir, o desenho continua funcionando:
 
@@ -918,7 +918,7 @@ Se, por qualquer motivo, nenhuma foto 'nova' existir, o desenho continua funcion
 
 **A troca é só rodar o pipeline:**
 
-1. Pôr os arquivos (com o nome do produto, ou com o nome de horário do WhatsApp) na pasta de entrada e rodar `node scripts/fotos.mjs --simular` para conferir as ligações. Depois, `node scripts/fotos.mjs`.
+1. Pôr os arquivos (com o nome do produto, ou com o nome de horário do WhatsApp) na pasta de entrada e rodar `npm run fotos -- --simular` para conferir as ligações. Depois, `npm run fotos`.
 2. O pipeline gera `-q`, `-540` e `-1080` em WebP, sem retoque, e grava `origem: 'nova'`, `foco` e `cor` no `fotos.json`.
 
 **Muda sozinho, sem código:**

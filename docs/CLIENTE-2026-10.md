@@ -115,5 +115,5 @@ Use as texturas reais no lugar do tijolinho desenhado em código; o desenho fica
 **Ainda faltam** (o cliente vai mandar mais):
 
 - Gran Bacon, Porção de batata turbinada, Combo Casal e Gran Egg.
-- Hot Dog Pizza, Gran Chicken, Dog com Doritos, Combo Dilúvio, Combo 2 Dog Doritos e Gran Bacon + Coca: hoje usam as fotos antigas (origem 'antiga').
-- Os demais itens não têm foto e aparecem com a arte da categoria.
+- 10 produtos usam fotos antigas (origem 'antiga', cenário diferente): gran-burger, gran-burger-bacon, gran-egg-bacon, gran-chicken, dog-doritos, dog-pizza, combo-diluvio, combo-casal, gran-bacon-coca-maionese e combo-2-dog-doritos.
+- 25 produtos fora das bebidas não têm foto e aparecem com a arte da categoria (lista completa: `npm run fotos -- --simular`, seção "Produtos sem foto"). As 8 bebidas não levam foto.
