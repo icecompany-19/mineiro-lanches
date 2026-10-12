@@ -2,78 +2,164 @@
  "gran-burger-bacon": {
   "w": 1125,
   "h": 1375,
-  "cor": "#181828"
+  "cor": "#181828",
+  "origem": "antiga"
  },
  "gran-egg-bacon": {
   "w": 1125,
   "h": 1217,
-  "cor": "#080808"
+  "cor": "#080808",
+  "origem": "antiga"
  },
  "gran-salada": {
-  "w": 1125,
-  "h": 1249,
-  "cor": "#282828"
+  "w": 1200,
+  "h": 1600,
+  "cor": "#a97340",
+  "foco": "50% 55%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/gran-salada.jpeg"
  },
  "dog-pizza": {
   "w": 1125,
   "h": 1134,
-  "cor": "#281818"
+  "cor": "#281818",
+  "origem": "antiga"
  },
  "gran-bacon-maionese": {
   "w": 1125,
   "h": 1030,
-  "cor": "#080808"
+  "cor": "#080808",
+  "origem": "antiga"
  },
  "combo-2-dog-doritos": {
   "w": 996,
   "h": 1239,
-  "cor": "#282828"
+  "cor": "#282828",
+  "origem": "antiga"
  },
  "dog-doritos": {
   "w": 481,
   "h": 643,
-  "cor": "#485858"
+  "cor": "#485858",
+  "origem": "antiga"
  },
  "gran-crispy": {
-  "w": 716,
-  "h": 806,
-  "cor": "#380808"
+  "w": 1200,
+  "h": 1600,
+  "cor": "#b48047",
+  "foco": "50% 67%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/gran-crispy.jpeg"
  },
  "gran-burger": {
   "w": 720,
   "h": 866,
-  "cor": "#d8d8d8"
+  "cor": "#d8d8d8",
+  "origem": "antiga"
  },
  "combo-casal": {
   "w": 1600,
   "h": 1372,
-  "cor": "#e8e8d8"
+  "cor": "#e8e8d8",
+  "origem": "antiga"
  },
  "gran-chicken": {
   "w": 1086,
   "h": 1448,
-  "cor": "#080808"
+  "cor": "#080808",
+  "origem": "antiga"
  },
  "gran-bacon-onion": {
-  "w": 1112,
-  "h": 1468,
-  "cor": "#181818"
+  "w": 1200,
+  "h": 1600,
+  "cor": "#ac7d47",
+  "foco": "50% 60%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/gran-bacon-onion.jpeg"
  },
  "combo-diluvio": {
   "w": 1200,
   "h": 1600,
-  "cor": "#c8c8c8"
+  "cor": "#c8c8c8",
+  "origem": "antiga"
  },
  "recorte:gran-bacon-onion": {
   "w": 554,
-  "h": 720
+  "h": 720,
+  "origem": "antiga"
  },
  "recorte:gran-chicken": {
   "w": 720,
-  "h": 665
+  "h": 665,
+  "origem": "antiga"
  },
  "recorte:gran-egg-bacon": {
   "w": 661,
-  "h": 720
+  "h": 720,
+  "origem": "antiga"
+ },
+ "big-mineiro": {
+  "w": 1200,
+  "h": 1600,
+  "cor": "#926e48",
+  "foco": "50% 56%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/big-mineiro.jpeg"
+ },
+ "dog-max": {
+  "w": 1200,
+  "h": 1600,
+  "cor": "#b6803a",
+  "foco": "50% 58%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/dog-max.jpeg"
+ },
+ "exagerado-x-salada-egg-bacon": {
+  "w": 1200,
+  "h": 1600,
+  "cor": "#a57850",
+  "foco": "50% 53%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/exagerado-x-egg-bacon.jpeg"
+ },
+ "combo-gran-bacon-onion": {
+  "w": 1200,
+  "h": 1600,
+  "cor": "#a96e38",
+  "foco": "50% 60%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/gran-onion-bacon.jpeg"
+ },
+ "dog-cbo-turbo": {
+  "w": 1200,
+  "h": 1600,
+  "cor": "#b47944",
+  "foco": "50% 63%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/hotdog-cbo-turbo.jpeg"
+ },
+ "ultra-x-salada-bacon": {
+  "w": 1200,
+  "h": 1600,
+  "cor": "#a5734b",
+  "foco": "50% 66%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/ultra-x-salada-bacon.jpeg"
+ },
+ "x-churrasco": {
+  "w": 1200,
+  "h": 1600,
+  "cor": "#a57745",
+  "foco": "50% 68%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/x-churrasco.jpeg"
+ },
+ "x-salada": {
+  "w": 1200,
+  "h": 1600,
+  "cor": "#a2754d",
+  "foco": "50% 65%",
+  "origem": "nova",
+  "arquivo": "design/fotos-cliente/x-salada-tradicional.jpeg"
  }
 }

@@ -1,18 +1,26 @@
 /* Mineiro Lanche · núcleo compartilhado entre cardápio, site e painel.
    Expõe window.ML: CONFIG (cardápio e regras), preços, horário e mensagem de WhatsApp. Os pedidos vivem no servidor:
    as entradas trocam ML.store pela store do Supabase (src/lib/store-supabase.js).
-   Fontes: cardápio impresso enviado pelo dono, legendas de 02/10/2026 e Instagram @mineirolanchesuzano.
+   Fontes: cardápio impresso enviado pelo dono, legendas de 02/10/2026, Instagram @mineirolanchesuzano e as respostas
+   do dono de outubro (docs/CLIENTE-2026-10.md: horário, endereço e composições).
    Fica como script clássico (IIFE, sem import/export): as entradas o importam só pelo efeito e
    scripts/gerar-seed.mjs o avalia com node:vm para gerar o seed do banco. */
 (function () {
   'use strict';
 
   // ================= CONFIG: tudo que é do Mineiro Lanche =================
+  // hot dogs (docs/CLIENTE-2026-10.md): todos têm a mesma base e só muda a quantidade de salsicha;
+  // Dog Bacon e Dog Pizza são essa base com o adicional Bacon ou Pizza (não são itens à parte)
+  var ING_DOG = ['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry'];
+  var DICA_DOG = 'Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.';
   var CONFIG = {
     nome: 'Mineiro Lanche',
     tipo: 'food truck',
     cidade: 'Suzano',
     regiao: 'Centro, Suzano',
+    // ponto do truck (docs/CLIENTE-2026-10.md); sem coordenadas confirmadas
+    endereco: 'Rua Eliziel Alves Costa, 300, Centro, Suzano/SP',
+    enderecoPartes: { rua: 'Rua Eliziel Alves Costa, 300', bairro: 'Centro', cidade: 'Suzano', uf: 'SP' },
     whatsapp: '5511985720150',
     whatsappTexto: '(11) 98572-0150',
     instagram: 'https://www.instagram.com/mineirolanchesuzano/',
@@ -22,9 +30,10 @@
       cheddar: 'Diretamente pros amantes de cheddar!',
       regiao: 'Suzano e região'
     },
-    // 0 = domingo. Domingo não informado (a bio diz "todos os dias"): null = a confirmar.
-    horarios: { 0: null, 1: ['19:00', '00:00'], 2: ['19:00', '00:00'], 3: ['19:00', '00:00'], 4: ['19:00', '00:00'], 5: ['19:00', '01:00'], 6: ['19:00', '01:00'] },
-    horarioTexto: ['Segunda a quinta, das 19h à meia-noite', 'Sexta e sábado, das 19h à 1h', 'Domingo: a confirmar'],
+    // 0 = domingo. Todos os dias das 19h à meia-noite; sexta e sábado até 1h (o dono confirmou o domingo em 10/2026).
+    // null = fechado naquele dia (o banco pode mandar outros horários pelo estado_cardapio)
+    horarios: { 0: ['19:00', '00:00'], 1: ['19:00', '00:00'], 2: ['19:00', '00:00'], 3: ['19:00', '00:00'], 4: ['19:00', '00:00'], 5: ['19:00', '01:00'], 6: ['19:00', '01:00'] },
+    horarioTexto: ['Domingo a quinta, das 19h à meia-noite', 'Sexta e sábado, das 19h à 1h'],
     modos: [
       { id: 'entrega', label: 'Entrega', desc: 'Suzano e região · taxa combinada' },
       { id: 'local', label: 'Comer no local', desc: 'Consumo no truck' }
@@ -47,43 +56,46 @@
       { id: 'artesanais', label: 'Artesanais', icone: 'burger', desc: 'Hambúrguer artesanal de 200 g', itens: [
         { id: 'gran-burger', nome: 'Gran Burger', preco: 25.90, tipo: 'lanche', foto: 'gran-burger', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue'], base: 'Pão e hambúrguer artesanal 200 g' },
         { id: 'gran-burger-bacon', nome: 'Gran Burger Bacon', preco: 33.40, tipo: 'lanche', foto: 'gran-burger-bacon', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon'], base: 'Gran Burger com bacon' },
-        { id: 'gran-salada', nome: 'Gran Salada', preco: 26.90, tipo: 'lanche', foto: 'gran-salada', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal'], base: 'Pão e hambúrguer artesanal 200 g' },
+        { id: 'gran-salada', nome: 'Gran Salada', preco: 26.90, tipo: 'lanche', foto: 'gran-salada', ing: ['Maionese grill', 'Cheddar cremoso', 'Mussarela', 'Barbecue', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa'], base: 'Pão seladinho na chapa e hambúrguer angus 200 g' },
         { id: 'gran-egg', nome: 'Gran Egg', preco: 30.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Ovo', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal'], base: 'Pão e hambúrguer artesanal 200 g' },
-        { id: 'gran-bacon', nome: 'Gran Bacon', preco: 31.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal'], base: 'Pão e hambúrguer artesanal 200 g' },
+        { id: 'gran-bacon', nome: 'Gran Bacon', preco: 31.90, tipo: 'lanche', ing: ['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Mussarela', 'Bacon em tiras', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa'], base: 'Pão seladinho na chapa e hambúrguer angus 200 g' },
         { id: 'gran-egg-bacon', nome: 'Gran Egg Bacon', preco: 33.90, tipo: 'lanche', foto: 'gran-egg-bacon', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon', 'Ovo', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal'], base: 'Pão e hambúrguer artesanal 200 g' },
         { id: 'gran-big-tudo', nome: 'Gran Big Tudo', preco: 34.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Requeijão', 'Batata palha', 'Tomate', 'Cebola roxa', 'Azeite e sal'], base: 'Pão e hambúrguer artesanal 200 g' },
         { id: 'gran-black', nome: 'Gran Black', preco: 35.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Tomate', 'Cebola roxa', 'Azeite e sal'], base: 'Pão e hambúrguer artesanal 200 g' },
         { id: 'gran-big-mineiro', nome: 'Gran Big Mineiro', preco: 36.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Requeijão', 'Batata palha', 'Tomate', 'Cebola roxa', 'Presunto', 'Azeite e sal'], base: 'Pão e hambúrguer artesanal 200 g' },
         { id: 'gran-chicken', nome: 'Gran Chicken', preco: 24.90, tipo: 'lanche', foto: 'gran-chicken', ing: ['Cheddar', 'Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa'], base: 'Pão de brioche e hambúrguer de frango empanado' },
-        { id: 'gran-bacon-onion', nome: 'Gran Bacon Onion', preco: 34.90, tipo: 'lanche', foto: 'gran-bacon-onion', ing: ['Maionese', 'Barbecue', '3 onion rings', 'Cheddar cremoso', 'Mussarela', 'Bacon', 'Alface americano', 'Tomate', 'Cebola roxa'], base: 'Pão de brioche e hambúrguer 200 g' },
+        { id: 'gran-bacon-onion', nome: 'Gran Bacon Onion', preco: 34.90, tipo: 'lanche', foto: 'gran-bacon-onion', ing: ['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '3 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa'], base: 'Pão seladinho na chapa e hambúrguer angus 200 g' },
         { id: 'gran-crispy', nome: 'Gran Crispy', preco: 27.90, tipo: 'lanche', foto: 'gran-crispy', ing: ['Maionese', 'Barbecue', 'Cheddar cremoso', 'Cebola caramelizada', 'Cebola crispy'], base: 'Pão de brioche e hambúrguer 200 g' }
       ] },
       { id: 'tradicionais', label: 'Tradicionais', icone: 'burger', desc: 'Os clássicos da chapa', itens: [
         { id: 'x-burguer', nome: 'X-Burguer', preco: 16.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue'], base: 'Pão e hambúrguer' },
-        { id: 'x-salada', nome: 'X-Salada', preco: 19.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal'], base: 'Pão e hambúrguer' },
+        { id: 'x-salada', nome: 'X-Salada', preco: 19.90, tipo: 'lanche', foto: 'x-salada', ing: ['Mussarela', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete', 'Azeite e sal'], base: 'Pão de hambúrguer e hambúrguer 90 g' },
         { id: 'mega-x-salada-egg', nome: 'Mega X-Salada Egg', preco: 21.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Ovo'], base: 'Pão e hambúrguer' },
-        { id: 'ultra-x-salada-bacon', nome: 'Ultra X-Salada Bacon', preco: 23.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Bacon'], base: 'Pão e hambúrguer' },
-        { id: 'exagerado-x-salada-egg-bacon', nome: 'Exagerado X-Salada Egg Bacon', preco: 27.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Ovo', 'Bacon'], base: 'Pão e hambúrguer' },
+        { id: 'ultra-x-salada-bacon', nome: 'Ultra X-Salada Bacon', preco: 23.90, tipo: 'lanche', foto: 'ultra-x-salada-bacon', ing: ['Cheddar cremoso', 'Mussarela', 'Bacon', 'Alface', 'Vinagrete', 'Azeite e sal'], base: 'Pão de hambúrguer e hambúrguer 90 g' },
+        { id: 'exagerado-x-salada-egg-bacon', nome: 'Exagerado X-Salada Egg Bacon', preco: 27.90, tipo: 'lanche', foto: 'exagerado-x-salada-egg-bacon', ing: ['Maionese', 'Barbecue', 'Cheddar cremoso', 'Mussarela', 'Bacon', 'Ovo', 'Alface', 'Vinagrete', 'Azeite e sal'], base: 'Pão de hambúrguer e hambúrguer 90 g' },
         { id: 'big-tudo', nome: 'Big Tudo', preco: 28.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Bacon', 'Batata palha'], base: 'Pão e hambúrguer' },
         { id: 'black-master', nome: 'Black Master', preco: 29.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Bacon'], base: 'Pão australiano e hambúrguer' },
-        { id: 'big-mineiro', nome: 'Big Mineiro', preco: 30.90, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Presunto', 'Bacon', 'Batata palha'], base: 'Pão e hambúrguer' }
+        { id: 'big-mineiro', nome: 'Big Mineiro', preco: 30.90, tipo: 'lanche', foto: 'big-mineiro', ing: ['Mussarela', 'Presunto', 'Ovo', 'Bacon', 'Maionese', 'Barbecue', 'Batata palha', 'Alface', 'Vinagrete', 'Azeite e sal'], base: 'Pão de hambúrguer e hambúrguer 90 g' }
       ] },
-      { id: 'hotdog', label: 'Hot dog', icone: 'hotdog', desc: 'Salsicha Perdigão', itens: [
-        { id: 'dog-medio', nome: 'Hot Dog Médio', preco: 13.90, tipo: 'lanche', ing: ['Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 1 salsicha' },
+      { id: 'hotdog', label: 'Hot dog', icone: 'hotdog', desc: 'Salsicha Perdigão · Dog Bacon ou Dog Pizza: qualquer dog com o adicional Bacon ou Pizza', itens: [
+        { id: 'dog-medio', nome: 'Hot Dog Médio', preco: 13.90, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 1 salsicha Perdigão', nota: DICA_DOG },
         { id: 'dog-medio-frango', nome: 'Hot Dog Médio Frango', preco: 19.90, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 1 salsicha' },
-        { id: 'dog-max', nome: 'Hot Dog Max', preco: 15.90, tipo: 'lanche', ing: ['Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 2 salsichas' },
+        { id: 'dog-max', nome: 'Hot Dog Max', preco: 15.90, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 2 salsichas Perdigão', nota: DICA_DOG },
         { id: 'dog-max-frango', nome: 'Hot Dog Max Frango', preco: 21.90, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 2 salsichas' },
-        { id: 'dog-super', nome: 'Hot Dog Super', preco: 18.90, tipo: 'lanche', ing: ['Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 3 salsichas' },
+        { id: 'dog-super', nome: 'Hot Dog Super', preco: 18.90, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 3 salsichas Perdigão', nota: DICA_DOG },
         { id: 'dog-super-frango', nome: 'Hot Dog Super Frango', preco: 24.90, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 3 salsichas' },
         { id: 'dog-doritos', nome: 'Dog com Doritos', preco: 23.90, tipo: 'lanche', foto: 'dog-doritos', ing: ['Doritos', 'Cheddar'], base: 'O hot dog com Doritos da casa' },
-        { id: 'dog-pizza', nome: 'Hot Dog Pizza', preco: 26.40, tipo: 'lanche', foto: 'dog-pizza', ing: ['Queijo gratinado', 'Azeitona', 'Orégano'], base: 'Hot dog com cobertura de pizza', nota: 'Ingredientes a confirmar (na foto: queijo gratinado, azeitona e orégano).' }
+        // o Hot Dog Super com o adicional Pizza (foto "Hot Dog Super Pizza" do dono; 18,90 + 7,50)
+        { id: 'dog-pizza', nome: 'Hot Dog Pizza', preco: 26.40, tipo: 'lanche', foto: 'dog-pizza', ing: ING_DOG.concat(['Queijo gratinado', 'Orégano']), base: 'Hot Dog Super (3 salsichas Perdigão) com o adicional Pizza' },
+        // item novo; o dono ainda vai mandar o preço: null = "Preço a confirmar" (não vai para a sacola; consulta pelo WhatsApp)
+        { id: 'dog-cbo-turbo', nome: 'Hot Dog CBO Turbo', preco: null, tipo: 'lanche', foto: 'dog-cbo-turbo', ing: ['Maionese', 'Ketchup', 'Alface', 'Azeite e sal', 'Purê de batata', 'Batata palha', 'Cheddar', 'Catupiry', 'Mussarela gratinada', 'Bacon'], base: 'Pão de dog e 3 salsichas Perdigão' }
       ] },
       { id: 'baguetes', label: 'Baguetes', icone: 'baguete', desc: 'Na baguete, do jeito mineiro', itens: [
         { id: 'carne-maluca', nome: 'Carne Maluca', preco: 26.90, tipo: 'lanche', ing: ['Maionese', 'Barbecue', 'Milho', 'Batata palha', 'Vinagrete com cebola', 'Purê', 'Requeijão', 'Cheddar'], base: 'Baguete e carne desfiada' },
         { id: 'x-frango', nome: 'X-Frango', preco: 25.90, tipo: 'lanche', ing: ['Queijo', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal'], base: 'Baguete e filé de frango' },
         { id: 'x-frango-egg-bacon', nome: 'X-Frango Egg Bacon', preco: 29.90, tipo: 'lanche', ing: ['Queijo', 'Purê', 'Ovo', 'Bacon', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal'], base: 'Baguete e filé de frango' },
         { id: 'x-calabresa', nome: 'X-Calabresa', preco: 25.90, tipo: 'lanche', ing: ['Queijo', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal'], base: 'Baguete e calabresa' },
-        { id: 'x-churrasco', nome: 'X-Churrasco', preco: 28.90, tipo: 'lanche', ing: ['Queijo', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal'], base: 'Baguete e contra filé' },
+        { id: 'x-churrasco', nome: 'X-Churrasco', preco: 28.90, tipo: 'lanche', foto: 'x-churrasco', ing: ['Maionese', 'Barbecue', 'Vinagrete', 'Mussarela', 'Purê de batata', 'Batata palha', 'Cheddar', 'Requeijão'], base: 'Pão de baguete e contra-filé' },
         { id: 'americano', nome: 'Americano', preco: 21.90, tipo: 'lanche', ing: ['Maionese', 'Mussarela', 'Presunto', 'Ovo', 'Tomate', 'Alface', 'Azeite e sal'], base: 'Baguete' }
       ] },
       { id: 'combos', label: 'Combos', icone: 'combo', desc: 'Lanche, batata e bebida', itens: [
@@ -94,13 +106,13 @@
         { id: 'combo-gran-burger', nome: 'Combo Gran Burger', preco: 39.90, tipo: 'combo', inclui: ['Gran Burger (brioche, 200 g de carne angus, mussarela, cheddar, maionese e barbecue)', 'Coca-Cola 350 ml', '250 g de batata'], ing: ['Mussarela', 'Cheddar', 'Maionese', 'Barbecue'] },
         { id: 'combo-gran-bacon', nome: 'Combo Gran Bacon', preco: 45.90, tipo: 'combo', inclui: ['Gran Bacon (brioche, 200 g de carne angus, mussarela, cheddar, bacon, maionese, barbecue, alface americano e tomate)', 'Coca-Cola 350 ml', '250 g de batata'], ing: ['Mussarela', 'Cheddar', 'Bacon', 'Maionese', 'Barbecue', 'Alface americano', 'Tomate'] },
         { id: 'combo-gran-salada', nome: 'Combo Gran Salada', preco: 42.90, tipo: 'combo', inclui: ['Gran Salada (brioche, 200 g de carne angus, mussarela, cheddar, alface americano, tomate, cebola roxa, maionese e barbecue)', 'Coca-Cola 350 ml', '250 g de batata'], ing: ['Mussarela', 'Cheddar', 'Alface americano', 'Tomate', 'Cebola roxa', 'Maionese', 'Barbecue'] },
-        { id: 'combo-gran-bacon-onion', nome: 'Combo Gran Bacon Onion', preco: 48.90, tipo: 'combo', inclui: ['Gran Bacon Onion (brioche, maionese, barbecue, 200 g de carne angus, mussarela, cheddar, bacon e 3 onion rings)', '250 g de batata', 'Coca-Cola 350 ml'], ing: ['Maionese', 'Barbecue', 'Mussarela', 'Cheddar', 'Bacon', '3 onion rings'] },
+        { id: 'combo-gran-bacon-onion', nome: 'Combo Gran Bacon Onion', preco: 48.90, tipo: 'combo', foto: 'combo-gran-bacon-onion', inclui: ['Gran Bacon Onion (brioche, maionese, barbecue, 200 g de carne angus, mussarela, cheddar, bacon e 3 onion rings)', '250 g de batata', 'Coca-Cola 350 ml'], ing: ['Maionese', 'Barbecue', 'Mussarela', 'Cheddar', 'Bacon', '3 onion rings'] },
         { id: 'combo-hot-dog-max', nome: 'Combo Hot Dog Max', preco: 29.90, tipo: 'combo', inclui: ['Hot dog médio com 2 salsichas, alface, purê, batata palha, ketchup, cheddar e catupiri', '250 g de batata frita', 'Coca-Cola 350 ml'], ing: ['Alface', 'Purê', 'Batata palha', 'Ketchup', 'Cheddar', 'Catupiri'] },
         { id: 'combo-x-frango', nome: 'Combo X-Frango', preco: 39.90, tipo: 'combo', inclui: ['X-Frango na baguete (filé de frango, mussarela, maionese, barbecue, vinagrete, purê, batata palha, cheddar e catupiry)', '250 g de batata', 'Coca-Cola 350 ml'], ing: ['Mussarela', 'Maionese', 'Barbecue', 'Vinagrete', 'Purê', 'Batata palha', 'Cheddar', 'Catupiry'] },
         { id: 'combo-gran-chicken', nome: 'Combo Gran Chicken', preco: 38.90, tipo: 'combo', inclui: ['Gran Chicken (brioche, frango empanado, maionese, barbecue, alface americano, tomate e cebola roxa)', '250 g de batata', 'Coca-Cola 350 ml'], ing: ['Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa'] }
       ] },
       { id: 'porcoes', label: 'Porções', icone: 'batata', desc: 'Pra dividir', itens: [
-        { id: 'porcao-batata', nome: 'Porção de batata', preco: 39.90, tipo: 'porcao', inclui: ['500 g de batata', 'Cheddar', 'Catupiri', 'Bacon', 'Calabresa'] },
+        { id: 'porcao-batata', nome: 'Porção de batata turbinada', preco: 39.90, tipo: 'porcao', inclui: ['500 g de batata frita', 'Cheddar cremoso', 'Bacon', 'Requeijão', 'Calabresa', 'Alho-poró'] },
         { id: 'porcao-onion', nome: 'Porção de onion', preco: 14.90, tipo: 'porcao', inclui: ['6 onion rings'] }
       ] },
       { id: 'bebidas', label: 'Bebidas', icone: 'lata', desc: 'Geladas', itens: [
@@ -124,13 +136,17 @@
   CONFIG.adicionais.forEach(function (a) { adicionaisPorId[a.id] = a; });
 
   function arred(v) { return Math.round(v * 100) / 100; }
-  function brl(v) { return 'R$ ' + arred(v).toFixed(2).replace('.', ','); }
+  // preço null = o dono ainda não informou (item novo): aparece como "Preço a confirmar" e não vai para a sacola
+  var SEM_PRECO = 'Preço a confirmar';
+  function brl(v) { return v == null ? SEM_PRECO : 'R$ ' + arred(v).toFixed(2).replace('.', ','); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function pad(n, t) { return String(n).padStart(t || 2, '0'); }
   function numeroTxt(n) { return '#' + pad(n, 4); }
   function podeCombo(p) { return p.tipo === 'lanche'; }
   function podePrensar(p) { return p.tipo === 'lanche' || p.tipo === 'combo'; }
   function podeAdicionais(p) { return p.tipo === 'lanche' || p.tipo === 'combo'; }
+  // só vai para a sacola (e o servidor só aceita) o produto com preço; null = "Preço a confirmar"
+  function temPreco(p) { return !!p && typeof p.preco === 'number' && isFinite(p.preco); }
 
   // ================= preço e descrição de uma escolha =================
   // sel = { produtoId, completo, removidos[], prensado, combo: { ativo, refri }, adicionais: { id: qtd }, sabor, qtd }
@@ -150,8 +166,10 @@
       qtd: Math.max(1, +sel.qtd || 1)
     };
   }
+  // null quando o produto ainda não tem preço (o item nem entra na sacola)
   function precoUnitario(sel) {
     var p = produtos[sel.produtoId], v = p.preco;
+    if (!temPreco(p)) return null;
     if (sel.combo && sel.combo.ativo) v += CONFIG.regras.combo.preco;
     Object.keys(sel.adicionais || {}).forEach(function (id) { v += (sel.adicionais[id] || 0) * adicionaisPorId[id].preco; });
     return arred(v);
@@ -178,7 +196,7 @@
       precoBase: p.preco, precoUnit: unit, qtd: n.qtd,
       completo: n.completo, removidos: n.removidos, prensado: n.prensado, combo: n.combo,
       adicionais: Object.keys(n.adicionais).map(function (id) { return { id: id, nome: adicionaisPorId[id].nome, qtd: n.adicionais[id], preco: adicionaisPorId[id].preco }; }),
-      sabor: n.sabor, resumo: resumo(n), subtotal: arred(unit * n.qtd)
+      sabor: n.sabor, resumo: resumo(n), subtotal: unit == null ? null : arred(unit * n.qtd)
     };
   }
 
@@ -223,12 +241,12 @@
     if (loja.modo === 'aberta') return Object.assign(base, { aberto: true, txt: 'Aberto agora (horário estendido)' });
     var hoje = TURNOS[a.dia];
     if (hoje && a.min < hoje.abre) return Object.assign(base, { aberto: false, txt: 'Fechado agora · abre hoje às ' + horaTxt(hoje.abre) });
-    if (hoje === null && CONFIG.horarios[a.dia] === null) return Object.assign(base, { aberto: false, txt: 'Domingo: horário a confirmar', aConfirmar: true });
+    // dia sem turno (null) = fechado: diz quando abre de novo
     for (var i = 1; i <= 7; i++) {
       var d = (a.dia + i) % 7, t = TURNOS[d];
       if (t) return Object.assign(base, { aberto: false, txt: 'Fechado agora · abre ' + (i === 1 ? 'amanhã' : NOMES_DIA[d]) + ' às ' + horaTxt(t.abre) });
     }
-    return Object.assign(base, { aberto: false, txt: 'Horário a confirmar' });
+    return Object.assign(base, { aberto: false, txt: 'Fechado agora' });
   }
 
   var STATUS = {
@@ -281,14 +299,18 @@
     return s.length > 1500 ? s.slice(0, 1497) + '...' : s;
   }
   function waLink(texto, telefone) { return 'https://wa.me/' + (telefone || CONFIG.whatsapp) + '?text=' + encodeURIComponent(texto); }
+  // item com "Preço a confirmar": a alternativa à sacola é perguntar pelo WhatsApp
+  function mensagemConsulta(p) {
+    return 'Olá, ' + CONFIG.nome + '! Vi o ' + p.nome + ' no cardápio e quero saber o preço. Como faço para pedir?';
+  }
 
   window.ML = {
     CONFIG: CONFIG, produtos: produtos, adicionais: adicionaisPorId, STATUS: STATUS,
-    fmt: { brl: brl, esc: esc, numero: numeroTxt, hora: horaTxt, relogio: relogio, dia: function (d) { return NOMES_DIA[d]; } },
-    regras: { podeCombo: podeCombo, podePrensar: podePrensar, podeAdicionais: podeAdicionais, proximoStatus: proximoStatus },
+    fmt: { brl: brl, semPreco: SEM_PRECO, esc: esc, numero: numeroTxt, hora: horaTxt, relogio: relogio, dia: function (d) { return NOMES_DIA[d]; } },
+    regras: { podeCombo: podeCombo, podePrensar: podePrensar, podeAdicionais: podeAdicionais, temPreco: temPreco, proximoStatus: proximoStatus },
     precos: { normalizar: normalizar, unitario: precoUnitario, chave: chave, resumo: resumo, item: itemDoPedido },
     horario: { agora: agoraSP, situacao: situacao, situacaoNo: situacaoNo, turnos: TURNOS, definir: definirHorarios },
     store: store,
-    whatsapp: { mensagem: mensagem, link: waLink }
+    whatsapp: { mensagem: mensagem, consulta: mensagemConsulta, link: waLink }
   };
 })();

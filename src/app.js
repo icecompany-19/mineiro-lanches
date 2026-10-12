@@ -94,7 +94,8 @@ export function iniciarApp() {
   var CHAVE_SACOLA = 'mineiro:v2:sacola', CHAVE_RASCUNHO = 'mineiro:v2:rascunho';
   function lerLocal(k, padrao) { try { var v = localStorage.getItem(k); return v == null ? padrao : JSON.parse(v); } catch { return padrao; } }
   function gravarLocal(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem storage */ } }
-  var sacola = lerLocal(CHAVE_SACOLA, []).filter(function (l) { return l && l.sel && ML.produtos[l.sel.produtoId]; });
+  // item com "Preço a confirmar" (preco null) nunca fica na sacola
+  var sacola = lerLocal(CHAVE_SACOLA, []).filter(function (l) { return l && l.sel && ML.regras.temPreco(ML.produtos[l.sel.produtoId]); });
   function salvarSacola() { gravarLocal(CHAVE_SACOLA, sacola); atualizarContadores(); }
   // quem chega pelo QR (?origem=qrcode&mesa=3): vale para a visita toda (sessionStorage), mesmo depois de navegar
   var CHAVE_ORIGEM = 'mineiro:v2:origem';
@@ -124,6 +125,7 @@ export function iniciarApp() {
   }
   function totaisSacola() { var n = 0, v = 0; sacola.forEach(function (l) { var it = ML.precos.item(l.sel); n += it.qtd; v += it.subtotal; }); return { n: n, v: Math.round(v * 100) / 100 }; }
   function addSacola(sel) {
+    if (!ML.regras.temPreco(ML.produtos[sel.produtoId])) return;
     var n = ML.precos.normalizar(sel), k = ML.precos.chave(n);
     var ja = sacola.filter(function (l) { return l.chave === k; })[0];
     if (ja) ja.sel.qtd += n.qtd; else sacola.push({ chave: k, sel: n });
@@ -153,7 +155,7 @@ export function iniciarApp() {
       var t = ML.horario.turnos[d], hoje = d === a.dia, nome = ML.fmt.dia(d);
       var barra, hora;
       if (t) { barra = '<span class="faixa" style="left:' + ((t.abre - ini) / faixa * 100) + '%;width:' + ((t.fecha - t.abre) / faixa * 100) + '%"></span>'; hora = ML.fmt.hora(t.abre) + '–' + ML.fmt.hora(t.fecha).replace('meia-noite', '0h'); }
-      else { barra = '<span class="faixa duvida" style="left:' + (60 / faixa * 100) + '%;width:' + (360 / faixa * 100) + '%"></span>'; hora = 'a confirmar'; }
+      else { barra = ''; hora = 'fechado'; }
       var marca = '';
       var minRel = turnoAtual.aberto && turnoAtual.turnoDia === d ? (a.min < ini ? a.min + 1440 : a.min) : (hoje ? a.min : -1);
       if (minRel >= ini && minRel <= ini + faixa) marca = '<span class="agora" style="left:' + ((minRel - ini) / faixa * 100) + '%"></span>';
@@ -211,7 +213,7 @@ export function iniciarApp() {
           if (naTela && p.foto && fotos < 4) carga = fotos++ === 0 ? 'lcp' : 'cedo';
           return '<button type="button" class="prod' + (off ? ' esgotado' : '') + '" id="prod-' + p.id + '" data-abrir="' + p.id + '">' + visual(p, 'q', null, { carga: carga }) +
             '<span><span class="prod-nome">' + esc(p.nome) + '</span><span class="prod-ing">' + esc(ingTexto(p)) + '</span>' +
-            (off ? '<span class="selo-esgotado">Esgotado hoje</span>' : (ML.regras.podeCombo(p) ? '<span class="selo-combo">Vira combo +' + comboTxt() + '</span>' : '')) +
+            (off ? '<span class="selo-esgotado">Esgotado hoje</span>' : (ML.regras.podeCombo(p) && ML.regras.temPreco(p) ? '<span class="selo-combo">Vira combo +' + comboTxt() + '</span>' : '')) +
             '<span class="prod-pe"><span class="preco">' + brl(p.preco) + '</span><span class="prod-mais" aria-hidden="true">' + ic('mais') + '</span></span></span></button>';
         }).join('') + '</section>';
     }).join('');
@@ -270,6 +272,15 @@ export function iniciarApp() {
     else h += '<p class="ficha-desc">' + esc(ingTexto(p)) + '</p>';
     if (p.nota) h += '<p class="ficha-nota">' + esc(p.nota) + '</p>';
     if (esg) h += '<p class="ficha-nota">' + (p.inativo ? 'Fora do cardápio no momento.' : 'Esgotado hoje no truck.') + '</p>';
+    // "Preço a confirmar": não vai para a sacola; a alternativa é perguntar pelo WhatsApp (sem as opções de montar)
+    if (!ML.regras.temPreco(p)) {
+      h += '<p class="ficha-nota">O truck ainda vai confirmar o preço deste item. Por enquanto, peça pelo WhatsApp.</p>' +
+        '<a class="btn btn-borda" id="ficha-consulta" href="' + esc(ML.whatsapp.link(ML.whatsapp.consulta(p))) + '" target="_blank" rel="noopener">' + ic('chat') + 'Consultar no WhatsApp</a></div><div style="height:18px"></div>';
+      corpo.innerHTML = h;
+      if (manterRolagem) corpo.scrollTop = rol;
+      atualizarRodapeFicha();
+      return;
+    }
     h += '</div>';
     if ((p.tipo === 'lanche' || p.tipo === 'combo') && p.ing && p.ing.length) {
       h += '<section class="grupo"><div class="grupo-cab">' + ic('completo') + '<div><strong>Como você quer?</strong><small>Completo, ou tire o que não quiser</small></div></div>' +
@@ -314,12 +325,14 @@ export function iniciarApp() {
     atualizarRodapeFicha();
   }
   function atualizarRodapeFicha() {
-    var s = ficha.sel, p = ML.produtos[s.produtoId], esg = indisponivel(p.id);
+    var s = ficha.sel, p = ML.produtos[s.produtoId], esg = indisponivel(p.id), semPreco = !ML.regras.temPreco(p);
     var n = ML.precos.normalizar(s), total = ML.precos.unitario(n) * n.qtd;
     $('#ficha-qtd').textContent = n.qtd;
-    $('[data-fq="-1"]').disabled = n.qtd <= 1;
-    $('#ficha-add-txt').textContent = esg ? (p.inativo ? 'Indisponível' : 'Esgotado hoje') : (ficha.editar ? 'Salvar' : 'Adicionar');
-    $('#ficha-add').setAttribute('aria-disabled', String(esg));
+    $('[data-fq="-1"]').disabled = semPreco || n.qtd <= 1;
+    $('[data-fq="1"]').disabled = semPreco;
+    $('#ficha-add-txt').textContent = esg ? (p.inativo ? 'Indisponível' : 'Esgotado hoje') : semPreco ? ML.fmt.semPreco : (ficha.editar ? 'Salvar' : 'Adicionar');
+    $('#ficha-add').setAttribute('aria-disabled', String(esg || semPreco));
+    if (semPreco) { $('#ficha-total').textContent = ''; $('#ficha-total').removeAttribute('data-v'); return; }
     contar($('#ficha-total'), total);
   }
   // contagem animada do total
@@ -332,7 +345,7 @@ export function iniciarApp() {
   }
   function confirmarFicha() {
     var p = ML.produtos[ficha.sel.produtoId];
-    if (indisponivel(p.id)) return;
+    if (indisponivel(p.id) || !ML.regras.temPreco(p)) return;
     var sel = JSON.parse(JSON.stringify(ficha.sel)), origem = ficha.origem, editar = ficha.editar;
     fecharFicha(function () {
       if (editar) { trocarLinha(editar, sel); renderSacola(); toast(p.nome + ' atualizado na sacola'); return; }

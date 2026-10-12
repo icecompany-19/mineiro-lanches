@@ -3,6 +3,8 @@
 // O seed é idempotente: atualiza nome, preço, categoria, ordem, ingredientes, tipo e foto pelo id, sem mexer
 // em esgotado_dia. O CONFIG manda no ativo: o que está nele fica ativo (inclusive o que saiu e voltou) e o que
 // saiu fica inativo. Loja: insere se não existir e só atualiza horarios e combo_preco.
+// Produto com preco null no CONFIG ("Preço a confirmar") vai com preco null: aparece no cardápio, mas o
+// criar_pedido recusa.
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -84,6 +86,15 @@ const num = (v) => {
   if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) throw new Error('preço inválido: ' + v);
   return v.toFixed(2);
 };
+// preço de produto: null = "Preço a confirmar" (só null; undefined ou texto é erro no CONFIG)
+const precoProduto = (p) => {
+  if (p.preco === null) return 'null';
+  try {
+    return num(p.preco);
+  } catch {
+    throw new Error(`preço inválido em ${p.id}: ${p.preco} (use um número ou null para "Preço a confirmar")`);
+  }
+};
 const arr = (a) => (a && a.length ? 'array[' + a.map(txt).join(', ') + ']::text[]' : "'{}'::text[]");
 
 export function montarSeed(CONFIG, origem = 'src/core.js') {
@@ -103,15 +114,17 @@ export function montarSeed(CONFIG, origem = 'src/core.js') {
 
   const linhasProd = produtos.map(
     (p, i) =>
-      `  (${txt(p.id)}, ${txt(p.categoria)}, ${txt(p.nome)}, ${num(p.preco)}, ${txt(p.tipo)}, ` +
+      `  (${txt(p.id)}, ${txt(p.categoria)}, ${txt(p.nome)}, ${precoProduto(p)}, ${txt(p.tipo)}, ` +
       `${p.foto ? txt(p.foto) : 'null'}, ${arr(p.ing)}, ${i + 1})`
   );
   const linhasAdic = adicionais.map((a) => `  (${txt(a.id)}, ${txt(a.nome)}, ${num(a.preco)})`);
+  const semPreco = produtos.filter((p) => p.preco === null).map((p) => p.id);
 
   return `-- Cardápio do Mineiro Lanche: gerado por scripts/gerar-seed.mjs a partir do CONFIG de ${origem}. Não edite à mão.
 -- ${produtos.length} produtos e ${adicionais.length} adicionais. Idempotente: atualiza nome, preço, categoria, ordem,
 -- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia. O CONFIG manda no ativo: quem está nele fica
 -- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo.
+-- Preço null = "Preço a confirmar" (o criar_pedido recusa): ${semPreco.length ? semPreco.join(', ') : 'nenhum'}.
 
 insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingredientes, ordem) values
 ${linhasProd.join(',\n')}

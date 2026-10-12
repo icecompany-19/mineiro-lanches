@@ -1,6 +1,6 @@
 -- Dia de operação (corte às 4h de São Paulo) e loja aberta/fechada pelo horário e pelos modos manuais.
 -- Datas: 08/10/2026 é quinta; 09 sexta; 10 sábado; 11 domingo; 12 segunda; 13 terça.
--- CONFIG: segunda a quinta 19h–0h; sexta e sábado 19h–1h; domingo null (a confirmar).
+-- CONFIG: domingo a quinta 19h–0h; sexta e sábado 19h–1h (docs/CLIENTE-2026-10.md: domingo abre).
 begin;
 \ir _ajuda.sql
 
@@ -21,9 +21,14 @@ select pg_temp.ok(loja_aberta('2026-10-10 00:30-03'), 'sexta à noite 00:30 (sá
 select pg_temp.ok(not loja_aberta('2026-10-10 01:00-03'), 'sábado 01:00: fechada, acabou o turno de sexta');
 select pg_temp.ok(not loja_aberta('2026-10-09 00:30-03'), 'sexta 00:30 do calendário: fechada, o turno de quinta acaba à meia-noite');
 select pg_temp.ok(not loja_aberta('2026-10-13 00:30-03'), 'terça 00:30: fechada, o turno de segunda acaba à meia-noite');
-select pg_temp.ok(not loja_aberta('2026-10-11 20:00-03'), 'domingo 20:00: fechada, domingo é null (a confirmar)');
+select pg_temp.ok(loja_aberta('2026-10-11 20:00-03'), 'domingo 20:00: aberta (domingo abre das 19h à meia-noite)');
+select pg_temp.ok(not loja_aberta('2026-10-11 18:59-03'), 'domingo 18:59: fechada');
+select pg_temp.ok(loja_aberta('2026-10-11 19:00-03'), 'domingo 19:00: aberta');
+select pg_temp.ok(loja_aberta('2026-10-11 23:59:59-03'), 'domingo 23:59:59: aberta');
+select pg_temp.ok(not loja_aberta('2026-10-11 01:00-03'), 'domingo 01:00: fechada, acabou o turno de sábado');
 select pg_temp.ok(loja_aberta('2026-10-11 00:30-03'), 'domingo 00:30: aberta pela sobra do turno de sábado (19h–1h)');
-select pg_temp.ok(not loja_aberta('2026-10-12 00:30-03'), 'segunda 00:30: fechada (domingo não tem turno)');
+select pg_temp.ok(not loja_aberta('2026-10-12 00:00-03'), 'segunda 00:00: fechada, o turno de domingo acaba à meia-noite');
+select pg_temp.ok(not loja_aberta('2026-10-12 00:30-03'), 'segunda 00:30: fechada (o turno de domingo não passa da meia-noite)');
 select pg_temp.ok(not loja_aberta('2026-10-12 18:59-03'), 'segunda 18:59: fechada');
 select pg_temp.ok(loja_aberta('2026-10-12 19:00-03'), 'segunda 19:00: aberta');
 select pg_temp.ok(loja_aberta('2026-10-12 23:59:59-03'), 'segunda 23:59:59: aberta');
@@ -31,6 +36,11 @@ select pg_temp.ok(not loja_aberta('2026-10-13 00:00-03'), 'terça 00:00: fechada
 select pg_temp.ok(loja_aberta('2026-10-09 23:00-03'), 'sexta 23:00: aberta');
 select pg_temp.ok(loja_aberta('2026-10-10 03:30+00'), '03:30 UTC de sábado = 00:30 de sábado em SP: aberta (fuso aplicado)');
 select pg_temp.ok(not loja_aberta('2026-10-09 15:00-03'), 'sexta 15:00: fechada');
+
+-- dia sem turno (null) = fechado o dia todo; a sobra do turno de ontem continua valendo
+update loja set horarios = jsonb_set(horarios, '{0}', 'null');
+select pg_temp.ok(not loja_aberta('2026-10-11 20:00-03'), 'domingo null: fechado às 20:00');
+select pg_temp.ok(loja_aberta('2026-10-11 00:30-03'), 'domingo null: 00:30 ainda é o turno de sábado');
 
 -- turnos de teste: o dia todo (00:00–00:00) e nenhum
 update loja set horarios = '{"0":["00:00","00:00"],"1":["00:00","00:00"],"2":["00:00","00:00"],"3":["00:00","00:00"],"4":["00:00","00:00"],"5":["00:00","00:00"],"6":["00:00","00:00"]}';

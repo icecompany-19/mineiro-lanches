@@ -29,11 +29,12 @@ $$;
 -- ================= tabelas =================
 
 -- cardápio (gerado do CONFIG por scripts/gerar-seed.mjs)
+-- preco null = "Preço a confirmar": aparece no cardápio, mas o criar_pedido recusa (produto_invalido)
 create table if not exists public.produtos (
   id text primary key check (id ~ '^[a-z0-9][a-z0-9-]{0,59}$'),
   categoria text not null check (char_length(categoria) between 1 and 40),
   nome text not null check (char_length(nome) between 1 and 120),
-  preco numeric(10, 2) not null check (preco >= 0),
+  preco numeric(10, 2) check (preco >= 0),
   tipo text not null check (tipo in ('lanche', 'combo', 'porcao', 'bebida')),
   foto text check (foto is null or char_length(foto) <= 120),
   ingredientes text[] not null default '{}',
@@ -41,6 +42,8 @@ create table if not exists public.produtos (
   ativo boolean not null default true,
   esgotado_dia date
 );
+-- upgrade da versão de 08/10/2026 (preco era not null): rodar de novo não muda nada
+alter table public.produtos alter column preco drop not null;
 
 create table if not exists public.adicionais (
   id text primary key check (id ~ '^[a-z0-9][a-z0-9-]{0,59}$'),

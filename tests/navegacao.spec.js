@@ -307,9 +307,24 @@ test('head de produção: SEO na página do cliente, noindex só no painel, sem 
   const ld = JSON.parse(cliente.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
   expect(ld['@type']).toBe('FoodEstablishment');
   expect(ld.telephone).toBe('+55 11 98572-0150');
-  expect(ld.address).toMatchObject({ addressLocality: 'Suzano', addressRegion: 'SP', addressCountry: 'BR' });
+  expect(ld.address).toMatchObject({
+    streetAddress: 'Rua Eliziel Alves Costa, 300, Centro',
+    addressLocality: 'Suzano',
+    addressRegion: 'SP',
+    addressCountry: 'BR'
+  });
   expect(ld.hasMenu).toMatch(/\/#cardapio$/);
-  expect(ld.openingHoursSpecification.flatMap((o) => o.dayOfWeek)).not.toContain('Sunday');
+  // domingo abre (docs/CLIENTE-2026-10.md): domingo a quinta 19h–0h, sexta e sábado 19h–1h
+  const dias = Object.fromEntries(ld.openingHoursSpecification.flatMap((o) => o.dayOfWeek.map((d) => [d, o.opens + '-' + o.closes])));
+  expect(dias).toEqual({
+    Sunday: '19:00-00:00',
+    Monday: '19:00-00:00',
+    Tuesday: '19:00-00:00',
+    Wednesday: '19:00-00:00',
+    Thursday: '19:00-00:00',
+    Friday: '19:00-01:00',
+    Saturday: '19:00-01:00'
+  });
   expect(painel).toContain('<meta name="robots" content="noindex, nofollow">');
   expect(painel).toContain('<link rel="manifest" href="/painel/manifest.webmanifest">');
 });

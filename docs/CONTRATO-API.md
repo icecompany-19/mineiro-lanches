@@ -10,7 +10,7 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | Código | Quando |
 |---|---|
 | `dados_invalidos` | Campo obrigatório ausente ou formato errado |
-| `produto_invalido` | Id inexistente ou inativo; opção não permitida para o tipo |
+| `produto_invalido` | Id inexistente ou inativo; produto sem preço ("Preço a confirmar"); opção não permitida para o tipo |
 | `produto_esgotado` | Item esgotado no dia de operação |
 | `loja_fechada` | Loja fechada e `aceita_fechada = false` |
 | `muitos_pedidos` | Mais de 5 pedidos do mesmo telefone em 10 min (só `anon`) |
@@ -29,7 +29,7 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | `id` | `text` pk |
 | `categoria` | `text` |
 | `nome` | `text` |
-| `preco` | `numeric(10,2)` |
+| `preco` | `numeric(10,2)` null. **`null` = "Preço a confirmar"**: item novo cujo preço o dono ainda não mandou (o `preco: null` do CONFIG). Aparece no cardápio, mas não vai para a sacola e o `criar_pedido` o recusa com `produto_invalido`. `check (preco >= 0)` |
 | `tipo` | `lanche` · `combo` · `porcao` · `bebida` |
 | `foto` | `text` null |
 | `ingredientes` | `text[]` (o `ing` do CONFIG) |
@@ -46,7 +46,7 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | `modo` | `auto` · `aberta` · `fechada` |
 | `aceita_fechada` | `false` |
 | `combo_preco` | `14.90` |
-| `horarios` | `jsonb`, igual ao `CONFIG.horarios`: `{"0":null,"1":["19:00","00:00"],…}` |
+| `horarios` | `jsonb`, igual ao `CONFIG.horarios`: `{"0":["19:00","00:00"],…,"5":["19:00","01:00"],"6":["19:00","01:00"]}` (0 = domingo; `null` = fechado naquele dia) |
 | `atualizado_em` | |
 
 **`clientes`**
@@ -120,7 +120,7 @@ Entrada: o que o checkout já monta, com os itens no formato de `itemDoPedido` d
 
 - `nome`: 2 a 80 caracteres. `telefone`: só dígitos, 10 ou 11. `modo` válido. `endereco` obrigatório e com 5 a 200 caracteres quando `modo = 'entrega'`. Limites: `referencia` ≤ 120, `obs` ≤ 300, `troco` ≤ 40, `pagamento` ≤ 30, `mesa` ≤ 10.
 - `origem`: `cardapio` ou `qrcode`; `exemplo` só se `is_equipe()`.
-- Itens: de 1 a 30 linhas; `qtd` de 1 a 20; produto existe, está ativo e não está esgotado no dia.
+- Itens: de 1 a 30 linhas; `qtd` de 1 a 20; produto existe, está ativo, **tem preço** (`preco` não é `null`) e não está esgotado no dia. Item sem preço recusa o pedido inteiro com `produto_invalido`, também para a equipe.
 - `removidos` filtrados para os que estão em `ingredientes` e ordenados; `completo = (removidos vazio)`.
 - `prensado` só vale se `tipo` for `lanche` ou `combo`.
 - `combo.ativo` só vale se `tipo = 'lanche'`; `refri` ≤ 40.
@@ -157,7 +157,22 @@ Devolve `{ numero, criadoEm, status, historico, modo, total, itens: [{ nome, qtd
   "adicionais": { "bacon": 7.5 }, "loja": { "modo": "auto", "aceitaFechada": false, "comboPreco": 14.9, "horarios": { } } }
 ```
 
+`precos` traz todos os produtos, inclusive os inativos; o de um item sem preço vem `null` (ex.: `"dog-cbo-turbo": null`). Hoje o adaptador (`store-supabase.js`) só aplica preços numéricos: um `null` do banco mantém o preço do `CONFIG`, que é o mesmo do seed.
+
 O front aplica isso sobre o `CONFIG` ao abrir. Repete quando chega aviso do Realtime em `produtos` ou `loja`, e a cada 60 s mesmo com o canal ligado (`adicionais` não está no Realtime: adicional desativado ou com preço novo chega por essa consulta). Adicional ausente de `adicionais` é inativo: a sacola marca a linha que o tem e o checkout não envia até ele sair.
+
+### Preço a confirmar (`preco` null) no front
+
+| Onde | Comportamento |
+|---|---|
+| `core.js` | `ML.fmt.brl(null)` devolve `"Preço a confirmar"` (`ML.fmt.semPreco`); `ML.regras.temPreco(p)` diz se o produto tem preço; `ML.precos.unitario()` devolve `null` e o `subtotal` do item sai `null`. `ML.whatsapp.consulta(p)` monta a mensagem pronta de consulta. |
+| Cardápio | O card mostra "Preço a confirmar" no lugar do preço e não oferece "Vira combo". |
+| Ficha | Mostra nome, foto, descrição e "Consultar no WhatsApp" (`#ficha-consulta`, `wa.me` com a mensagem pronta), sem as opções de montar. O botão de adicionar fica `aria-disabled="true"` com o texto "Preço a confirmar" e não adiciona. |
+| Sacola | O item nunca entra: `addSacola` recusa e a sacola guardada no aparelho é filtrada ao abrir. |
+| Banco | `criar_pedido` recusa com `produto_invalido` (última barreira). |
+| Painel | A lista de esgotados mostra "Preço a confirmar"; esgotar e liberar funcionam normalmente. |
+
+Quando o dono mandar o preço: troque o `null` pelo valor no `CONFIG`, rode `npm run seed && npm run setup-sql` e aplique o `setup.sql`.
 
 ### Funções só da equipe (`sem_permissao` se não for `is_equipe()`)
 
@@ -188,3 +203,13 @@ bash scripts/supabase-local/iniciar.sh   # Postgres 16 :54322 + PostgREST :3000 
 - Para aplicar o SQL: `psql postgresql://postgres@localhost:54322/postgres -f supabase/setup.sql`; em seguida, `notify pgrst, 'reload schema'`.
 - Login da equipe: `equipe@teste.local` com qualquer senha. Esse usuário precisa estar em `equipe`: o `supabase/tests/` insere.
 - Não existe Realtime local. O front **precisa** funcionar só com o plano B de consulta periódica: painel a cada 5 s, cardápio a cada 60 s, acompanhamento a cada 10 s.
+- **Atualização por cima da versão anterior.** O `setup.sql` novo roda sobre o de 08/10/2026 (`preco` era `not null`; o `0001` faz `alter column preco drop not null`). Pedidos, clientes, esgotados e o modo da loja ficam como estavam; preços, composições e horários vêm do `CONFIG`. Para testar sem mexer no banco `postgres` compartilhado, use um banco à parte:
+
+  ```bash
+  B=postgresql://postgres@localhost:54322
+  psql $B/postgres -c 'drop database if exists upgrade' -c 'create database upgrade'
+  psql $B/upgrade -f scripts/supabase-local/stub.sql
+  git show <versão anterior>:supabase/setup.sql | psql $B/upgrade -v ON_ERROR_STOP=1 -f -
+  psql $B/upgrade -v ON_ERROR_STOP=1 -f supabase/setup.sql
+  PG_URL=$B/upgrade bash scripts/testar-sql.sh
+  ```

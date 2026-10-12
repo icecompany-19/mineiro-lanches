@@ -89,8 +89,10 @@ select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'e'::j
 select pg_temp.igual(:'e'::jsonb ->> 'diaOperacional', dia_operacional()::text, 'estado_cardapio: diaOperacional');
 select pg_temp.ok(:'e'::jsonb -> 'esgotados' = '["gran-crispy"]', 'estado_cardapio: só o esgotado de hoje (o de ontem já caiu)');
 select pg_temp.ok(:'e'::jsonb -> 'inativos' = '["combo-casal"]', 'estado_cardapio: inativos');
-select pg_temp.ok((select count(*) from jsonb_object_keys(:'e'::jsonb -> 'precos')) = 55 and :'e'::jsonb #> '{precos,gran-burger}' = '25.90'::jsonb
-                  and jsonb_typeof(:'e'::jsonb #> '{precos,gran-burger}') = 'number', 'estado_cardapio: preço dos 55 produtos, como número');
+select pg_temp.ok((select count(*) from jsonb_object_keys(:'e'::jsonb -> 'precos')) = 56 and :'e'::jsonb #> '{precos,gran-burger}' = '25.90'::jsonb
+                  and jsonb_typeof(:'e'::jsonb #> '{precos,gran-burger}') = 'number', 'estado_cardapio: preço dos 56 produtos, como número');
+select pg_temp.ok((:'e'::jsonb -> 'precos') ? 'dog-cbo-turbo' and jsonb_typeof(:'e'::jsonb #> '{precos,dog-cbo-turbo}') = 'null'
+                  and not (:'e'::jsonb -> 'inativos') ? 'dog-cbo-turbo', 'estado_cardapio: item sem preço vem com preço null (e ativo)');
 select pg_temp.ok(:'e'::jsonb -> 'adicionais' = '{"bacon":7.50,"catupiry":7.50,"doritos":7.50,"queijo":7.50}', 'estado_cardapio: adicionais ativos com preço');
 select pg_temp.ok(:'e'::jsonb -> 'loja' = jsonb_build_object('modo', 'aberta', 'aceitaFechada', false, 'comboPreco', 14.90, 'horarios', (select horarios from loja)),
   'estado_cardapio: bloco loja');
@@ -99,6 +101,12 @@ select pg_temp.sou(:'equipe');
 set local role authenticated;
 select marcar_esgotado('gran-crispy', false);
 select pg_temp.ok(estado_cardapio() -> 'esgotados' = '[]', 'desmarcar esgotado: some da lista');
+-- item sem preço: o painel esgota e libera normalmente, mas nem a equipe pede
+select marcar_esgotado('dog-cbo-turbo', true);
+select pg_temp.ok(estado_cardapio() -> 'esgotados' = '["dog-cbo-turbo"]', 'marcar_esgotado em item sem preço');
+select marcar_esgotado('dog-cbo-turbo', false);
+select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido('[{"produtoId":"dog-cbo-turbo"}]', '{"origem":"exemplo","cliente":{"nome":"Ana (exemplo)","telefone":""}}')),
+  'produto_invalido', 'equipe também não pede item sem preço (produto_invalido)');
 select pg_temp.igual(pg_temp.erro($$select marcar_esgotado('nao-existe', true)$$), 'nao_encontrado', 'marcar_esgotado de produto inexistente: nao_encontrado');
 select pg_temp.igual(pg_temp.erro($$select marcar_esgotado('gran-crispy', null)$$), 'dados_invalidos', 'marcar_esgotado com null: dados_invalidos');
 

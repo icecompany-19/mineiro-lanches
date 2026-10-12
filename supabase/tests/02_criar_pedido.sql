@@ -93,9 +93,9 @@ set local role anon;
 select pg_temp.igual(pg_temp.erro_item('x-burguer', '{"adicionais":[{"id":"pizza","qtd":1}]}'), 'produto_invalido', 'adicional inativo: produto_invalido');
 
 -- ================= removidos: só os ingredientes, ordenados =================
-select pg_temp.ok(pg_temp.um('gran-bacon-onion', '{"completo":false,"removidos":["Tomate","Abacaxi","Bacon","Cebola roxa","3 onion rings","Tomate"]}')
-                  @> '{"completo":false,"removidos":["3 onion rings","Bacon","Cebola roxa","Tomate"],"resumo":"Sem 3 onion rings, bacon, cebola roxa, tomate · Não prensado"}',
-  'removidos fora dos ingredientes descartados, sem repetir e em ordem');
+select pg_temp.ok(pg_temp.um('gran-bacon-onion', '{"completo":false,"removidos":["Tomate em rodelas","Abacaxi","Bacon em fatias","Cebola roxa","3 onion rings","Tomate em rodelas","Bacon"]}')
+                  @> '{"completo":false,"removidos":["3 onion rings","Bacon em fatias","Cebola roxa","Tomate em rodelas"],"resumo":"Sem 3 onion rings, bacon em fatias, cebola roxa, tomate em rodelas · Não prensado"}',
+  'removidos fora dos ingredientes descartados (Abacaxi; Bacon, que aqui é "Bacon em fatias"), sem repetir e em ordem');
 select pg_temp.ok(pg_temp.um('gran-big-tudo', '{"completo":false,"removidos":["Requeijão","Batata palha"]}')
                   @> '{"removidos":["Batata palha","Requeijão"],"resumo":"Sem batata palha, requeijão · Não prensado"}',
   'resumo em minúsculas com acento');
@@ -137,6 +137,23 @@ reset role;
 update produtos set ativo = false where id = 'gran-egg';
 set local role anon;
 select pg_temp.igual(pg_temp.erro_item('gran-egg'), 'produto_invalido', 'produto inativo: produto_invalido');
+
+-- ================= "Preço a confirmar" (preco null): está no cardápio, mas não se vende pelo site =================
+select pg_temp.igual(pg_temp.erro_item('dog-cbo-turbo'), 'produto_invalido', 'item sem preço (CBO Turbo): produto_invalido');
+select pg_temp.igual(pg_temp.erro_item('dog-cbo-turbo', '{"qtd":2,"prensado":true,"combo":{"ativo":true,"refri":"Coca"},"adicionais":[{"id":"bacon","qtd":1}],"precoUnit":30,"subtotal":60}'),
+  'produto_invalido', 'item sem preço com combo, adicional e preço mandado pelo navegador: produto_invalido');
+select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido(jsonb_build_array(pg_temp.item('agua'), pg_temp.item('dog-cbo-turbo')), pg_temp.cliente('11900000030'))),
+  'produto_invalido', 'um item sem preço recusa o pedido inteiro');
+reset role;
+select pg_temp.ok(not exists (select 1 from pedidos where cliente_telefone = '11900000030') and not exists (select 1 from clientes where telefone = '11900000030'),
+  'pedido recusado por item sem preço não grava pedido nem cliente');
+update produtos set preco = null where id = 'x-burguer';
+set local role anon;
+select pg_temp.igual(pg_temp.erro_item('x-burguer'), 'produto_invalido', 'produto que perdeu o preço no banco: produto_invalido');
+reset role;
+update produtos set preco = 16.90 where id = 'x-burguer';
+set local role anon;
+select pg_temp.ok(pg_temp.um('x-burguer') @> '{"precoUnit":16.90}', 'com preço de novo, volta a ser vendido');
 
 -- ================= cliente, modo e textos =================
 select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido('[{"produtoId":"agua"}]', pg_temp.cliente(pg_temp.tel_novo(), 'A'))), 'dados_invalidos', 'nome com 1 caractere: dados_invalidos');

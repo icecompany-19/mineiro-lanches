@@ -3,24 +3,35 @@ begin;
 \ir _ajuda.sql
 
 -- seed (CONFIG do core.js)
-select pg_temp.igual((select count(*) from produtos)::text, '55', 'seed: 55 produtos');
+select pg_temp.igual((select count(*) from produtos)::text, '56', 'seed: 56 produtos');
 select pg_temp.igual(
   (select string_agg(tipo || '=' || n, ',' order by tipo) from (select tipo, count(*) n from produtos group by tipo) t),
-  'bebida=8,combo=11,lanche=34,porcao=2', 'seed: 34 lanches, 11 combos, 2 porções, 8 bebidas');
+  'bebida=8,combo=11,lanche=35,porcao=2', 'seed: 35 lanches, 11 combos, 2 porções, 8 bebidas');
 select pg_temp.igual((select count(*) from adicionais where preco = 7.50)::text, '5', 'seed: 5 adicionais a R$ 7,50');
 select pg_temp.igual((select count(*) from loja)::text, '1', 'seed: uma linha de loja');
-select pg_temp.ok((select combo_preco = 14.90 and horarios = '{"0":null,"1":["19:00","00:00"],"2":["19:00","00:00"],"3":["19:00","00:00"],"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb from loja),
-  'seed: loja com combo 14,90 e horários do CONFIG');
+select pg_temp.ok((select combo_preco = 14.90 and horarios = '{"0":["19:00","00:00"],"1":["19:00","00:00"],"2":["19:00","00:00"],"3":["19:00","00:00"],"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb from loja),
+  'seed: loja com combo 14,90 e horários do CONFIG (domingo 19h–0h)');
 select pg_temp.igual((select string_agg(id, ',' order by ordem) from (select id, ordem from produtos order by ordem limit 3) t),
   'gran-burger,gran-burger-bacon,gran-salada', 'seed: ordem do CONFIG');
-select pg_temp.ok((select ingredientes = array['Maionese', 'Barbecue', '3 onion rings', 'Cheddar cremoso', 'Mussarela', 'Bacon', 'Alface americano', 'Tomate', 'Cebola roxa']
+select pg_temp.ok((select ingredientes = array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '3 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']
                    and categoria = 'artesanais' and preco = 34.90 and foto = 'gran-bacon-onion' from produtos where id = 'gran-bacon-onion'),
   'seed: ingredientes = ing do CONFIG, com categoria, preço e foto');
-select pg_temp.ok((select foto is null and ingredientes = '{}' from produtos where id = 'porcao-batata'), 'seed: sem foto e sem ing ficam null e {}');
+select pg_temp.ok((select foto is null and ingredientes = '{}' and nome = 'Porção de batata turbinada' and preco = 39.90 from produtos where id = 'porcao-batata'),
+  'seed: sem foto e sem ing ficam null e {} (porção turbinada, mesmo id e preço)');
+
+-- "Preço a confirmar": preco null no CONFIG vai null para o banco (o criar_pedido recusa; 02 e 05)
+select pg_temp.ok((select is_nullable = 'YES' from information_schema.columns
+                   where table_schema = 'public' and table_name = 'produtos' and column_name = 'preco'), 'produtos.preco aceita null');
+select pg_temp.ok((select preco is null and ativo and tipo = 'lanche' and categoria = 'hotdog' and nome = 'Hot Dog CBO Turbo'
+                   and 'Mussarela gratinada' = any (ingredientes) from produtos where id = 'dog-cbo-turbo'),
+  'seed: Hot Dog CBO Turbo ativo, no hot dog, com preço null');
+select pg_temp.igual((select string_agg(id, ',') from produtos where preco is null), 'dog-cbo-turbo', 'seed: só o CBO Turbo sem preço');
+select pg_temp.igual(pg_temp.erro($$update produtos set preco = -0.01 where id = 'gran-burger'$$), '23514', 'check: preço negativo continua recusado');
 
 -- seed de novo: não mexe em esgotado, o CONFIG manda no ativo (quem saiu e voltou é reativado; quem saiu fica
 -- inativo), loja só horarios e combo_preco
 update produtos set esgotado_dia = dia_operacional(), ativo = false, preco = 1 where id = 'gran-burger';
+update produtos set preco = 30 where id = 'dog-cbo-turbo';
 update adicionais set ativo = false, preco = 1 where id = 'bacon';
 update loja set modo = 'fechada', aceita_fechada = true, combo_preco = 1, horarios = '{}';
 insert into produtos (id, categoria, nome, preco, tipo, ordem) values ('saiu-do-config', 'artesanais', 'Antigo', 10, 'lanche', 99);
@@ -29,12 +40,13 @@ insert into adicionais (id, nome, preco) values ('saiu-do-config', 'Antigo', 7.5
 select pg_temp.ok((select preco = 25.90 and esgotado_dia = dia_operacional() from produtos where id = 'gran-burger'),
   'seed repetido: volta o preço e preserva esgotado_dia');
 select pg_temp.ok((select ativo from produtos where id = 'gran-burger'), 'seed repetido: produto que voltou ao CONFIG fica ativo de novo');
+select pg_temp.ok((select preco is null from produtos where id = 'dog-cbo-turbo'), 'seed repetido: preço null do CONFIG vale por cima do banco');
 select pg_temp.ok((select ativo and preco = 7.50 from adicionais where id = 'bacon'), 'seed repetido: adicional que voltou ao CONFIG fica ativo de novo');
 select pg_temp.ok((select not ativo from produtos where id = 'saiu-do-config'), 'seed repetido: produto fora do CONFIG fica inativo');
 select pg_temp.ok((select not ativo from adicionais where id = 'saiu-do-config'), 'seed repetido: adicional fora do CONFIG fica inativo');
 select pg_temp.ok((select modo = 'fechada' and aceita_fechada and combo_preco = 14.90 and horarios ? '5' from loja),
   'seed repetido: loja preserva modo e aceita_fechada, atualiza combo_preco e horarios');
-select pg_temp.igual((select count(*) from produtos)::text, '56', 'seed repetido: não duplica produtos');
+select pg_temp.igual((select count(*) from produtos)::text, '57', 'seed repetido: não duplica produtos');
 select pg_temp.igual((select count(*) from adicionais)::text, '6', 'seed repetido: não duplica adicionais');
 
 -- RLS e Realtime

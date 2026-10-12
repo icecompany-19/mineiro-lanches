@@ -394,7 +394,8 @@ begin
       raise exception 'dados_invalidos' using errcode = 'P0001';
     end if;
     select * into v_prod from public.produtos where id = v_entrada ->> 'produtoId';
-    if not found or not v_prod.ativo then
+    -- preco null = "Preço a confirmar": está no cardápio, mas ainda não se vende pelo site (nem pela equipe)
+    if not found or not v_prod.ativo or v_prod.preco is null then
       raise exception 'produto_invalido' using errcode = 'P0001';
     end if;
     if v_prod.esgotado_dia = v_dia then
@@ -556,7 +557,7 @@ as $$
 $$;
 
 -- ================= estado_cardapio (anon, authenticated) =================
--- o front aplica sobre o CONFIG: esgotados do dia, inativos, preços e loja
+-- o front aplica sobre o CONFIG: esgotados do dia, inativos, preços (null = "Preço a confirmar") e loja
 create or replace function public.estado_cardapio()
 returns jsonb
 language sql

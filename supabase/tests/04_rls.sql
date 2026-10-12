@@ -10,7 +10,7 @@ select criar_pedido(pg_temp.pedido('[{"produtoId":"agua"}]', pg_temp.cliente('11
 -- ================= anon =================
 select pg_temp.sou(null);
 set local role anon;
-select pg_temp.igual((select count(*) from produtos)::text, '55', 'anon lê os 55 produtos');
+select pg_temp.igual((select count(*) from produtos)::text, '56', 'anon lê os 56 produtos');
 select pg_temp.igual((select count(*) from adicionais)::text, '5', 'anon lê os adicionais');
 select pg_temp.igual((select count(*) from loja)::text, '1', 'anon lê a loja');
 select pg_temp.igual(pg_temp.erro('select * from pedidos'), '42501', 'anon não lê pedidos');
@@ -50,7 +50,7 @@ select pg_temp.ok(not is_equipe(), 'logado fora da equipe: is_equipe() = false')
 select pg_temp.igual((select count(*) from pedidos)::text, '0', 'logado fora da equipe não vê pedidos');
 select pg_temp.igual((select count(*) from clientes)::text, '0', 'logado fora da equipe não vê clientes');
 select pg_temp.igual((select count(*) from equipe)::text, '0', 'logado fora da equipe não vê a equipe');
-select pg_temp.igual((select count(*) from produtos)::text, '55', 'logado fora da equipe lê o cardápio');
+select pg_temp.igual((select count(*) from produtos)::text, '56', 'logado fora da equipe lê o cardápio');
 select pg_temp.igual(pg_temp.erro($$update produtos set preco = 0.01$$), '42501', 'logado fora da equipe não muda preço');
 select pg_temp.igual(pg_temp.erro($$update loja set modo = 'fechada'$$), '42501', 'logado fora da equipe não muda a loja');
 select pg_temp.igual(pg_temp.erro(format($$insert into equipe (user_id) values (%L)$$, :'estranho')), '42501', 'logado fora da equipe não se põe na equipe');

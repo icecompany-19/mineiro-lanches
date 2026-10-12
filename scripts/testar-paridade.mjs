@@ -1,6 +1,7 @@
 // Paridade core.js ⇄ banco: monta seleções variadas, calcula item, resumo e total com o próprio core.js (node:vm)
 // e compara com o que o criar_pedido devolve pela API HTTP local, centavo a centavo e caractere a caractere.
-// Confere também o horário (situacaoNo × horario_aberto) e o acesso pela API (anon, logado e equipe).
+// Confere também o horário (situacaoNo × horario_aberto), o "Preço a confirmar" (preco null no CONFIG: o banco
+// guarda null, o estado_cardapio devolve null e o criar_pedido recusa) e o acesso pela API (anon, logado e equipe).
 // Uso: node scripts/testar-paridade.mjs [caminho/do/core.js]
 //   API_URL (padrão http://localhost:54321), PG_URL (padrão postgresql://postgres@localhost:54322/postgres), SEMENTE
 // Pré-requisito: bash scripts/supabase-local/iniciar.sh e o supabase/setup.sql aplicado.
@@ -111,8 +112,19 @@ async function main() {
       .map((x) => [rnd(), x])
       .sort((p, q) => p[0] - q[0])
       .map((p) => p[1]);
-  const produtos = [];
-  CONFIG.categorias.forEach((c) => c.itens.forEach((p) => produtos.push(p)));
+  const todos = [];
+  CONFIG.categorias.forEach((c) => c.itens.forEach((p) => todos.push(p)));
+  // só o que tem preço vai para a sacola; o "Preço a confirmar" (preco null) é conferido à parte
+  const produtos = todos.filter((p) => ML.regras.temPreco(p));
+  const semPreco = todos.filter((p) => p.preco === null);
+  ok(
+    produtos.length + semPreco.length === todos.length,
+    'CONFIG: todo produto tem preço numérico ou null',
+    todos
+      .filter((p) => !produtos.includes(p) && !semPreco.includes(p))
+      .map((p) => p.id)
+      .join(', ')
+  );
   const refris = ['', 'Coca-Cola', '  Guaraná  ', 'Fanta Uva', 'Sprite'];
   const sabores = ['Coca-Cola', ' Guaraná ', 'Uva', 'Laranja', 'Limão'];
 
@@ -237,6 +249,43 @@ async function main() {
       ok(r.status === 200 && r.json.id === c.resp.id && r.json.numero === c.resp.numero, 'reenvio com o mesmo uuid devolve o mesmo pedido');
     }
 
+    // ================= "Preço a confirmar": core.js × banco =================
+    const listaProdutos = await http('GET', '/rest/v1/produtos?select=id,preco,ativo');
+    const precoNoBanco = Object.fromEntries((listaProdutos.json || []).map((p) => [p.id, p.preco]));
+    const estadoPrecos = await http('POST', '/rest/v1/rpc/estado_cardapio', { corpo: {} });
+    for (const p of semPreco) {
+      ok(p.id in precoNoBanco && precoNoBanco[p.id] === null, `${p.id}: preco null no banco (seed)`, JSON.stringify(precoNoBanco[p.id]));
+      ok(
+        estadoPrecos.status === 200 && p.id in estadoPrecos.json.precos && estadoPrecos.json.precos[p.id] === null,
+        `${p.id}: estado_cardapio devolve preço null`
+      );
+      ok(
+        ML.fmt.brl(p.preco) === 'Preço a confirmar' && ML.precos.unitario({ produtoId: p.id }) === null,
+        `${p.id}: core.js mostra "Preço a confirmar" e não calcula preço`
+      );
+      const r = await http('POST', '/rest/v1/rpc/criar_pedido', {
+        corpo: {
+          p: {
+            cliente: { nome: 'Paridade sem preço', telefone: telefones[0] },
+            modo: 'retirada',
+            obs: 'paridade',
+            itens: [{ produtoId: p.id, qtd: 1, precoUnit: 30, subtotal: 30 }]
+          }
+        }
+      });
+      ok(
+        r.status >= 400 && r.json && r.json.message === 'produto_invalido',
+        `${p.id}: criar_pedido recusa com produto_invalido (HTTP ${r.status})`,
+        r.texto.slice(0, 200)
+      );
+    }
+    const precoDiferente = produtos.filter((p) => precoNoBanco[p.id] !== p.preco);
+    ok(
+      !precoDiferente.length,
+      `preços do banco = CONFIG (${produtos.length} produtos com preço)`,
+      precoDiferente.map((p) => `${p.id}: banco ${precoNoBanco[p.id]} × CONFIG ${p.preco}`).join(', ')
+    );
+
     // ================= horário: core.js × banco =================
     if (ML.horario && ML.horario.situacaoNo) {
       const js = [];
@@ -264,7 +313,7 @@ async function main() {
       ok(r.status >= 400, `anon GET /${t}: erro (HTTP ${r.status})`, r.texto.slice(0, 200));
     }
     for (const [t, n] of [
-      ['produtos', 55],
+      ['produtos', todos.length],
       ['adicionais', 5],
       ['loja', 1]
     ]) {
@@ -283,7 +332,7 @@ async function main() {
       ok(del.status >= 400, `anon DELETE /${t}: erro (HTTP ${del.status})`);
     }
     ok(
-      sql(`select modo from loja`) === 'aberta' && sql(`select count(*) from produtos`) === '55',
+      sql(`select modo from loja`) === 'aberta' && sql(`select count(*) from produtos`) === String(todos.length),
       'depois das tentativas, loja e produtos intactos'
     );
     for (const [fn, args] of [
@@ -298,7 +347,7 @@ async function main() {
     }
     const estado = await http('POST', '/rest/v1/rpc/estado_cardapio', { corpo: {} });
     ok(
-      estado.status === 200 && estado.json.loja.modo === 'aberta' && Object.keys(estado.json.precos).length === 55,
+      estado.status === 200 && estado.json.loja.modo === 'aberta' && Object.keys(estado.json.precos).length === todos.length,
       'anon rpc/estado_cardapio'
     );
     const acomp = await http('POST', '/rest/v1/rpc/acompanhar_pedido', { corpo: { p_token: criados[0].resp.token } });
