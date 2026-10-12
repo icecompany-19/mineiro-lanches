@@ -59,6 +59,7 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
     j.loja.comboPreco = 16.5;
     j.precos['dog-doritos'] = 24.5;
     j.precos['gran-bacon-onion'] = 35.5;
+    j.loja.horarios = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, ['20:00', '01:00']]));
   });
   await page.goto('/');
   const textos = () => page.evaluate(() => [...document.querySelectorAll('[data-combo-preco]')].map((e) => e.textContent));
@@ -72,6 +73,8 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   await page.goto('/#site');
   await expect(page.locator('#monte-switch')).toContainText('Vira combo +R$ 16,50');
   await expect(page.locator('.dog-preco')).toHaveText('R$ 24,50');
+  // o herói do site: a próxima abertura sai dos turnos que o banco mandou (todos os dias às 20h)
+  await expect(page.locator('.s-hero [data-abre]')).toHaveText('20h');
 });
 
 test('adicional que saiu do cardápio com o lanche na sacola: a linha acusa, o envio não sai e editar tira o adicional', async ({

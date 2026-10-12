@@ -155,8 +155,8 @@ test('herói do site: placa, um título por estado da luz e botões acima da dob
   await expect(page.locator('.palco, .recorte, .s-letreiro')).toHaveCount(0);
   expect((await page.locator('#view-site h1').allTextContents()).join(' ')).not.toMatch(/mineiro/i);
   await expect(hero.locator('.hero-tit__e')).toHaveCount(3);
-  // só o título do estado (o app escreve html[data-luz] e [data-luz-motivo]) fica visível. O estado da loja chega do
-  // servidor depois da primeira pintura: confere até os dois concordarem
+  // só o título do estado (o app escreve html[data-luz] e [data-luz-motivo]) fica visível e o h1 diz o mesmo ao leitor de
+  // tela (aria-label). O estado da loja chega do servidor depois da primeira pintura: confere até os dois concordarem
   await expect
     .poll(() =>
       page.evaluate(() => {
@@ -165,7 +165,8 @@ test('herói do site: placa, um título por estado da luz e botões acima da dob
         const titulos = [...document.querySelectorAll('.s-hero .hero-tit__e')];
         const visiveis = titulos.filter((e) => getComputedStyle(e).visibility === 'visible').map((e) => e.dataset.estado);
         const atual = titulos.find((e) => e.dataset.estado === estado);
-        return visiveis.length === 1 && visiveis[0] === estado && !!atual;
+        const rotulo = document.getElementById('s-tit').getAttribute('aria-label');
+        return visiveis.length === 1 && visiveis[0] === estado && rotulo === atual.textContent.replace(/\s+/g, ' ').trim();
       })
     )
     .toBe(true);
@@ -177,7 +178,7 @@ test('herói do site: placa, um título por estado da luz e botões acima da dob
   }
 });
 
-test('herói do site: com a loja pausada o título é "Pausa na chapa."', async ({ page }) => {
+test('herói do site: com a loja pausada o título é "Pausa na chapa." e o h1 acompanha', async ({ page }) => {
   await page.route('**/rest/v1/rpc/estado_cardapio', async (r) => {
     const resposta = await r.fetch();
     const j = await resposta.json();
@@ -187,7 +188,32 @@ test('herói do site: com a loja pausada o título é "Pausa na chapa."', async 
   await page.goto('/#site');
   await expect(page.locator('.s-hero .hero-tit__e[data-estado="pausa"]')).toBeVisible();
   await expect(page.locator('.s-hero .hero-tit__e:visible')).toHaveCount(1);
-  await expect(page.locator('.s-hero .hero-tit__e:visible')).toHaveText('Pausa na chapa.');
+  await expect(page.locator('#s-tit')).toHaveAttribute('aria-label', 'Pausa na chapa.');
+});
+
+test('herói do site: o cone da arandela segue o mouse em 1024+ e, com movimento reduzido, nada anima', async ({ page }) => {
+  const largo = (page.viewportSize()?.width || 0) >= 1024;
+  const mx = () => page.evaluate(() => getComputedStyle(document.querySelector('.s-hero')).getPropertyValue('--mx'));
+  await page.goto('/#site');
+  await expect(page.locator('.s-hero .hero-tit .letra').first()).toBeAttached(); // o chunk do site montou o herói
+  if (largo) {
+    const antes = await mx();
+    await page.mouse.move(300, 300);
+    await page.mouse.move(900, 400);
+    expect(await mx(), '--mx depois do pointermove').not.toBe(antes);
+  }
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('about:blank');
+  await page.goto('/#site');
+  await expect(page.locator('.s-hero .hero-tit .letra').first()).toBeAttached();
+  const antes = await mx();
+  if (largo) {
+    await page.mouse.move(250, 350);
+    await page.mouse.move(1000, 450);
+    expect(await mx(), 'sem movimento reduzido o mouse não mexe o cone').toBe(antes);
+  }
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => document.getAnimations().length), 'animações com movimento reduzido').toBe(0);
 });
 
 // O app (módulo) roda depois da primeira pintura. Aqui ele chega atrasado de propósito (rede lenta) e um laço de
