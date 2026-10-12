@@ -22,7 +22,7 @@
 /* ---------- barra lateral ---------- */
 .pn-lado { position: sticky; top: 0; align-self: start; height: 100vh; display: flex; flex-direction: column; gap: 1.25rem; padding: 1.25rem 1rem; background: var(--carvao-2); border-right: 1px solid var(--borda-escura); }
 .pn-marca { display: flex; align-items: center; gap: .75rem; }
-.pn-selo-logo { width: 64px; height: 64px; object-fit: contain; border-radius: 50%; }
+.pn-selo-logo { width: 64px; height: 64px; object-fit: contain; }
 .pn-marca-t { font-family: var(--f-letreiro); font-size: 1.25rem; line-height: 1.1; color: var(--amarelo); }
 .pn-nav { display: flex; flex-direction: column; gap: .35rem; }
 .pn-nav-b { display: flex; align-items: center; gap: .75rem; min-height: 48px; padding: 0 .9rem; border: 0; border-radius: 12px; background: transparent; color: var(--cinza-quente); font: 500 1rem var(--f-placa); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; text-align: left; transition: background 220ms var(--suave), color 220ms var(--suave), transform 120ms var(--suave); }
@@ -358,7 +358,7 @@
 /* ---------- acesso (login da equipe, antes do quadro) ---------- */
 .pn-acesso { display: grid; place-items: center; min-height: 100vh; padding: 1.5rem 1rem; }
 .pn-acesso-caixa { width: min(100%, 24rem); display: flex; flex-direction: column; align-items: center; gap: .5rem; padding: 2rem 1.5rem; background: var(--carvao-2); border: 1px solid var(--borda-escura); border-radius: 22px; text-align: center; }
-.pn-acesso-logo { width: 84px; height: 84px; border-radius: 50%; }
+.pn-acesso-logo { width: 84px; height: 84px; }
 .pn-acesso-tit { margin: .25rem 0 0; font: 400 1.9rem/1.05 var(--f-letreiro); color: var(--amarelo); }
 .pn-acesso-sub { color: var(--cinza-quente); font-size: .9rem; }
 .pn-acesso-corpo { width: 100%; display: flex; flex-direction: column; gap: .85rem; margin-top: 1rem; text-align: left; }

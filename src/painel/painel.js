@@ -261,7 +261,7 @@
     return `<div class="pn-app">
     <div class="pn-desktop">
       <aside class="pn-lado">
-        <div class="pn-marca"><img class="pn-selo-logo" src="/assets/logo-selo.svg" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-marca-t">Painel<br>de pedidos</span></div>
+        <div class="pn-marca"><img class="pn-selo-logo" src="/assets/logo/selo-128.webp" srcset="/assets/logo/selo-128.webp 1x, /assets/logo/selo-256.webp 2x" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-marca-t">Painel<br>de pedidos</span></div>
         <nav class="pn-nav" aria-label="Seções do painel">${nav}</nav>
         ${sairHTML()}
         <p class="pn-rodape">Mineiro Lanche · Painel de pedidos</p>
