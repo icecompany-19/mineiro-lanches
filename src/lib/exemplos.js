@@ -44,7 +44,7 @@ export function dadosDeExemplo(ML) {
     itens.push(sel);
   }
   if (bebidas.length && Math.random() < 0.3) itens.push({ produtoId: sorteia(bebidas).id, qtd: 1 });
-  const modo = sorteia(['entrega', 'entrega', 'retirada', 'local']);
+  const modo = sorteia(['entrega', 'entrega', 'local']);
   return {
     origem: 'exemplo',
     cliente: { nome: sorteia(NOMES) + ' (exemplo)', telefone: '' },

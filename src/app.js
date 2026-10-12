@@ -94,11 +94,11 @@ export function iniciarApp() {
     opc = opc || {};
     if (p.foto && FOTOS[p.foto]) {
       var f = FOTOS[p.foto], estilo = estiloFoto(f, tam);
-      return '<span class="foto ' + (f.origem === 'nova' ? 'nova' : 'antiga') + (extra ? ' ' + extra : '') + '"' + (estilo ? ' style="' + estilo + '"' : '') + '><img ' + atrFoto(p.foto, tam, opc.uso, opc.carga) + ' alt="Foto do ' + esc(p.nome) + '"></span>';
+      return '<span class="foto ' + (f.origem === 'nova' ? 'nova' : 'antiga') + (extra ? ' ' + extra : '') + '"' + (estilo ? ' style="' + estilo + '"' : '') + '><img ' + atrFoto(p.foto, tam, opc.uso, opc.carga) + (opc.carga === 'lcp' || opc.carga === 'cedo' ? ' class="ok"' : '') + ' alt="Foto do ' + esc(p.nome) + '"></span>';
     }
     return '<span class="arte' + (extra ? ' ' + extra : '') + '" aria-hidden="true">' + ic(iconeDe(p)) + '</span>';
   }
-  // imagens aparecem com um fade quando carregam
+  // imagens lazy aparecem com um fade quando carregam; as 'lcp' e 'cedo' já nascem com class="ok" (sem fade: a foto principal não espera o load)
   document.addEventListener('load', function (e) { if (e.target.tagName === 'IMG' && e.target.parentNode && e.target.parentNode.classList.contains('foto')) e.target.classList.add('ok'); }, true);
   function marcarCarregadas(raiz) { $$('.foto img', raiz).forEach(function (i) { if (i.complete && i.naturalWidth) i.classList.add('ok'); }); }
   function ingTexto(p) { return p.inclui ? p.inclui.join(' · ') : [p.base].concat(p.ing || []).filter(Boolean).join(', '); }
@@ -230,7 +230,12 @@ export function iniciarApp() {
     return lista.slice(0, 10);
   }
   var ICONE_BIO = { 'Hambúrguer artesanal': 'burger', 'Hot dog com Doritos': 'hotdog', 'Consumo no local': 'mesa', 'Entregas': 'moto' };
-  var ICONE_MODO = { entrega: 'moto', retirada: 'sacola', local: 'mesa' };
+  var ICONE_MODO = { entrega: 'moto', local: 'mesa' };
+  // texto da taxa de entrega: último trecho do desc da entrega no CONFIG.modos; o HTML nasce vazio e o JS preenche
+  function taxaEntregaTxt() {
+    var ent = C.modos.filter(function (m) { return m.id === 'entrega'; })[0];
+    return ent ? ent.desc.split(' · ').pop() : 'sem taxa';
+  }
   function montarBio() {
     var naBio = st.aba === 'app' && st.tela === 'bio';
     $('#chips-bio').innerHTML = C.bio.map(function (b) { return '<li>' + ic(ICONE_BIO[b] || 'estrela') + esc(b) + '</li>'; }).join('');
@@ -254,9 +259,8 @@ export function iniciarApp() {
       modosBio.innerHTML = C.modos.map(function (m) { return '<li>' + ic(ICONE_MODO[m.id] || 'truck') + '<span><strong>' + esc(m.label) + '</strong> · ' + esc(m.desc) + '</span></li>'; }).join('') +
         '<li>' + ic('prensa') + '<span><strong>Prensado</strong> · ' + esc(textoPrensado()) + '</span></li>';
     }
-    // "Entrega: taxa combinada" da comanda da sacola (CONFIG.modos)
-    var ent = C.modos.filter(function (m) { return m.id === 'entrega'; })[0];
-    $$('[data-taxa-entrega]').forEach(function (el) { el.textContent = ent ? ent.desc.split(' · ').pop() : 'sem taxa'; });
+    // taxa de entrega da comanda da sacola (CONFIG.modos)
+    $$('[data-taxa-entrega]').forEach(function (el) { el.textContent = taxaEntregaTxt(); });
     atualizarPedirDeNovo();
   }
 
@@ -596,13 +600,12 @@ export function iniciarApp() {
   }
 
   // ================= checkout =================
-  // peças do checkout que não estão no index.html: telefone obrigatório (o servidor exige), aviso de privacidade
-  // (LGPD) e o bloco de erro do envio com "Tentar de novo" e "Enviar pelo WhatsApp" (acima do botão fixo)
+  // peças do checkout que não estão no index.html: aviso de privacidade (LGPD), a mensagem de erro do telefone
+  // e o bloco de erro do envio com "Tentar de novo" e "Enviar pelo WhatsApp" (acima do botão fixo)
   (function () {
     var tel = $('#f-tel'), campo = tel.closest('.campo');
     campo.id = 'c-tel';
-    $('label', campo).textContent = 'Telefone com DDD (WhatsApp)';
-    tel.required = true; tel.setAttribute('autocomplete', 'tel-national');
+    tel.setAttribute('autocomplete', 'tel-national');
     campo.insertAdjacentHTML('beforeend', '<span class="msg-erro" id="erro-tel" hidden>Informe o telefone com DDD para o truck falar com você.</span>');
     campo.insertAdjacentHTML('afterend', '<p class="nota-dados">' + ic('check') + 'Usamos seus dados só para preparar e entregar este pedido.</p>');
     $('.enviar-wrap').insertAdjacentHTML('beforebegin',
@@ -611,7 +614,7 @@ export function iniciarApp() {
       '<button type="button" class="btn btn-vermelho" data-go="sacola" data-ajustar hidden>Ajustar a sacola</button>' +
       '<a class="btn btn-borda" id="envio-wa" href="#" target="_blank" rel="noopener">' + ic('chat') + 'Enviar pelo WhatsApp</a></div>' +
       '<small>A sacola e os seus dados continuam aqui.</small></div>');
-    // rascunho do formulário: volta como estava depois de um envio que falhou (some quando o pedido sai)
+    // rascunho do formulário: volta como estava depois de um envio que falhou e para o próximo pedido (só a observação sai quando o pedido sai)
     var r = lerLocal(CHAVE_RASCUNHO, {});
     [['f-nome', 'nome'], ['f-tel', 'tel'], ['f-end', 'end'], ['f-ref', 'ref'], ['f-obs', 'obs']].forEach(function (c) { if (r[c[1]]) $('#' + c[0]).value = r[c[1]]; });
     // o modo escolhido também, a não ser que o QR da mesa mande "Comer no local"
@@ -632,7 +635,7 @@ export function iniciarApp() {
   function modoLabel(m) { return m.id === 'local' && origemQR && origemQR.mesa ? m.label + ' · Mesa ' + origemQR.mesa : m.label; }
   function renderCheckout() {
     $('#modos').innerHTML = C.modos.map(function (m) {
-      return '<button type="button" class="modo" data-modo="' + m.id + '" aria-pressed="' + (st.modo === m.id) + '">' + ic(ICONE_MODO[m.id]) + '<span><strong>' + esc(modoLabel(m)) + '</strong><small>' + esc(m.desc) + '</small></span></button>';
+      return '<button type="button" class="modo" data-modo="' + m.id + '" aria-pressed="' + (st.modo === m.id) + '">' + ic(ICONE_MODO[m.id]) + '<span><strong>' + esc(modoLabel(m)) + '</strong><small>' + esc(m.desc) + '</small></span>' + ic('check', 'modo-check') + '</button>';
     }).join('');
     $('#bloco-endereco').hidden = st.modo !== 'entrega';
     $('#pagamentos').innerHTML = C.pagamentos
@@ -640,7 +643,7 @@ export function iniciarApp() {
       : '<p class="aviso">A forma de pagamento é combinada com o ' + esc(C.nome) + ' na entrega ou no truck.</p>';
     var t = totaisSacola();
     $('#chk-itens').textContent = plural(t.n);
-    $('#chk-taxa').textContent = st.modo === 'entrega' ? 'taxa combinada' : 'sem taxa';
+    $('#chk-taxa').textContent = st.modo === 'entrega' ? taxaEntregaTxt() : 'sem taxa';
     // a comanda (que recolhe) lista os itens com o que foi escolhido
     $('#chk-lista').innerHTML = sacola.map(function (l) {
       var it = ML.precos.item(l.sel);
@@ -749,10 +752,10 @@ export function iniciarApp() {
     ML.store.criarPedido(dados).then(function (pedido) {
       envio.uuid = null; envio.assinatura = null;
       sacola = []; salvarSacola();
-      // dados pessoais não ficam no aparelho depois do envio (celular ou computador compartilhado):
-      // o rascunho só serve enquanto o pedido não sai. Fica o modo; o navegador ainda sugere nome e telefone.
-      ['#f-nome', '#f-tel', '#f-end', '#f-ref', '#f-obs'].forEach(function (s) { $(s).value = ''; });
-      gravarLocal(CHAVE_RASCUNHO, { modo: st.modo });
+      // o cliente que volta só confere: nome, telefone, endereço e referência continuam no aparelho (rascunho);
+      // sai apenas a observação, que valia para aquele pedido
+      $('#f-obs').value = '';
+      salvarRascunho();
       travarEnvio(false);
       st.pedidoToken = pedido.token;
       // o checkout sai do histórico: voltar do acompanhamento leva à sacola, não ao formulário enviado
@@ -773,7 +776,6 @@ export function iniciarApp() {
   // ================= acompanhar pedido =================
   var PASSOS = {
     entrega: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['rota', 'Saiu para entrega', 'moto'], ['entregue', 'Entregue', 'check']],
-    retirada: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['pronto', 'Pronto para retirar', 'sacola'], ['entregue', 'Retirado', 'check']],
     local: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['pronto', 'Pronto para servir', 'mesa'], ['entregue', 'Servido', 'check']]
   };
   var MSG = { novo: 'Pedido recebido pelo Mineiro Lanche', preparo: 'Seu lanche está na chapa', pronto: 'Pronto!', rota: 'Saiu para entrega', entregue: 'Bom apetite!', cancelado: 'Pedido cancelado' };
@@ -810,7 +812,7 @@ export function iniciarApp() {
     }
     $('#ped-num').textContent = ML.fmt.numero(p.numero);
     var msg = MSG[p.status] || '';
-    if (p.status === 'pronto') msg = p.modo === 'retirada' ? 'Pronto! Pode retirar no truck' : 'Pronto para servir';
+    if (p.status === 'pronto') msg = 'Pronto para servir';
     if (p.status === 'cancelado') { var u = p.historico[p.historico.length - 1]; msg += u && u.motivo ? ' · ' + u.motivo : ''; }
     $('#ped-msg').textContent = msg;
     // para leitor de tela: o status muda sozinho (consulta a cada 10 s)
