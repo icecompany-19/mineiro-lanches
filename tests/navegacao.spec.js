@@ -2,7 +2,7 @@
 // do site se volta ao cardápio e à bio. Links diretos, voltar do navegador, console limpo, nada de domínio externo
 // (fora o próprio Supabase), nenhum texto de prévia e o painel em /painel/, com login da equipe.
 // Uso: npx playwright test tests/navegacao.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
-/* global document, location, innerHeight, scrollTo, window, requestAnimationFrame */
+/* global document, location, innerHeight, scrollTo, window, requestAnimationFrame, getComputedStyle */
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -143,6 +143,51 @@ test('links diretos #bio, #cardapio e #site, e #painel leva a /painel/', async (
   await expect(page.locator('.pn-acesso').getByLabel('E-mail')).toBeVisible();
   expect(v.erros, 'erros no console').toEqual([]);
   expect(v.externas, 'requisições a outros domínios').toEqual([]);
+});
+
+// Herói do site (docs/DIRECAO-VISUAL.md 6.2, S0): a placa é a logo oficial, os 3 títulos ocupam a mesma célula e só o do
+// estado da luz aparece; o nome da marca fica na logo (nada de "MINEIRO" em h1) e os dois botões ficam acima da dobra.
+test('herói do site: placa, um título por estado da luz e botões acima da dobra', async ({ page }) => {
+  await page.goto('/#site');
+  const hero = page.locator('.s-hero');
+  await expect(hero).toBeVisible();
+  await expect(hero.locator('.placa .placa-arte')).toBeVisible();
+  await expect(page.locator('.palco, .recorte, .s-letreiro')).toHaveCount(0);
+  expect((await page.locator('#view-site h1').allTextContents()).join(' ')).not.toMatch(/mineiro/i);
+  await expect(hero.locator('.hero-tit__e')).toHaveCount(3);
+  // só o título do estado (o app escreve html[data-luz] e [data-luz-motivo]) fica visível. O estado da loja chega do
+  // servidor depois da primeira pintura: confere até os dois concordarem
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const d = document.documentElement.dataset;
+        const estado = d.luz === 'acesa' ? 'aberto' : d.luzMotivo === 'pausa' ? 'pausa' : 'fechado';
+        const titulos = [...document.querySelectorAll('.s-hero .hero-tit__e')];
+        const visiveis = titulos.filter((e) => getComputedStyle(e).visibility === 'visible').map((e) => e.dataset.estado);
+        const atual = titulos.find((e) => e.dataset.estado === estado);
+        return visiveis.length === 1 && visiveis[0] === estado && !!atual;
+      })
+    )
+    .toBe(true);
+  const altura = await page.evaluate(() => innerHeight);
+  for (const b of [hero.getByRole('button', { name: 'Fazer pedido' }), hero.getByRole('link', { name: 'WhatsApp' })]) {
+    const caixa = await b.boundingBox();
+    expect(caixa.y + caixa.height, 'botão do herói acima da dobra').toBeLessThanOrEqual(altura);
+    expect(caixa.height, 'alvo de toque').toBeGreaterThanOrEqual(44);
+  }
+});
+
+test('herói do site: com a loja pausada o título é "Pausa na chapa."', async ({ page }) => {
+  await page.route('**/rest/v1/rpc/estado_cardapio', async (r) => {
+    const resposta = await r.fetch();
+    const j = await resposta.json();
+    j.loja.modo = 'fechada';
+    await r.fulfill({ response: resposta, json: j });
+  });
+  await page.goto('/#site');
+  await expect(page.locator('.s-hero .hero-tit__e[data-estado="pausa"]')).toBeVisible();
+  await expect(page.locator('.s-hero .hero-tit__e:visible')).toHaveCount(1);
+  await expect(page.locator('.s-hero .hero-tit__e:visible')).toHaveText('Pausa na chapa.');
 });
 
 // O app (módulo) roda depois da primeira pintura. Aqui ele chega atrasado de propósito (rede lenta) e um laço de

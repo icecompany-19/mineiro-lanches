@@ -49,6 +49,9 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   const noHtml = [...html.matchAll(/(?:combo por \+|data-combo-preco>)(R\$ \d+,\d\d)/g)].map((m) => m[1]);
   expect(noHtml.length, 'textos de combo no index.html (3 metas + 5 na página)').toBe(8);
   expect([...new Set(noHtml)], 'preço do combo escrito no HTML = CONFIG').toEqual([combo]);
+  // a hora de abertura do título "fechado" do herói do site é a do CONFIG (o JS refaz com os turnos que o banco mandar)
+  const [hh, mm] = CONFIG.horarios[0][0].split(':').map(Number);
+  expect(html, 'hora de abertura no herói do index.html = CONFIG').toContain(`<span data-abre>${hh}h${mm ? String(mm).padStart(2, '0') : ''}</span>`);
   expect((await (await request.get('/')).text()).match(/data-combo-preco/g).length).toBe(5);
 
   // o banco manda outro preço: todos os textos fixos da página trocam
@@ -69,7 +72,6 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   await page.goto('/#site');
   await expect(page.locator('#monte-switch')).toContainText('Vira combo +R$ 16,50');
   await expect(page.locator('.dog-preco')).toHaveText('R$ 24,50');
-  expect(await page.locator('.palco__dica').textContent()).toBe('Gran Bacon Onion · R$ 35,50');
 });
 
 test('adicional que saiu do cardápio com o lanche na sacola: a linha acusa, o envio não sai e editar tira o adicional', async ({

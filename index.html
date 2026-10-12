@@ -302,29 +302,36 @@
     <!-- [BARRA] fim -->
 
     <!-- [S0] inicio: section.s-hero (dono: site-I) -->
-    <section class="s-hero" aria-labelledby="s-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
+    <!-- Herói "Acende" (6.2, S0): 3 títulos na mesma célula; o CSS mostra o do estado da luz e src/site/cenas/hero.js cuida do resto -->
+    <section class="s-hero parede" aria-labelledby="s-tit">
+      <span class="grao" aria-hidden="true"></span>
+      <span class="hero-cone" aria-hidden="true"></span>
+      <span class="arandela" aria-hidden="true"></span>
+      <span class="brasas" aria-hidden="true"><i style="--x:14%;--s:4px;--d:7s;--a:-1s;--dx:10px"></i><i style="--x:27%;--s:3px;--d:9s;--a:-5s;--dx:-8px"></i><i style="--x:38%;--s:5px;--d:6s;--a:-2.5s;--dx:14px"></i><i style="--x:52%;--s:3px;--d:8s;--a:-6s;--dx:-12px"></i><i style="--x:63%;--s:4px;--d:10s;--a:-3s;--dx:9px"></i><i style="--x:74%;--s:3px;--d:7.5s;--a:-7s;--dx:-6px"></i><i style="--x:85%;--s:5px;--d:9.5s;--a:-4s;--dx:-14px"></i><i style="--x:93%;--s:3px;--d:6.5s;--a:-1.8s;--dx:-10px"></i><i class="d" style="--x:5%;--s:4px;--d:8.5s;--a:-2s;--dx:12px"></i><i class="d" style="--x:20%;--s:3px;--d:6.8s;--a:-4.4s;--dx:-10px"></i><i class="d" style="--x:32%;--s:4px;--d:9.2s;--a:-6.5s;--dx:8px"></i><i class="d" style="--x:45%;--s:5px;--d:7.2s;--a:-.6s;--dx:-14px"></i><i class="d" style="--x:58%;--s:3px;--d:10.5s;--a:-8s;--dx:11px"></i><i class="d" style="--x:68%;--s:4px;--d:6.2s;--a:-3.4s;--dx:-9px"></i><i class="d" style="--x:79%;--s:3px;--d:8.8s;--a:-5.6s;--dx:13px"></i><i class="d" style="--x:88%;--s:4px;--d:7.8s;--a:-.2s;--dx:-12px"></i><i class="d" style="--x:97%;--s:5px;--d:9.8s;--a:-7.4s;--dx:-8px"></i><i class="d" style="--x:10%;--s:5px;--d:10.2s;--a:-9s;--dx:9px"></i></span>
       <div class="s-wrap s-hero__grid">
-        <div>
-          <p class="s-olho">Hambúrguer artesanal · Hot dog com Doritos</p>
-          <h1 class="s-letreiro" id="s-tit" aria-label="Mineiro Lanche"><span class="l1">MINEIRO</span><span class="l2">LANCHE</span></h1>
-          <p class="s-sub"><span class="estrelas" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg></span>food truck · Suzano</p>
-          <p class="s-lead"><strong>Lanche de rua feito na chapa</strong>, com entrega em Suzano e região e consumo no truck.</p>
+        <div class="hero-txt">
+          <h1 class="hero-tit" id="s-tit">
+            <span class="hero-tit__e" data-estado="aberto">Acendeu: a chapa tá quente.</span>
+            <span class="hero-tit__e" data-estado="fechado">A chapa acende às <span class="junto"><span data-abre>19h</span>.</span></span>
+            <span class="hero-tit__e" data-estado="pausa">Pausa na chapa.</span>
+          </h1>
+          <p class="hero-apoio">Hambúrguer artesanal, tradicional e hot dog</p>
+          <p class="hero-horario" data-hero-horario><span>Domingo a quinta, das 19h à meia-noite</span><span>Sexta e sábado, das 19h à 1h</span></p>
           <p class="status" data-status role="status"></p>
           <div class="s-ctas">
             <button type="button" class="btn btn-vermelho" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-burger"/></svg>Fazer pedido</button>
-            <a class="btn btn-claro" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>WhatsApp</a>
+            <a class="btn btn-borda" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>WhatsApp</a>
           </div>
         </div>
-        <div class="palco" id="palco">
-          <div class="disco" aria-hidden="true"></div>
-          <svg class="ic estrela-s" style="left:12%;top:8%" aria-hidden="true"><use href="#i-estrela"/></svg>
-          <svg class="ic estrela-s" style="right:10%;top:14%;animation-delay:-1s" aria-hidden="true"><use href="#i-estrela"/></svg>
-          <svg class="ic estrela-s" style="left:4%;top:52%;animation-delay:-1.6s" aria-hidden="true"><use href="#i-estrela"/></svg>
-          <div class="recorte r-esq" data-prof="1.4"><img src="/assets/recortes/gran-chicken.webp" alt="" width="720" height="665" loading="lazy" decoding="async" style="--d:-2s"></div>
-          <div class="recorte r-dir" data-prof="-1.2"><img src="/assets/recortes/gran-egg-bacon.webp" alt="" width="661" height="720" loading="lazy" decoding="async" style="--d:-4s"></div>
-          <div class="recorte r-principal" data-prof=".6"><img src="/assets/recortes/gran-bacon-onion.webp" alt="Gran Bacon Onion, foto do Mineiro Lanche" width="554" height="720" loading="lazy" decoding="async"></div>
-          <p class="palco__dica" aria-hidden="true">Gran Bacon Onion · <span data-preco-de="gran-bacon-onion">R$ 34,90</span></p>
+        <div class="hero-placa">
+          <div class="placa" data-placa>
+            <span class="placa-correntes" aria-hidden="true"></span>
+            <span class="placa-halo" aria-hidden="true"></span>
+            <span class="placa-anel" aria-hidden="true"></span>
+            <img class="placa-arte" src="/assets/logo/logo-256.webp" srcset="/assets/logo/logo-256.webp 1x, /assets/logo/logo-512.webp 2x" width="256" height="209" alt="Mineiro Lanche food truck" fetchpriority="high" decoding="async">
+            <span class="placa-brilho" aria-hidden="true" hidden><i></i></span>
+            <span class="fumaca" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
         </div>
       </div>
     </section>

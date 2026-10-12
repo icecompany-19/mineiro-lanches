@@ -588,37 +588,50 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .fab .ic{--ic-d:rgba(255,255,255,.2)}
 /* site S0: layout mínimo para a rota direta #site (dono: trilha site-I) */
 /* O site imersivo (#view-site) vem no chunk site-*.css (src/styles/site.css e src/site/cenas/*.css), carregado por
-   import() em src/app.js. Aqui fica só o que segura a primeira pintura de quem abre direto em #site: grade, título,
-   palco e as classes comuns que a S0 usa (.site, .s-wrap, .s-olho, .s-ctas, .rabisco-fundo). A pele vem no chunk. */
+   import() em src/app.js. Aqui fica só o que segura a primeira pintura de quem abre direto em #site: o herói "Acende"
+   (grade, placa, título por estado da luz, apoio, status e CTAs) e as classes comuns que ele usa (.site, .s-wrap,
+   .s-olho, .s-ctas, .rabisco-fundo). A pele e o movimento (letras, brasas, cone) vêm no chunk (cenas/hero.css). */
 .site{position:relative;background:var(--carvao);color:var(--creme);overflow:clip}
 .s-wrap{max-width:1180px;margin:0 auto;padding-inline:20px}
 .s-olho{margin:0;font-family:var(--f-placa);font-size:15px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--amarelo)}
 .rabisco-fundo{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.s-hero{position:relative;padding-block:30px 40px;background:radial-gradient(70% 55% at 70% 45%,rgba(200,16,46,.55),transparent 70%),var(--carvao);overflow:hidden}
-.s-hero .rabisco-fundo{color:rgba(247,194,27,.05)}
-.s-hero__grid{position:relative;display:grid;gap:10px;align-items:center}
-.s-hero__grid>*{min-width:0}
-.s-letreiro{margin:26px 0 0;font-family:var(--f-letreiro);font-weight:400;line-height:.86;font-size:clamp(58px,16.5vw,128px);transform:rotate(-5deg);transform-origin:0 50%}
-.s-letreiro .l1,.s-letreiro .l2{display:block;white-space:nowrap}
-.s-letreiro .l1{color:var(--amarelo)}
-.s-letreiro .l2{color:#fff;margin-left:.3em}
-.s-sub{margin:20px 0 0;display:flex;align-items:center;gap:10px;font-family:var(--f-placa);font-size:17px;letter-spacing:.16em;text-transform:uppercase;color:var(--cinza-quente)}
-.s-sub .estrelas{display:inline-flex;gap:2px;color:var(--amarelo)}
-.s-sub .estrelas .ic{width:16px;height:16px;--ic-d:var(--amarelo)}
-.s-lead{margin:14px 0 0;max-width:36ch;font-size:18px;line-height:1.5;color:var(--cinza-quente)}
-.s-lead strong{color:var(--creme)}
-.s-hero .status{margin-top:16px}
 .s-ctas{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px}
 .s-ctas .btn{flex:1 1 210px}
-.palco{position:relative;width:min(100%,520px);aspect-ratio:1/1;margin:0 auto}
-.palco .estrela-s{position:absolute;width:26px;height:26px}
-.recorte{position:absolute}
-.recorte img{width:100%;height:auto}
-.palco .r-principal{left:18%;top:8%;width:64%}
-.palco .r-esq{left:-4%;bottom:6%;width:36%}
-.palco .r-dir{right:-6%;bottom:2%;width:38%}
-.palco__dica{position:absolute;left:50%;bottom:-6%;transform:translateX(-50%);margin:0;font-family:var(--f-placa);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--amarelo);white-space:nowrap}
-@media (min-width:880px){.s-hero{padding-block:60px 70px}.s-hero__grid{grid-template-columns:1.05fr 1fr;gap:30px}}
+/* herói: 100svh (menos a barra do site, quando ela existe); --cx e --cy são o centro da poça de luz e da arandela */
+.s-hero{--cx:50%;--cy:22%;--vx:52%;--vy:26%;position:relative;min-height:calc(100svh - var(--barra,0px));display:grid;align-items:center;overflow:hidden}
+/* sem o tijolo desenhado (plano B) por baixo: a textura real é opaca e o plano B custaria 9,5 KB na primeira vista; se ela faltar, fica a cor do tijolo sob o véu */
+.s-hero.parede::before{background:var(--parede-desfocada) center/cover no-repeat,linear-gradient(rgba(199,137,85,.85),rgba(199,137,85,.85)),var(--tijolo);-webkit-mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%);mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%)}
+.s-hero.parede::after{background:radial-gradient(var(--vx) var(--vy) at var(--cx) var(--cy),rgba(18,11,9,.28),var(--veu) 100%)}
+.s-hero .arandela{left:var(--cx)}
+.s-hero__grid{position:relative;z-index:1;display:grid;gap:18px;justify-items:center;padding-block:56px 40px}
+.s-hero__grid>*{min-width:0}
+.hero-placa{order:-1;display:grid;justify-items:center}
+.s-hero .placa{width:clamp(168px,22vw,280px);view-transition-name:placa}
+.s-hero .placa-correntes{height:min(100vh,900px)}
+.hero-txt{position:relative;display:grid;justify-items:center;gap:14px;text-align:center}
+/* os 3 títulos na mesma célula: só o do estado da luz aparece (html[data-luz] e [data-luz-motivo], de src/app.js);
+   antes de o app dizer o estado, vale "fechado", que nunca afirma o que não é verdade */
+.hero-tit{margin:0 0 .1em;display:grid;font:400 clamp(44px,12vw,104px)/.92 var(--f-letreiro);font-kerning:none;font-variant-ligatures:none;color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-3deg);transform-origin:50% 60%}
+.hero-tit__e{grid-area:1/1;align-self:center;visibility:hidden;opacity:0}
+html[data-luz="acesa"] .hero-tit__e[data-estado="aberto"],
+html[data-luz="apagada"][data-luz-motivo="pausa"] .hero-tit__e[data-estado="pausa"],
+html:not([data-luz="acesa"]):not([data-luz-motivo="pausa"]) .hero-tit__e[data-estado="fechado"]{visibility:visible;opacity:1;transition:opacity var(--t-ui) var(--suave)}
+.hero-tit .junto{white-space:nowrap}
+.hero-horario span{white-space:nowrap}
+.hero-apoio{margin:0;text-wrap:balance;font:400 clamp(16px,4.6vw,20px)/1.4 var(--f-corpo);color:var(--osso);text-shadow:0 0 14px rgba(18,11,9,.95),0 0 4px rgba(18,11,9,.8)}
+.hero-horario{margin:0;display:grid;gap:2px;font:600 clamp(11.5px,3.5vw,14px)/1.3 var(--f-placa);letter-spacing:.1em;text-transform:uppercase;color:var(--osso-2);text-shadow:0 0 14px rgba(18,11,9,.95),0 0 4px rgba(18,11,9,.8)}
+.hero-txt .s-ctas{margin-top:8px;width:min(100%,420px);justify-content:center}
+.hero-cone{position:absolute;inset:0;z-index:-1;pointer-events:none;background:conic-gradient(from 180deg at var(--cx) -8%,transparent 0 152deg,rgba(255,200,120,.16) 168deg 192deg,transparent 208deg);opacity:var(--luz,1);transform:translateX(calc(var(--mx,0) * 56px));transition:transform .5s var(--suave),opacity var(--t-cena) var(--suave)}
+.s-hero .brasas i.d{display:none}
+@media (min-width:960px){
+  .s-hero{--cx:calc(50% + min(25%,320px));--cy:42%;--vx:38%;--vy:48%}
+  .s-hero__grid{grid-template-columns:1.1fr .9fr;gap:30px;justify-items:stretch;align-items:center;padding-block:56px}
+  .hero-placa{order:0}
+  .hero-txt{justify-items:start;text-align:left}
+  .hero-tit{transform-origin:0 60%}
+  .hero-txt .s-ctas{justify-content:flex-start;width:min(100%,520px)}
+}
+@media (min-width:1024px){.s-hero .brasas i.d{display:block}}
 
 /* ---------- animações ---------- */
 @keyframes placa-chega{from{transform:translateY(6px) scale(.97)}to{transform:none}}

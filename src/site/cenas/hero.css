@@ -1,20 +1,8 @@
-/* S0 · herói (dono: site-I). O layout mínimo (grade, título, palco e recortes) fica em src/styles/app.css, no bloco
-   "site S0", para a rota direta #site; aqui ficam a pele e o movimento. */
-.s-letreiro .l1{text-shadow:0 2px 0 #C99400,0 4px 0 #A87C00,0 6px 0 var(--vinho),0 8px 0 var(--vinho),0 18px 30px rgba(0,0,0,.5)}
-.s-letreiro .l2{text-shadow:0 2px 0 #E6DCD2,0 4px 0 #CFC3B8,0 6px 0 var(--vinho),0 8px 0 var(--vinho),0 18px 30px rgba(0,0,0,.5)}
-.s-letreiro .letra{display:inline-block;animation:letra-cai .7s var(--mola) both;animation-delay:calc(.1s + var(--i) * 45ms)}
-.palco{--mx:0;--my:0}
-.palco .disco{position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle at 40% 35%,#E8233F,var(--vermelho) 55%,#6E0A1A);box-shadow:0 0 0 10px rgba(232,179,58,.6),0 0 0 22px rgba(232,179,58,.12),0 40px 80px -30px rgba(0,0,0,.8)}
-.palco .disco::before{content:"";position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.06) 0 6deg,transparent 6deg 18deg);animation:gira 60s linear infinite}
-.palco .estrela-s{color:var(--amarelo);--ic-d:var(--amarelo);animation:cintila 2.4s ease-in-out infinite}
-.recorte{will-change:transform;filter:drop-shadow(0 30px 26px rgba(0,0,0,.55))}
-.recorte img{animation:boia 6s ease-in-out infinite;animation-delay:var(--d,0s)}
+/* S0 · herói "Acende" (dono: site-I). O layout (grade, placa, título por estado, apoio, status, CTAs, cone) fica em
+   src/styles/app.css, no bloco "site S0", para a rota direta #site; aqui fica o movimento: as brasas que sobem da chapa.
+   Só transform e opacity animam. */
+/* as brasas sobem até 62% da altura da tela (a keyframe comum, brasa, sobe 300 px: pensada para a bio) */
+.s-hero .brasas i{bottom:-6px;animation-name:hero-brasa}
 
-@keyframes letra-cai{0%{opacity:0;transform:translateY(-60%) rotate(-6deg)}100%{opacity:1;transform:none}}
-@keyframes cintila{0%,100%{opacity:.25;transform:scale(.6)}50%{opacity:1;transform:scale(1.15)}}
-@keyframes gira{to{transform:rotate(360deg)}}
-@keyframes boia{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-10px) rotate(2deg)}}
+@keyframes hero-brasa{0%{opacity:0;transform:translate(0,0) scale(1)}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx,12px),-62svh) scale(.4)}}
 
-@media (prefers-reduced-motion:reduce){
-  .s-letreiro .letra,.palco .disco::before,.palco .estrela-s,.recorte img{animation:none}
-}

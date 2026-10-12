@@ -113,7 +113,7 @@ test.describe('fotos sem distorção', () => {
     await page.goto('/#site');
     await expect(page.locator('#view-site')).toBeVisible();
     await rolarTudo(page);
-    expect(await conferir(page, 'site'), 'recortes, galeria e logo conferidos').toBeGreaterThanOrEqual(15);
+    expect(await conferir(page, 'site'), 'fotos da galeria e logo conferidas').toBeGreaterThanOrEqual(15);
 
     const foto = page.locator('#mosaico button').first();
     await foto.scrollIntoViewIfNeeded();
