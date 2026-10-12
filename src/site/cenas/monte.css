@@ -78,7 +78,7 @@
   .s2-regra{display:block;max-width:46ch;font-size:16px}
   .s2-pilha{max-width:640px}
   .s2-comp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 28px;justify-content:stretch}
-  .s2-comp li{display:flex;align-items:baseline;gap:12px;min-height:34px;padding:0;border-radius:0;background:none;box-shadow:none;font-size:17px;line-height:1.3}
+  .s2-comp li{display:flex;align-items:baseline;gap:12px;min-height:34px;padding:0;border-radius:0;background:none;box-shadow:none;font-size:clamp(15px,1.35vw,17px);line-height:1.3}
   .s2-comp li:first-child{grid-column:1 / -1}
   /* o número no lugar do halo do chip; o fio de luz embaixo de cada linha é o que acende */
   .s2-comp li::before{content:counter(c,decimal-leading-zero);position:static;z-index:auto;flex:none;min-width:2ch;border-radius:0;background:none;box-shadow:none;opacity:1;color:var(--fio);font:700 14px/1 var(--f-placa);letter-spacing:.1em}

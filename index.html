@@ -469,12 +469,35 @@
     <!-- [S5] fim -->
 
     <!-- [S6] inicio: section.s-noite (dono: site-I) -->
-    <section class="s-noite" aria-labelledby="noite-tit">
-      <div class="s-wrap">
+    <!-- Letreiro da noite (6.2, S6): a parede acende ou apaga com o truck (html[data-luz]); o horário vem do CONFIG
+         ([data-horario-txt], as 7 lâmpadas [data-semana] e o status [data-status] são escritos por src/app.js); o relógio de Suzano
+         anda por minuto e a régua "Simule um horário" (src/site/cenas/noite.js) mexe só na luz (--luz) desta seção: nunca no status
+         real nem em html[data-luz]. A régua nasce desabilitada e o JS a liga. -->
+    <section class="s-noite parede" aria-labelledby="noite-tit">
+      <span class="grao" aria-hidden="true"></span>
+      <span class="hero-cone" aria-hidden="true"></span>
+      <span class="arandela" aria-hidden="true"></span>
+      <div class="s-wrap noite__grade">
+        <div class="noite__cab">
+          <p class="s-olho rv">Todo dia, inclusive domingo</p>
+          <h2 class="s-h2 rv" id="noite-tit">Horário</h2>
+          <p class="noite__txt rv" data-horario-txt>Domingo a quinta, das 19h à meia-noite · Sexta e sábado, das 19h à 1h</p>
+        </div>
+        <div class="noite__relogio rv">
+          <p class="noite__rotulo" id="noite-agora">Agora em Suzano</p>
+          <time class="noite__hora" data-relogio aria-labelledby="noite-agora">--:--</time>
+          <span class="status" data-status role="status"></span>
+        </div>
         <div class="horario rv">
-          <div class="horario__cab"><h2 id="noite-tit">Horário</h2><span class="status" data-status></span></div>
           <ul class="semana" data-semana></ul>
           <div class="escala" aria-hidden="true"><span>18h</span><span>22h</span><span>2h</span></div>
+        </div>
+        <div class="noite__regua rv">
+          <label class="noite__lbl" for="noite-regua">Simule um horário</label>
+          <input class="regua" id="noite-regua" type="range" min="0" max="1435" step="5" value="1200" disabled>
+          <div class="regua__escala" aria-hidden="true"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span></div>
+          <p class="noite__sim" data-sim-txt>Mova a régua: a parede acende ou apaga.</p>
+          <button type="button" class="btn btn-fantasma noite__volta" data-sim-volta>Voltar para agora</button>
         </div>
       </div>
     </section>
