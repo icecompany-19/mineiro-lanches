@@ -299,6 +299,17 @@
        marcadores [Sx] inicio/fim, com o dono da cena; só o dono edita o que está entre os marcadores dele. -->
   <div class="site" id="view-site" hidden>
     <!-- [BARRA] inicio (dono: site-I) -->
+    <!-- Barra do site (6.1): 56 px, sempre visível. Selo de 34 px SEM srcset (o selo-128 cobre até 42 px CSS em DPR 3) com o ponto de
+         status (cor por html[data-luz]), abas Bio · Cardápio · Site em 1024+ (em 390 só a pílula "Cardápio") e a sacola -->
+    <header class="barra-site">
+      <a class="barra-site__selo" href="#bio" aria-label="Mineiro Lanche, início"><img src="/assets/logo/selo-128.webp" width="34" height="34" alt="" decoding="async"><i class="barra-site__ponto" aria-hidden="true"></i></a>
+      <nav class="barra-site__abas" aria-label="Telas do Mineiro Lanche">
+        <button type="button" class="aba" data-go="bio">Bio</button>
+        <button type="button" class="aba" data-go="menu">Cardápio</button>
+        <a class="aba" href="#site" aria-current="page">Site</a>
+      </nav>
+      <button type="button" class="ibtn ibtn-sacola" data-go="sacola" aria-label="Ver a sacola" data-sacola-btn><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span class="badge" data-contador hidden>0</span></button>
+    </header>
     <!-- [BARRA] fim -->
 
     <!-- [S0] inicio: section.s-hero (dono: site-I) -->

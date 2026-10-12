@@ -148,6 +148,12 @@ test('srcset usa a largura real dos arquivos (sem repetir largura)', async ({ pa
     const larguras = c.srcset.split(',').map((p) => p.trim().split(/\s+/)[1]);
     expect(new Set(larguras).size, `largura repetida em ${c.srcset}`).toBe(larguras.length);
   }
+  // o selo da barra do site é o selo-128 de 34 px, SEM srcset: o selo-128 cobre até 42 px CSS em DPR 3 e o teste da logo acima exige logo-256/512 em todo srcset da logo
+  const selo = await page.evaluate(() => {
+    const i = document.querySelector('.barra-site__selo img');
+    return { src: i.getAttribute('src'), srcset: i.getAttribute('srcset'), w: i.getBoundingClientRect().width };
+  });
+  expect(selo).toEqual({ src: '/assets/logo/selo-128.webp', srcset: null, w: 34 });
   const doritos = conjuntos.find((c) => c.srcset.includes('/dog-doritos-'));
   expect(doritos?.srcset).toBe('/assets/fotos/dog-doritos-540.webp 481w');
   const burger = await page.evaluate(() => document.querySelector('img[srcset*="/gran-burger-540"]')?.getAttribute('srcset'));

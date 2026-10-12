@@ -632,6 +632,27 @@ html:not([data-luz="acesa"]):not([data-luz-motivo="pausa"]) .hero-tit__e[data-es
   .hero-txt .s-ctas{justify-content:flex-start;width:min(100%,520px)}
 }
 @media (min-width:1024px){.s-hero .brasas i.d{display:block}}
+/* barra do site (6.1): 56 px, sempre visível; selo de 34 px com o ponto de status, abas Bio · Cardápio · Site em 1024+ (em
+   390 só a pílula "Cardápio") e a sacola. Todo alvo tem 44 px ou mais. --barra é o que o herói desconta dos 100svh */
+.site{--barra:calc(56px + var(--top))}
+.barra-site{position:sticky;top:var(--top);z-index:20;height:56px;display:flex;align-items:center;gap:8px;padding:0 var(--calha);background:rgba(18,11,9,.92);border-bottom:1px solid var(--borda)}
+.barra-site__selo{position:relative;flex:none;width:44px;height:44px;margin-left:-5px;display:grid;place-items:center}
+.barra-site__selo img{width:34px;height:34px}
+.barra-site__ponto{position:absolute;right:2px;bottom:7px;width:10px;height:10px;border-radius:50%;background:var(--osso-2);box-shadow:0 0 0 2px var(--noite)}
+html[data-luz="acesa"] .barra-site__ponto{background:var(--neon-aberto);box-shadow:0 0 0 2px var(--noite),0 0 8px var(--neon-aberto)}
+html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-shadow:0 0 0 2px var(--noite)}
+.barra-site__abas{margin-left:auto;display:flex;isolation:isolate}
+.aba{position:relative;display:none;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:0;background:none;color:var(--osso);font:700 13px/1 var(--f-placa);letter-spacing:.08em;text-transform:uppercase;text-decoration:none}
+.aba[data-go="menu"]{display:inline-flex;border:1.5px solid var(--fio);border-radius:var(--r-pill);color:var(--fio)}
+.barra-site .ibtn-sacola{flex:none}
+@media (min-width:1024px){
+  .barra-site__abas{margin-left:8px;background:var(--chapa-2);border-radius:var(--r-pill)}
+  .aba,.aba[data-go="menu"]{display:inline-flex;border:0;border-radius:0;color:var(--osso)}
+  .aba::before{content:"";position:absolute;inset:4px 2px;z-index:-1;border-radius:var(--r-pill)}
+  .aba[aria-current="page"]{color:var(--grafite)}
+  .aba[aria-current="page"]::before{background:var(--fio)}
+  .barra-site .ibtn-sacola{margin-left:auto}
+}
 
 /* ---------- animações ---------- */
 @keyframes placa-chega{from{transform:translateY(6px) scale(.97)}to{transform:none}}

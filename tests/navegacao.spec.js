@@ -2,7 +2,7 @@
 // do site se volta ao cardápio e à bio. Links diretos, voltar do navegador, console limpo, nada de domínio externo
 // (fora o próprio Supabase), nenhum texto de prévia e o painel em /painel/, com login da equipe.
 // Uso: npx playwright test tests/navegacao.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
-/* global document, location, innerHeight, scrollTo, window, requestAnimationFrame, getComputedStyle */
+/* global document, location, innerHeight, scrollTo, window, requestAnimationFrame, getComputedStyle, localStorage */
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -214,6 +214,84 @@ test('herói do site: o cone da arandela segue o mouse em 1024+ e, com movimento
   }
   await page.waitForTimeout(500);
   expect(await page.evaluate(() => document.getAnimations().length), 'animações com movimento reduzido').toBe(0);
+});
+
+// Barra do site (docs/DIRECAO-VISUAL.md 6.1): 56 px e sempre visível, selo de 34 px sem srcset com o ponto de status, abas
+// Bio · Cardápio · Site em 1024+ (em 390, só a pílula "Cardápio") e a sacola com contador; todo alvo tem 44 px ou mais.
+test('barra do site: 56 px, sempre visível, alvos de 44 px e a sacola com contador', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'mineiro:v2:sacola',
+      JSON.stringify([
+        {
+          chave: 'gran-burger|teste',
+          sel: { produtoId: 'gran-burger', completo: true, removidos: [], prensado: false, combo: { ativo: false, refri: '' }, adicionais: {}, sabor: '', qtd: 1 }
+        }
+      ])
+    )
+  );
+  await page.goto('about:blank');
+  await page.goto('/#site');
+  const barra = page.locator('.barra-site');
+  await expect(barra).toBeVisible();
+  const largo = (page.viewportSize()?.width || 0) >= 1024;
+
+  // selo-128 de 34 px, sem srcset (o selo-128 cobre até 42 px CSS em DPR 3; tests/imagens.spec.js confere o resto)
+  const selo = barra.locator('.barra-site__selo img');
+  await expect(selo).not.toHaveAttribute('srcset', /.+/);
+  await expect(selo).toHaveAttribute('src', '/assets/logo/selo-128.webp');
+  expect((await selo.boundingBox()).width).toBe(34);
+  // o ponto de status acompanha a luz do app (acesa: neon do aberto; apagada: vermelho de texto no escuro)
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const cor = getComputedStyle(document.querySelector('.barra-site__ponto')).backgroundColor;
+        return document.documentElement.dataset.luz === 'acesa' ? cor === 'rgb(91, 227, 138)' : cor === 'rgb(255, 106, 92)';
+      })
+    )
+    .toBe(true);
+
+  // em 390 só a pílula "Cardápio"; em 1024+ as três abas, com "Site" na vez
+  const bio = barra.getByRole('button', { name: 'Bio' });
+  const cardapio = barra.getByRole('button', { name: 'Cardápio' });
+  const site = barra.getByRole('link', { name: 'Site' });
+  await expect(cardapio).toBeVisible();
+  if (largo) {
+    await expect(bio).toBeVisible();
+    await expect(site).toBeVisible();
+    await expect(site).toHaveAttribute('aria-current', 'page');
+  } else {
+    await expect(bio).toBeHidden();
+    await expect(site).toBeHidden();
+  }
+
+  // a sacola traz o contador do app e todo alvo visível tem 44 px ou mais (medido no layout)
+  await expect(barra.locator('[data-contador]')).toHaveText('1');
+  const alvos = [barra.getByRole('link', { name: 'Mineiro Lanche, início' }), cardapio, barra.getByRole('button', { name: 'Ver a sacola' })];
+  if (largo) alvos.push(bio, site);
+  for (const a of alvos) {
+    const r = await a.evaluate((el) => {
+      const b = el.getBoundingClientRect();
+      return { w: b.width, h: b.height };
+    });
+    expect(r.w, 'largura do alvo').toBeGreaterThanOrEqual(44);
+    expect(r.h, 'altura do alvo').toBeGreaterThanOrEqual(44);
+  }
+  expect((await barra.boundingBox()).height).toBe(56);
+
+  // sempre visível: depois de rolar o site inteiro a barra continua no topo
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.documentElement.scrollHeight; y += innerHeight) {
+      scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 60));
+    }
+  });
+  expect((await barra.boundingBox()).y, 'barra no topo da janela').toBe(0);
+
+  // a pílula leva ao cardápio (pelo data-go="menu" do app)
+  await cardapio.click();
+  await so(page, 'cardapio');
 });
 
 // O app (módulo) roda depois da primeira pintura. Aqui ele chega atrasado de propósito (rede lenta) e um laço de
