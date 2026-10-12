@@ -429,6 +429,10 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
   .ficha.fecha{animation:some-centro .2s ease forwards}
   .ficha-foto{max-height:360px}
 }
+/* a gaveta passa de 420 px: a parede nítida só vale em painel de close (DIRECAO §2.1.2), então volta a desfocada */
+@media (min-width:421px){
+  .ficha-foto.sem-foto{background:linear-gradient(rgba(18,11,9,.78),rgba(18,11,9,.78)),var(--parede-desfocada) center/cover,var(--tijolo)}
+}
 
 /* ---------- sacola ---------- */
 .form{padding:10px var(--calha) 40px;display:grid;gap:18px}
@@ -485,7 +489,8 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .modo small{display:block;margin-top:2px;font-size:13px;color:var(--osso-2)}
 .modo[aria-pressed="true"]{border-color:var(--fio);background:var(--chapa-2);box-shadow:inset 0 0 0 1px var(--fio)}
 .modo[aria-pressed="true"] .ic{color:var(--fio)}
-.modo[aria-pressed="true"]::after{content:"";flex:none;margin-left:auto;width:26px;height:26px;border-radius:50%;background:var(--fio) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231A0A04' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/15px no-repeat}
+.modo .ic.modo-check{display:none;margin-left:auto;width:26px;height:26px;color:var(--fio);--ic-d:rgba(255,204,0,.28)}
+.modo[aria-pressed="true"] .ic.modo-check{display:block}
 .nota-dados{display:flex;align-items:center;gap:7px;margin:12px 0 0;font-size:13px;color:var(--osso-2)}
 .nota-dados .ic{width:17px;height:17px;color:var(--neon-aberto);--ic-d:transparent}
 [data-screen="checkout"] .form{padding-bottom:40px}
