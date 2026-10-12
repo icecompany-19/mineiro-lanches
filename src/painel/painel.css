@@ -63,11 +63,13 @@
 .pn-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; min-width: 48px; padding: 0 1rem; border: 1.5px solid var(--borda-campo); border-radius: var(--r-md); background: var(--carvao-3); color: var(--creme); font: 500 .9rem var(--f-placa); letter-spacing: .05em; text-transform: uppercase; text-decoration: none; cursor: pointer; transition: transform var(--t-toque) var(--suave), background var(--t-ui) var(--suave), border-color var(--t-ui) var(--suave); }
 .pn-btn:hover { border-color: var(--fio); }
 .pn-btn:active { transform: translateY(1px) scale(.98); }
+.pn-btn:disabled { opacity: .5; cursor: default; }
 .pn-btn--ico { padding: 0; }
 .pn-btn--ico .pn-ic { width: 1.35em; height: 1.35em; }
 .pn-btn--peq { font-size: .78rem; padding: 0 .7rem; }
-.pn-btn--prim { background: var(--vermelho); border-color: var(--vermelho); color: var(--papel); }
-.pn-btn--prim:hover { background: var(--vermelho-escuro); border-color: var(--fio); }
+/* botão primário "placa" (4.1): faixa vermelha com o fio dourado por dentro */
+.pn-btn--prim { border-width: 0; background: var(--placa); color: var(--branco); font: 700 16px var(--f-placa); letter-spacing: .06em; box-shadow: inset 0 0 0 2px var(--fio), inset 0 -4px 0 rgba(0, 0, 0, .25); }
+.pn-btn--prim:active { background: var(--placa-escura); transform: translateY(1px); }
 .pn-btn--perigo { background: transparent; border-color: var(--cinza-quente); color: var(--creme); }
 .pn-btn--perigo:hover { background: var(--vinho); border-color: var(--creme); }
 
@@ -178,13 +180,15 @@
 
 /* campos */
 .pn-campo { display: flex; flex-direction: column; gap: .25rem; }
-.pn-campo-r { font: 500 .75rem var(--f-placa); letter-spacing: .08em; text-transform: uppercase; color: var(--cinza-quente); }
-.pn-input { min-height: 50px; padding: 0 .8rem; border: 1.5px solid var(--borda-campo); border-radius: var(--r-md); background: var(--carvao-2); color: var(--creme); width: 100%; }
-.pn-input:hover { border-color: var(--cinza-quente); }
+.pn-campo-r { font: 600 13px var(--f-placa); letter-spacing: .08em; text-transform: uppercase; color: var(--osso-2); }
+.pn-input { min-height: 50px; padding: 0 .8rem; border: 1.5px solid var(--borda-campo); border-radius: var(--r-md); background: var(--chapa-2); color: var(--osso); font-size: 16px; width: 100%; }
+.pn-input::placeholder { color: var(--placeholder); }
+.pn-input:hover { border-color: var(--osso-2); }
+.pn-input:focus-visible { border-color: var(--fio); }
 .pn-campo--busca { position: relative; flex: 1 1 18rem; }
 .pn-campo--busca .pn-ic { position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: var(--cinza-quente); pointer-events: none; }
 .pn-campo--busca .pn-input { padding-left: 2.4rem; }
-.pn-erro { color: var(--papel); background: var(--vermelho); padding: .3rem .6rem; border-radius: var(--r-xs); font-size: .85rem; }
+.pn-erro { color: var(--vermelho-luz); font-size: .9rem; font-weight: 600; overflow-wrap: anywhere; }
 
 /* histórico */
 .pn-barra-f { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin-bottom: .75rem; }
@@ -316,8 +320,6 @@
 .pn-modal-caixa--comanda { width: auto; align-items: center; }
 .pn-modal-t { margin: 0; font: 600 1.25rem var(--f-placa); letter-spacing: .08em; text-transform: uppercase; color: var(--fio); }
 .pn-modal-acoes { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
-.pn-modal .pn-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 48px; min-width: 48px; padding: 0 1rem; border: 1.5px solid var(--borda-campo); border-radius: var(--r-md); background: var(--carvao-3); color: var(--creme); font: 500 .9rem var(--f-placa); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; }
-.pn-modal .pn-btn--prim { background: var(--vermelho); border-color: var(--vermelho); color: var(--papel); }
 .pn-modal .pn-ic { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; }
 .pn-csv { width: 100%; min-height: 14rem; padding: .6rem; font: 12px/1.4 ui-monospace, Consolas, monospace; border: 1.5px solid var(--borda-campo); border-radius: var(--r-sm); background: var(--carvao); color: var(--creme); }
 .pn-comanda { width: 80mm; max-width: 100%; padding: 5mm 4mm; background: var(--papel); color: var(--tinta); font: 13px/1.35 ui-monospace, 'Courier New', Consolas, monospace; box-shadow: var(--sombra-card); }
@@ -376,14 +378,15 @@
 
 /* ---------- acesso (login da equipe, antes do quadro) ---------- */
 .pn-acesso { display: grid; place-items: center; min-height: 100vh; padding: 1.5rem 1rem; }
-.pn-acesso-caixa { width: min(100%, 24rem); display: flex; flex-direction: column; align-items: center; gap: .5rem; padding: 2rem 1.5rem; background: var(--carvao-2); border: 1px solid var(--borda-escura); border-radius: var(--r-xl); box-shadow: var(--sombra-card); text-align: center; }
+.pn-acesso-caixa { width: min(100%, 24rem); display: flex; flex-direction: column; align-items: center; gap: .5rem; padding: 2rem 1.5rem; background: var(--halo-placa) 50% -26px / 200px 200px no-repeat, var(--chapa); border: 1px solid var(--borda); border-radius: var(--r-xl); box-shadow: var(--sombra-card); text-align: center; }
 .pn-acesso-logo { width: 84px; height: 84px; }
-.pn-acesso-tit { margin: .25rem 0 0; font: 400 1.9rem/1.05 var(--f-letreiro); color: var(--amarelo); }
-.pn-acesso-sub { color: var(--cinza-quente); font-size: .9rem; }
+.pn-acesso-tit { margin: .25rem 0 0; font: 400 30px/1.05 var(--f-letreiro); color: var(--letreiro); text-shadow: 0 .06em 0 var(--placa); }
+.pn-acesso-sub { color: var(--osso-2); font-size: 14px; }
 .pn-acesso-corpo { width: 100%; display: flex; flex-direction: column; gap: .85rem; margin-top: 1rem; text-align: left; }
 .pn-acesso-form { display: flex; flex-direction: column; gap: .85rem; }
-.pn-acesso-b { width: 100%; min-height: 48px; font-size: 1rem; }
-.pn-acesso-msg { color: var(--cinza-quente); text-align: center; }
+.pn-acesso-b { width: 100%; min-height: 52px; }
+.pn-acesso .pn-btn--prim { box-shadow: var(--sombra-placa); }
+.pn-acesso-msg { color: var(--osso-2); text-align: center; }
 .pn-acesso-aviso { padding: .55rem .75rem; border-radius: var(--r-sm); border: 1px dashed var(--fio); color: var(--fio); font-size: .9rem; }
 .pn-acesso-sem h2 { margin: 0 0 .35rem; font: 400 1.5rem var(--f-letreiro); color: var(--creme); }
 .pn-acesso-sem p { color: var(--cinza-quente); overflow-wrap: anywhere; }
