@@ -57,7 +57,7 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   // o banco manda outro preço: todos os textos fixos da página trocam
   await mudarEstado(page, (j) => {
     j.loja.comboPreco = 16.5;
-    j.precos['dog-doritos'] = 24.5;
+    j.precos['dog-max'] = 24.5;
     j.precos['gran-bacon-onion'] = 35.5;
     j.loja.horarios = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, ['20:00', '01:00']]));
   });
@@ -74,7 +74,8 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   // a S2 (Pão seladinho na chapa): o preço do botão "Pedir este" é o do banco e a nota do combo também
   await expect(page.locator('.s-monte [data-preco-de="gran-bacon-onion"]')).toHaveText('R$ 35,50');
   await expect(page.locator('.s-monte .s2-combo')).toContainText('+R$ 16,50');
-  await expect(page.locator('.dog-preco')).toHaveText('R$ 24,50');
+  // a S4 (hot dog 1, 2 ou 3): o preço do tamanho escolhido (Max por padrão) é o do banco
+  await expect(page.locator('.s-dog [data-preco-de="dog-max"]')).toHaveText('R$ 24,50');
   // o herói do site: a próxima abertura sai dos turnos que o banco mandou (todos os dias às 20h)
   await expect(page.locator('.s-hero [data-abre]')).toHaveText('20h');
 });

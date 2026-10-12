@@ -173,4 +173,9 @@ test('srcset usa a largura real dos arquivos (sem repetir largura)', async ({ pa
   const parede = await page.evaluate(() => document.querySelector('#mosaico img[srcset*="/big-mineiro-540"]')?.getAttribute('srcset'));
   expect(parede).toBe('/assets/fotos/big-mineiro-540.webp 540w, /assets/fotos/big-mineiro-1080.webp 1080w');
   expect(await page.locator('#mosaico img[srcset*="/gran-burger-"]').count(), 'foto antiga na parede de fotos').toBe(0);
+  // o Dog Max (foto 'nova' da S4) tem 1200 px: o srcset traz o -540 e o -1080 pela largura real
+  const dogMax = await page.evaluate(() => document.querySelector('.s-dog img[srcset*="/dog-max-"]')?.getAttribute('srcset'));
+  expect(dogMax).toBe('/assets/fotos/dog-max-540.webp 540w, /assets/fotos/dog-max-1080.webp 1080w');
+  const burger = await page.evaluate(() => document.querySelector('img[srcset*="/gran-burger-540"]')?.getAttribute('srcset'));
+  expect(burger).toBe('/assets/fotos/gran-burger-540.webp 540w, /assets/fotos/gran-burger-1080.webp 720w');
 });

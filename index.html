@@ -349,16 +349,27 @@
     <!-- [S0] fim -->
 
     <!-- [S1] inicio: div.fitas (dono: site-II) -->
-    <div class="fitas" aria-hidden="true">
-      <div class="fita"><div class="fita__trilho" data-fita="a"></div></div>
-      <div class="fita b"><div class="fita__trilho" data-fita="b"></div></div>
+    <div class="fitas">
+      <div class="fita"><div class="fita__trilho" data-fita="a"><span class="fita__grupo"><span class="fita__item">Gran Salada</span><span class="fita__item">Gran Bacon Onion</span><span class="fita__item">Gran Crispy</span><span class="fita__item">X-Salada</span><span class="fita__item">Ultra X-Salada Bacon</span><span class="fita__item">Exagerado X-Salada Egg Bacon</span><span class="fita__item">Big Mineiro</span><span class="fita__item">Hot Dog Max</span><span class="fita__item">Hot Dog CBO Turbo</span><span class="fita__item">X-Churrasco</span><span class="fita__item">Combo Gran Bacon Onion</span></span></div></div>
+      <div class="fita b"><div class="fita__trilho" data-fita="b"><span class="fita__grupo"><span class="fita__item">Prensado? Avise antes: não cobramos para prensar</span><span class="fita__item">Qualquer lanche vira combo +R$ 14,90</span><span class="fita__item">Domingo também, das 19h à meia-noite</span></span></div></div>
     </div>
     <!-- [S1] fim -->
 
     <!-- [S1b] inicio: section.s-placa (dono: site-II) -->
     <section class="s-placa" aria-labelledby="placa-tit">
-      <div class="s-wrap">
+      <div class="s-wrap placa-grid">
         <h2 class="s-h2 rv" id="placa-tit">O que tem na chapa</h2>
+        <div class="placa-card">
+          <ul class="placa-lista">
+            <li class="rv" style="--i:0"><a href="#cardapio/artesanais"><span class="placa-nome">Artesanais</span> <span class="placa-pontos" aria-hidden="true"></span> <span class="placa-preco">a partir de <span class="placa-valor">R$ 24,90</span></span></a></li>
+            <li class="rv" style="--i:1"><a href="#cardapio/tradicionais"><span class="placa-nome">Tradicionais</span> <span class="placa-pontos" aria-hidden="true"></span> <span class="placa-preco">a partir de <span class="placa-valor">R$ 16,90</span></span></a></li>
+            <li class="rv" style="--i:2"><a href="#cardapio/hotdog"><span class="placa-nome">Hot dog</span> <span class="placa-pontos" aria-hidden="true"></span> <span class="placa-preco">a partir de <span class="placa-valor">R$ 13,90</span></span></a></li>
+            <li class="rv" style="--i:3"><a href="#cardapio/baguetes"><span class="placa-nome">Baguetes</span> <span class="placa-pontos" aria-hidden="true"></span> <span class="placa-preco">a partir de <span class="placa-valor">R$ 21,90</span></span></a></li>
+            <li class="rv" style="--i:4"><a href="#cardapio/combos"><span class="placa-nome">Combos</span> <span class="placa-pontos" aria-hidden="true"></span> <span class="placa-preco">a partir de <span class="placa-valor">R$ 29,90</span></span></a></li>
+            <li class="rv" style="--i:5"><a href="#cardapio/porcoes"><span class="placa-nome">Porções</span> <span class="placa-pontos" aria-hidden="true"></span> <span class="placa-preco">a partir de <span class="placa-valor">R$ 14,90</span></span></a></li>
+            <li class="rv" style="--i:6"><a href="#cardapio/bebidas"><span class="placa-nome">Bebidas</span> <span class="placa-pontos" aria-hidden="true"></span> <span class="placa-preco">a partir de <span class="placa-valor">R$ 4,00</span></span></a></li>
+          </ul>
+        </div>
       </div>
     </section>
     <!-- [S1b] fim -->
@@ -411,27 +422,19 @@
       <div class="s-wrap">
         <p class="s-olho rv">Do seu jeito</p>
         <h2 class="s-h2 rv" id="prensa-tit">Prensado ou não?</h2>
-        <p class="s-p rv">Você escolhe em cada lanche. Não cobramos para prensar.</p>
+        <p class="s-p rv" id="prensa-aviso">Avise antes: não cobramos para prensar.</p>
         <div class="prensa-grid">
-          <svg class="prensa-ilustra" id="prensa-ilustra" viewBox="0 0 400 300" aria-hidden="true">
-            <rect x="40" y="250" width="320" height="22" rx="8" fill="#3E3131"/>
-            <rect x="52" y="236" width="296" height="16" rx="6" fill="#6E5B4E"/>
-            <g class="lanche">
-              <path d="M80 236c0-18 10-30 30-34h180c20 4 30 16 30 34z" fill="#E6A94A"/>
-              <path d="M84 206c10-8 30 4 46-4s28 6 44-2 28 6 44-2 30 6 46-2 26 4 34 2l-2 10H86z" fill="#F7C21B"/>
-              <path d="M86 200c12-4 24 4 36 0s24 4 36 0 24 4 36 0 24 4 36 0 24 4 36 0 20 2 26 0v6H86z" fill="#7A3B1C"/>
-              <path d="M82 196c0-34 30-56 118-56s118 22 118 56z" fill="#E9A64A"/>
-              <path d="M110 170c20-14 50-20 80-20" stroke="#FFE6B8" stroke-width="7" stroke-linecap="round" fill="none" opacity=".7"/>
-            </g>
-            <g class="placa-cima">
-              <rect x="190" y="18" width="20" height="60" rx="6" fill="#8A7D72"/>
-              <rect x="150" y="10" width="100" height="18" rx="9" fill="#C8102E"/>
-              <rect x="52" y="76" width="296" height="18" rx="6" fill="#6E5B4E"/>
-              <rect x="40" y="62" width="320" height="22" rx="8" fill="#3E3131"/>
-            </g>
-            <g class="vapor"><path d="M150 140c-10-12 8-18 0-30"/><path d="M200 136c-10-12 10-20 0-34"/><path d="M250 140c-10-12 8-18 0-30"/></g>
-          </svg>
-          <div>
+          <div class="prensa-par">
+            <div class="prensa-cena">
+              <div class="prensa-palco" id="prensa-palco" data-prensa-de="x-churrasco"><span class="foto nova prensa-foto" style="--cor:#a57745;--foco:50% 68%"><img src="/assets/fotos/x-churrasco-540.webp" srcset="/assets/fotos/x-churrasco-540.webp 540w, /assets/fotos/x-churrasco-1080.webp 1080w" sizes="(min-width:880px) 440px, 90vw" width="540" height="720" loading="lazy" decoding="async" alt="Foto do X-Churrasco"></span><span class="prensa-prensa" aria-hidden="true"><span class="prensa-cabo"></span><span class="prensa-chapa"></span></span><span class="prensa-vapor" aria-hidden="true"><i></i><i></i><i></i></span><span class="prensa-tsss" aria-hidden="true">Tsss…</span></div>
+              <p class="prensa-rotulo" aria-hidden="true">Não prensado</p>
+            </div>
+            <div class="prensa-cena prensa-cena--fixa" aria-hidden="true">
+              <div class="prensa-palco prensado" data-prensa-de="x-churrasco"><span class="foto nova prensa-foto" style="--cor:#a57745;--foco:50% 68%"><img src="/assets/fotos/x-churrasco-540.webp" srcset="/assets/fotos/x-churrasco-540.webp 540w, /assets/fotos/x-churrasco-1080.webp 1080w" sizes="(min-width:880px) 440px, 90vw" width="540" height="720" loading="lazy" decoding="async" alt=""></span><span class="prensa-prensa" aria-hidden="true"><span class="prensa-cabo"></span><span class="prensa-chapa"></span></span><span class="prensa-vapor" aria-hidden="true"><i></i><i></i><i></i></span><span class="prensa-tsss" aria-hidden="true">Tsss…</span></div>
+              <p class="prensa-rotulo">Prensado!</p>
+            </div>
+          </div>
+          <div class="prensa-controle">
             <p class="prensa-estado" id="prensa-estado" aria-live="polite">Não prensado</p>
             <div class="prensa-regua"><label for="f-prensa">Arraste para prensar</label><input id="f-prensa" type="range" min="0" max="100" value="0"></div>
           </div>
@@ -442,28 +445,99 @@
 
     <!-- [S4] inicio: section.s-dog (dono: site-II) -->
     <section class="s-dog" id="s-dog" aria-labelledby="dog-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
-      <div class="s-wrap dog-grid">
-        <div class="dog-foto rv"><div class="doritos" id="doritos" aria-hidden="true"></div></div>
-        <div class="dog-info">
-          <p class="s-olho" style="color:var(--amarelo-claro)">Destaque do perfil</p>
-          <h2 class="s-h2" id="dog-tit">Hot dog com Doritos</h2>
-          <p class="s-p" style="color:#FFE3E7">O dog da casa com Doritos e cheddar. Tem também o Hot Dog Pizza.</p>
-          <p class="dog-preco" data-preco-de="dog-doritos">R$ 23,90</p>
-          <div class="s-ctas" style="margin-top:4px"><button type="button" class="btn btn-amarelo" data-abrir="dog-doritos"><svg class="ic" aria-hidden="true"><use href="#i-hotdog"/></svg>Pedir o dog com Doritos</button></div>
-          <button type="button" class="mini-card" data-abrir="dog-pizza" id="mini-pizza"></button>
+      <div class="s-wrap">
+        <p class="s-olho rv">Hot dog</p>
+        <h2 class="s-h2 rv" id="dog-tit">1, 2 ou 3 salsichas</h2>
+        <div class="dog-grid">
+          <div class="dog-cena rv">
+            <div class="dog-foto" id="dog-foto" data-dog-foto="dog-max"><span class="foto nova" style="--cor:#b6803a;--foco:50% 58%"><img src="/assets/fotos/dog-max-540.webp" srcset="/assets/fotos/dog-max-540.webp 540w, /assets/fotos/dog-max-1080.webp 1080w" sizes="(min-width:880px) 440px, 90vw" width="540" height="720" loading="lazy" decoding="async" alt="Foto do Hot Dog Max"></span></div>
+            <div class="dog-bandeja" id="dog-bandeja" aria-hidden="true"><span class="dog-salsicha on"></span><span class="dog-salsicha on"></span><span class="dog-salsicha"></span></div>
+          </div>
+          <div class="dog-info">
+            <div class="seg tres dog-seg rv" role="radiogroup" aria-label="Quantidade de salsichas" style="--i:1">
+              <button type="button" class="opt" role="radio" aria-checked="false" tabindex="-1" data-dog="dog-medio"><span class="dog-n">1</span><small>Médio</small></button>
+              <button type="button" class="opt" role="radio" aria-checked="true" data-dog="dog-max"><span class="dog-n">2</span><small>Max</small></button>
+              <button type="button" class="opt" role="radio" aria-checked="false" tabindex="-1" data-dog="dog-super"><span class="dog-n">3</span><small>Super</small></button>
+            </div>
+            <div class="dog-valor rv">
+              <p class="dog-nome" id="dog-nome">Hot Dog Max</p>
+              <p class="dog-preco" id="dog-preco" data-preco-de="dog-max">R$ 15,90</p>
+              <p class="dog-base" id="dog-base">Pão médio e 2 salsichas Perdigão</p>
+            </div>
+            <ul class="dog-ings rv" id="dog-ings"><li>Maionese</li><li>Ketchup</li><li>Alface</li><li>Purê de batata</li><li>Azeite e sal</li><li>Batata palha</li><li>Cheddar</li><li>Catupiry</li></ul>
+            <p class="dog-dica rv" id="dog-dica">Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.</p>
+            <div class="dog-acoes rv">
+              <button type="button" class="btn btn-vermelho" id="dog-add"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span id="dog-add-rot">Adicionar</span></button>
+              <button type="button" class="btn btn-borda" id="dog-pers">Personalizar</button>
+            </div>
+            <p class="sr" id="dog-fala" aria-live="polite"></p>
+          </div>
         </div>
+        <article class="dog-cbo rv" id="dog-cbo" aria-labelledby="cbo-nome">
+          <div class="dog-cbo__foto"><span class="foto nova" style="--cor:#b47944;--foco:50% 63%"><img src="/assets/fotos/dog-cbo-turbo-540.webp" srcset="/assets/fotos/dog-cbo-turbo-540.webp 540w, /assets/fotos/dog-cbo-turbo-1080.webp 1080w" sizes="(min-width:880px) 240px, 40vw" width="540" height="720" loading="lazy" decoding="async" alt="Foto do Hot Dog CBO Turbo"></span></div>
+          <div class="dog-cbo__txt">
+            <h3 class="dog-cbo__nome" id="cbo-nome">Hot Dog CBO Turbo</h3>
+            <p class="dog-cbo__base">Pão de dog e 3 salsichas Perdigão, Maionese, Ketchup, Alface, Azeite e sal, Purê de batata, Batata palha, Cheddar, Catupiry, Mussarela gratinada, Bacon</p>
+            <p class="dog-cbo__preco" id="dog-cbo-preco">Preço a confirmar</p>
+            <a class="btn btn-borda" id="dog-cbo-wa" href="https://wa.me/5511985720150" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>Consultar no WhatsApp</a>
+            <button type="button" class="btn btn-vermelho" data-abrir="dog-cbo-turbo" id="dog-cbo-pedir" hidden>Pedir</button>
+          </div>
+        </article>
       </div>
     </section>
     <!-- [S4] fim -->
 
     <!-- [S5] inicio: section.s-combos (dono: site-II) -->
-    <section class="s-combos" aria-labelledby="comb-tit">
+    <section class="s-combos parede" id="s-combos" aria-labelledby="comb-tit">
+      <div class="grao" aria-hidden="true"></div>
       <div class="s-wrap">
         <p class="s-olho rv">Combos</p>
-        <h2 class="s-h2 rv" id="comb-tit">Pra quem chega com fome</h2>
-        <p class="s-p rv">Dilúvio e Casal com mais de um lanche, e o Gran Bacon com Coca e maionese artesanal da casa.</p>
-        <div class="pilha" id="pilha"></div>
+        <h2 class="s-h2 rv" id="comb-tit">Vira combo</h2>
+        <p class="combo-neon rv">Qualquer lanche vira combo +<span data-neon-preco>R$ 14,90</span></p>
+        <p class="combo-inclui rv" data-combo-inclui>batata frita 140 g + refrigerante lata 350 ml</p>
+        <div class="combo-escolha rv">
+          <div class="combo-chips" id="combo-chips" role="group" aria-label="Lanche para virar combo"><button type="button" class="chip" aria-pressed="true" data-combo-de="gran-salada">Gran Salada</button><button type="button" class="chip" aria-pressed="false" data-combo-de="gran-bacon-onion">Gran Bacon Onion</button><button type="button" class="chip" aria-pressed="false" data-combo-de="gran-crispy">Gran Crispy</button><button type="button" class="chip" aria-pressed="false" data-combo-de="x-salada">X-Salada</button><button type="button" class="chip" aria-pressed="false" data-combo-de="ultra-x-salada-bacon">Ultra X-Salada Bacon</button><button type="button" class="chip" aria-pressed="false" data-combo-de="exagerado-x-salada-egg-bacon">Exagerado X-Salada Egg Bacon</button><button type="button" class="chip" aria-pressed="false" data-combo-de="big-mineiro">Big Mineiro</button><button type="button" class="chip" aria-pressed="false" data-combo-de="dog-max">Hot Dog Max</button><button type="button" class="chip" aria-pressed="false" data-combo-de="x-churrasco">X-Churrasco</button></div>
+          <button type="button" class="btn btn-vermelho" id="combo-escolher"><svg class="ic" aria-hidden="true"><use href="#i-combo"/></svg>Escolher e virar combo</button>
+        </div>
+        <div class="pilha" id="pilha">
+          <article class="carta nova" data-carta="combo-gran-bacon-onion" style="--i:0">
+            <div class="carta-foto"><span class="foto nova" style="--cor:#a96e38;--foco:50% 60%"><img src="/assets/fotos/combo-gran-bacon-onion-1080.webp" srcset="/assets/fotos/combo-gran-bacon-onion-540.webp 540w, /assets/fotos/combo-gran-bacon-onion-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="1440" loading="lazy" decoding="async" alt="Foto do Combo Gran Bacon Onion"></span></div>
+            <div class="carta-corpo">
+              <h3 class="carta-nome">Combo Gran Bacon Onion</h3>
+              <ul class="carta-inclui"><li>Gran Bacon Onion (brioche, maionese, barbecue, 200 g de carne angus, mussarela, cheddar, bacon e 3 onion rings)</li><li>250 g de batata</li><li>Coca-Cola 350 ml</li></ul>
+              <div class="carta-pe"><span class="preco" data-preco-de="combo-gran-bacon-onion">R$ 48,90</span><button type="button" class="btn btn-vermelho" data-abrir="combo-gran-bacon-onion"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
+            </div>
+            <span class="carta-sombra" aria-hidden="true"></span>
+          </article>
+          <article class="carta antiga" data-carta="combo-diluvio" style="--i:1">
+            <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/combo-diluvio-1080.webp" srcset="/assets/fotos/combo-diluvio-540.webp 540w, /assets/fotos/combo-diluvio-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="1440" loading="lazy" decoding="async" alt="Foto do Combo Dilúvio"></span></div>
+            <div class="carta-corpo">
+              <h3 class="carta-nome">Combo Dilúvio</h3>
+              <ul class="carta-inclui"><li>Gran Burgers na piscininha de cheddar</li><li>Farofinha de bacon</li><li>140 g de batata frita</li><li>Refrigerante lata 350 ml (qualquer um)</li></ul>
+              <p class="carta-nota">Mais de um lanche (foto: 2 burgers). Quantidade exata a confirmar.</p>
+              <div class="carta-pe"><span class="preco" data-preco-de="combo-diluvio">R$ 49,90</span><button type="button" class="btn btn-vermelho" data-abrir="combo-diluvio"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
+            </div>
+            <span class="carta-sombra" aria-hidden="true"></span>
+          </article>
+          <article class="carta antiga" data-carta="gran-bacon-coca-maionese" style="--i:2">
+            <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/gran-bacon-maionese-1080.webp" srcset="/assets/fotos/gran-bacon-maionese-540.webp 540w, /assets/fotos/gran-bacon-maionese-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="989" loading="lazy" decoding="async" alt="Foto do Gran Bacon + Coca 350 ml + Maionese da casa"></span></div>
+            <div class="carta-corpo">
+              <h3 class="carta-nome">Gran Bacon + Coca 350 ml + Maionese da casa</h3>
+              <ul class="carta-inclui"><li>Gran Bacon</li><li>Coca-Cola 350 ml</li><li>Maionese artesanal da casa</li></ul>
+              <div class="carta-pe"><span class="preco" data-preco-de="gran-bacon-coca-maionese">R$ 42,90</span><button type="button" class="btn btn-vermelho" data-abrir="gran-bacon-coca-maionese"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
+            </div>
+            <span class="carta-sombra" aria-hidden="true"></span>
+          </article>
+          <article class="carta antiga" data-carta="combo-2-dog-doritos" style="--i:3">
+            <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/combo-2-dog-doritos-1080.webp" srcset="/assets/fotos/combo-2-dog-doritos-540.webp 540w, /assets/fotos/combo-2-dog-doritos-1080.webp 996w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="996" height="1239" loading="lazy" decoding="async" alt="Foto do Combo 2 Hot Dog com Doritos"></span></div>
+            <div class="carta-corpo">
+              <h3 class="carta-nome">Combo 2 Hot Dog com Doritos</h3>
+              <ul class="carta-inclui"><li>2 Hot Dog com Doritos</li><li>Coca-Cola 600 ml</li></ul>
+              <div class="carta-pe"><span class="preco" data-preco-de="combo-2-dog-doritos">R$ 57,80</span><button type="button" class="btn btn-vermelho" data-abrir="combo-2-dog-doritos"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
+            </div>
+            <span class="carta-sombra" aria-hidden="true"></span>
+          </article>
+        </div>
       </div>
     </section>
     <!-- [S5] fim -->
@@ -523,18 +597,33 @@
 
     <!-- [S8] inicio: section.s-onde (dono: site-II) -->
     <section class="s-onde" aria-labelledby="onde-tit">
-      <svg class="rabisco-fundo" aria-hidden="true"><rect width="100%" height="100%" fill="url(#p-rabisco-claro)"/></svg>
-      <div class="s-wrap" style="position:relative">
-        <p class="s-olho rv">Onde e quando</p>
+      <div class="s-wrap">
+        <p class="s-olho rv">Onde</p>
         <h2 class="s-h2 rv" id="onde-tit">Centro de Suzano</h2>
         <p class="s-p rv">Entregas em Suzano e região e consumo no truck.</p>
         <div class="onde-grid">
-          <nav class="links rv" aria-label="Contato">
-            <a class="link-linha" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg><span>WhatsApp<small>(11) 98572-0150</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
-            <a class="link-linha" data-insta href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-insta"/></svg><span>Instagram<small>@mineirolanchesuzano</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
-            <button type="button" class="link-linha" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span>Fazer pedido<small>Cardápio completo com preços</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></button>
-            <a class="link-linha" href="#bio"><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><span>Link da bio<small>Destaques, horário e contatos</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
-          </nav>
+          <div class="onde-mapa" aria-hidden="true">
+            <svg viewBox="0 0 360 246" focusable="false">
+              <path class="rota-fundo" d="M28 200C84 200 92 140 152 140S208 200 256 188 288 92 320 56"/>
+              <path class="rota" id="onde-rota" pathLength="1" d="M28 200C84 200 92 140 152 140S208 200 256 188 288 92 320 56"/>
+              <circle class="voce" cx="28" cy="200" r="8"/>
+              <text class="voce-txt" x="12" y="240">Você</text>
+              <g class="truck" id="onde-truck" transform="translate(320 56)"><circle r="22"/><use href="#i-truck" x="-14" y="-14" width="28" height="28"/></g>
+            </svg>
+          </div>
+          <div class="onde-lado">
+            <div class="onde-cartao rv">
+              <p class="onde-end"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg><span id="onde-end">Rua Eliziel Alves Costa, 300 · Centro · Suzano/SP</span></p>
+              <ul class="onde-modos"><li><svg class="ic" aria-hidden="true"><use href="#i-moto"/></svg><span>Entrega<small>Suzano e região · taxa combinada</small></span></li><li><svg class="ic" aria-hidden="true"><use href="#i-mesa"/></svg><span>Comer no local<small>Consumo no truck</small></span></li></ul>
+              <a class="btn btn-vermelho" id="onde-mapa" href="https://www.google.com/maps/search/?api=1&amp;query=Rua%20Eliziel%20Alves%20Costa%2C%20300%2C%20Centro%2C%20Suzano%2FSP" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg>Abrir no mapa</a>
+            </div>
+            <nav class="links rv" aria-label="Contato">
+              <a class="link-linha" data-wa href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg><span>WhatsApp<small>(11) 98572-0150</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
+              <a class="link-linha" data-insta href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-insta"/></svg><span>Instagram<small>@mineirolanchesuzano</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
+              <button type="button" class="link-linha" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span>Fazer pedido<small>Cardápio completo com preços</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></button>
+              <a class="link-linha" href="#bio"><svg class="ic" aria-hidden="true"><use href="#i-estrela"/></svg><span>Link da bio<small>Destaques, horário e contatos</small></span><svg class="seta" aria-hidden="true"><use href="#i-seta"/></svg></a>
+            </nav>
+          </div>
         </div>
       </div>
     </section>

@@ -1,7 +1,31 @@
-/* S8 · onde (dono: site-II) */
-.s-onde{padding-block:80px 70px;background:var(--vermelho);color:#fff;position:relative;overflow:hidden}
-.s-onde .rabisco-fundo{color:rgba(255,255,255,.07)}
-.s-onde .s-olho{color:var(--amarelo-claro)}
-.s-onde .s-p{color:#FFE3E7}
-.onde-grid{position:relative;margin-top:28px;display:grid;gap:18px;max-width:640px}
+/* S8 · onde (dono: site-II). Rota em SVG desenhada pelo --p do .onde-mapa; cartão do endereço (até 420 px) sobre a
+   parede nítida com véu .75, que só é pedida quando a seção entra (.visivel). Só transform e opacity animam. */
+.s-onde{padding-block:72px 64px}
+.onde-grid{margin-top:28px;display:grid;gap:26px;align-items:center}
 .onde-grid>*{min-width:0}
+.onde-mapa{width:100%;max-width:560px}
+.onde-mapa svg{display:block;width:100%;height:auto;overflow:visible}
+.rota-fundo,.rota{fill:none;stroke-linecap:round}
+.rota-fundo{stroke:var(--borda-campo);stroke-width:3;stroke-dasharray:1 9}
+.rota{stroke:var(--fio);stroke-width:4;stroke-dasharray:1;stroke-dashoffset:calc(1 - clamp(0,(var(--p,1) - .1) * 2.5,1))}
+.voce{fill:var(--osso)}
+.voce-txt{font:600 15px var(--f-placa);letter-spacing:.12em;text-transform:uppercase;fill:var(--osso)}
+.truck circle{fill:var(--placa);stroke:var(--fio);stroke-width:2.5}
+.truck use{color:var(--branco)}
+.onde-lado{display:grid;gap:14px;max-width:420px}
+.onde-cartao{position:relative;isolation:isolate;display:grid;gap:16px;padding:20px;border-radius:var(--r-lg);border:1px solid var(--borda);background:var(--chapa)}
+.onde-cartao::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;opacity:0;transition:opacity var(--t-cena) var(--suave)}
+.s-onde.visivel .onde-cartao::before{opacity:1;background:linear-gradient(rgba(18,11,9,.75),rgba(18,11,9,.75)),var(--parede-nitida) center/cover,var(--tijolo)}
+.onde-end{display:flex;gap:10px;align-items:flex-start;margin:0;font:600 21px/1.25 var(--f-placa);letter-spacing:.04em;color:var(--osso)}
+.onde-end .ic{flex:none;width:24px;height:24px;color:var(--fio)}
+.onde-modos{display:flex;flex-wrap:wrap;gap:8px;margin:0;padding:0;list-style:none}
+.onde-modos li{display:flex;gap:9px;align-items:center;padding:8px 14px 8px 11px;border-radius:var(--r-lg);border:1.5px solid var(--fio);background:rgba(18,11,9,.6);font:600 14px/1.1 var(--f-placa);letter-spacing:.06em;text-transform:uppercase;color:var(--osso)}
+.onde-modos .ic{flex:none;width:20px;height:20px;color:var(--anel)}
+.onde-modos small{display:block;margin-top:3px;font:400 12.5px/1.2 var(--f-corpo);letter-spacing:0;text-transform:none;color:var(--osso-2)}
+@media (min-width:880px){
+  .s-onde{padding-block:112px 96px}
+  .onde-grid{grid-template-columns:minmax(0,1.3fr) minmax(0,420px);gap:64px}
+}
+@media (prefers-reduced-motion:reduce){
+  .onde-cartao::before{transition:none}
+}

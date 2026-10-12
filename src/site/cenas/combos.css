@@ -1,22 +1,54 @@
-/* S5 · combos (dono: site-II). Preço sobre o papel das cartas em vermelho da placa (o --fio some no papel). */
-.s-combos{padding-block:80px 30px;background:var(--creme);color:var(--tinta)}
-.s-combos .s-olho{color:var(--vermelho)}
-.s-combos .s-h2{color:var(--vinho)}
-.s-combos .s-p{color:var(--tinta-2)}
-.pilha{margin-top:28px;display:grid;gap:22px;padding-bottom:30px}
-.carta{position:sticky;top:calc(var(--top) + 16px + var(--i) * 12px);display:grid;gap:0;border-radius:28px;overflow:hidden;background:var(--papel);box-shadow:0 -14px 34px -16px rgba(42,31,26,.4);transform-origin:50% 0;will-change:transform}
-.carta .foto{aspect-ratio:16/11}
-.carta-corpo{padding:18px 20px 22px;display:grid;gap:8px}
-.carta-corpo strong{font-family:var(--f-letreiro);font-weight:400;font-size:clamp(28px,7.5vw,44px);line-height:1;color:var(--vinho)}
-.carta-corpo ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
-.carta-corpo li{padding:3px 10px;border-radius:999px;background:var(--creme);border:1px solid var(--linha);font-size:13px;font-weight:500}
-.carta-pe{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
-.carta-pe .preco{font-size:26px;color:var(--placa)}
-@media (min-width:880px){
-  .carta{grid-template-columns:1.1fr 1fr}
-  .carta .foto{aspect-ratio:auto;height:100%;min-height:360px}
-}
+/* S5 · vira combo + pilha de combos (dono: site-II). Parede acesa (.parede, do app.css): ela começa apagada e acende
+   quando a seção entra (.visivel, escrito por base.js) com um véu uniforme de .80 a .92, que mantém o texto acima de
+   4,5:1. Cartas --chapa presas (sticky, top: 72px + i * 8px); a coberta encolhe por transform e escurece por uma camada
+   de opacidade (.carta-sombra), os dois por --sob (0 a 1): nunca filter. Foto 'antiga' fica numa moldura escura.
+   Sem overflow na seção (quebraria o sticky). Movimento reduzido: lista comum. */
+.s-combos{padding-block:72px 40px}
+.s-combos.parede::before{opacity:0;transition:opacity var(--t-cena) var(--suave)}
+.s-combos.parede.visivel::before{opacity:var(--luz,1)}
+.s-combos.parede::after{background:radial-gradient(80% 55% at 50% 12%,rgba(18,11,9,.8),rgba(18,11,9,.92))}
+.s-combos .s-wrap{position:relative}
 
+/* neon, o que vem incluso, chips e o botão */
+.combo-neon{margin:20px 0 0;font:600 clamp(24px,6.4vw,40px)/1.2 var(--f-placa);letter-spacing:.12em;text-transform:uppercase;color:var(--vermelho-luz);text-shadow:0 0 8px currentColor,0 0 22px color-mix(in srgb,currentColor 45%,transparent)}
+.combo-inclui{margin:10px 0 0;font-size:16px;line-height:1.5;color:var(--osso-2)}
+.combo-escolha{margin-top:22px;display:grid;gap:16px}
+.combo-escolha[hidden]{display:none}
+.combo-chips{display:flex;gap:8px;overflow-x:auto;margin-inline:-20px;padding:4px 20px 8px;scrollbar-width:none;scroll-snap-type:x proximity}
+.combo-chips::-webkit-scrollbar{display:none}
+.combo-chips .chip{scroll-snap-align:start;background:rgba(18,11,9,.6)}
+.combo-chips .chip[aria-pressed="true"]{background:var(--fio)}
+.combo-escolha .btn{width:100%}
+
+/* pilha de cartas */
+.pilha{margin-top:40px;max-width:980px;display:grid;gap:22px;padding-bottom:40px}
+.carta{position:sticky;top:calc(72px + var(--i,0) * 8px);display:grid;border-radius:var(--r-2xl);overflow:hidden;background:var(--chapa);border:1px solid var(--borda);box-shadow:0 -14px 34px -16px rgba(0,0,0,.7),var(--sombra-card);transform-origin:50% 0;transform:scale(calc(1 - var(--sob,0) * .07));will-change:transform}
+.carta[hidden]{display:none}
+.carta-foto .foto{aspect-ratio:4/3;border-radius:0}
+.carta.antiga .carta-foto{padding:12px;background:var(--chapa-2);box-shadow:inset 0 0 0 1px var(--borda)}
+.carta.antiga .carta-foto .foto{border-radius:var(--r-lg)}
+.carta-corpo{padding:18px 18px 20px;display:grid;gap:10px;align-content:center}
+.carta-nome{margin:0;font:400 clamp(24px,6.4vw,32px)/1.05 var(--f-letreiro);color:var(--osso)}
+.carta-inclui{margin:0;padding:0;list-style:none;display:grid;gap:5px}
+.carta-inclui li{position:relative;padding-left:16px;font-size:14px;line-height:1.4;color:var(--osso-2)}
+.carta-inclui li::before{content:"";position:absolute;left:0;top:.5em;width:6px;height:6px;border-radius:50%;background:var(--anel)}
+.carta-nota{margin:0;font-size:13px;line-height:1.4;color:var(--osso-2)}
+.carta-pe{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px}
+.carta-pe .preco{font:700 28px/1 var(--f-placa);letter-spacing:.02em;color:var(--fio)}
+.carta-pe .btn{min-height:48px;padding-inline:20px}
+.carta.off .carta-corpo>:not(.carta-pe){opacity:.6}
+.carta-sombra{position:absolute;inset:0;pointer-events:none;background:var(--noite);opacity:calc(var(--sob,0) * .7)}
+
+@media (min-width:880px){
+  .s-combos{padding-block:112px 56px}
+  .combo-chips{flex-wrap:wrap;overflow:visible;margin:0;padding:0}
+  .combo-escolha .btn{width:auto;justify-self:start}
+  .carta{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+  .carta-foto .foto{aspect-ratio:auto;height:100%;min-height:380px}
+  .carta-corpo{padding:28px 30px}
+  .carta-nome{font-size:36px}
+}
 @media (prefers-reduced-motion:reduce){
-  .carta{position:relative;top:auto}
+  .s-combos.parede::before{transition:none}
+  .carta{position:relative;top:auto;transform:none;will-change:auto}
 }
