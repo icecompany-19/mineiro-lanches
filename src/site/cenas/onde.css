@@ -1,6 +1,7 @@
 /* S8 · onde (dono: site-II). Rota em SVG desenhada pelo --p do .onde-mapa; cartão do endereço (até 420 px) sobre a
    parede nítida com véu .75, que só é pedida quando a seção entra (.visivel). Só transform e opacity animam. */
-.s-onde{padding-block:72px 64px}
+.s-onde{padding-block:72px 64px;content-visibility:auto;contain-intrinsic-size:auto calc(679px + 78vw)}
+@media (min-width:600px){.s-onde{contain-intrinsic-size:auto 1124px}}
 .onde-grid{margin-top:28px;display:grid;gap:26px;align-items:center}
 .onde-grid>*{min-width:0}
 .onde-mapa{width:100%;max-width:560px}
@@ -23,7 +24,7 @@
 .onde-modos .ic{flex:none;width:20px;height:20px;color:var(--anel)}
 .onde-modos small{display:block;margin-top:3px;font:400 12.5px/1.2 var(--f-corpo);letter-spacing:0;text-transform:none;color:var(--osso-2)}
 @media (min-width:880px){
-  .s-onde{padding-block:112px 96px}
+  .s-onde{padding-block:112px 96px;contain-intrinsic-size:auto 724px}
   .onde-grid{grid-template-columns:minmax(0,1.3fr) minmax(0,420px);gap:64px}
 }
 @media (prefers-reduced-motion:reduce){

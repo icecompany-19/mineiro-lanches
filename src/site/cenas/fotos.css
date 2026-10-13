@@ -10,7 +10,7 @@
 .s-galeria{position:relative;padding-block:72px 84px;background:radial-gradient(70% 340px at 50% 0,rgba(255,200,120,.06),transparent),var(--noite);
   content-visibility:auto;contain-intrinsic-size:auto 1670px}
 .s-galeria .s-olho{color:var(--fio)}
-.s-galeria .s-h2{margin-top:6px;font-size:clamp(38px,10vw,76px);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg);transform-origin:0 60%}
+.s-galeria .s-h2{margin-top:6px}
 
 /* ---------- alvenaria ---------- */
 .mosaico{margin-top:30px;columns:2;column-gap:12px}

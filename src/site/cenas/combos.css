@@ -3,8 +3,9 @@
    4,5:1. Cartas --chapa presas (sticky, top: 72px + i * 8px); a coberta encolhe por transform e escurece por uma camada
    de opacidade (.carta-sombra), os dois por --sob (0 a 1): nunca filter. Foto 'antiga' fica numa moldura escura.
    Sem overflow na seção (quebraria o sticky). Movimento reduzido: lista comum. */
-.s-combos{padding-block:72px 40px}
-.s-combos.parede::before{opacity:0;transition:opacity var(--t-cena) var(--suave)}
+.s-combos{padding-block:72px 40px;content-visibility:auto;contain-intrinsic-size:auto calc(1338px + 300vw)}
+/* espelhada e deslocada: a S6 vizinha usa a mesma textura, e vizinhas nunca repetem a mesma mancha (2.1, regra 5) */
+.s-combos.parede::before{transform:scaleX(-1);background-position:30% 50%;opacity:0;transition:opacity var(--t-cena) var(--suave)}
 .s-combos.parede.visivel::before{opacity:var(--luz,1)}
 .s-combos.parede::after{background:radial-gradient(80% 55% at 50% 12%,rgba(18,11,9,.8),rgba(18,11,9,.92))}
 .s-combos .s-wrap{position:relative}
@@ -14,7 +15,7 @@
 .combo-inclui{margin:10px 0 0;font-size:16px;line-height:1.5;color:var(--osso-2)}
 .combo-escolha{margin-top:22px;display:grid;gap:16px}
 .combo-escolha[hidden]{display:none}
-.combo-chips{display:flex;gap:8px;overflow-x:auto;margin-inline:-20px;padding:4px 20px 8px;scrollbar-width:none;scroll-snap-type:x proximity}
+.combo-chips{display:flex;gap:8px;overflow-x:auto;margin-inline:-20px;padding:4px 20px 8px;scroll-padding-inline:20px;scrollbar-width:none;scroll-snap-type:x proximity}
 .combo-chips::-webkit-scrollbar{display:none}
 .combo-chips .chip{scroll-snap-align:start;background:rgba(18,11,9,.6)}
 .combo-chips .chip[aria-pressed="true"]{background:var(--fio)}
@@ -39,13 +40,16 @@
 .carta-sombra{position:absolute;inset:0;pointer-events:none;background:var(--noite);opacity:calc(var(--sob,0) * .7)}
 
 @media (min-width:880px){
-  .s-combos{padding-block:112px 56px}
+  .s-combos{padding-block:112px 56px;contain-intrinsic-size:auto 2662px}
   .combo-chips{flex-wrap:wrap;overflow:visible;margin:0;padding:0}
   .combo-escolha .btn{width:auto;justify-self:start}
   .carta{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
   .carta-foto .foto{aspect-ratio:auto;height:100%;min-height:380px}
   .carta-corpo{padding:28px 30px}
   .carta-nome{font-size:36px}
+}
+@media (min-width:1000px){
+  .s-combos{contain-intrinsic-size:auto 2932px}
 }
 @media (prefers-reduced-motion:reduce){
   .s-combos.parede::before{transition:none}
