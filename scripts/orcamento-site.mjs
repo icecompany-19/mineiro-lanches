@@ -10,9 +10,10 @@
 //      caminho crítico da primeira dobra = HTML + CSS do index + JS da entrada e dos imports estáticos
 //      + chunk do site (JS e CSS) + fontes com preload no HTML + imagens da S0 (todo <img> entre os marcadores
 //      [S0] do index.html, lazy ou não: na primeira dobra elas baixam já; o maior candidato do srcset, que é o do
-//      celular em DPR 3) + preloads de imagem que public/rota.js faz para #site + texturas que o CSS das classes
-//      da section da S0 pede (url() ou var(--x) com url()). Texto, CSS e JS contam com gzip; imagens e fontes,
-//      o tamanho do arquivo.
+//      celular em DPR 3) + preloads de imagem que public/rota.js faz para #site + texturas de fundo que o CSS
+//      aplica aos elementos da S0 (url() ou var(--x) com url() no background que VENCE a cascata de cada elemento
+//      e de seus ::before e ::after: uma textura que o herói troca por outra não conta). Texto, CSS e JS contam com
+//      gzip; imagens e fontes, o tamanho do arquivo.
 //      Ficam de fora (impressos à parte, informativos): o pacote do Supabase, que a store só pede depois da
 //      primeira pintura (main-cliente.js), e as fontes sem preload, que baixam quando o texto delas aparece.
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
@@ -116,19 +117,65 @@ for (const m of ramoSite.matchAll(/(?:href = |'imagesrcset', )'([^']+)'/g)) {
   const u = maiorCandidato(m[0].startsWith('href') ? ` src="${m[1]}"` : ` srcset="${m[1]}"`);
   if (u) imagens.add(u);
 }
-// texturas que o CSS das classes da section da S0 pede
-const classesS0 = ((s0.match(/<section class="([^"]+)"/) || [])[1] || 's-hero').split(/\s+/).filter(Boolean);
+// Texturas de fundo que o CSS aplica aos elementos da S0 (todo elemento com class entre os marcadores). A cascata
+// decide: para cada elemento e cada alvo (ele mesmo, ::before, ::after) vale só o background da regra mais específica
+// (no empate, a última) cujo seletor final usa apenas classes que o elemento tem. Assim o tijolo.svg do .parede::before
+// genérico não conta no herói, que o troca em .s-hero.parede::before. Ancestrais, estados e @media ficam de fora.
+const elementosS0 = new Map();
+for (const m of s0.matchAll(/<[a-z][\w-]*\b[^>]*?\sclass="([^"]+)"/g)) {
+  const classes = [...new Set(m[1].split(/\s+/).filter(Boolean))].sort();
+  elementosS0.set(classes.join(' '), classes);
+}
 const cssTodo = cssIndex
   .concat(siteCssTodos)
   .map((n) => ler(join(APP, n)).toString('utf8'))
   .join('\n');
 const vars = {};
 for (const m of cssTodo.matchAll(/(--[\w-]+)\s*:\s*url\(["']?([^"')]+)["']?\)/g)) vars[m[1]] = m[2];
-for (const regra of cssTodo.split('}')) {
-  const [sel, decl] = regra.split('{');
-  if (!decl || !classesS0.some((c) => new RegExp('\\.' + c + '(?![\\w-])').test(sel))) continue;
-  for (const m of decl.matchAll(/url\(["']?([^"')]+)["']?\)/g)) if (m[1].startsWith('/')) imagens.add(m[1]);
-  for (const m of decl.matchAll(/var\((--[\w-]+)\)/g)) if (vars[m[1]]) imagens.add(vars[m[1]]);
+// as declarações de um bloco, separadas por ";" fora de parênteses (um url(data:…;base64,…) tem ";")
+function declaracoes(bloco) {
+  const out = [];
+  let nivel = 0;
+  let atual = '';
+  for (const ch of bloco) {
+    if (ch === '(') nivel++;
+    else if (ch === ')') nivel--;
+    if (ch === ';' && !nivel) {
+      out.push(atual.trim());
+      atual = '';
+    } else atual += ch;
+  }
+  if (atual.trim()) out.push(atual.trim());
+  return out;
+}
+const regrasDeFundo = [];
+cssTodo.split('}').forEach((regra, ordem) => {
+  const [seletores, bloco] = regra.split('{');
+  if (!bloco) return;
+  const fundo = declaracoes(bloco).filter((d) => /^background(-image)?\s*:/.test(d));
+  if (!fundo.length) return;
+  for (const s of seletores.split(',')) {
+    const sel = s.trim();
+    const composto = sel.split(/[\s>+~]+/).pop();
+    const alvo = (composto.match(/::?(before|after)$/) || ['', ''])[1];
+    const base = composto.replace(/::?(before|after)$/, '');
+    if (!/^(\.[\w-]+)+$/.test(base)) continue; // só classes: sem tag, atributo nem :estado
+    const esp = (sel.match(/\.[\w-]+|\[[^\]]*\]|:(?!:)[\w-]+/g) || []).length;
+    regrasDeFundo.push({ classes: base.slice(1).split('.'), alvo, esp, ordem, fundo });
+  }
+});
+for (const classes of elementosS0.values()) {
+  for (const alvo of ['', 'before', 'after']) {
+    const vence = regrasDeFundo
+      .filter((r) => r.alvo === alvo && r.classes.every((c) => classes.includes(c)))
+      .sort((a, b) => a.esp - b.esp || a.ordem - b.ordem)
+      .pop();
+    if (!vence) continue;
+    for (const d of vence.fundo) {
+      for (const m of d.matchAll(/url\(["']?([^"')]+)["']?\)/g)) if (m[1].startsWith('/')) imagens.add(m[1]);
+      for (const m of d.matchAll(/var\((--[\w-]+)/g)) if (vars[m[1]]) imagens.add(vars[m[1]]);
+    }
+  }
 }
 const tamImg = (u) => tamanho(doDist(u)) || tamanho(publico(u));
 const nHtml = gz(Buffer.from(html));
@@ -140,6 +187,15 @@ const nPrimeira = nHtml + nClienteCss + nEstaticos + nSiteJs + nSiteCss + nFonte
 const fontesTodas = arquivos.filter((n) => n.endsWith('.woff2') && !fontesPreload.includes(n));
 const nFontesResto = soma(fontesTodas, (n) => tamanho(join(APP, n)));
 const nDepois = soma(depoisDaPintura, gzApp);
+// <img> sem loading="lazy" fora da S0 (o selo da barra do site e os das telas ocultas do app): o navegador baixa mesmo com
+// display:none, então pesam na primeira vista de verdade; ficam fora do limite acima só porque não são da S0
+const eagerFora = new Map();
+for (const m of html.replace(s0, '').matchAll(/<img\b[^>]*>/g)) {
+  if (/\sloading="lazy"/.test(m[0])) continue;
+  const u = maiorCandidato(m[0]);
+  if (u && u.startsWith('/') && !imagens.has(u)) eagerFora.set(u, tamImg(u));
+}
+const nEagerFora = [...eagerFora.values()].reduce((t, n) => t + n, 0);
 
 // ---------- relatório ----------
 const linhas = [
@@ -162,6 +218,7 @@ console.log(`    chunk do site ${kb(nSiteJs + nSiteCss)} · fontes com preload $
 console.log(`    imagens da S0 ${kb(nImagens)}: ${[...imagens].map((u) => u + ' ' + kb(tamImg(u))).join(', ') || 'nenhuma'}`);
 console.log('  fora da primeira vista (informativo):');
 console.log(`    JS pedido depois da primeira pintura ${kb(nDepois)} (${depoisDaPintura.join(', ') || 'nenhum'})`);
+console.log(`    imagens eager fora da S0 ${kb(nEagerFora)}: ${[...eagerFora].map(([u, n]) => u + ' ' + kb(n)).join(', ') || 'nenhuma'} (baixam mesmo em tela oculta)`);
 console.log(`    fontes sem preload ${kb(nFontesResto)} (${fontesTodas.length} arquivos .woff2; baixam quando o texto delas aparece)`);
 console.log(`  CSS do cliente (index): ${kb(nClienteCss)}`);
 console.log(ok ? 'Dentro do orçamento.' : 'Fora do orçamento: veja as linhas marcadas PASSA.');
