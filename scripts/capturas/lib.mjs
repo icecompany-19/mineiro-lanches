@@ -13,7 +13,7 @@ import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
 
-/* global document, innerWidth, innerHeight, scrollX, scrollY, scrollTo, devicePixelRatio */ // código que roda dentro da página (page.evaluate)
+/* global document, DocumentTimeline, requestAnimationFrame, innerWidth, innerHeight, scrollX, scrollY, scrollTo, devicePixelRatio */ // código que roda dentro da página (page.evaluate)
 
 export const RAIZ = resolve(import.meta.dirname, '../..');
 export const PASTA = join(RAIZ, 'capturas');
@@ -206,30 +206,66 @@ export async function rolarTudo(page) {
   });
 }
 
+// Leva ao fim as animações finitas e espera 2 quadros. Sem isso, os PNG saíam com elas no quadro inicial (barras e anel do relatório a
+// ~20%, selo de contagem em escala 1,3), o que faz os dados parecerem errados. Só a linha do tempo do documento: o que anda com a
+// rolagem (scroll-driven) fica como está, e as infinitas continuam rodando. Só nas capturas: o medir.mjs conta as animações vivas
+// e não pode ver isso. O que termina sem fill (pn-bump, as piscadas) volta ao estado de repouso, que é o certo para o PNG.
+async function terminarAnimacoes(page) {
+  await page.evaluate(async () => {
+    document.getAnimations().forEach((a) => {
+      const t = a.effect && a.effect.getComputedTiming && a.effect.getComputedTiming();
+      if (t && t.iterations !== Infinity && a.timeline instanceof DocumentTimeline) {
+        try {
+          a.finish();
+        } catch {
+          /* animação que não pode terminar (pausada com atraso infinito etc.) */
+        }
+      }
+    });
+    await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+  });
+}
+
 // Altura máxima de um PNG (px do dispositivo): acima de ~16 mil px o Chromium falha ou sai em branco.
 const ALTURA_MAX_PX = 15000;
 // Salva o PNG. Sem opções: a página inteira (limitada); com elemento: só o retângulo dele (também limitado).
-export async function salvarPng(page, caminho, { elemento = null, cheia = true } = {}) {
+// alongar: estica a janela até a altura da página antes da foto e a devolve depois. Serve às telas com barra lateral sticky de 100vh
+// (painel em 1280): no navegador ela acompanha a rolagem, mas numa foto de página inteira ela acabaria em 800 px e deixaria uma faixa vazia.
+export async function salvarPng(page, caminho, { elemento = null, cheia = true, alongar = false } = {}) {
   mkdirSync(dirname(caminho), { recursive: true });
   const dpr = await page.evaluate(() => devicePixelRatio);
   const maxCss = Math.floor(ALTURA_MAX_PX / dpr);
   if (!cheia && !elemento) {
+    await terminarAnimacoes(page);
     await page.screenshot({ path: caminho });
     return { cortada: false };
   }
-  const caixa = await page.evaluate((el) => {
-    const de = document.documentElement;
-    const larg = Math.max(de.clientWidth, innerWidth);
-    if (el) {
-      const r = el.getBoundingClientRect();
-      return { x: Math.max(0, r.left + scrollX), y: r.top + scrollY, width: Math.min(r.width, larg), height: r.height };
+  const medirCaixa = () =>
+    page.evaluate((el) => {
+      const de = document.documentElement;
+      const larg = Math.max(de.clientWidth, innerWidth);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        return { x: Math.max(0, r.left + scrollX), y: r.top + scrollY, width: Math.min(r.width, larg), height: r.height };
+      }
+      return { x: 0, y: 0, width: larg, height: Math.max(de.scrollHeight, innerHeight) };
+    }, elemento);
+  let caixa = await medirCaixa();
+  const janela = page.viewportSize();
+  const esticar = alongar && janela && !elemento && caixa.height > janela.height;
+  try {
+    if (esticar) {
+      await page.setViewportSize({ width: janela.width, height: Math.ceil(Math.min(caixa.height, maxCss)) });
+      caixa = await medirCaixa(); // o 100vh das barras sticky mudou: confere a altura de novo
     }
-    return { x: 0, y: 0, width: larg, height: Math.max(de.scrollHeight, innerHeight) };
-  }, elemento);
-  const cortada = caixa.height > maxCss;
-  const clip = { x: caixa.x, y: caixa.y, width: Math.max(1, Math.floor(caixa.width)), height: Math.max(1, Math.floor(Math.min(caixa.height, maxCss))) };
-  await page.screenshot({ path: caminho, fullPage: true, clip });
-  return { cortada, alturaCss: caixa.height };
+    await terminarAnimacoes(page);
+    const cortada = caixa.height > maxCss;
+    const clip = { x: caixa.x, y: caixa.y, width: Math.max(1, Math.floor(caixa.width)), height: Math.max(1, Math.floor(Math.min(caixa.height, maxCss))) };
+    await page.screenshot({ path: caminho, fullPage: true, clip });
+    return { cortada, alturaCss: caixa.height };
+  } finally {
+    if (esticar) await page.setViewportSize(janela);
+  }
 }
 
 // ---------- execução ----------

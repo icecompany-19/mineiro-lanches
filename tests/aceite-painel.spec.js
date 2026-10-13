@@ -13,8 +13,7 @@
 // Nenhum botão que grava (avançar, cancelar-ok, apagar-ok, simular, gerar exemplos) é clicado. Única escrita: se faltar a
 // linha da equipe, ela é inserida com `on conflict do nothing`, como o tests/e2e.spec.js faz.
 // Interface de computador (quadro, abas, painéis) só no projeto desktop; a lista de 390 px, no projeto celular.
-//
-// Defeitos do front que este spec encontrou estão como test.fixme com o motivo exato (no fim do arquivo).
+//   6. cabeçalho: o celular (390) tem o selo de 64 px e o status da loja; o de 1280 não muda de lugar de uma tela para outra.
 /* global document, window, matchMedia */
 import { test as base, expect as expectBase } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
@@ -413,22 +412,17 @@ test.describe('aba oculta pausa as animações infinitas', () => {
 });
 
 // ---------- 4. só transform, opacity e clip-path ----------
-// Defeitos conhecidos (cada um tem o seu test.fixme no fim do arquivo); o resto precisa estar limpo.
-const KEYFRAMES_PROIBIDOS = new Set(['pn-pisca', 'pn-respira', 'pn-anel']);
-
 test.describe('keyframes só com transform, opacity e clip-path', () => {
   test('todo @keyframes do CSS do painel', async ({ page }) => {
     await page.goto('/painel/');
     const todos = await keyframesDoCss(page);
     expect(todos.length, '@keyframes lidos das folhas de estilo').toBeGreaterThan(8);
     expect(
-      todos.filter((k) => !KEYFRAMES_PROIBIDOS.has(k.nome) && propriedadesProibidas(k.props).length).map((k) => `${k.nome}: ${propriedadesProibidas(k.props).join(', ')}`),
+      todos.filter((k) => propriedadesProibidas(k.props).length).map((k) => `${k.nome}: ${propriedadesProibidas(k.props).join(', ')}`),
       '@keyframes que animam outra propriedade'
     ).toEqual([]);
-    for (const nome of KEYFRAMES_PROIBIDOS) {
-      const k = todos.find((x) => x.nome === nome);
-      if (k) expect(propriedadesProibidas(k.props).length, `@keyframes ${nome} segue fora da regra (test.fixme no fim do arquivo)`).toBeGreaterThan(0);
-    }
+    // as três que animavam box-shadow e stroke-dasharray seguem existindo, agora só com opacity
+    for (const nome of ['pn-pisca', 'pn-respira', 'pn-anel']) expect(todos.map((k) => k.nome), `@keyframes ${nome}`).toContain(nome);
   });
 
   test('animações vivas da jornada', async ({ page, largura }) => {
@@ -454,7 +448,6 @@ test.describe('keyframes só com transform, opacity e clip-path', () => {
     for (const esperado of ['pn-zumbido', 'pn-respira', 'pn-entra', 'pn-pisca', 'pn-anel', 'pn-cresce'])
       expect(nomes, `animação "${esperado}" vista na jornada`).toContain(esperado);
     const ruins = Object.entries(g)
-      .filter(([nome]) => !KEYFRAMES_PROIBIDOS.has(nome))
       .filter(([, v]) => propriedadesProibidas(v.props).length)
       .map(([nome, v]) => `${nome} (${v.alvos.join(' | ')}): ${propriedadesProibidas(v.props).join(', ')}`);
     expect(ruins, 'animações vivas que mexem em outra propriedade').toEqual([]);
@@ -500,28 +493,53 @@ test.describe("nenhuma violação de CSP (script-src 'self', sem script nem hand
   });
 });
 
-// ================= defeitos do front encontrados (test.fixme) =================
-// Cada caso traz a asserção certa: quando o front for corrigido, basta trocar test.fixme por test.
+// ---------- 6. cabeçalho ----------
+test.describe('cabeçalho', () => {
+  // 14:00 de terça (13/10/2026): fechado, o status mais comprido ("Fechado agora · abre hoje às 19h"). O modo da loja volta a 'auto'
+  // só na resposta da API (o banco é compartilhado e pode estar em 'aberta').
+  async function fechado(page) {
+    await page.clock.setFixedTime(new Date('2026-10-13T14:00:00-03:00'));
+    await page.route('**/rest/v1/rpc/estado_cardapio', async (route) => {
+      const resposta = await route.fetch();
+      const json = await resposta.json();
+      if (json && json.loja) json.loja.modo = 'auto';
+      await route.fulfill({ response: resposta, json });
+    });
+  }
 
-test.describe('defeitos conhecidos', () => {
-  // painel.css:358 e :135. O destaque do pedido novo (borda piscando 3 vezes) anima `box-shadow`.
-  test.fixme('quadro, pedido novo (`.pn-destaque`): @keyframes pn-pisca anima `box-shadow`, só transform/opacity/clip-path valem', async ({ page }) => {
-    await page.goto('/painel/');
-    const k = (await keyframesDoCss(page)).find((x) => x.nome === 'pn-pisca');
-    expect(k ? propriedadesProibidas(k.props) : []).toEqual([]);
+  test('celular (390): selo de 64 px e o status da loja no topo da lista', async ({ page, largura }) => {
+    test.skip(largura !== 390, 'a lista é a interface de 390 px');
+    await fechado(page);
+    await entrar(page);
+    const selo = page.locator('.pn-mobile .pn-m-topo .pn-selo-logo');
+    await expect(selo).toBeVisible();
+    const caixa = await selo.boundingBox();
+    expect([Math.round(caixa.width), Math.round(caixa.height)], 'selo do cabeçalho em CSS px').toEqual([64, 64]);
+    expect(await selo.evaluate((i) => i.currentSrc), 'arte do selo').toMatch(/[/]assets[/]logo[/]selo-(128|256)[.]webp$/);
+    const status = page.locator('.pn-mobile [data-lojatxt-m]');
+    await expect(status).toHaveClass(/pn-loja-txt--off/);
+    await expect(status).toHaveText(/^Fechado/i);
+    expect(await status.evaluate((e) => e.textContent), 'o mesmo texto do status do computador').toBe(await page.locator('[data-lojatxt]').evaluate((e) => e.textContent));
+    const topo = await page.locator('.pn-mobile .pn-m-topo').boundingBox();
+    const m = await rolagemHorizontal(page);
+    expect(m.scrollWidth, 'sem rolagem horizontal com o cabeçalho').toBe(m.clientWidth);
+    expect(topo.x + topo.width, 'o cabeçalho cabe na janela').toBeLessThanOrEqual(JANELAS[390].width);
   });
 
-  // painel.css:361 e :143. A respiração do tempo de um pedido em atraso anima `box-shadow`.
-  test.fixme('quadro, pedido em atraso (`.pn-tempo[data-nivel="atraso"]`): @keyframes pn-respira anima `box-shadow`', async ({ page }) => {
-    await page.goto('/painel/');
-    const k = (await keyframesDoCss(page)).find((x) => x.nome === 'pn-respira');
-    expect(k ? propriedadesProibidas(k.props) : []).toEqual([]);
-  });
-
-  // painel.css:369 e :267. O anel do relatório desenha-se animando `stroke-dasharray`.
-  test.fixme('relatório, anel (`.pn-anel-v`): @keyframes pn-anel anima `stroke-dasharray`', async ({ page }) => {
-    await page.goto('/painel/');
-    const k = (await keyframesDoCss(page)).find((x) => x.nome === 'pn-anel');
-    expect(k ? propriedadesProibidas(k.props) : []).toEqual([]);
+  test('computador (1280): a barra superior fica no mesmo lugar em todas as telas, mesmo com o status mais comprido', async ({ page, largura }) => {
+    test.skip(largura !== 1280, 'interface de computador');
+    await fechado(page);
+    await entrar(page);
+    const lugares = {};
+    for (const view of VIEWS) {
+      if (view !== 'pedidos') await ir(page, view);
+      const caixa = async (sel) => {
+        const b = await page.locator(sel).boundingBox();
+        return [Math.round(b.x), Math.round(b.y)];
+      };
+      lugares[view] = { segmentado: await caixa('.pn-seg'), status: await caixa('[data-lojatxt]'), relogio: await caixa('[data-relogio]'), som: await caixa('[data-act="som"]') };
+    }
+    const referencia = lugares.pedidos;
+    for (const view of VIEWS) expect(lugares[view], `barra superior em ${view} (x, y) contra a de pedidos`).toEqual(referencia);
   });
 });

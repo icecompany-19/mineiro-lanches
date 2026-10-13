@@ -329,6 +329,7 @@
       <aside class="pn-lateral" data-lateral role="dialog" aria-modal="true" aria-label="Detalhe do pedido" inert aria-hidden="true"></aside>
     </div>
     <div class="pn-mobile">
+      <header class="pn-m-topo"><img class="pn-selo-logo" src="/assets/logo/selo-128.webp" srcset="/assets/logo/selo-128.webp 1x, /assets/logo/selo-256.webp 2x" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-loja-txt" data-lojatxt-m role="status"></span></header>
       <p class="pn-aviso-m" role="note"><strong>O painel foi pensado para computador</strong></p>
       <div data-mobile></div>
       ${sairHTML()}
@@ -343,6 +344,9 @@
     const lt = q('[data-lojatxt]');
     lt.textContent = sit.txt;
     lt.className = 'pn-loja-txt ' + (sit.aberto ? 'pn-loja-txt--on' : 'pn-loja-txt--off');
+    const ltm = q('[data-lojatxt-m]'); // o mesmo status no cabeçalho do celular (hook próprio: [data-lojatxt] segue sendo o do computador)
+    ltm.textContent = sit.txt;
+    ltm.className = lt.className;
     const som = q('[data-act="som"]');
     som.setAttribute('aria-pressed', String(!!cfg.som));
     som.innerHTML = ic(cfg.som ? 'som' : 'som-off');
