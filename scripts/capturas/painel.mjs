@@ -66,6 +66,8 @@ export async function garantir(dados) {
 }
 
 // Só os pedidos de captura (o banco é compartilhado) e com a idade de cada um no relógio fixo (o banco grava a hora real).
+// Fechado (14:00, "abre hoje às 19h"): sem pedidos. Pedidos de 13h30 com o truck fechado até as 19h seriam dados incoerentes no PNG,
+// e o estado vazio (quadro, lista, histórico, relatório) também precisa de captura.
 export async function ligar(page, v, dados) {
   await modoAuto(page);
   await interceptar(
@@ -74,6 +76,7 @@ export async function ligar(page, v, dados) {
     async (route) => {
       if (route.request().method() !== 'GET') return route.continue();
       const resposta = await route.fetch();
+      if (v.estado === 'fechado') return route.fulfill({ response: resposta, json: [] });
       const linhas = await resposta.json();
       const minhas = (Array.isArray(linhas) ? linhas : [])
         .filter((l) => dados.porId[l.id])
@@ -91,6 +94,7 @@ const VISOES = [
 ];
 
 export async function telas(page, v, dados, tela) {
+  const vazio = v.estado === 'fechado'; // ver ligar()
   await page.goto(BASE + '/painel/');
   await page.getByRole('button', { name: 'Entrar' }).waitFor();
   await tela('login');
@@ -101,18 +105,18 @@ export async function telas(page, v, dados, tela) {
 
   if (v.largura === 390) {
     await page.locator('.pn-mobile').waitFor({ state: 'visible' });
-    await page.locator('.pn-mobile .pn-card, .pn-mobile [data-id]').first().waitFor({ state: 'attached' }).catch(() => {});
+    await page.locator(vazio ? '.pn-mobile .pn-vazio' : '.pn-mobile .pn-m-item').first().waitFor({ state: 'visible' });
     await tela('quadro', { espera: 1500 });
     return;
   }
 
-  await page.locator('.pn-card').nth(2).waitFor({ state: 'visible' });
-  await tela('quadro', { espera: 1500 }); // os indicadores contam de 0 até o valor
+  await (vazio ? page.locator('[data-vazio]') : page.locator('.pn-card').nth(2)).waitFor({ state: 'visible' });
+  await tela('quadro', { espera: 1500, alongar: true }); // os indicadores contam de 0 até o valor; a janela estica para a lateral ir até o pé
 
   for (const [chave, nome] of VISOES) {
     await page.locator(`[data-nav="${chave}"]`).click();
     await page.locator(`[data-view="${chave}"]`).waitFor({ state: 'visible' });
-    await tela(nome, { espera: 1200 });
+    await tela(nome, { espera: 1200, alongar: true });
   }
 }
 

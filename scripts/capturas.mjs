@@ -23,9 +23,9 @@ async function capturar(modulo, servidor) {
   const cortadas = [];
   const r = await executar(
     modulo,
-    async ({ page, alvo, nome, variante, elemento, cheia = true }) => {
+    async ({ page, alvo, nome, variante, elemento, cheia = true, alongar = false }) => {
       if (cheia) await rolarTudo(page);
-      const res = await salvarPng(page, caminhoCaptura(alvo, nome, variante), { elemento, cheia });
+      const res = await salvarPng(page, caminhoCaptura(alvo, nome, variante), { elemento, cheia, alongar });
       if (res.cortada) cortadas.push(`${nome}-${variante.largura} (${Math.round(res.alturaCss)} px de altura, cortada)`);
       n++;
     },
