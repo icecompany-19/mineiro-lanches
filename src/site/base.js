@@ -64,6 +64,8 @@ export function visivel(el) {
 // opcoes.modo: 'passagem' (padrão) = 0 quando o topo da seção aparece embaixo, 1 quando o fim dela sai em cima;
 //              'preso' = cena com palco sticky: 0 quando o topo da seção chega a opcoes.topo (px), 1 quando o fim
 //              dela chega ao pé da janela (a faixa em que o palco fica preso).
+// opcoes.semP: a cena não usa o --p (o CSS dela não o lê): o laço não o calcula nem o escreve (escrever uma propriedade herdada
+//              refaz o estilo da seção inteira a cada quadro de rolagem) e o quadro recebe p = 0.
 // opcoes.quadro(p, info): chamado a cada quadro do laço com a seção visível; info = { y, vh, vel, dy }
 //              (vel = velocidade da rolagem suavizada, em px por quadro; dy = quanto rolou desde o último quadro).
 // Com movimento reduzido: --p fica em 1 (cena completa) e o quadro não é chamado.
@@ -71,7 +73,7 @@ export function visivel(el) {
 export function registrar(el, opcoes) {
   if (!el) return () => {};
   const o = opcoes || {};
-  const r = { modo: o.modo === 'preso' ? 'preso' : 'passagem', topo: +o.topo || 0, quadro: o.quadro || null, p: -1 };
+  const r = { modo: o.modo === 'preso' ? 'preso' : 'passagem', topo: +o.topo || 0, quadro: o.quadro || null, p: -1, semP: !!o.semP };
   regs.set(el, r);
   observar(el);
   atualizar(el, r, { y: window.scrollY, vh: window.innerHeight, vel: 0, dy: 0 });
@@ -96,7 +98,11 @@ function escreverP(el, r, p) {
 }
 function atualizar(el, r, info) {
   if (reduz()) {
-    escreverP(el, r, 1);
+    if (!r.semP) escreverP(el, r, 1);
+    return;
+  }
+  if (r.semP) {
+    if (r.quadro) r.quadro(0, info);
     return;
   }
   const p = progresso(el, r, info.vh);
@@ -150,8 +156,13 @@ export function revelar(raiz) {
       },
       { threshold: 0.12 }
     );
+    // as seções abaixo da dobra (content-visibility: auto, com o miolo pulado) são medidas pela caixa delas: medir cada .rv obrigaria
+    // o navegador a montar o layout de todas, que é o que o content-visibility evita
+    const abaixo = new Map();
     raiz.querySelectorAll('.rv').forEach((el) => {
-      if (el.getBoundingClientRect().top > vh) {
+      const sec = el.closest('section');
+      if (sec && !abaixo.has(sec)) abaixo.set(sec, sec.getBoundingClientRect().top > vh);
+      if ((sec && abaixo.get(sec)) || el.getBoundingClientRect().top > vh) {
         el.classList.add('fora');
         ioRv.observe(el);
       }

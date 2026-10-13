@@ -47,13 +47,19 @@ const SENHA_TESTE = 'qualquer-senha';
 // ---------- variantes: largura × estado × movimento ----------
 // 20:00 de terça (13/10/2026): dentro do turno; 14:00: fora. Fuso de São Paulo nos dois.
 export const ESTADOS = { aberto: '2026-10-13T20:00:00-03:00', fechado: '2026-10-13T14:00:00-03:00' };
+// Estados em que o modo manual do truck (loja.modo) manda mais que o relógio (docs/DIRECAO-VISUAL.md, 8, "Dados"): o módulo que os quer
+// os lista em estadosExtras. pausa = dentro do horário (20:00) com modo 'fechada' (título "Pausa na chapa.", parede apagada, neon fechado);
+// forcada = fora do horário (14:00) com modo 'aberta' (parede acesa e neon aberto). Só sem movimento reduzido.
+export const ESTADOS_EXTRAS = { pausa: { relogio: 'aberto', modo: 'fechada' }, forcada: { relogio: 'fechado', modo: 'aberta' } };
+const relogioDe = (v) => ESTADOS[v.estado] || ESTADOS[(ESTADOS_EXTRAS[v.estado] || {}).relogio];
 export const CONTEXTOS = {
   390: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
   1280: { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 }
 };
-export function variantes(larguras) {
+export function variantes(larguras, extras = []) {
   const v = [];
   for (const largura of larguras) for (const estado of Object.keys(ESTADOS)) for (const reduzido of [false, true]) v.push({ largura, estado, reduzido });
+  for (const largura of larguras) for (const estado of extras) v.push({ largura, estado, reduzido: false, modo: ESTADOS_EXTRAS[estado].modo });
   return v;
 }
 export const rotuloVariante = (v) => `${v.largura}-${v.estado}${v.reduzido ? '-reduzido' : ''}`;
@@ -228,6 +234,8 @@ async function terminarAnimacoes(page) {
 
 // Altura máxima de um PNG (px do dispositivo): acima de ~16 mil px o Chromium falha ou sai em branco.
 const ALTURA_MAX_PX = 15000;
+// Foto de cena alta em 390 (DPR 3) no Chromium sem GPU leva mais que os 15 s do padrão (a S5 do site: ~21 s, 7800 px de altura).
+const TEMPO_FOTO = 90_000;
 // Salva o PNG. Sem opções: a página inteira (limitada); com elemento: só o retângulo dele (também limitado).
 // alongar: estica a janela até a altura da página antes da foto e a devolve depois. Serve às telas com barra lateral sticky de 100vh
 // (painel em 1280): no navegador ela acompanha a rolagem, mas numa foto de página inteira ela acabaria em 800 px e deixaria uma faixa vazia.
@@ -237,7 +245,7 @@ export async function salvarPng(page, caminho, { elemento = null, cheia = true, 
   const maxCss = Math.floor(ALTURA_MAX_PX / dpr);
   if (!cheia && !elemento) {
     await terminarAnimacoes(page);
-    await page.screenshot({ path: caminho });
+    await page.screenshot({ path: caminho, timeout: TEMPO_FOTO });
     return { cortada: false };
   }
   const medirCaixa = () =>
@@ -261,7 +269,7 @@ export async function salvarPng(page, caminho, { elemento = null, cheia = true, 
     await terminarAnimacoes(page);
     const cortada = caixa.height > maxCss;
     const clip = { x: caixa.x, y: caixa.y, width: Math.max(1, Math.floor(caixa.width)), height: Math.max(1, Math.floor(Math.min(caixa.height, maxCss))) };
-    await page.screenshot({ path: caminho, fullPage: true, clip });
+    await page.screenshot({ path: caminho, fullPage: true, clip, timeout: TEMPO_FOTO });
     return { cortada, alturaCss: caixa.height };
   } finally {
     if (esticar) await page.setViewportSize(janela);
@@ -287,7 +295,7 @@ export async function executar(modulo, aoTela, opcoes = {}) {
     page.setDefaultTimeout(15_000);
     vigiar(page, `${modulo.alvo} ${rotulo}`, erros);
     try {
-      await page.clock.setFixedTime(new Date(ESTADOS[v.estado]));
+      await page.clock.setFixedTime(new Date(relogioDe(v)));
       await page.emulateMedia({ reducedMotion: v.reduzido ? 'reduce' : 'no-preference' });
       if (modulo.ligar) await modulo.ligar(page, v, dados);
       await modulo.telas(page, v, dados, async (nome, extra = {}) => {
@@ -301,7 +309,7 @@ export async function executar(modulo, aoTela, opcoes = {}) {
   };
   try {
     dados = modulo.preparar ? await modulo.preparar() : undefined;
-    for (const v of variantes(modulo.larguras)) {
+    for (const v of variantes(modulo.larguras, modulo.estadosExtras)) {
       const rotulo = rotuloVariante(v);
       if (apenas && !rotulo.includes(apenas)) continue;
       try {
@@ -348,7 +356,7 @@ export async function modoAuto(page) {
     await route.fulfill({ response: resposta, json });
   });
 }
-export const agoraFalso = (v) => new Date(ESTADOS[v.estado]).getTime();
+export const agoraFalso = (v) => new Date(relogioDe(v)).getTime();
 // Desloca os carimbos de tempo de um pedido (criadoEm/criado_em, atualizado_em, historico[].em) em delta ms.
 // O banco grava com a hora real (12/10); o relógio fixo das capturas é 13/10 20:00 ou 14:00.
 export function deslocarTempos(pedido, delta) {

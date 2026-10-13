@@ -2,7 +2,8 @@
    inox em degradê e cabo, que desce por translateY conforme --v (0 a 1, escrito pelo JS). Vapor e "Tsss…" aparecem
    em .prensado. Só animam transform e opacity. As medidas da prensa são em cqw (largura do quadro), então ela escala
    com a foto. Movimento reduzido: os dois estados lado a lado, parados. */
-.s-prensa{position:relative;padding-block:72px 64px;background:var(--carvao);overflow:hidden}
+.s-prensa{position:relative;padding-block:72px 64px;background:var(--carvao);overflow:hidden;content-visibility:auto;contain-intrinsic-size:auto calc(211px + 140vw)}
+@media (min-width:440px){.s-prensa{contain-intrinsic-size:auto 904px}}
 .prensa-grid{margin-top:28px;display:grid;gap:22px;align-items:center}
 .prensa-grid>*{min-width:0}
 .s-prensa.sem-foto .prensa-grid{display:none}
@@ -46,7 +47,7 @@
 .prensa-regua label{font-weight:600}
 .prensa-regua input{width:100%;height:44px;accent-color:var(--fio)}
 @media (min-width:880px){
-  .s-prensa{padding-block:112px}
+  .s-prensa{padding-block:112px;contain-intrinsic-size:auto 761px}
   .prensa-grid{grid-template-columns:minmax(0,440px) 1fr;gap:64px}
   .prensa-par{margin:0}
   .prensa-estado{text-align:left;font-size:44px}
@@ -68,4 +69,8 @@
   .prensa-cena:not(.prensa-cena--fixa) .prensa-vapor,.prensa-cena:not(.prensa-cena--fixa) .prensa-tsss{display:none}
   .prensa-cena--fixa .prensa-palco.prensado .prensa-vapor i{animation:none;opacity:.55;transform:translateY(-10cqw) scale(1.4)}
   .prensa-cena--fixa .prensa-palco.prensado .prensa-tsss{animation:none;opacity:1}
+}
+@media (prefers-reduced-motion:reduce) and (min-width:880px){
+  .prensa-grid{grid-template-columns:minmax(0,1fr)}
+  .prensa-par{width:min(100%,880px)}
 }

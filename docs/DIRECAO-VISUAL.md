@@ -740,7 +740,7 @@ Itens com escolha obrigatória (bebida com sabor, combo com refri quando houver 
 ```js
 // src/site/roteiro.js: preferência por seção; o primeiro com foto 'nova' vence
 export const ROTEIRO = {
-  monte: ['gran-bacon', 'gran-bacon-onion', 'gran-salada', 'gran-crispy'],
+  monte: ['gran-bacon', 'gran-bacon-onion', 'gran-salada'], // o gran-crispy volta quando o cliente confirmar o pão (9)
   dog: ['dog-max'],
   prensado: ['x-churrasco'],
   combos: ['combo-gran-bacon-onion', 'combo-diluvio', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos'], // 'antiga' entra com moldura escura
@@ -895,7 +895,7 @@ export const ROTEIRO = {
 | Bio e cardápio | crescimento ≤ 3 KB gz (adição rápida, toast e luz) |
 | JS do cliente no total | < 120 KB gz (`PLANO.md`, A5.5) |
 | Fontes | nenhum arquivo novo; Rubik 500 e 800 cortados se não forem usados |
-| Primeira vista do `#site` (antes do lazy) | ≤ 150 KB transferidos |
+| Primeira vista do `#site` (antes do lazy) | ≤ 190 KB transferidos (era 150; ver 9, "Orçamento") |
 | LCP (4G lento, CPU 4×, 390×844 DPR 3) | bio < 1,8 s; site < 1,5 s; cardápio < 1,8 s; limite duro 2,5 s |
 | CLS | < 0,05 em todas as telas (limite duro 0,1) |
 | Lighthouse mobile | desempenho ≥ 90 |
@@ -1021,7 +1021,7 @@ Onde o código segue um caminho diferente do texto acima, vale esta seção. Os 
 | JS do site (chunk) | ≤ 12 KB | 10,2 KB |
 | CSS do site (chunk) | ≤ 10 KB | 8,0 KB |
 | JS do cliente no total | < 120 KB | 66,2 KB |
-| Primeira vista de `/#site` | ≤ 150 KB | **180,1 KB, fora do limite** |
+| Primeira vista de `/#site` | ≤ 150 KB | **180,1 KB, fora do limite** (13/10: limite novo de 190 KB, medido 180,8 KB) |
 
   A primeira vista de `/#site` tinha 189,5 KB: o script contava o `tijolo.svg` (9,5 KB) que o herói não usa mais (a regra genérica `.parede::before` o pede, a `.s-hero.parede::before` o troca) e deixava de contar o `grao.svg` (0,7 KB). Corrigido o script, a conta é HTML 14,7 + CSS 14,8 + JS estático 31,1 (cliente 19,1 e `store-supabase` 11,9) + chunk do site 18,2 + fontes com preload 23,4 (Lilita One e Oswald 600) + imagens da S0 77,9 (logo-512 70,5; parede desfocada 6,7; grão 0,7). **Só a logo e as duas fontes somam 93,9 KB**; todo o resto (HTML, CSS, JS, chunk e texturas) soma 86,2 KB, e o limite deixa 56,1 KB para ele. A logo não pode ser recomprimida nem refeita. O limite de 150 KB não fecha sem uma destas mudanças, todas maiores que uma limpeza:
   - separar o herói das outras nove cenas no chunk do site (hoje os 18,2 KB inteiros entram na primeira vista, embora só a S0 apareça nela);
@@ -1029,3 +1029,20 @@ Onde o código segue um caminho diferente do texto acima, vale esta seção. Os 
   - subir o limite para o que a logo e as fontes permitem (hoje, cerca de 180 KB).
 
   Nada disso foi feito aqui. O que saiu de peso real foi `loading="lazy"` no selo-256 do acompanhamento (`#pedido-selo`), que ficava numa tela escondida e baixava 25,4 KB em toda abertura da página, e os padrões `p-rabisco*` do sprite (cerca de 0,3 KB gz no HTML). O script agora também lista as imagens sem `lazy` fora da S0 (hoje só o `selo-128` da barra, 9,8 KB), que o navegador baixa mesmo em tela oculta.
+
+- **Revisão visual do site (13/10).** Onde o código passou a seguir outro caminho que o texto acima:
+  - **S2 sem o Gran Crispy** (`ROTEIRO.monte`): o CONFIG diz "pão de brioche" e a cena se chama "pão seladinho na chapa". O pão do Gran Crispy e dos combos é a pergunta 7 de `docs/PLANO-FASE-2.md`, ainda sem resposta; até lá a cena só mostra o que o cliente descreveu como seladinho (Gran Bacon Onion e Gran Salada). O Combo Gran Bacon Onion ficou com a composição do Gran Bacon Onion do cliente (sem mussarela, com cheddar cremoso, bacon em fatias, alface, tomate e cebola roxa) e sem citar o pão, pela mesma pergunta.
+  - **Nada de anotação interna na tela:** a `nota` do CONFIG aparece na ficha e é texto para o cliente. "Quantidade/composição a confirmar" saiu das notas do Combo Dilúvio e do Combo Casal ("Pergunte pelo WhatsApp ..."); a S5 não tem mais `.carta-nota`.
+  - **S4:** a dica é a do HTML ("... toque em Personalizar e escolha o adicional Bacon ou Pizza"), não a `DICA_DOG`, cujo "aqui embaixo" aponta, na ficha, para a lista de adicionais. O conteúdo é o mesmo.
+  - **Títulos de seção:** o grito de 1.2 (Lilita, `--letreiro`, adesivo `--placa`, −2°, `clamp(38px,10vw,76px)`) está em `site.css` (`.s-h2`) e vale para toda cena; cada uma só diz tamanho, margem e origem da inclinação.
+  - **Parede (S0 e S6, 880+):** a textura desfocada fica a 165% de altura presa ao topo; a linha de rejunte deixou de cruzar a poça de luz atrás da placa e do relógio. A S5 espelha a dela (`scaleX(-1)`), porque a S6 vizinha usa a mesma textura (2.1, regra 5).
+  - **Horário:** cada turno é um bloco (`.turno`) e palavra com hífen não quebra (`.nb`: "meia-noite"); o "·" fica no fim da linha de cima.
+  - **x-churrasco:** a foto saiu sem os 96 px de baixo (6%, 1128×1504, ainda 3:4), porque ali aparecia um papel com anotação à mão que o `foco` não cortava. É `recortes` no `fotos-originais/mapa.json` (só recorte, sem retoque); o pipeline passou a gravar `arquivo` com barra normal também no Windows.
+  - **Capturas:** além de aberto e fechado, `node scripts/capturas.mjs site --apenas=pausa` e `--apenas=forcada` geram a barra, o herói, a S6 e a S9 com `loja.modo` contra o relógio (20:00 com "fechada": "Pausa na chapa."; 14:00 com "aberta": parede acesa).
+- **Orçamento e desempenho (13/10).** Lighthouse mobile em `/#site` (build de produção, CPU 4×, esta máquina, que o próprio Lighthouse acusa como lenta, benchmark ~450): desempenho 48–50 → 55–59 (3 rodadas), TBT 1,6 s → 0,8 a 1,0 s, CLS 0 a 0,13 → 0,016; com CPU 2×, 60 → 63–77 (2 rodadas, variação grande). **Não chega a 90 nem ao LCP < 1,5 s** (4,1 a 4,5 s): o que sobra é o primeiro layout a frio (~380 ms na máquina, que o 4× multiplica), as 5 fontes sem preload (82,5 KB que baixam com o texto) e o elemento LCP ser a seção do herói (a textura de parede, não o h1). O que mudou:
+  - `src/app.js` lia `window.scrollY` no carregamento (estado do balanço da placa), o que forçava o layout da página inteira no meio da montagem do DOM, e a página refazia o layout depois (de 721 ms para 470 ms de layout no trace). Agora o ponto de partida vem do primeiro evento de rolagem.
+  - `content-visibility: auto` com `contain-intrinsic-size: auto` (altura do conteúdo, sem o padding, por faixa de largura, medida) na S1b, S3, S4, S5, S6, S8 e S9 (a S7 já tinha; a S2 é presa e fica de fora). Layout 586–750 ms → 495–552 ms e TBT do trace ~950 ms → ~710 ms. **Custo conhecido:** num salto de rolagem (barra arrastada, `scrollIntoView`) o Chrome conta, de vez em quando (cerca de 1 em cada 10 sequências de 7 saltos no teste), um deslocamento grande do pseudo-elemento da parede ou do `.s-wrap` que nasce de caixa vazia; rolagem contínua e Lighthouse não sentem (CLS 0,0004). Com a reserva medida o salto não desloca nada.
+  - `registrar()` ganhou `semP`: herói, fitas e S5 não leem `--p` e deixam de escrever a propriedade herdada a cada quadro de rolagem. A revelação (`revelar`) mede a caixa da seção, não cada `.rv`, para não forçar o layout das seções puladas.
+  - O halo da placa tinha duas animações de `transform` e `opacity` no mesmo elemento (`halo-sobe` e `halo-respira`), que o Chrome roda na thread principal; agora a entrada fica no `::before`.
+  - A frase de apoio do herói reserva 2 linhas até 519 px: com a Rubik (sem preload) ela quebra em 2 e com a fonte de reserva em 1, e o herói subia ~14 px quando a fonte chegava (CLS 0,13).
+  - **Primeira vista: decidido subir o limite para 190 KB** (a terceira opção acima). Separar o herói do chunk (−11 KB) e o pedaço do painel do `store-supabase` (−5 KB) não chegam a 150 KB (a logo e as duas fontes com preload já somam 93,9 KB e a logo não se recomprime); medido: 180,8 KB. As duas separações continuam possíveis, e valem pelo tempo de execução, não pelo limite.

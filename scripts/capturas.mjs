@@ -23,7 +23,8 @@ async function capturar(modulo, servidor) {
   const cortadas = [];
   const r = await executar(
     modulo,
-    async ({ page, alvo, nome, variante, elemento, cheia = true, alongar = false }) => {
+    async ({ page, alvo, nome, variante, elemento, cheia = true, alongar = false, soMedida = false }) => {
+      if (soMedida) return; // tela que só o medir.mjs mede (ex.: S2 presa à rolagem: a foto são as janelas -inicio/-meio/-fim)
       if (cheia) await rolarTudo(page);
       const res = await salvarPng(page, caminhoCaptura(alvo, nome, variante), { elemento, cheia, alongar });
       if (res.cortada) cortadas.push(`${nome}-${variante.largura} (${Math.round(res.alturaCss)} px de altura, cortada)`);

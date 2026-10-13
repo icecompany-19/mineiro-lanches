@@ -1,13 +1,16 @@
-/* S6 · Letreiro da noite (dono: site-I). Seção comum (não presa; sem content-visibility: ao rolar até ela o Chrome contou CLS 1,0
-   porque a parede (::before e ::after) nascia de 0×0, e a seção é leve demais para compensar): section.s-noite.parede, entre os marcadores [S6] do index.html.
+/* S6 · Letreiro da noite (dono: site-I). Seção comum (não presa), com content-visibility: auto e o tamanho de reserva medido (contain-intrinsic-size:
+   altura do conteúdo, sem o padding, por faixa de largura): sem a reserva, a parede (::before e ::after) nascia de 0×0 e o Chrome contava CLS 1,0
+   ao rolar até ela. Num salto de rolagem ainda pode contar de vez em quando (docs/DIRECAO-VISUAL.md, 9). section.s-noite.parede, entre os marcadores [S6] do index.html.
    A parede acende e apaga com o truck (html[data-luz], em app.css). A régua "Simule um horário" (noite.js) põe --luz direto
    na seção e data-sim="aberto|fechado"; isso só muda esta seção. As 7 lâmpadas ([data-semana]), o status e [data-horario-txt]
    são escritos por src/app.js; o cartão .horario e as linhas .semana são os da bio (app.css). Só opacity e transform animam. */
 
-.s-noite{--cx:50%;--cy:34%;--vx:62%;--vy:60%;position:relative;padding-block:72px 80px;overflow:hidden}
+.s-noite{--cx:50%;--cy:34%;--vx:62%;--vy:60%;position:relative;padding-block:72px 80px;overflow:hidden;content-visibility:auto;contain-intrinsic-size:auto 808px}
+@media (min-width:880px){.s-noite{contain-intrinsic-size:auto 885px}}
 /* sem o tijolo desenhado (plano B) por baixo, como o herói: a textura real é opaca e o plano B custaria 9,5 KB */
 .s-noite.parede::before{background:var(--parede-desfocada) center/cover no-repeat,linear-gradient(rgba(199,137,85,.85),rgba(199,137,85,.85)),var(--tijolo);-webkit-mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%);mask:radial-gradient(70% 62% at var(--cx) var(--cy),#000 0 30%,transparent 78%)}
 /* o cone (hero-cone) já vem de app.css e segue --luz; aqui só o véu, mais fechado no meio porque há texto amarelo sobre a parede */
+@media (min-width:880px){.s-noite.parede::before{background-size:auto 165%,auto;background-position:50% 0,0 0}} /* como o herói: a faixa de rejunte sai de trás do relógio */
 .s-noite.parede::after{background:radial-gradient(var(--vx) var(--vy) at var(--cx) var(--cy),rgba(18,11,9,.58),var(--veu) 90%)}
 .s-noite .arandela{left:var(--cx)}
 
@@ -17,7 +20,7 @@
 /* ---------- título e horário do CONFIG ---------- */
 .noite__cab{display:grid;justify-items:center;gap:4px;text-align:center}
 .s-noite .s-olho{color:var(--fio)}
-.s-noite .s-h2{font-size:clamp(38px,10vw,76px);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg);transform-origin:50% 60%}
+.s-noite .s-h2{transform-origin:50% 60%}
 .noite__txt{margin:10px 0 0;max-width:34ch;text-wrap:balance;font:500 15px/1.5 var(--f-placa);letter-spacing:.06em;text-transform:uppercase;color:var(--osso);text-shadow:0 0 14px rgba(18,11,9,.95),0 0 4px rgba(18,11,9,.8)}
 
 /* ---------- relógio de Suzano ---------- */
@@ -52,7 +55,7 @@ html[data-luz="apagada"] .s-noite:not([data-sim]) .semana li.hoje .lampada,
 .noite__volta:not(.on){visibility:hidden}
 
 @media (min-width:1024px){
-  .s-noite{--cx:30%;--cy:46%;--vx:46%;--vy:62%;padding-block:120px}
+  .s-noite{--cx:30%;--cy:46%;--vx:46%;--vy:62%;padding-block:120px;contain-intrinsic-size:auto 587px}
   .noite__grade{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);column-gap:64px;row-gap:28px;justify-items:stretch;align-items:start}
   .noite__grade>*{max-width:none}
   .noite__cab,.noite__relogio{justify-items:start;text-align:left}

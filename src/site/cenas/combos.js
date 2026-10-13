@@ -102,6 +102,7 @@ export function iniciar(ctx) {
 
   // a carta coberta pela próxima encolhe e escurece: --sob de 0 a 1 (lê todas as posições antes de escrever)
   registrar(sec, {
+    semP: true,
     quadro() {
       const vis = ctx.$$('[data-carta]:not([hidden])', pilha);
       const topo = vis.map((c) => c.getBoundingClientRect().top);

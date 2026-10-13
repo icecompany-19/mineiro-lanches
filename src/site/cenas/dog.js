@@ -178,10 +178,10 @@ export function iniciar(ctx) {
     if ($('.dog-cbo__base').textContent !== comp) $('.dog-cbo__base').textContent = comp;
   }
 
-  // a base comum dos três tamanhos e a dica (do CONFIG)
+  // a base comum dos três tamanhos (do CONFIG). A dica é a do HTML: a do CONFIG (DICA_DOG) diz "aqui embaixo", que na ficha aponta
+  // para a lista de adicionais; na S4 não há lista, o caminho é o botão Personalizar
   const ings = (P['dog-max'].ing || []).map((x) => '<li>' + ctx.esc(x) + '</li>').join('');
   if ($('#dog-ings').innerHTML !== ings) $('#dog-ings').innerHTML = ings;
-  if (P['dog-max'].nota) $('#dog-dica').textContent = P['dog-max'].nota;
   mostrar();
   cbo();
   ctx.ML.store.ouvir((ev) => {

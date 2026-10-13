@@ -73,6 +73,7 @@ export function iniciar(ctx) {
   const trilhos = ctx.$$('.fita__trilho', sec);
   // a velocidade da rolagem (px por quadro, suavizada no laço da base) vira o playbackRate da animação do trilho
   registrar(sec, {
+    semP: true,
     quadro(p, info) {
       const taxa = 1 + Math.min(info.vel / 6, 5);
       trilhos.forEach((tr) => {

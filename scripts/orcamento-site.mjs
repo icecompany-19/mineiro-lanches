@@ -6,7 +6,8 @@
 //   2. CSS do site: _app/site-*.css (os .css que src/site/site.js importa)             ≤ 10 KB gz
 //   3. JS do cliente no total: todo .js que index.html alcança (imports estáticos e
 //      dinâmicos, o Supabase inclusive), menos o que só o chunk do site alcança        < 120 KB gz
-//   4. Primeira vista de /#site (estimativa, cache vazio, abrindo direto em /#site):    ≤ 150 KB
+//   4. Primeira vista de /#site (estimativa, cache vazio, abrindo direto em /#site):    ≤ 190 KB (era 150: a logo e as duas fontes
+//      com preload já somam 93,9 KB e não encolhem; docs/DIRECAO-VISUAL.md, 9, "Orçamento e desempenho")
 //      caminho crítico da primeira dobra = HTML + CSS do index + JS da entrada e dos imports estáticos
 //      + chunk do site (JS e CSS) + fontes com preload no HTML + imagens da S0 (todo <img> entre os marcadores
 //      [S0] do index.html, lazy ou não: na primeira dobra elas baixam já; o maior candidato do srcset, que é o do
@@ -23,7 +24,7 @@ import { resolve, join } from 'node:path';
 const RAIZ = resolve(import.meta.dirname, '..');
 const DIST = resolve(RAIZ, process.argv[2] || 'dist');
 const APP = join(DIST, '_app');
-const LIMITES = { siteJs: 12, siteCss: 10, clienteJs: 120, primeiraVista: 150 }; // KB (1 KB = 1000 bytes, como o Vite)
+const LIMITES = { siteJs: 12, siteCss: 10, clienteJs: 120, primeiraVista: 190 }; // KB (1 KB = 1000 bytes, como o Vite)
 
 if (!existsSync(join(DIST, 'index.html')) || !existsSync(APP)) {
   console.error(`orcamento-site: ${DIST} sem index.html ou _app/. Rode "npm run build" antes.`);

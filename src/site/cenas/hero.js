@@ -66,6 +66,7 @@ function montar() {
   letrado = true;
   // balanço da placa pela velocidade da rolagem (base.js só chama o quadro com a seção na tela e sem movimento reduzido)
   registrar(sec, {
+    semP: true,
     quadro(p, info) {
       balancar(placa, info.dy);
     }

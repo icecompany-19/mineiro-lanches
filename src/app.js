@@ -253,7 +253,8 @@ export function iniciarApp() {
     var e = C.enderecoPartes;
     $$('[data-endereco]').forEach(function (el) { el.textContent = e ? [e.rua, e.bairro, e.cidade + '/' + e.uf].join(' · ') : C.endereco; });
     $$('[data-mapa]').forEach(function (a) { a.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(C.endereco); });
-    $$('[data-horario-txt]').forEach(function (el) { el.textContent = (C.horarioTexto || []).join(' · '); });
+    // cada turno num bloco (a quebra de linha cai entre os turnos, com o "·" no fim da linha de cima) e palavra com hífen sem quebra ("meia-noite")
+    $$('[data-horario-txt]').forEach(function (el) { var ts = C.horarioTexto || []; el.innerHTML = ts.map(function (t, i) { return '<span class="turno">' + esc(t).replace(/[^ ]+-[^ ]+/g, '<span class="nb">$&</span>') + (i < ts.length - 1 ? '&nbsp;·' : '') + '</span>'; }).join(' '); });
     var modosBio = $('[data-modos-bio]');
     if (modosBio) {
       modosBio.innerHTML = C.modos.map(function (m) { return '<li>' + ic(ICONE_MODO[m.id] || 'truck') + '<span><strong>' + esc(m.label) + '</strong> · ' + esc(m.desc) + '</span></li>'; }).join('') +
@@ -928,9 +929,11 @@ export function iniciarApp() {
       soprarFumaca($('.fumaca', placa));
     });
   }
-  var balanco = { ang: 0, vel: 0, rodando: false, y: window.scrollY };
+  // y nasce nulo: ler window.scrollY na carga força o layout da página inteira antes de o JS terminar de montar o DOM (368 ms no
+  // trace do Lighthouse, e depois o layout se refaz); o primeiro evento de rolagem só marca o ponto de partida
+  var balanco = { ang: 0, vel: 0, rodando: false, y: null };
   function balancarPlaca() {
-    var y = window.scrollY, dy = y - balanco.y;
+    var y = window.scrollY, dy = balanco.y === null ? 0 : y - balanco.y;
     balanco.y = y;
     if (reduz || !placa || st.aba !== 'app' || st.tela !== 'bio' || !dy) return;
     balanco.vel += clamp(dy * 0.025, -0.9, 0.9);

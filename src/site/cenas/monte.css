@@ -16,7 +16,7 @@
 .s2-cab{display:grid;justify-items:center;text-align:center;gap:2px}
 /* o sobretítulo só entra com espaço (1024+): no celular o palco é todo da foto, da composição e do botão */
 .s-monte .s-olho{display:none;font-size:14px}
-.s-monte .s-h2{margin-top:0;font-size:clamp(32px,8.8vw,64px);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg);transform-origin:50% 60%}
+.s-monte .s-h2{margin-top:0;font-size:clamp(32px,8.8vw,64px);transform-origin:50% 60%}
 .s2-regra{display:none;margin:12px 0 0}
 
 /* ---------- quadro da foto: moldura escura que a foto preenche de baixo para cima ---------- */
@@ -38,7 +38,7 @@
 /* as composições dos lanches ficam na mesma célula; a mais alta dá a altura, então trocar de lanche não mexe em nada abaixo */
 .s2-comp{grid-area:1/1;display:flex;flex-wrap:wrap;justify-content:center;align-content:flex-start;gap:5px;margin:0;padding:0;list-style:none;counter-reset:c}
 .s2-comp:not([data-ativo]){visibility:hidden}
-.s2-comp li{--t:calc(.12 + var(--k,0) / var(--n,8) * .72);--on:clamp(0,calc((var(--p,1) - var(--t)) * 10),1);counter-increment:c;position:relative;isolation:isolate;display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:var(--r-pill);background:var(--chapa-2);box-shadow:inset 0 0 0 1.5px var(--borda-campo);color:var(--osso);font:600 12px/1.2 var(--f-corpo);opacity:calc(.5 + var(--on) * .5)}
+.s2-comp li{--t:calc(.12 + var(--k,0) / var(--n,8) * .72);--on:clamp(0,calc((var(--p,1) - var(--t)) * 10),1);counter-increment:c;position:relative;isolation:isolate;display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:var(--r-pill);background:var(--chapa-2);box-shadow:inset 0 0 0 1.5px var(--borda-campo);color:var(--osso);font:600 13px/1.2 var(--f-corpo);opacity:calc(.5 + var(--on) * .5)}
 .s2-comp li::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:rgba(255,204,0,.16);box-shadow:inset 0 0 0 1.5px var(--fio),0 0 14px rgba(255,204,0,.35);opacity:var(--on)}
 
 /* ---------- segmentado: a pele de .seg (app.css) com n colunas ---------- */
@@ -76,7 +76,7 @@
   .s-monte .s-olho{display:block}
   .s-monte .s-h2{transform-origin:0 60%}
   .s2-regra{display:block;max-width:46ch;font-size:16px}
-  .s2-pilha{max-width:640px}
+  .s2-pilha{max-width:520px}
   .s2-comp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 28px;justify-content:stretch}
   .s2-comp li{display:flex;align-items:baseline;gap:12px;min-height:34px;padding:0;border-radius:0;background:none;box-shadow:none;font-size:clamp(15px,1.35vw,17px);line-height:1.3}
   .s2-comp li:first-child{grid-column:1 / -1}

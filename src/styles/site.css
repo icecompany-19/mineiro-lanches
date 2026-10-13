@@ -4,7 +4,9 @@
    ficam em src/styles/app.css, no bloco "site S0". Só animam transform, opacity e clip-path. */
 
 /* títulos e texto das seções */
-.s-h2{margin:10px 0 0;font-family:var(--f-letreiro);font-weight:400;font-size:clamp(42px,11vw,92px);line-height:.95}
+/* o grito de 1.2: Lilita --letreiro, adesivo --placa, -2°; as cenas só trocam tamanho, margem e origem da inclinação */
+.s-h2{margin:10px 0 0;font:400 clamp(38px,10vw,76px)/.95 var(--f-letreiro);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-2deg);transform-origin:0 60%}
+.s-h2.rv.fora{transform:translateY(36px) rotate(-2deg)}
 .s-p{margin:14px 0 0;max-width:40ch;font-size:17px;line-height:1.55;color:var(--cinza-quente)}
 
 /* título letra por letra (base.js, embrulharLetras): a palavra não quebra no meio */
@@ -19,4 +21,5 @@
 
 @media (prefers-reduced-motion:reduce){
   .rv.fora{transform:none;opacity:1}
+  .s-h2.rv.fora{transform:rotate(-2deg)}
 }

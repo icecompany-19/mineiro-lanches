@@ -4,7 +4,8 @@
    As fotos chegam pelo app (ML.app.foto, exposto em src/app.js); os produtos, por window.ML.produtos. */
 
 export const ROTEIRO = {
-  monte: ['gran-bacon', 'gran-bacon-onion', 'gran-salada', 'gran-crispy'],
+  // sem o gran-crispy até o cliente confirmar o pão dele (core.js: o cardápio diz brioche, a S2 diz "pão seladinho na chapa")
+  monte: ['gran-bacon', 'gran-bacon-onion', 'gran-salada'],
   dog: ['dog-max'],
   prensado: ['x-churrasco'],
   combos: ['combo-gran-bacon-onion', 'combo-diluvio', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos'], // 'antiga' entra com moldura escura

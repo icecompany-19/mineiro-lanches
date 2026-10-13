@@ -1,7 +1,7 @@
 /* S4 · hot dog: 1, 2 ou 3 salsichas (dono: site-II). Fundo --noite com um brilho de --placa atrás da foto; a foto 'nova'
    fica inteira (sem transform). A bandeja de inox e as salsichas são CSS; o preço rola em colunas (.odo) por
    translateY. Só animam transform e opacity. Movimento reduzido: tudo parado (o JS troca direto). */
-.s-dog{position:relative;padding-block:72px 64px;background:radial-gradient(80% 36% at 50% 30%,rgba(196,6,12,.34),transparent 72%),var(--noite);overflow:hidden}
+.s-dog{position:relative;padding-block:72px 64px;background:radial-gradient(80% 36% at 50% 30%,rgba(196,6,12,.34),transparent 72%),var(--noite);overflow:hidden;content-visibility:auto;contain-intrinsic-size:auto calc(1079px + 169vw)}
 .dog-grid{margin-top:28px;display:grid;gap:26px;align-items:center}
 .dog-grid>*{min-width:0}
 .s-dog.sem-foto .dog-cena{display:none}
@@ -56,15 +56,20 @@
 .dog-cbo__txt .btn{margin-top:4px;width:100%}
 .dog-cbo__txt .btn[hidden]{display:none}
 
+@media (max-width:559.98px){
+  .dog-cbo{grid-template-columns:minmax(0,1fr)}
+  .dog-cbo__foto .foto{aspect-ratio:4/3}
+}
 @media (min-width:560px){
   .dog-acoes{grid-template-columns:1fr 1fr}
+  .s-dog{contain-intrinsic-size:auto 1614px}
 }
 @media (min-width:880px){
-  .s-dog{padding-block:112px 104px;background:radial-gradient(46% 70% at 28% 42%,rgba(196,6,12,.34),transparent 72%),var(--noite)}
+  .s-dog{contain-intrinsic-size:auto 1179px;padding-block:112px 104px;background:radial-gradient(46% 70% at 28% 42%,rgba(196,6,12,.34),transparent 72%),var(--noite)}
   .dog-grid{grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:72px}
   .dog-cena{margin:0}
   .dog-info{max-width:520px}
-  .dog-cbo{max-width:none;margin-top:72px;grid-template-columns:200px minmax(0,1fr);gap:32px;padding:16px}
+  .dog-cbo{margin-top:72px;grid-template-columns:200px minmax(0,1fr);gap:32px;padding:16px}
   .dog-cbo__base{max-width:60ch}
   .dog-cbo__txt .btn{width:auto}
 }

@@ -295,9 +295,13 @@ test.describe('S4 · hot dog: 1, 2 ou 3 salsichas', () => {
     await expect(preco(page)).toHaveText(brl(dogs['dog-max'].preco));
     await expect(page.locator('#dog-nome')).toHaveText('Hot Dog Max');
     await expect(page.locator('#dog-base')).toHaveText(dogs['dog-max'].base);
-    // os chips da base e a dica vêm do CONFIG
+    // os chips da base vêm do CONFIG; a dica é a própria da S4 (a do CONFIG diz "aqui embaixo", que só vale na ficha)
     await expect(page.locator('#dog-ings li')).toHaveText(dogs['dog-max'].ing);
-    await expect(page.locator('#dog-dica')).toHaveText(dogs['dog-max'].nota);
+    const dica = await page.locator('#dog-dica').textContent();
+    expect(dica).toContain('Personalizar');
+    expect(dica).not.toContain('aqui embaixo');
+    expect(dica).toContain('Dog Bacon ou Dog Pizza');
+    expect(dica).toContain('queijo gratinado e orégano'); // o mesmo conteúdo do CONFIG (DICA_DOG), com o caminho certo
     await expect(page.locator('.dog-salsicha.on')).toHaveCount(2);
   });
 

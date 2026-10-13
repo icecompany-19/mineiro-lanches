@@ -446,7 +446,7 @@ async function medirContraste(page, escopo) {
     try {
       await page.evaluate(() => window.__ml.ocultar(true));
       await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
-      png = await page.screenshot();
+      png = await page.screenshot({ timeout: 60_000 }); // em 390 (DPR 3), sem GPU, uma janela leva até ~7 s
     } finally {
       await page.evaluate(() => window.__ml.ocultar(false));
     }
@@ -643,6 +643,7 @@ try {
   const { erros, falhas } = await executar(
     modulo,
     async (ctx) => {
+      if (ctx.soCaptura) return; // estado só para a foto (ex.: S2 em p = .5 e 1): a cena inteira já é medida
       if (!regras.length) regras = await ctx.page.evaluate(regrasComTijolo).catch(() => []);
       const m = await medirTela(ctx);
       const i = telas.findIndex((t) => t.chave === m.chave); // variante repetida depois de uma falha: vale a última

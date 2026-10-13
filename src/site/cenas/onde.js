@@ -13,7 +13,7 @@ export function iniciar(ctx) {
   if (!sec || montada) return;
   montada = true;
   const C = ctx.C;
-  ctx.$('#onde-end', sec).textContent = C.enderecoPartes ? [C.enderecoPartes.rua, C.enderecoPartes.bairro, C.enderecoPartes.cidade + '/' + C.enderecoPartes.uf].join(' · ') : C.endereco;
+  ctx.$('#onde-end', sec).textContent = C.enderecoPartes ? [C.enderecoPartes.rua, C.enderecoPartes.bairro, C.enderecoPartes.cidade + '/' + C.enderecoPartes.uf].join('\u00a0· ') : C.endereco;
   ctx.$('#onde-mapa', sec).href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(C.endereco);
   const rota = ctx.$('#onde-rota', sec);
   const truck = ctx.$('#onde-truck', sec);
