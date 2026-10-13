@@ -36,8 +36,12 @@
 //
 // Texturas: mapa.json, "paredes": [{ arquivo, x, y, w, h, nome? }] recorta um trecho de parede de cada foto (pixels do
 // original já girado) e grava <texturas>/<nome ou tijolo-N>.webp, sem retoque.
+//
+// Recortes: mapa.json, "recortes": { slug: { x, y, w, h } } tira da foto do produto o que não deve aparecer (um papel com anotação no
+// canto, por exemplo), em pixels do original já girado. As três variantes saem do trecho (w e h do fotos.json são os do trecho) e o foco
+// do mapa vale para o trecho. Só recorte: nada é pintado, ampliado nem retocado.
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { basename, dirname, extname, join, relative, resolve } from 'node:path';
+import { basename, dirname, extname, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
@@ -141,7 +145,7 @@ export function envioDoHorario(info, envios = ENVIOS, tolerancia = TOLERANCIA_MI
 
 // ================= mapa.json =================
 export function lerMapa(arquivo) {
-  const vazio = { arquivos: {}, compartilhadas: {}, foco: {}, focoPadrao: '50% 50%', paredes: [], slugs: {}, envios: [] };
+  const vazio = { arquivos: {}, compartilhadas: {}, foco: {}, focoPadrao: '50% 50%', paredes: [], recortes: {}, slugs: {}, envios: [] };
   if (!arquivo || !existsSync(arquivo)) return { ...vazio, ausente: true };
   let m;
   try {
@@ -156,6 +160,7 @@ export function lerMapa(arquivo) {
     foco: semComentarios(m.foco),
     focoPadrao: m.foco_padrao || '50% 50%',
     paredes: Array.isArray(m.paredes) ? m.paredes : [],
+    recortes: semComentarios(m.recortes),
     slugs: semComentarios(m.slugs),
     envios: Array.isArray(m.envios) ? m.envios : []
   };
@@ -301,9 +306,24 @@ export function tamanhosVariantes(w, h) {
 }
 
 // Gera <slug>-q, -540 e -1080 e devolve a entrada do fotos.json.
-async function gerarVariantes(caminho, slug, focoPedido, origem, saida, simular) {
-  const arquivo = relative(RAIZ, caminho).startsWith('..') ? basename(caminho) : relative(RAIZ, caminho);
-  const { buf, w, h } = await abrirGirada(caminho);
+// recorte: { x, y, w, h } em pixels do original já girado (inteiros, dentro da foto); devolve o objeto validado
+export function validarRecorte(recorte, w, h) {
+  const r = ['x', 'y', 'w', 'h'].map((k) => Number(recorte && recorte[k]));
+  if (r.some((v) => !Number.isInteger(v) || v < 0) || r[2] < 1 || r[3] < 1 || r[0] + r[2] > w || r[1] + r[3] > h) {
+    throw new Error(`recorte ${JSON.stringify(recorte)} fora da foto (${w}×${h})`);
+  }
+  return { x: r[0], y: r[1], w: r[2], h: r[3] };
+}
+
+async function gerarVariantes(caminho, slug, focoPedido, origem, saida, simular, recorte = null) {
+  const arquivo = (relative(RAIZ, caminho).startsWith('..') ? basename(caminho) : relative(RAIZ, caminho)).split(sep).join('/'); // barra normal também no Windows
+  let { buf, w, h } = await abrirGirada(caminho);
+  if (recorte) {
+    const r = validarRecorte(recorte, w, h);
+    buf = await sharp(buf).extract({ left: r.x, top: r.y, width: r.w, height: r.h }).png({ compressionLevel: 0 }).toBuffer();
+    w = r.w;
+    h = r.h;
+  }
   const foco = focoPedido === 'auto' ? await focoAutomatico(buf, w, h) : focoPedido;
   const q = recorteQ(w, h, foco);
   const { channels } = await sharp(buf).stats();
@@ -446,7 +466,7 @@ export async function processar(opcoes = {}) {
       continue;
     }
     try {
-      const { entrada, arquivos } = await gerarVariantes(join(op.pasta, escolhida.nome), slug, foco, escolhida.origem, rel.saida, rel.simular);
+      const { entrada, arquivos } = await gerarVariantes(join(op.pasta, escolhida.nome), slug, foco, escolhida.origem, rel.saida, rel.simular, mapa.recortes[slug] || mapa.recortes[escolhida.produto] || null);
       novas[slug] = entrada;
       rel.ligadas.push({ ...escolhida, ...entrada });
       if (!rel.simular) rel.gravados.push(...arquivos);

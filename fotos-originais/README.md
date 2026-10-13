@@ -91,6 +91,10 @@ Chaves que começam com `_` são comentários.
 - **foco**: ponto focal do recorte quadrado `-q` (cards, sacola, stories), em `x% y%` da foto: o centro do lanche. O
   recorte é o maior quadrado com esse ponto no centro, sem sair da foto. `auto` deixa o sharp achar a região de interesse.
   Rodando de novo sobre a mesma foto, vale o foco que já está no `fotos.json`.
+- **recortes**: `{ "x-churrasco": { "x": 36, "y": 0, "w": 1128, "h": 1504 } }` tira da foto do produto o que não deve aparecer
+  (um papel com anotação no canto, por exemplo), em pixels da foto já em pé. As três variantes saem do trecho, e `w` e `h` do
+  `fotos.json` são os dele; o `foco` vale para o trecho. Mantenha a proporção da foto (3:4), para o quadro não cortar nada
+  além do que já cortava. É só recorte: nada é pintado nem retocado.
 - **paredes**: trecho de parede de tijolinho sem lanche, prato ou planta, em pixels da foto já em pé. Gera
   `public/assets/texturas/<nome ou tijolo-N>.webp` (até 1600 px de largura), sem retoque. Para medir, abra a foto num
   editor e anote o retângulo. A textura real substitui o `tijolo.svg` (desenhado em código), que é só o plano B.

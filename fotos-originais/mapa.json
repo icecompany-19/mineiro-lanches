@@ -16,7 +16,13 @@
  },
  "foco_padrao": "50% 50%",
  "foco": {
-  "_como": "slug → ponto focal do recorte quadrado -q (object-position: \"x% y%\", 0 a 100) ou \"auto\" (região de interesse do sharp)."
+  "_como": "slug → ponto focal do recorte quadrado -q (object-position: \"x% y%\", 0 a 100) ou \"auto\" (região de interesse do sharp). Vale para a foto já recortada (veja recortes).",
+  "x-churrasco": "50% 72%"
+ },
+ "recortes": {
+  "_como": "slug → { x, y, w, h } em pixels do original já girado: tira da foto o que não deve aparecer, sem retoque. As variantes saem do trecho.",
+  "_x-churrasco": "Sem os 96 px de baixo (6%, mesmo 3:4): ali aparece, no canto de baixo à esquerda, um papel com anotação à mão que o foco não consegue cortar (a foto e o quadro são 3:4).",
+  "x-churrasco": { "x": 36, "y": 0, "w": 1128, "h": 1504 }
  },
  "_paredes": "Trechos de parede de tijolinho sem lanche nem objeto: { arquivo, x, y, w, h, nome? } em pixels da foto já girada. Gera public/assets/texturas/<nome ou tijolo-N>.webp, sem retoque. Ex.: { \"arquivo\": \"WhatsApp Image 2026-10-09 at 21.03.10.jpeg\", \"x\": 320, \"y\": 0, \"w\": 880, \"h\": 660 }",
  "paredes": []

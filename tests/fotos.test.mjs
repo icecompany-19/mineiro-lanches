@@ -116,6 +116,7 @@ before(async () => {
       },
       compartilhadas: { 'dog-medio': 'dog-max', 'dog-super': 'dog-max' },
       foco: { 'gran-bacon': '50% 30%' },
+      recortes: { _como: 'comentário', 'gran-bacon-onion': { x: 10, y: 20, w: 300, h: 400 } },
       paredes: [
         { arquivo: WA('2026-10-09 at 18.58.12'), x: 10, y: 20, w: 300, h: 200 },
         { arquivo: 'nao-existe.jpeg', x: 0, y: 0, w: 10, h: 10, nome: 'tijolo-x' }
@@ -267,6 +268,22 @@ test('só recorte e redimensionamento: cor média igual e -q recortado no foco',
   const noFoco = await diferenca(q, esperado);
   assert.ok(noFoco < 4, `-q bate com o recorte no foco (diferença ${noFoco.toFixed(2)})`);
   if (top !== Math.round((h - lado) / 2)) assert.ok(noFoco < (await diferenca(q, centro)), 'e não com o recorte do centro');
+});
+
+test('recortes do mapa.json: as variantes saem do trecho e w e h do fotos.json são os dele (sem ampliar)', async () => {
+  const fotos = JSON.parse(readFileSync(json, 'utf8'));
+  assert.deepEqual([fotos['gran-bacon-onion'].w, fotos['gran-bacon-onion'].h], [300, 400]);
+  for (const [nome, w, h] of [['q', 360, 360], ['540', 300, 400], ['1080', 300, 400]]) {
+    const m = await sharp(join(saida, `gran-bacon-onion-${nome}.webp`)).metadata();
+    assert.deepEqual([m.width, m.height], [w, h], `gran-bacon-onion-${nome}`);
+  }
+  // o trecho é o da foto de origem: mesma imagem do original recortado, só redimensionada (nada pintado)
+  const origem = join(pasta, WA('2026-10-09 at 20.27.40'));
+  const esperado = await sharp(origem).extract({ left: 10, top: 20, width: 300, height: 400 }).toBuffer();
+  assert.ok((await diferenca(join(saida, 'gran-bacon-onion-1080.webp'), esperado)) < 4, 'o -1080 é o trecho do original');
+  assert.deepEqual(F.validarRecorte({ x: 36, y: 0, w: 1128, h: 1504 }, 1200, 1600), { x: 36, y: 0, w: 1128, h: 1504 });
+  assert.throws(() => F.validarRecorte({ x: 0, y: 0, w: 900, h: 10 }, 800, 600), /fora da foto/);
+  assert.throws(() => F.validarRecorte({ x: 0, y: 0, w: 10.5, h: 10 }, 800, 600), /fora da foto/);
 });
 
 test('fotos.json: formato que src/app.js e o virtual:fotos leem e ordem mantida', () => {
