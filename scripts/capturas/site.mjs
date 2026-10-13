@@ -13,6 +13,9 @@
 //   s3-prensa-100                  a régua da S3 toda à direita (prensado; só sem movimento reduzido: com ele a régua some)
 //   s6-noite-14h                   a S6 com a régua "Simule um horário" em 14h (parede apagada na simulação)
 //   s7-galeria-ampliada            a primeira foto do mosaico aberta em #luz-caixa
+// Variantes além de aberto/fechado × movimento (lib.mjs, ESTADOS_EXTRAS): 390-pausa e 1280-pausa (20:00 com loja.modo = 'fechada': título "Pausa
+// na chapa.", parede apagada, neon fechado) e 390-forcada e 1280-forcada (14:00 com 'aberta': parede acesa e neon aberto), só para a barra,
+// o herói (S0), a S6 e a S9 (docs/DIRECAO-VISUAL.md, 8, "Dados"). Ex.: node scripts/capturas.mjs site --sem-build --apenas=pausa
 // --cena=<trecho do nome ou posição> (ou CAPTURAS_CENA) limita a rodada a uma cena (teste de fumaça): "s2" pega a S2 e os estados dela.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -22,6 +25,9 @@ import { BASE, RAIZ } from './lib.mjs';
 
 export const alvo = 'site';
 export const larguras = [390, 1280];
+// pausa e forçada: o modo manual do truck contra o relógio (lib.mjs, ESTADOS_EXTRAS); só a barra, o herói, a S6 e a S9, que seguem a luz
+export const estadosExtras = ['pausa', 'forcada'];
+const CENAS_DA_LUZ = ['BARRA', 'S0', 'S6', 'S9'];
 
 const slug = (s) =>
   String(s)
@@ -39,11 +45,12 @@ function marcadoresDoFonte() {
 }
 
 // A luz do truck depende só do relógio fixo: o estado_cardapio real vem com loja.modo = 'auto' (o banco compartilhado pode estar em
-// 'aberta'). O lib.mjs faz isso com page.route (modoAuto), mas com a interceptação ligada o Chromium deixa em branco, na foto de recorte,
-// as imagens que estão fora da janela (as fotos das cartas da S5 saíam vazias com todas as imagens carregadas). Aqui a troca é feita
-// dentro da página, por um fetch embrulhado, sem page.route: a resposta continua sendo a do banco real, só com o modo trocado.
-export async function ligar(page) {
-  await page.addInitScript(() => {
+// 'aberta'); nas variantes pausa e forçada o modo é o da variante ('fechada' ou 'aberta'). O lib.mjs faz isso com page.route (modoAuto),
+// mas com a interceptação ligada o Chromium deixa em branco, na foto de recorte, as imagens que estão fora da janela (as fotos das
+// cartas da S5 saíam vazias com todas as imagens carregadas). Aqui a troca é feita dentro da página, por um fetch embrulhado, sem
+// page.route: a resposta continua sendo a do banco real, só com o modo trocado.
+export async function ligar(page, v) {
+  await page.addInitScript((modo) => {
     const original = window.fetch.bind(window);
     window.fetch = async (...args) => {
       const resposta = await original(...args);
@@ -52,13 +59,13 @@ export async function ligar(page) {
       if (!url.includes('/rest/v1/rpc/estado_cardapio')) return resposta;
       try {
         const json = await resposta.clone().json();
-        if (json && json.loja) json.loja.modo = 'auto';
+        if (json && json.loja) json.loja.modo = modo;
         return new Response(JSON.stringify(json), { status: resposta.status, statusText: resposta.statusText, headers: { 'content-type': 'application/json' } });
       } catch {
         return resposta;
       }
     };
-  });
+  }, (v && v.modo) || 'auto');
 }
 
 // cenas do DOM: [{ i, id, nome }] na ordem. O primeiro elemento entre os comentários é a cena.
@@ -141,12 +148,15 @@ async function percorrer(page, elemento) {
 // A foto de uma cena é um recorte da página inteira (fullPage + clip) e o Chromium rola a página durante essa foto (a S5 em 390 saltava
 // ~1200 px). O que depende da rolagem sai fora do lugar: a barra do site (fixed) caía no meio da foto, as cartas da S5 (sticky) se
 // descolavam do lugar delas e a rota da S8 (--p) ficava no começo. Por isso, só nas fotos de cena (não nas janelas):
+//   - o content-visibility das seções fica desligado (a foto de recorte não espera a pintura das imagens que ele pulou);
 //   - a barra do site fica escondida (a cena "barra" a mostra; as janelas -inicio/-meio/-fim/-ficha/-ampliada também);
 //   - as cartas da S5 ficam em fluxo comum (position: relative), como já ficam com movimento reduzido: o lugar natural delas;
 //   - a S8 é fotografada com a cena já passada pelo topo (POSICAO 'fim'): a rota no estado final, o mesmo do movimento reduzido.
 // As outras cenas são fotografadas com o topo delas no topo da janela ('topo').
 const POSICAO = { S8: 'fim' };
 const AJUSTES = [
+  // a foto de recorte revela a cena inteira de uma vez e o content-visibility (as seções abaixo da S2) deixa as fotos lazy de fora dela sem pintar
+  { id: '__cap-cv', css: '.site section{content-visibility:visible!important}', quando: () => true },
   { id: '__cap-barra', css: '.barra-site{visibility:hidden!important}', quando: (c) => c !== 'BARRA' },
   { id: '__cap-s5', css: '.s-combos .carta{position:relative!important;top:auto!important}', quando: (c) => c === 'S5' }
 ];
@@ -206,7 +216,8 @@ export async function telas(page, v, dados, tela) {
   await page.locator('#mosaico button[data-ampliar]').first().waitFor({ state: 'attached' });
   const filtro = (process.env.CAPTURAS_CENA || '').toLowerCase();
   const cenas = await listarCenas(page);
-  const quer = (c) => !filtro || c.nome.includes(filtro) || String(c.i) === filtro;
+  // pausa e forçada (v.modo): só as cenas que seguem a luz do truck
+  const quer = (c) => (!v.modo || CENAS_DA_LUZ.includes(c.id)) && (!filtro || c.nome.includes(filtro) || String(c.i) === filtro);
   const fechar = async (seletorAberto, seletorFechar) => {
     await page.locator(seletorFechar).first().click();
     await page.locator(seletorAberto).waitFor({ state: 'hidden' });
@@ -259,7 +270,7 @@ export async function telas(page, v, dados, tela) {
       await semAjustes(page);
     }
 
-    if (c.id === 'S6') {
+    if (c.id === 'S6' && !v.modo) {
       await page.locator('#noite-regua').scrollIntoViewIfNeeded();
       await page.locator('#noite-regua').fill('840'); // 14h
       await page.waitForTimeout(900);
