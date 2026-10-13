@@ -56,7 +56,7 @@ const REDIRECTS = [
   ['/q/3', '/?origem=qrcode&mesa=3'],
   ['/painel', '/painel/']
 ];
-const PAGINAS = ['/', '/#cardapio', '/q', '/q/3', '/painel/'];
+const PAGINAS = ['/', '/#cardapio', '/#site', '/q', '/q/3', '/painel/'];
 // Cartaz do QR (public/qr/cartaz.html, fora do Vite): também é servido com a mesma CSP.
 const CARTAZ = '/qr/cartaz';
 
