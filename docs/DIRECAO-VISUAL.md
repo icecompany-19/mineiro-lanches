@@ -598,7 +598,7 @@ Sem a logo montada por partes e sem os recortes de lanche voando.
 **390:**
 
 - **Cabeçalho fixo de 64 px** (fundo `rgba(18,11,9,.94)`, sem blur): voltar, selo de 38 px, "Cardápio" em Lilita 24, status neon curto e sacola redonda.
-- **Busca:** campo escuro (componente 4.5).
+- **Busca:** campo escuro (especificação do campo em 5.5).
 - **Fileiras:** chips de categoria fixos e chips de filtro.
 - **Faixa do combo.**
 - **Categorias:** título em Lilita 28, `--letreiro`, −1,5°, com a descrição (`desc`) em Oswald 500 14 px `--osso-2`. Abaixo, os cards de item.
@@ -630,7 +630,7 @@ Itens com escolha obrigatória (bebida com sabor, combo com refri quando houver 
   4. Adicionais com stepper (R$ 7,50, do `CONFIG`).
 - **Rodapé fixo:** stepper + "Adicionar · R$ X". O total rola em 200 ms (WAAPI, `translateY` dos dígitos).
 - **Ao adicionar:** a miniatura voa até a sacola, a ficha fecha e aparece o toast.
-- **Entrada:** a foto do card vira o topo da ficha por View Transition de até 200 ms. Sem suporte ou com movimento reduzido, a troca é seca.
+- **Entrada:** a foto do card vira o topo da ficha em 200 ms (implementado por WAAPI, não por View Transition: seção 9). Com movimento reduzido, a troca é seca.
 
 **1280:** diálogo central de 560 px, raio 24, altura máxima de 88vh. A foto fica no topo, com 360 px no máximo.
 
@@ -667,7 +667,7 @@ Itens com escolha obrigatória (bebida com sabor, combo com refri quando houver 
   - **Erro:** borda e mensagem `--vermelho-luz` com ícone, e `aria-describedby`.
 - **Rodapé fixo, sempre visível:** "Enviar pedido · R$ X" (`#btn-enviar`).
   - **Enviando:** botão travado com barra de calor.
-  - **Sucesso:** a comanda "imprime" (`clip-path` de cima para baixo, 600 ms) e sobe; vai para o acompanhamento.
+  - **Sucesso:** vai para o acompanhamento, e é lá que a comanda "imprime" (`clip-path` de cima para baixo, 600 ms; seção 9).
   - **Erro:** `#envio-erro` com "Tentar de novo" e "Enviar pelo WhatsApp" (o fluxo atual).
 
 **1280:** coluna de celular.
@@ -697,7 +697,7 @@ Itens com escolha obrigatória (bebida com sabor, combo com refri quando houver 
 
 - **Tokens:** os nomes antigos, com os valores novos (1.1). Sem tijolo, fumaça, partículas, grão ou módulo do site; o painel não importa nada de `src/site`.
 - **Cabeçalho:** `selo-128.webp` de 64 px. O modo da loja (Auto / Aberta / Fechada) usa o componente de status neon.
-- **Login:** `selo-256.webp` de 84 px e campos escuros (componente 4.5).
+- **Login:** `selo-256.webp` de 84 px e campos escuros (especificação do campo em 5.5).
 - **Cards de pedido:**
   - papel claro sobre o escuro (lê-se de longe): fundo `--papel`, texto `--tinta`;
   - número em Oswald 700, 32 px;
@@ -901,6 +901,8 @@ export const ROTEIRO = {
 | Lighthouse mobile | desempenho ≥ 90 |
 | Animação | só `transform`, `opacity` e `clip-path`; partículas ≤ 8 no celular e ≤ 18 no desktop; nada em `setInterval` para animar |
 
+`node scripts/orcamento-site.mjs` mede, no build, o JS e o CSS do site, o JS do cliente e a primeira vista. O resultado de 12/10 (a primeira vista passa do limite) está na seção 9.
+
 ---
 
 ## 7. Quando chegarem as fotos de tijolinho que faltam
@@ -999,3 +1001,31 @@ node scripts/testar-paridade.mjs
 node --test tests/*.test.mjs
 npx playwright test
 ```
+
+---
+
+## 9. Decisões de implementação (12/10)
+
+Onde o código segue um caminho diferente do texto acima, vale esta seção. Os ids D6, D11 e D14 são os de `docs/PLANO-FASE-2.md`, seção 2.
+
+- **D6, o checkout mantém os dados.** Depois do envio, o rascunho (`mineiro:v2:rascunho`) continua com nome, telefone, endereço e referência; sai só a observação, que valia para aquele pedido. Quem volta só confere (checklist de 8, "Jornada"). O e2e confere o rascunho guardado depois do envio.
+- **D11, S6 com a régua, S8 sem texto circular.** A S6 tem a régua "Simule um horário" (`input type="range"`, 0h a 24h, passo de 5 min): ela só mexe na luz (`--luz`) da própria seção, nunca no status real nem em `html[data-luz]`, e nasce desabilitada até o JS ligá-la. A S8 ficou com a rota desenhada ao rolar e o cartão do endereço; o texto em círculo não foi feito e não há iframe de mapa ("Abrir no mapa" é um link do Google Maps).
+- **D14, a moto fica até o cliente responder.** O ícone `moto` segue em "Entregas", no modo entrega e em "Saiu para entrega" (`app.js`, S8, painel). O cliente nunca disse que a entrega é de moto: nenhum texto diz isso, só o ícone. Se a resposta do item 5 da mensagem (`docs/PLANO-FASE-2.md`, seção 6) for outra, troca-se por `truck`.
+- **Entrada da ficha por WAAPI de 200 ms.** A foto do card vira o topo da ficha com `animate()` (translação, escala e raio, `voarParaFicha` em `src/app.js`), não por View Transition como dizia 5.3. A troca de telas (bio, cardápio, site) continua por View Transition de até 200 ms. Com movimento reduzido, a troca é seca.
+- **A comanda imprime no acompanhamento.** O checkout limpa a sacola, navega para `#pedido/<token>` e é na comanda do acompanhamento (`#pedido-topo .comanda`) que roda o `imprime` (`clip-path`, 600 ms, uma vez). Com movimento reduzido, não roda.
+- **A gaveta `#ficha` fica fora de `#view-app`.** O `<dialog id="ficha">` é irmão de `#view-app` e `#view-site`, não filho de nenhum: o site também a abre ("Pedir este" da S2, o hot dog da S4 e o combo da S5), e um `<dialog>` dentro de um ancestral escondido abre com tamanho zero (correção `555f90a`).
+- **Orçamento de 6.3, medido em 12/10 com `node scripts/orcamento-site.mjs` (gzip, build de produção):**
+
+| Item | Limite | Medido |
+|---|---|---|
+| JS do site (chunk) | ≤ 12 KB | 10,2 KB |
+| CSS do site (chunk) | ≤ 10 KB | 8,0 KB |
+| JS do cliente no total | < 120 KB | 66,2 KB |
+| Primeira vista de `/#site` | ≤ 150 KB | **180,1 KB, fora do limite** |
+
+  A primeira vista de `/#site` tinha 189,5 KB: o script contava o `tijolo.svg` (9,5 KB) que o herói não usa mais (a regra genérica `.parede::before` o pede, a `.s-hero.parede::before` o troca) e deixava de contar o `grao.svg` (0,7 KB). Corrigido o script, a conta é HTML 14,7 + CSS 14,8 + JS estático 31,1 (cliente 19,1 e `store-supabase` 11,9) + chunk do site 18,2 + fontes com preload 23,4 (Lilita One e Oswald 600) + imagens da S0 77,9 (logo-512 70,5; parede desfocada 6,7; grão 0,7). **Só a logo e as duas fontes somam 93,9 KB**; todo o resto (HTML, CSS, JS, chunk e texturas) soma 86,2 KB, e o limite deixa 56,1 KB para ele. A logo não pode ser recomprimida nem refeita. O limite de 150 KB não fecha sem uma destas mudanças, todas maiores que uma limpeza:
+  - separar o herói das outras nove cenas no chunk do site (hoje os 18,2 KB inteiros entram na primeira vista, embora só a S0 apareça nela);
+  - separar do `store-supabase` o que é só do painel (a mesma função serve às duas páginas e o cliente leva tudo, 11,9 KB gz; o pacote do Supabase já vem por `import()` depois da primeira pintura);
+  - subir o limite para o que a logo e as fontes permitem (hoje, cerca de 180 KB).
+
+  Nada disso foi feito aqui. O que saiu de peso real foi `loading="lazy"` no selo-256 do acompanhamento (`#pedido-selo`), que ficava numa tela escondida e baixava 25,4 KB em toda abertura da página, e os padrões `p-rabisco*` do sprite (cerca de 0,3 KB gz no HTML). O script agora também lista as imagens sem `lazy` fora da S0 (hoje só o `selo-128` da barra, 9,8 KB), que o navegador baixa mesmo em tela oculta.

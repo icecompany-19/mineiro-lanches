@@ -77,6 +77,8 @@ Tarefas que só podem ser verificadas em N2 ficam em commit local até o N2 exis
 
 ## 4. Microtarefas
 
+**Situação em 12/10, fim do dia.** Concluídas: E1 a E8, E10 a E17, A1 a A8, B1 a B16 e P1 a P8. Pendentes: A9 a A11, B18 e B19 e P10 (em andamento); a Fase 4 inteira (G0 a G15, o go-live); F8 a F14, conforme as respostas e as fotos do cliente; E9 (poppler); P9 (abas do painel no celular), opcional. B17 e A12 (limpeza do legado e registro das decisões) fecham com os commits da rodada de limpeza; o resultado do orçamento da primeira vista de `/#site` está em `docs/DIRECAO-VISUAL.md`, seção 9. As linhas abaixo ficam como foram escritas: o estado de cada tarefa é o desta lista.
+
 **Legenda de modelos (preço por milhão de tokens de entrada/saída, API da Anthropic, 12/10):** **H** = Haiku 5.5 (`claude-haiku-5-5`, US$ 0,10 / 0,50 até 100 mil tokens de contexto; 0,50 / 2,50 acima disso, então tarefas Haiku têm ≤ 25 min e nunca leem arquivo inteiro), **S** = Sonnet 5.5 (`claude-sonnet-5-5`, US$ 2 / 10), **O** = Opus 5.5 (`claude-opus-5-5`, US$ 4 / 20), **F** = Fable 5.1 (US$ 10 / 50, só planejar e desempatar), 👤 = humano. Regra: o modelo mais barato que dá conta. Haiku para trocas apontadas por linha, mover, configurar, gerar; Sonnet para CSS/JS de tela, scripts com lógica, triagem de testes e qualquer edição que exija classificar ocorrências; Opus só para o olhar (capturas) e o desempate.
 
 ### Fase 0: higiene e ambiente (~8 h de agente; decisão D1)
