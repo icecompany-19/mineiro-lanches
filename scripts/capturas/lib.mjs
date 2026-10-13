@@ -228,6 +228,8 @@ async function terminarAnimacoes(page) {
 
 // Altura máxima de um PNG (px do dispositivo): acima de ~16 mil px o Chromium falha ou sai em branco.
 const ALTURA_MAX_PX = 15000;
+// Foto de cena alta em 390 (DPR 3) no Chromium sem GPU leva mais que os 15 s do padrão (a S5 do site: ~21 s, 7800 px de altura).
+const TEMPO_FOTO = 90_000;
 // Salva o PNG. Sem opções: a página inteira (limitada); com elemento: só o retângulo dele (também limitado).
 // alongar: estica a janela até a altura da página antes da foto e a devolve depois. Serve às telas com barra lateral sticky de 100vh
 // (painel em 1280): no navegador ela acompanha a rolagem, mas numa foto de página inteira ela acabaria em 800 px e deixaria uma faixa vazia.
@@ -237,7 +239,7 @@ export async function salvarPng(page, caminho, { elemento = null, cheia = true, 
   const maxCss = Math.floor(ALTURA_MAX_PX / dpr);
   if (!cheia && !elemento) {
     await terminarAnimacoes(page);
-    await page.screenshot({ path: caminho });
+    await page.screenshot({ path: caminho, timeout: TEMPO_FOTO });
     return { cortada: false };
   }
   const medirCaixa = () =>
@@ -261,7 +263,7 @@ export async function salvarPng(page, caminho, { elemento = null, cheia = true, 
     await terminarAnimacoes(page);
     const cortada = caixa.height > maxCss;
     const clip = { x: caixa.x, y: caixa.y, width: Math.max(1, Math.floor(caixa.width)), height: Math.max(1, Math.floor(Math.min(caixa.height, maxCss))) };
-    await page.screenshot({ path: caminho, fullPage: true, clip });
+    await page.screenshot({ path: caminho, fullPage: true, clip, timeout: TEMPO_FOTO });
     return { cortada, alturaCss: caixa.height };
   } finally {
     if (esticar) await page.setViewportSize(janela);
