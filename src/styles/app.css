@@ -66,7 +66,7 @@ html[data-luz="apagada"] .brasas{opacity:.4}
 html[data-luz="apagada"] .placa-halo{opacity:.45}
 /* pausa fora da tela (IntersectionObserver) e com a aba oculta */
 .pausa .brasas i,.pausa .placa-halo,.pausa .placa-anel,.pausa .fumaca i,.pausa .status::after,
-html.aba-oculta .brasas i,html.aba-oculta .placa-halo,html.aba-oculta .placa-anel,html.aba-oculta .fumaca i,html.aba-oculta .status::after{animation-play-state:paused!important}
+html.aba-oculta .brasas i,html.aba-oculta .placa-halo,html.aba-oculta .placa-anel,html.aba-oculta .fumaca i,html.aba-oculta .status::after,html.aba-oculta .btn.enviando::after,html.aba-oculta .btn.enviando .ic{animation-play-state:paused!important}
 /* View Transitions entre bio, cardápio e site: no máximo 200 ms; a placa da bio vira a do herói do site */
 ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation-duration:var(--t-vt)}
 .bio-topo .placa{view-transition-name:placa}
@@ -276,7 +276,7 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .filtros{display:flex;gap:8px;overflow-x:auto;padding:12px var(--calha) 0;scrollbar-width:none}
 .filtros::-webkit-scrollbar{display:none}
 .filtro{position:relative;flex:none;min-height:36px;margin:4px 0;padding:0 14px;border-radius:var(--r-pill);border:1.5px solid var(--borda-campo);background:transparent;font:600 13px var(--f-placa);letter-spacing:.06em;text-transform:uppercase;color:var(--osso-2);transition:background-color var(--t-toque),border-color var(--t-toque)}
-.filtro::after{content:"";position:absolute;inset:-4px 0}
+.filtro::after{content:"";position:absolute;inset:-6px 0}
 .filtro[aria-pressed="true"]{background:var(--chapa-2);border-color:var(--fio);color:var(--osso)}
 .cat{padding:30px var(--calha) 0;scroll-margin-top:calc(var(--top) + 196px)}
 .cat-cab{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
@@ -569,8 +569,8 @@ html:has([data-screen="checkout"]:not([hidden])),html:has([data-screen="sacola"]
 .story-palco{position:relative;width:min(100%,480px);height:100%;margin:0 auto;display:flex;flex-direction:column}
 .story-barras{position:absolute;z-index:3;top:calc(10px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;gap:4px}
 .story-barras span{flex:1;height:3px;border-radius:2px;background:rgba(255,243,224,.3);overflow:hidden}
-.story-barras span i{display:block;height:100%;width:0;background:var(--fio)}
-.story-barras span.visto i{width:100%}
+.story-barras span i{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left;background:var(--fio)}
+.story-barras span.visto i{transform:none}
 .story-barras span.agora i{animation:progresso var(--dur,4.5s) linear forwards}
 .story.pausado .story-barras span.agora i{animation-play-state:paused}
 .story-cab{position:absolute;z-index:3;top:calc(22px + env(safe-area-inset-top,0px));left:12px;right:12px;display:flex;align-items:center;gap:10px}
@@ -689,7 +689,7 @@ html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-s
 @keyframes voa-entra{0%{opacity:0;transform:translateY(16px) scale(.8)}100%{opacity:1;transform:none}}
 @keyframes sobe-gaveta{from{transform:translateY(100%)}to{transform:none}}
 @keyframes desce-gaveta{to{transform:translateY(100%)}}
-@keyframes progresso{to{width:100%}}
+@keyframes progresso{to{transform:none}}
 @keyframes anda{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
 
 /* movimento reduzido: placa estática e acesa, sem halo pulsando, sem anel girando, sem brasas nem fumaça */
@@ -697,4 +697,5 @@ html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-s
   .brasas,.fumaca{display:none}
   .placa-halo,.placa-anel,.status::after{animation:none!important}
   .placa-arte{animation:none!important;opacity:1!important}
+  .faixa-combo.anima .selo-placa{animation:none}
 }

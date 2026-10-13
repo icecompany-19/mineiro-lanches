@@ -15,14 +15,14 @@
 //
 // Como o spec mede (decisões que não estão no plano):
 // - alvo de toque = caixa do controle somada à dos pseudo-elementos absolutos dele (o `.filtro` tem 36 px de corpo e o
-//   `::after{inset:-4px 0}` o leva a 42, não aos 44 da DIRECAO 4.2: test.fixme no fim do arquivo). Link no meio de uma
+//   `::after{inset:-6px 0}` o leva a 45, acima dos 44 da DIRECAO 4.2). Link no meio de uma
 //   frase é isento (WCAG 2.5.8);
 // - o anel de foco na comanda (papel claro) é --placa-escura, não o --fio que some no papel (app.css: `.comanda
 //   :focus-visible`); no campo de busca o anel é do <label> (`.busca label:focus-within`), o <input> tem outline:none;
 // - "em andamento" = tudo menos o que já terminou (animation-fill-mode: both deixa a animação terminada na lista);
 // - as animações da própria View Transition do navegador (-ua-…) não são do app e ficam de fora do gravador.
 //
-// Defeitos do front que este spec encontrou estão como test.fixme com o motivo exato (lista no fim do arquivo).
+// Os defeitos do front que este spec encontrou foram corrigidos; os casos ficam no fim do arquivo.
 /* global document, window, localStorage, getComputedStyle, matchMedia */
 import { test as base, expect as expectBase } from '@playwright/test';
 import {
@@ -241,8 +241,8 @@ test.describe('movimento reduzido', () => {
 });
 
 // ---------- 3. só transform, opacity e clip-path ----------
-// Defeitos conhecidos (cada um tem o seu test.fixme no fim do arquivo); o resto precisa estar limpo.
-const KEYFRAMES_PROIBIDOS = new Set(['progresso', 'destaca']);
+// Nenhum @keyframes do cliente pode animar outra propriedade (progresso e destaca foram corrigidos em 12/10).
+const KEYFRAMES_PROIBIDOS = new Set();
 
 test.describe('keyframes só com transform, opacity e clip-path', () => {
   test('todo @keyframes do CSS do cliente', async ({ page }) => {
@@ -253,10 +253,10 @@ test.describe('keyframes só com transform, opacity e clip-path', () => {
       todos.filter((k) => !KEYFRAMES_PROIBIDOS.has(k.nome) && propriedadesProibidas(k.props).length).map((k) => `${k.nome}: ${propriedadesProibidas(k.props).join(', ')}`),
       '@keyframes que animam outra propriedade'
     ).toEqual([]);
-    // o que é conhecido continua conhecido: se saiu do CSS, o test.fixme correspondente deve virar teste normal
+    // lista de exceções conhecidas (vazia desde 12/10)
     for (const nome of KEYFRAMES_PROIBIDOS) {
       const k = todos.find((x) => x.nome === nome);
-      if (k) expect(propriedadesProibidas(k.props).length, `@keyframes ${nome} segue fora da regra (test.fixme no fim do arquivo)`).toBeGreaterThan(0);
+      if (k) expect(propriedadesProibidas(k.props).length, `@keyframes ${nome} segue fora da regra`).toBeGreaterThan(0);
     }
   });
 
@@ -398,7 +398,7 @@ test.describe('alvos de toque ≥ 44×44', () => {
       const { pequenos, conferidos } = await alvosPequenos(page, TELAS[nome].raiz, 44);
       expect(conferidos, `${nome}: controles visíveis conferidos`).toBeGreaterThan(2);
       expect(
-        pequenos.filter((p) => !p.quem.startsWith('button.filtro')).map((p) => `${p.quem} "${p.texto}" ${p.medida}`), // .filtro: test.fixme no fim do arquivo
+        pequenos.map((p) => `${p.quem} "${p.texto}" ${p.medida}`),
         `${nome} em ${largura}: controles com menos de 44×44`
       ).toEqual([]);
     });
@@ -504,12 +504,12 @@ test.describe('controles das medidas', () => {
   });
 });
 
-// ================= defeitos do front encontrados (test.fixme) =================
-// Cada caso traz a asserção certa: quando o front for corrigido, basta trocar test.fixme por test.
+// ================= defeitos do front encontrados pela aceitação (12/10), já corrigidos =================
+// Cada caso guarda a asserção que falhava antes da correção.
 
 test.describe('defeitos conhecidos', () => {
   // app.css:103 e :498. `html.aba-oculta` (app.css:68) só lista brasas, halo, anel, fumaça e `.status::after`.
-  test.fixme('checkout, botão "enviando": calor (`.btn.enviando::after`) e anda (`.btn.enviando .ic`) seguem rodando com a aba oculta', async ({ page }) => {
+  test('checkout, botão "enviando": calor (`.btn.enviando::after`) e anda (`.btn.enviando .ic`) seguem rodando com a aba oculta', async ({ page }) => {
     await page.route('**/rest/v1/rpc/criar_pedido', () => {}); // pendente: nada chega ao banco
     await abrir(page, 'checkout');
     await page.locator('#f-nome').fill('Ana Teste');
@@ -526,14 +526,14 @@ test.describe('defeitos conhecidos', () => {
   });
 
   // app.css:797 e :570. A barra de progresso do story anima `width` em vez de `transform: scaleX`.
-  test.fixme('story (bio): @keyframes progresso anima `width` (`.story-barras span.agora i`), só transform/opacity/clip-path valem', async ({ page }) => {
+  test('story (bio): @keyframes progresso anima `width` (`.story-barras span.agora i`), só transform/opacity/clip-path valem', async ({ page }) => {
     await page.goto('/#bio');
     const k = (await keyframesDoCss(page)).find((x) => x.nome === 'progresso');
     expect(k ? propriedadesProibidas(k.props) : []).toEqual([]);
   });
 
   // app.css:792 e :309. `.prod.destaca` nunca recebe a classe no app.js (código morto) e o keyframe anima `box-shadow`.
-  test.fixme('cardápio: @keyframes destaca anima `box-shadow` (`.prod.destaca`, app.css:309), código sem uso no app.js', async ({ page }) => {
+  test('cardápio: @keyframes destaca anima `box-shadow` (`.prod.destaca`, app.css:309), código sem uso no app.js', async ({ page }) => {
     await page.goto('/#bio');
     const k = (await keyframesDoCss(page)).find((x) => x.nome === 'destaca');
     expect(k ? propriedadesProibidas(k.props) : []).toEqual([]);
@@ -541,7 +541,7 @@ test.describe('defeitos conhecidos', () => {
 
   // app.css:276-277. O corpo tem 36 px e o `::after{inset:-4px 0}` conta a partir da borda de padding (a borda de 1 a
   // 1,5 px fica dentro): o alvo real é 42 px (conferido com elementFromPoint: acerta de -3 px a +38 px), a direção pede 44.
-  test.fixme('cardápio, chips de filtro (`button.filtro`, 390 e 1280): área clicável de 42 px de altura (36 + `::after{inset:-4px 0}`), o mínimo é 44', async ({ page }) => {
+  test('cardápio, chips de filtro (`button.filtro`, 390 e 1280): área clicável de 42 px de altura (36 + `::after{inset:-4px 0}`), o mínimo é 44', async ({ page }) => {
     await abrir(page, 'cardapio');
     const { pequenos, conferidos } = await alvosPequenos(page, '#filtros', 44);
     expect(conferidos, 'chips de filtro conferidos').toBeGreaterThan(3);
@@ -549,7 +549,7 @@ test.describe('defeitos conhecidos', () => {
   });
 
   // app.js:395-398. A entrada da ficha é WAAPI com { transform, transformOrigin, borderRadius: '14px' → '0' }.
-  test.fixme('ficha (aberta pelo card do cardápio): `voarParaFicha` (app.js:395) anima `borderRadius` (14px → 0) em `.ficha-foto img` pelo WAAPI', async ({ page }) => {
+  test('ficha (aberta pelo card do cardápio): `voarParaFicha` (app.js:395) anima `borderRadius` (14px → 0) em `.ficha-foto img` pelo WAAPI', async ({ page }) => {
     await instalarGravador(page);
     await abrir(page, 'cardapio');
     await page.locator('#prod-gran-burger').click();
@@ -563,7 +563,7 @@ test.describe('defeitos conhecidos', () => {
 
   // app.css:164 e :775. `.faixa-combo.anima .selo-placa{animation:selo-bate .6s both .1s}`: com movimento reduzido o
   // base.css zera duração e repetição, mas o `both` e o atraso de .1 s deixam a animação (terminada) em document.getAnimations().
-  test.fixme('movimento reduzido: document.getAnimations().length deveria ser 0 em bio, cardápio e ficha, mas `selo-bate` (`.faixa-combo.anima .selo-placa`) continua listada', async ({ page }) => {
+  test('movimento reduzido: document.getAnimations().length deveria ser 0 em bio, cardápio e ficha, mas `selo-bate` (`.faixa-combo.anima .selo-placa`) continua listada', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     for (const nome of ['bio', 'cardapio', 'ficha']) {
       await abrir(page, nome);
