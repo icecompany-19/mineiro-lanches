@@ -136,6 +136,8 @@ async function abrir(page, nome, { modo = 'auto', hora = AS_20H, status = 'prepa
   if (nome === 'ficha') {
     await page.locator('#prod-gran-burger').click();
     await expect(page.locator('#ficha')).toBeVisible();
+    // a entrada da ficha (gaveta no celular, aparece-centro com scale .98 em 1280) termina antes de qualquer medida
+    await page.locator('#ficha').evaluate((d) => Promise.all(d.getAnimations({ subtree: true }).filter((a) => a.effect?.getTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {}))));
   }
   if (nome === 'story') {
     await page.locator('.story-btn').first().click();
