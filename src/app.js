@@ -393,10 +393,15 @@ export function iniciarApp() {
     if (!de || !para) return;
     var a = de.getBoundingClientRect(), b = para.getBoundingClientRect();
     if (!a.width || !b.width) return;
-    para.animate([
-      { transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ',' + (a.height / b.height) + ')', transformOrigin: '0 0', borderRadius: '14px' },
-      { transform: 'none', transformOrigin: '0 0', borderRadius: '0' }
+    // só transform e clip-path (direção §1.6): a origem fica no estilo, e o canto arredondado do card vem do clip-path
+    // (raio em coordenadas antes da escala, para aparecer com 14 px)
+    var raio = (14 * b.width) / a.width;
+    para.style.transformOrigin = '0 0';
+    var voo = para.animate([
+      { transform: 'translate(' + (a.left - b.left) + 'px,' + (a.top - b.top) + 'px) scale(' + (a.width / b.width) + ',' + (a.height / b.height) + ')', clipPath: 'inset(0 round ' + raio + 'px)' },
+      { transform: 'none', clipPath: 'inset(0 round 0px)' }
     ], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    voo.onfinish = voo.oncancel = function () { para.style.transformOrigin = ''; };
   }
   function soprarFumaca(f) { if (reduz || !f) return; f.classList.remove('sopra'); void f.offsetWidth; f.classList.add('sopra'); }
   function fecharFicha(depois) {

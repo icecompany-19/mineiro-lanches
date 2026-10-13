@@ -402,9 +402,8 @@ test.describe('animação só com transform, opacity e clip-path', () => {
     expect(fora, 'animações que usam outra propriedade').toEqual([]);
   });
 
-  // A foto do card vira o topo da ficha (src/app.js, voarParaFicha, a mesma do cardápio) com borderRadius e transformOrigin nos keyframes.
-  // O arquivo é o app.js, não uma cena do site: fica registrado aqui até alguém tirar essas duas propriedades dos keyframes.
-  test.fixme('a foto que voa do site para a ficha só anima transform e opacity (voarParaFicha anima borderRadius)', async ({ page }) => {
+  // A foto do card vira o topo da ficha (src/app.js, voarParaFicha, a mesma do cardápio): só transform e clip-path nos keyframes.
+  test('a foto que voa do site para a ficha só anima transform, opacity e clip-path', async ({ page }) => {
     await page.addInitScript(AMOSTRADOR);
     await abrirSite(page);
     await irA(page, 'section.s-monte');
