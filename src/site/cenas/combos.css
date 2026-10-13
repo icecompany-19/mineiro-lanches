@@ -32,7 +32,6 @@
 .carta-inclui{margin:0;padding:0;list-style:none;display:grid;gap:5px}
 .carta-inclui li{position:relative;padding-left:16px;font-size:14px;line-height:1.4;color:var(--osso-2)}
 .carta-inclui li::before{content:"";position:absolute;left:0;top:.5em;width:6px;height:6px;border-radius:50%;background:var(--anel)}
-.carta-nota{margin:0;font-size:13px;line-height:1.4;color:var(--osso-2)}
 .carta-pe{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px}
 .carta-pe .preco{font:700 28px/1 var(--f-placa);letter-spacing:.02em;color:var(--fio)}
 .carta-pe .btn{min-height:48px;padding-inline:20px}

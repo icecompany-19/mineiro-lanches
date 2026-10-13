@@ -47,12 +47,12 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   const combo = brl(CONFIG.regras.combo.preco);
   const html = readFileSync(resolve(RAIZ, 'index.html'), 'utf8');
   const noHtml = [...html.matchAll(/(?:combo por \+|data-combo-preco>)(R\$ \d+,\d\d)/g)].map((m) => m[1]);
-  expect(noHtml.length, 'textos de combo no index.html (3 metas + 5 na página)').toBe(8);
+  expect(noHtml.length, 'textos de combo no index.html (3 metas + 4 na página)').toBe(7);
   expect([...new Set(noHtml)], 'preço do combo escrito no HTML = CONFIG').toEqual([combo]);
   // a hora de abertura do título "fechado" do herói do site é a do CONFIG (o JS refaz com os turnos que o banco mandar)
   const [hh, mm] = CONFIG.horarios[0][0].split(':').map(Number);
   expect(html, 'hora de abertura no herói do index.html = CONFIG').toContain(`<span data-abre>${hh}h${mm ? String(mm).padStart(2, '0') : ''}</span>`);
-  expect((await (await request.get('/')).text()).match(/data-combo-preco/g).length).toBe(5);
+  expect((await (await request.get('/')).text()).match(/data-combo-preco/g).length).toBe(4);
 
   // o banco manda outro preço: todos os textos fixos da página trocam
   await mudarEstado(page, (j) => {
@@ -63,7 +63,7 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   });
   await page.goto('/');
   const textos = () => page.evaluate(() => [...document.querySelectorAll('[data-combo-preco]')].map((e) => e.textContent));
-  await expect.poll(textos).toEqual(Array(5).fill('R$ 16,50'));
+  await expect.poll(textos).toEqual(Array(4).fill('R$ 16,50'));
   await expect(page.locator('.bio-ctas + .faixa-combo')).toContainText('+R$ 16,50 · batata frita');
   expect(await page.locator('body').innerText()).not.toContain('+R$ 14,90');
   await page.locator('.bio-ctas').getByRole('button', { name: 'Fazer pedido' }).click();

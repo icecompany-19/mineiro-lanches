@@ -378,16 +378,16 @@
     <!-- [S2] inicio: section.s-monte (dono: site-I) -->
     <!-- "Pão seladinho na chapa" (6.2, S2): seção presa à rolagem (200vh; 240vh em 1024+). O palco fica colado sob a barra e
          src/site/cenas/monte.js escreve --p (0 a 1) na seção: a foto se revela de baixo para cima, os chips acendem em sequência e,
-         em p = 1, sobe o vapor e aparece "Pedir este". Só entram os lanches de ROTEIRO.monte com foto 'nova' (hoje Gran Bacon Onion,
-         Gran Salada e Gran Crispy; o Gran Bacon entra na frente quando ganhar foto nova). Este HTML é o estado completo e o JS refaz
-         o mesmo markup se o roteiro mudar. As composições ficam empilhadas na mesma célula: a mais alta dá a altura (sem CLS ao trocar). -->
+         em p = 1, sobe o vapor e aparece "Pedir este". Só entram os lanches de ROTEIRO.monte com foto 'nova' (hoje Gran Bacon Onion
+         e Gran Salada; o Gran Crispy espera o cliente confirmar o pão; o Gran Bacon entra na frente quando ganhar foto nova).
+         Este HTML é o estado completo e o JS refaz o mesmo markup se o roteiro mudar. As composições ficam empilhadas na mesma célula: a mais alta dá a altura (sem CLS ao trocar). -->
     <section class="s-monte" aria-labelledby="monte-tit">
       <div class="s2-palco">
         <div class="s-wrap s2-grade">
           <div class="s2-cab">
             <p class="s-olho">Hambúrguer artesanal</p>
             <h2 class="s-h2" id="monte-tit">Pão seladinho na chapa</h2>
-            <p class="s-p s2-regra">Qualquer lanche do cardápio vira combo por +<span data-combo-preco>R$ 14,90</span>, com batata frita 140 g e refrigerante lata 350 ml.</p>
+            <p class="s-p s2-regra">Angus 200&nbsp;g no pão seladinho na chapa. Escolha o lanche e veja a montagem.</p>
           </div>
           <div class="s2-quadro" data-monte-quadro>
             <span class="s2-luz" aria-hidden="true"></span>
@@ -401,12 +401,10 @@
             <div class="s2-pilha">
               <ol class="s2-comp" data-comp="gran-bacon-onion" data-ativo style="--n:9" aria-label="Composição: Gran Bacon Onion"><li style="--k:0">Pão seladinho na chapa e hambúrguer angus 200 g</li><li style="--k:1">Maionese grill</li><li style="--k:2">Barbecue</li><li style="--k:3">Cheddar cremoso</li><li style="--k:4">Bacon em fatias</li><li style="--k:5">3 onion rings</li><li style="--k:6">Alface americana</li><li style="--k:7">Tomate em rodelas</li><li style="--k:8">Cebola roxa</li></ol>
               <ol class="s2-comp" data-comp="gran-salada" style="--n:8" aria-label="Composição: Gran Salada"><li style="--k:0">Pão seladinho na chapa e hambúrguer angus 200 g</li><li style="--k:1">Maionese grill</li><li style="--k:2">Cheddar cremoso</li><li style="--k:3">Mussarela</li><li style="--k:4">Barbecue</li><li style="--k:5">Alface americana</li><li style="--k:6">Tomate em rodelas</li><li style="--k:7">Cebola roxa</li></ol>
-              <ol class="s2-comp" data-comp="gran-crispy" style="--n:6" aria-label="Composição: Gran Crispy"><li style="--k:0">Pão de brioche e hambúrguer 200 g</li><li style="--k:1">Maionese</li><li style="--k:2">Barbecue</li><li style="--k:3">Cheddar cremoso</li><li style="--k:4">Cebola caramelizada</li><li style="--k:5">Cebola crispy</li></ol>
             </div>
-            <div class="seg s2-seg" role="group" aria-label="Escolha o lanche" style="--n:3;--i:0">
+            <div class="seg s2-seg" role="group" aria-label="Escolha o lanche" style="--n:2;--i:0">
               <button type="button" class="opt" data-monte="gran-bacon-onion" aria-pressed="true">Gran Bacon Onion</button>
               <button type="button" class="opt" data-monte="gran-salada" aria-pressed="false">Gran Salada</button>
-              <button type="button" class="opt" data-monte="gran-crispy" aria-pressed="false">Gran Crispy</button>
             </div>
             <div class="s2-pedir">
               <button type="button" class="btn btn-vermelho" data-monte-pedir><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span>Pedir este</span><span class="btn-valor" data-preco-de="gran-bacon-onion">R$ 34,90</span></button>
@@ -466,7 +464,7 @@
               <p class="dog-base" id="dog-base">Pão médio e 2 salsichas Perdigão</p>
             </div>
             <ul class="dog-ings rv" id="dog-ings"><li>Maionese</li><li>Ketchup</li><li>Alface</li><li>Purê de batata</li><li>Azeite e sal</li><li>Batata palha</li><li>Cheddar</li><li>Catupiry</li></ul>
-            <p class="dog-dica rv" id="dog-dica">Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.</p>
+            <p class="dog-dica rv" id="dog-dica">Dog Bacon ou Dog Pizza: toque em Personalizar e escolha o adicional Bacon ou Pizza (queijo gratinado e orégano).</p>
             <div class="dog-acoes rv">
               <button type="button" class="btn btn-vermelho" id="dog-add"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span id="dog-add-rot">Adicionar</span></button>
               <button type="button" class="btn btn-borda" id="dog-pers">Personalizar</button>
@@ -505,7 +503,7 @@
             <div class="carta-foto"><span class="foto nova" style="--cor:#a96e38;--foco:50% 60%"><img src="/assets/fotos/combo-gran-bacon-onion-1080.webp" srcset="/assets/fotos/combo-gran-bacon-onion-540.webp 540w, /assets/fotos/combo-gran-bacon-onion-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="1440" loading="lazy" decoding="async" alt="Foto do Combo Gran Bacon Onion"></span></div>
             <div class="carta-corpo">
               <h3 class="carta-nome">Combo Gran Bacon Onion</h3>
-              <ul class="carta-inclui"><li>Gran Bacon Onion (brioche, maionese, barbecue, 200 g de carne angus, mussarela, cheddar, bacon e 3 onion rings)</li><li>250 g de batata</li><li>Coca-Cola 350 ml</li></ul>
+              <ul class="carta-inclui"><li>Gran Bacon Onion (angus 200&nbsp;g, maionese grill, barbecue, cheddar cremoso, bacon em fatias, 3 onion rings, alface americana, tomate em rodelas e cebola roxa)</li><li>250&nbsp;g de batata</li><li>Coca-Cola 350&nbsp;ml</li></ul>
               <div class="carta-pe"><span class="preco" data-preco-de="combo-gran-bacon-onion">R$ 48,90</span><button type="button" class="btn btn-vermelho" data-abrir="combo-gran-bacon-onion"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
             </div>
             <span class="carta-sombra" aria-hidden="true"></span>
@@ -514,8 +512,7 @@
             <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/combo-diluvio-1080.webp" srcset="/assets/fotos/combo-diluvio-540.webp 540w, /assets/fotos/combo-diluvio-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="1440" loading="lazy" decoding="async" alt="Foto do Combo Dilúvio"></span></div>
             <div class="carta-corpo">
               <h3 class="carta-nome">Combo Dilúvio</h3>
-              <ul class="carta-inclui"><li>Gran Burgers na piscininha de cheddar</li><li>Farofinha de bacon</li><li>140 g de batata frita</li><li>Refrigerante lata 350 ml (qualquer um)</li></ul>
-              <p class="carta-nota">Mais de um lanche (foto: 2 burgers). Quantidade exata a confirmar.</p>
+              <ul class="carta-inclui"><li>Gran Burgers na piscininha de cheddar</li><li>Farofinha de bacon</li><li>140&nbsp;g de batata frita</li><li>Refrigerante lata 350&nbsp;ml (qualquer um)</li></ul>
               <div class="carta-pe"><span class="preco" data-preco-de="combo-diluvio">R$ 49,90</span><button type="button" class="btn btn-vermelho" data-abrir="combo-diluvio"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
             </div>
             <span class="carta-sombra" aria-hidden="true"></span>
@@ -523,8 +520,8 @@
           <article class="carta antiga" data-carta="gran-bacon-coca-maionese" style="--i:2">
             <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/gran-bacon-maionese-1080.webp" srcset="/assets/fotos/gran-bacon-maionese-540.webp 540w, /assets/fotos/gran-bacon-maionese-1080.webp 1080w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="1080" height="989" loading="lazy" decoding="async" alt="Foto do Gran Bacon + Coca 350 ml + Maionese da casa"></span></div>
             <div class="carta-corpo">
-              <h3 class="carta-nome">Gran Bacon + Coca 350 ml + Maionese da casa</h3>
-              <ul class="carta-inclui"><li>Gran Bacon</li><li>Coca-Cola 350 ml</li><li>Maionese artesanal da casa</li></ul>
+              <h3 class="carta-nome">Gran Bacon + Coca 350&nbsp;ml + Maionese da casa</h3>
+              <ul class="carta-inclui"><li>Gran Bacon</li><li>Coca-Cola 350&nbsp;ml</li><li>Maionese artesanal da casa</li></ul>
               <div class="carta-pe"><span class="preco" data-preco-de="gran-bacon-coca-maionese">R$ 42,90</span><button type="button" class="btn btn-vermelho" data-abrir="gran-bacon-coca-maionese"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
             </div>
             <span class="carta-sombra" aria-hidden="true"></span>
@@ -533,7 +530,7 @@
             <div class="carta-foto"><span class="foto antiga"><img src="/assets/fotos/combo-2-dog-doritos-1080.webp" srcset="/assets/fotos/combo-2-dog-doritos-540.webp 540w, /assets/fotos/combo-2-dog-doritos-1080.webp 996w" sizes="(min-width:880px) 480px, calc(100vw - 40px)" width="996" height="1239" loading="lazy" decoding="async" alt="Foto do Combo 2 Hot Dog com Doritos"></span></div>
             <div class="carta-corpo">
               <h3 class="carta-nome">Combo 2 Hot Dog com Doritos</h3>
-              <ul class="carta-inclui"><li>2 Hot Dog com Doritos</li><li>Coca-Cola 600 ml</li></ul>
+              <ul class="carta-inclui"><li>2 Hot Dog com Doritos</li><li>Coca-Cola 600&nbsp;ml</li></ul>
               <div class="carta-pe"><span class="preco" data-preco-de="combo-2-dog-doritos">R$ 57,80</span><button type="button" class="btn btn-vermelho" data-abrir="combo-2-dog-doritos"><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg>Pedir</button></div>
             </div>
             <span class="carta-sombra" aria-hidden="true"></span>
