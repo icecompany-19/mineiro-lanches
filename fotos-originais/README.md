@@ -45,7 +45,7 @@ não leva EXIF nenhum (nem GPS) e a foto não é retocada: só girada pela orien
    npm run build && npx playwright test tests/imagens.spec.js
    ```
 
-O script só sobrescreve as variantes dos produtos que ligou. As outras fotos e as chaves `recorte:*` do `fotos.json` ficam
+O script só sobrescreve as variantes dos produtos que ligou. As outras fotos do `fotos.json` ficam
 como estão. Pasta sem fotos não grava nada.
 
 ## Como o arquivo vira produto

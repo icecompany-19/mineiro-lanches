@@ -7,8 +7,8 @@ const SPRITE = resolve(RAIZ, 'src/partials/sprite.svg');
 const MARCADOR = '<!-- sprite -->';
 const FOTOS = resolve(RAIZ, 'public/assets/fotos.json');
 
-// Injeta o sprite de ícones e padrões (src/partials/sprite.svg) no lugar de <!-- sprite --> das duas páginas.
-// Os <use href="#i-…"> e fill="url(#p-…)" continuam apontando para o mesmo documento.
+// Injeta o sprite de ícones (src/partials/sprite.svg) no lugar de <!-- sprite --> das duas páginas.
+// Os <use href="#i-…"> continuam apontando para o mesmo documento.
 function sprite() {
   const ler = () =>
     readFileSync(SPRITE, 'utf8')

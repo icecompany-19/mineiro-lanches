@@ -19,9 +19,8 @@ export function iniciarApp() {
   if (/^#painel(\/|$)/.test(location.hash)) { location.replace('/painel/'); return; }
 
   // fotos reais: tamanho original, cor média, foco e origem ('nova' = cenário de tijolinho; 'antiga' = provisória)
-  // (public/assets/fotos.json, gerado por scripts/fotos.mjs); "recorte:*" são os PNG sem fundo do site
-  var FOTOS = {};
-  Object.keys(FOTOS_JSON).forEach(function (k) { if (k.indexOf('recorte:') !== 0) FOTOS[k] = FOTOS_JSON[k]; });
+  // (public/assets/fotos.json, gerado por scripts/fotos.mjs)
+  var FOTOS = FOTOS_JSON;
   function ehNova(slug) { return !!FOTOS[slug] && FOTOS[slug].origem === 'nova'; }
   // a foto compartilhada (dog-max serve a Médio, Max e Super) fica com o produto do mesmo nome
   var produtoDaFoto = {};
@@ -50,7 +49,6 @@ export function iniciarApp() {
   // Tamanho exibido de cada uso (para o navegador escolher o arquivo do srcset). O site passa o texto do sizes
   // direto (uso que não é chave daqui vale como o próprio sizes).
   var SIZES = {
-    card: '180px',
     dest: '(min-width: 440px) 250px, 62vw',
     ficha: '(min-width: 1024px) 560px, (min-width: 440px) 440px, 100vw',
     story: '(min-width: 480px) 480px, 100vw'

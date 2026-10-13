@@ -51,7 +51,7 @@
       { id: 'pizza', nome: 'Pizza', preco: 7.50 }
     ],
     // tipo: lanche (vira combo, prensado, tirar item, adicionais) | combo (prensado, tirar item, adicionais) | porcao | bebida
-    // foto: nome do arquivo em /assets/fotos (sem tamanho); recorte: /assets/recortes/<nome>.webp quando existe
+    // foto: nome do arquivo em /assets/fotos (sem tamanho)
     categorias: [
       { id: 'artesanais', label: 'Artesanais', icone: 'burger', desc: 'Hambúrguer artesanal de 200 g', itens: [
         { id: 'gran-burger', nome: 'Gran Burger', preco: 25.90, tipo: 'lanche', foto: 'gran-burger', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue'], base: 'Pão e hambúrguer artesanal 200 g' },
