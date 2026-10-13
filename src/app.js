@@ -101,7 +101,13 @@ export function iniciarApp() {
   // imagens lazy aparecem com um fade quando carregam; as 'lcp' e 'cedo' já nascem com class="ok" (sem fade: a foto principal não espera o load)
   document.addEventListener('load', function (e) { if (e.target.tagName === 'IMG' && e.target.parentNode && e.target.parentNode.classList.contains('foto')) e.target.classList.add('ok'); }, true);
   function marcarCarregadas(raiz) { $$('.foto img', raiz).forEach(function (i) { if (i.complete && i.naturalWidth) i.classList.add('ok'); }); }
-  function ingTexto(p) { return p.inclui ? p.inclui.join(' · ') : [p.base].concat(p.ing || []).filter(Boolean).join(', '); }
+  // composição em frase corrida: os rótulos de CONFIG.ing são os chips da ficha (capitalizados), então aqui cada um começa em minúscula, menos as marcas;
+  // número e unidade ficam colados (NBSP) para a quebra de linha não separar "200" de "g"
+  var MARCAS_ING = /^(Doritos|Catupiry|Perdigão|Coca)/;
+  function ingTexto(p) {
+    var t = p.inclui ? p.inclui.join(' · ') : [p.base].concat((p.ing || []).map(function (s) { return MARCAS_ING.test(s) ? s : s.charAt(0).toLowerCase() + s.slice(1); })).filter(Boolean).join(', ');
+    return t.replace(/(\d) (g|kg|ml|L)\b/g, '$1\u00a0$2');
+  }
   var FUMACA = '<span class="fumaca" aria-hidden="true"><i></i><i></i><i></i></span>';
 
   // ================= estado =================
@@ -298,7 +304,7 @@ export function iniciarApp() {
     { id: 'doritos', label: 'Com Doritos', fn: function (p) { return /doritos/i.test(p.nome + ' ' + ingTexto(p)); } },
     { id: 'foto', label: 'Com foto', fn: function (p) { return !!p.foto; } }
   ];
-  function semAcento(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  function semAcento(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\u00a0/g, ' ').toLowerCase(); }
   function montarChips() {
     $('#chips').innerHTML = C.categorias.map(function (c, i) {
       return '<button type="button" class="chip" data-chip="' + c.id + '" aria-pressed="' + (i === 0) + '">' + ic(c.icone) + esc(c.label) + '</button>';
@@ -441,7 +447,7 @@ export function iniciarApp() {
     // 1. combo primeiro: "Vira combo? +R$ 14,90" (o painel enche de cheddar quando liga)
     if (ML.regras.podeCombo(p)) {
       var on = !!s.combo.ativo, ICONE_INCLUI = ['batata', 'lata'];
-      h += '<section class="grupo-combo' + (on ? ' on' : '') + '"><span class="cheddar" aria-hidden="true"></span><button type="button" class="interruptor" role="switch" aria-checked="' + on + '" data-combo><span class="grupo-cab">' + ic('combo') + '<span><strong>Vira combo? +' + comboTxt() + '</strong><small>' + esc(C.regras.combo.inclui.join(' + ')) + '</small></span></span><span class="trilho" aria-hidden="true"></span></button>';
+      h += '<section class="grupo-combo' + (on ? ' on' : '') + '"><span class="cheddar" aria-hidden="true"></span><button type="button" class="interruptor" role="switch" aria-checked="' + on + '" data-combo><span class="grupo-cab">' + ic('combo') + '<span><strong>Vira combo? <span class="nb">+' + comboTxt() + '</span></strong><small>' + esc(C.regras.combo.inclui.join(' + ')) + '</small></span></span><span class="trilho" aria-hidden="true"></span></button>';
       if (on) {
         h += '<div class="combo-extra"><div class="combo-itens">' + C.regras.combo.inclui.map(function (x, i) { return '<span class="combo-item">' + ic(ICONE_INCLUI[i] || 'combo') + esc(x) + '</span>'; }).join('') + '</div>';
         var refris = C.regras.combo.refris;
@@ -567,7 +573,7 @@ export function iniciarApp() {
     var p = ML.produtos[sel.produtoId], t = [];
     if (p.tipo === 'lanche' || p.tipo === 'combo') t.push(sel.completo === false && sel.removidos && sel.removidos.length ? '<span class="tag sem">Sem ' + esc(sel.removidos.join(', ').toLowerCase()) + '</span>' : '<span class="tag">Completo</span>');
     if (ML.regras.podePrensar(p)) t.push(sel.prensado ? '<span class="tag prensado">Prensado</span>' : '<span class="tag">Não prensado</span>');
-    if (sel.combo && sel.combo.ativo) t.push('<span class="tag combo">Combo +' + comboTxt() + (sel.combo.refri ? ' · ' + esc(sel.combo.refri) : '') + '</span>');
+    if (sel.combo && sel.combo.ativo) t.push('<span class="tag combo">Combo <span class="nb">+' + comboTxt() + '</span>' + (sel.combo.refri ? ' · ' + esc(sel.combo.refri) : '') + '</span>');
     Object.keys(sel.adicionais || {}).forEach(function (id) {
       var q = sel.adicionais[id], a = ML.adicionais[id], fora = naSacola && (!a || a.inativo);
       t.push('<span class="tag adic' + (fora ? ' esgotado' : '') + '">+ ' + (q > 1 ? q + '× ' : '') + esc(a ? a.nome : id) + (fora ? ' · fora do cardápio' : '') + '</span>');
@@ -587,7 +593,7 @@ export function iniciarApp() {
     $('#sacola-linhas').innerHTML = sacola.map(function (l) {
       var p = ML.produtos[l.sel.produtoId], it = ML.precos.item(l.sel), fora = linhaIndisponivel(l.sel);
       var upsell = !ofertou && !fora && ML.regras.podeCombo(p) && !(l.sel.combo && l.sel.combo.ativo)
-        ? '<div class="upsell"><span><strong>Vira combo por +' + comboTxt() + '?</strong><small>' + esc(C.regras.combo.inclui.join(' + ')) + '</small></span><button type="button" data-upsell="' + esc(l.chave) + '">Quero combo</button></div>' : '';
+        ? '<div class="upsell"><span><strong>Vira combo por <span class="nb">+' + comboTxt() + '?</span></strong><small>' + esc(C.regras.combo.inclui.join(' + ')) + '</small></span><button type="button" data-upsell="' + esc(l.chave) + '">Quero combo</button></div>' : '';
       if (upsell) ofertou = true;
       // item que esgotou depois de entrar na sacola: fica marcado até sair (o servidor recusaria o pedido)
       var selo = indisponivel(p.id) ? '<span class="tag esgotado">' + (p.inativo ? 'Fora do cardápio' : 'Esgotado hoje') + '</span>' : '';
