@@ -6,6 +6,7 @@
    Site imersivo (#site): src/site/site.js e as cenas entram por import() em carregarSite() (chunk próprio, com o
    CSS dele); o contrato com ele é o ML.app (montado no início, mais abaixo). */
 import FOTOS_JSON from 'virtual:fotos'; // public/assets/fotos.json (plugin em vite.config.js)
+import { criarHistoricoClientes, normalizarTelefone as digitosTel, chaveEndereco } from './lib/historico-clientes.js';
 
 export function iniciarApp() {
   'use strict';
@@ -112,6 +113,7 @@ export function iniciarApp() {
   var CHAVE_SACOLA = 'mineiro:v2:sacola', CHAVE_RASCUNHO = 'mineiro:v2:rascunho';
   function lerLocal(k, padrao) { try { var v = localStorage.getItem(k); return v == null ? padrao : JSON.parse(v); } catch { return padrao; } }
   function gravarLocal(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem storage */ } }
+  var historicoClientes = criarHistoricoClientes(lerLocal, gravarLocal);
   // item com "Preço a confirmar" (preco null) nunca fica na sacola
   var sacola = lerLocal(CHAVE_SACOLA, []).filter(function (l) { return l && l.sel && ML.regras.temPreco(ML.produtos[l.sel.produtoId]); });
   function salvarSacola() { gravarLocal(CHAVE_SACOLA, sacola); atualizarContadores(); }
@@ -614,6 +616,7 @@ export function iniciarApp() {
   }
 
   // ================= checkout =================
+  var rascunhoInicial = lerLocal(CHAVE_RASCUNHO, {});
   // peças do checkout que não estão no index.html: aviso de privacidade (LGPD), a mensagem de erro do telefone
   // e o bloco de erro do envio com "Tentar de novo" e "Enviar pelo WhatsApp" (acima do botão fixo)
   (function () {
@@ -621,7 +624,7 @@ export function iniciarApp() {
     campo.id = 'c-tel';
     tel.setAttribute('autocomplete', 'tel-national');
     campo.insertAdjacentHTML('beforeend', '<span class="msg-erro" id="erro-tel" hidden>Informe o telefone com DDD para o truck falar com você.</span>');
-    campo.insertAdjacentHTML('afterend', '<p class="nota-dados">' + ic('check') + 'Usamos seus dados só para preparar e entregar este pedido.</p>');
+    $('#c-nome').insertAdjacentHTML('afterend', '<p class="nota-dados">' + ic('check') + 'Usamos seus dados para preparar e entregar o pedido. Seus dados e endereços ficam salvos neste aparelho para os próximos pedidos.</p>');
     $('.enviar-wrap').insertAdjacentHTML('beforebegin',
       '<div class="envio-erro" id="envio-erro" role="alert" tabindex="-1" hidden><strong id="envio-erro-tit"></strong><p id="envio-erro-txt"></p>' +
       '<div class="envio-erro-acoes"><button type="button" class="btn btn-vermelho" data-tentar>Tentar de novo</button>' +
@@ -629,8 +632,10 @@ export function iniciarApp() {
       '<a class="btn btn-borda" id="envio-wa" href="#" target="_blank" rel="noopener">' + ic('chat') + 'Enviar pelo WhatsApp</a></div>' +
       '<small>A sacola e os seus dados continuam aqui.</small></div>');
     // rascunho do formulário: volta como estava depois de um envio que falhou e para o próximo pedido (só a observação sai quando o pedido sai)
-    var r = lerLocal(CHAVE_RASCUNHO, {});
+    var r = rascunhoInicial;
     [['f-nome', 'nome'], ['f-tel', 'tel'], ['f-cep', 'cep'], ['f-end', 'end'], ['f-ref', 'ref'], ['f-obs', 'obs']].forEach(function (c) { if (r[c[1]]) $('#' + c[0]).value = r[c[1]]; });
+    // Aproveita o formulário que já estava guardado antes do histórico por telefone.
+    if (!historicoClientes.buscar(r.tel)) historicoClientes.salvar({ telefone: r.tel, nome: r.nome, endereco: { cep: r.cep, end: r.end, ref: r.ref } });
     // o modo escolhido também, a não ser que o QR da mesa mande "Comer no local"
     if (!(origemQR && origemQR.mesa) && C.modos.some(function (m) { return m.id === r.modo; })) st.modo = r.modo;
   })();
@@ -638,14 +643,6 @@ export function iniciarApp() {
     gravarLocal(CHAVE_RASCUNHO, { nome: $('#f-nome').value, tel: $('#f-tel').value, cep: $('#f-cep').value, end: $('#f-end').value, ref: $('#f-ref').value, obs: $('#f-obs').value, modo: st.modo });
   }
   $('#form-pedido').addEventListener('input', function () { salvarRascunho(); });
-  // só os dígitos; aceita +55 e o 0 da operadora na frente
-  function digitosTel(v) {
-    var d = String(v || '').replace(/\D/g, '');
-    if ((d.length === 12 || d.length === 13) && d.indexOf('55') === 0) d = d.slice(2);
-    if (d.length === 11 && d.charAt(0) === '0') d = d.slice(1);
-    if (d.length === 12 && d.charAt(0) === '0') d = d.slice(1);
-    return d;
-  }
   // ================= endereço por CEP e taxa de entrega por distância =================
   // CEP -> ViaCEP (rua, bairro, cidade, UF). Rua e número -> Nominatim (OpenStreetMap) -> rota de carro do truck até lá (OSRM) -> km.
   // Taxa = km (sempre para cima) x porKm + fixa (CONFIG.entrega.taxa); o banco refaz a conta e é ele quem vale.
@@ -750,8 +747,8 @@ export function iniciarApp() {
       if (!j || j.erro) { entr.ok = false; dicaCep('CEP não encontrado. Confira os números ou escreva o endereço abaixo.', 'erro'); agendarTaxa(); return; }
       entr.cep = cep; entr.ok = true; entr.bairro = j.bairro || ''; entr.cidade = j.localidade || ''; entr.uf = j.uf || '';
       var campo = $('#f-end'), rua = j.logradouro || '';
-      // CEP novo traz a rua dele; o que o cliente já digitou da mesma rua (com o número) fica
-      if (rua && !(manterRua && campo.value.trim() && campo.value.toLowerCase().indexOf(rua.toLowerCase()) === 0)) campo.value = rua + ', ';
+      // Uma busca nova preenche a rua; ao restaurar um endereço, conserva o texto e o número salvos.
+      if (rua && !(manterRua && campo.value.trim())) campo.value = rua + ', ';
       $('#f-bairro').value = [entr.bairro, entr.cidade && entr.uf ? entr.cidade + '/' + entr.uf : entr.cidade].filter(Boolean).join(' · ');
       $('#c-bairro').hidden = !$('#f-bairro').value;
       dicaCep(rua ? 'Agora é só informar o número da casa.' : 'Este CEP não tem rua própria: escreva a rua e o número.', 'ok');
@@ -782,6 +779,82 @@ export function iniciarApp() {
   // rascunho com CEP: refaz a busca (sem apagar a rua e o número já digitados) só quando o cliente chega ao checkout
   var restaurarCep = $('#f-cep').value.replace(/\D/g, '').length === 8;
 
+  // Identificação pelo telefone e vários endereços, separados por cliente neste aparelho.
+  var telefoneIdentificado = digitosTel($('#f-tel').value);
+  if (!/^\d{10,11}$/.test(telefoneIdentificado)) telefoneIdentificado = '';
+  function lerEnderecoCliente() { return { cep: $('#f-cep').value, end: $('#f-end').value, ref: $('#f-ref').value }; }
+  function limparEnderecoCliente() {
+    limparCep();
+    restaurarCep = false;
+    $('#f-cep').value = ''; $('#f-end').value = ''; $('#f-ref').value = '';
+    $('#f-endereco-salvo').value = '';
+    agendarTaxa(); // invalida a rota e qualquer cálculo do endereço anterior
+  }
+  function preencherEnderecoCliente(endereco) {
+    limparEnderecoCliente();
+    $('#f-cep').value = mascaraCep(endereco.cep);
+    $('#f-end').value = endereco.end;
+    $('#f-ref').value = endereco.ref;
+    restaurarCep = endereco.cep.length === 8;
+    if (restaurarCep && st.tela === 'checkout') { restaurarCep = false; buscarCep(endereco.cep, true); }
+    salvarRascunho();
+  }
+  function selecionarEnderecoAtual() {
+    var perfil = historicoClientes.buscar(telefoneIdentificado);
+    var chave = chaveEndereco(lerEnderecoCliente());
+    var indice = perfil ? perfil.enderecos.findIndex(function (e) { return chaveEndereco(e) === chave; }) : -1;
+    $('#f-endereco-salvo').value = indice < 0 ? '' : String(indice);
+  }
+  function renderEnderecosCliente() {
+    var perfil = historicoClientes.buscar(telefoneIdentificado);
+    var enderecos = perfil ? perfil.enderecos : [];
+    $('#enderecos-salvos').hidden = !enderecos.length;
+    $('#f-endereco-salvo').innerHTML = '<option value="">Novo endereço</option>' + enderecos.map(function (e, i) {
+      return '<option value="' + i + '">' + esc(e.end + (e.ref ? ' · ' + e.ref : '') + (e.cep ? ' · CEP ' + mascaraCep(e.cep) : '')) + '</option>';
+    }).join('');
+    selecionarEnderecoAtual();
+  }
+  function identificarCliente() {
+    var tel = digitosTel($('#f-tel').value);
+    if (tel === telefoneIdentificado) return;
+    // Ao trocar de cliente, nunca reaproveita o nome, o endereço ou a taxa de outra pessoa.
+    if (telefoneIdentificado) { $('#f-nome').value = ''; $('#f-obs').value = ''; limparEnderecoCliente(); }
+    telefoneIdentificado = /^\d{10,11}$/.test(tel) ? tel : '';
+    var perfil = historicoClientes.buscar(telefoneIdentificado);
+    if (perfil) {
+      $('#f-nome').value = perfil.nome;
+      if (perfil.enderecos.length) preencherEnderecoCliente(perfil.enderecos[0]);
+    }
+    $('#cliente-dica').textContent = perfil ? 'Encontramos seus dados salvos. Confira abaixo ou adicione outro endereço.'
+      : telefoneIdentificado ? 'Preencha seus dados para continuar.' : 'Informe seu telefone com DDD para recuperar seus dados salvos.';
+    renderEnderecosCliente();
+    salvarRascunho();
+  }
+  $('#f-tel').addEventListener('input', identificarCliente);
+  $('#f-tel').addEventListener('change', identificarCliente);
+  $('#f-endereco-salvo').addEventListener('change', function () {
+    var perfil = historicoClientes.buscar(telefoneIdentificado);
+    var valor = this.value;
+    if (perfil && valor !== '' && perfil.enderecos[+valor]) preencherEnderecoCliente(perfil.enderecos[+valor]);
+    else limparEnderecoCliente();
+    selecionarEnderecoAtual();
+    salvarRascunho();
+  });
+  $('#btn-novo-endereco').addEventListener('click', function () {
+    limparEnderecoCliente();
+    salvarRascunho();
+    $('#f-cep').focus();
+  });
+  ['#f-cep', '#f-end', '#f-ref'].forEach(function (sel) { $(sel).addEventListener('input', selecionarEnderecoAtual); });
+  // Na volta ao checkout, conserva também alterações ainda não enviadas do rascunho.
+  var perfilInicial = historicoClientes.buscar(telefoneIdentificado);
+  if (perfilInicial) {
+    if (!$('#f-nome').value) $('#f-nome').value = perfilInicial.nome;
+    if (!Object.prototype.hasOwnProperty.call(rascunhoInicial, 'end') && !$('#f-end').value && perfilInicial.enderecos.length) preencherEnderecoCliente(perfilInicial.enderecos[0]);
+    $('#cliente-dica').textContent = 'Encontramos seus dados salvos. Confira abaixo ou adicione outro endereço.';
+  }
+  renderEnderecosCliente();
+
   function modoLabel(m) { return m.id === 'local' && origemQR && origemQR.mesa ? m.label + ' · Mesa ' + origemQR.mesa : m.label; }
   function renderCheckout() {
     if (restaurarCep) { restaurarCep = false; buscarCep($('#f-cep').value.replace(/\D/g, ''), true); }
@@ -789,9 +862,11 @@ export function iniciarApp() {
       return '<button type="button" class="modo" data-modo="' + m.id + '" aria-pressed="' + (st.modo === m.id) + '">' + ic(ICONE_MODO[m.id]) + '<span><strong>' + esc(modoLabel(m)) + '</strong><small>' + esc(m.desc) + '</small></span>' + ic('check', 'modo-check') + '</button>';
     }).join('');
     $('#bloco-endereco').hidden = st.modo !== 'entrega';
-    $('#pagamentos').innerHTML = C.pagamentos
+    var temPagamentos = Array.isArray(C.pagamentos) && C.pagamentos.length > 0;
+    $('#pagamentos').closest('.bloco').hidden = !temPagamentos;
+    $('#pagamentos').innerHTML = temPagamentos
       ? segHTML('pagamento', C.pagamentos.map(function (p) { return { attr: 'data-pag="' + esc(p) + '"', on: st.pagamento === p, txt: esc(p) }; }))
-      : '<p class="aviso">A forma de pagamento é combinada com o ' + esc(C.nome) + ' na entrega ou no truck.</p>';
+      : '';
     var t = totaisSacola();
     $('#chk-itens').textContent = plural(t.n);
     renderTaxa();
@@ -886,7 +961,7 @@ export function iniciarApp() {
       var campo = $(c[2]);
       $(c[0]).classList.toggle('erro', c[1]); $(c[0] + ' .msg-erro').hidden = !c[1]; if (c[1]) ok = false;
       campo.setAttribute('aria-invalid', String(c[1]));
-      if (c[1]) campo.setAttribute('aria-describedby', c[3]); else campo.removeAttribute('aria-describedby');
+      if (c[1]) campo.setAttribute('aria-describedby', c[3]); else if (campo.id === 'f-tel') campo.setAttribute('aria-describedby', 'cliente-dica'); else campo.removeAttribute('aria-describedby');
     });
     if (!ok) { var prim = $('.campo.erro input'); if (prim) prim.focus(); }
     return ok;
@@ -903,6 +978,7 @@ export function iniciarApp() {
       return;
     }
     var dados = lerFormulario();
+    var cadastroEnviado = { telefone: dados.cliente.telefone, nome: dados.cliente.nome, endereco: dados.modo === 'entrega' ? lerEnderecoCliente() : null };
     // item que já se sabe esgotado nem vai ao servidor
     if (nomesIndisponiveis().length) { renderSacola(); mostrarErroEnvio(codigoIndisponivel(), dados); return; }
     var assinatura = JSON.stringify(dados);
@@ -911,6 +987,8 @@ export function iniciarApp() {
     esconderErroEnvio();
     travarEnvio(true);
     ML.store.criarPedido(dados).then(function (pedido) {
+      historicoClientes.salvar(cadastroEnviado);
+      renderEnderecosCliente();
       envio.uuid = null; envio.assinatura = null;
       sacola = []; salvarSacola();
       // o cliente que volta só confere: nome, telefone, endereço e referência continuam no aparelho (rascunho);

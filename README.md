@@ -34,6 +34,10 @@ Bio, cardápio, site e painel de pedidos do food truck Mineiro Lanche (Centro de
 
 ## Desenvolver e testar
 
+O checkout começa pelo telefone e recupera nome e endereços já salvos **neste navegador**. O cliente pode escolher um endereço anterior ou adicionar outro; cada pedido aceito guarda o endereço usado sem apagar os demais. O rascunho anterior é aproveitado na atualização. A taxa é calculada novamente para cada endereço escolhido. Dados de outro telefone não são reaproveitados no formulário.
+
+O histórico fica na chave local `mineiro:v2:cadastros`. Ele não consulta a tabela privada `clientes` por telefone. Recuperar o cadastro em outro aparelho exige confirmar a posse do telefone antes de liberar nomes e endereços; essa integração não faz parte do histórico local.
+
 ```bash
 npm ci
 source scripts/supabase-local/ambiente-windows.sh   # só no Windows (Git Bash): PATH do Postgres 17 e do PostgREST

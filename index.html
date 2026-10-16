@@ -201,13 +201,18 @@
           <div class="aviso alerta" id="aviso-fechado" hidden></div>
           <section class="bloco" aria-labelledby="quem-tit">
             <h2 id="quem-tit">Quem está pedindo?</h2>
+            <div class="campo"><label for="f-tel">Telefone com DDD (WhatsApp)</label><input id="f-tel" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="(11) 90000-0000" aria-describedby="cliente-dica" required><span class="campo-dica" id="cliente-dica" role="status" aria-live="polite">Comece pelo telefone para recuperar seus dados salvos.</span></div>
             <div class="campo" id="c-nome"><label for="f-nome">Seu nome</label><input id="f-nome" autocomplete="name" maxlength="60" required><span class="msg-erro" id="erro-nome" hidden>Escreva seu nome para o truck chamar você.</span></div>
-            <div class="campo"><label for="f-tel">Telefone com DDD (WhatsApp)</label><input id="f-tel" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="(11) 90000-0000" required></div>
           </section>
           <section class="bloco" aria-labelledby="modo-tit">
             <h2 id="modo-tit">Como você quer receber?</h2>
             <div class="modos" id="modos"></div>
             <div id="bloco-endereco">
+              <div class="campo enderecos-salvos" id="enderecos-salvos" hidden>
+                <label for="f-endereco-salvo">Seus endereços</label>
+                <select id="f-endereco-salvo"></select>
+                <button type="button" class="btn btn-borda" id="btn-novo-endereco">Adicionar novo endereço</button>
+              </div>
               <div class="campo" id="c-cep"><label for="f-cep">CEP</label><input id="f-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000"><span class="campo-dica" id="cep-dica" role="status" aria-live="polite">Digite o CEP e a rua, o bairro e a cidade vêm sozinhos.</span></div>
               <div class="campo" id="c-end"><label for="f-end">Rua e número</label><input id="f-end" autocomplete="street-address" maxlength="110" placeholder="Rua e número da casa"><span class="msg-erro" id="erro-end" hidden>Informe o endereço para a entrega.</span></div>
               <div class="campo" id="c-bairro" hidden><label for="f-bairro">Bairro e cidade</label><input id="f-bairro" readonly tabindex="-1"></div>

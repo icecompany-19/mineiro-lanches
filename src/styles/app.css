@@ -716,6 +716,10 @@ html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-s
 .campo-dica{font:13px/1.35 var(--f-corpo);color:var(--osso-2)}
 .campo-dica.ok{color:var(--neon-aberto)}
 .campo-dica.erro{color:var(--vermelho-luz)}
+.enderecos-salvos{padding:14px;border:1px solid var(--borda-campo);border-radius:var(--r-lg);background:var(--chapa);min-width:0}
+.enderecos-salvos select{width:100%;min-width:0;min-height:48px;padding:10px 12px;border:1.5px solid var(--borda-campo);border-radius:var(--r-md);background:var(--chapa);color:var(--osso);font:inherit}
+.enderecos-salvos select:focus-visible{outline:3px solid var(--fio);outline-offset:3px}
+.enderecos-salvos .btn{min-height:48px;white-space:normal}
 .campo input[readonly]{background:var(--chapa);color:var(--osso-2);border-style:dashed}
 .taxa-msg{margin:12px 0 0;padding:12px 14px;border-radius:var(--r-md);border:1.5px dashed var(--borda-campo);background:var(--chapa);font:600 14px/1.4 var(--f-corpo);color:var(--osso)}
 .taxa-msg.ok{border-style:solid;border-color:var(--neon-aberto)}
