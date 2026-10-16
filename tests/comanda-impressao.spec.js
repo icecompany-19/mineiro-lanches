@@ -8,6 +8,8 @@
 /* global window, document, getComputedStyle */
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import sharp from 'sharp';
 
 const PG = process.env.PG_URL || 'postgresql://postgres@localhost:54322/postgres';
 const MM = 96 / 25.4; // px por mm no CSS
@@ -146,4 +148,32 @@ test('pedido sem taxa calculada mostra "TAXA DE ENTREGA A COMBINAR" na comanda',
   await entrar(page, [linha(14, { taxa_entrega: null, distancia_km: null, total: 97.7 })]);
   await page.locator('.pn-card[data-id$="14"] [data-act="imprimir"]').click();
   await expect(page.locator('.pn-comanda')).toContainText('TAXA DE ENTREGA A COMBINAR');
+});
+
+test('impressão térmica tem margens brancas, sem faixas escuras ou sombras do painel', async ({ page }, testInfo) => {
+  await entrar(page, [linha(15)]);
+  await page.locator('.pn-card[data-id$="15"] [data-act="imprimir"]').click();
+  await page.locator('.pn-modal [data-m="imprimir"]').click();
+  await page.emulateMedia({ media: 'print' });
+  const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+  const caminho = testInfo.outputPath('comanda.pdf');
+  const imagem = testInfo.outputPath('comanda');
+  writeFileSync(caminho, pdf);
+  execFileSync('pdftoppm', ['-r', '203', '-png', '-singlefile', caminho, imagem]);
+  await testInfo.attach('comanda-termica', { path: imagem + '.png', contentType: 'image/png' });
+
+  const { data, info } = await sharp(imagem + '.png').removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const margem = Math.floor(2 * 203 / 25.4); // primeiros/últimos 2 mm não têm conteúdo
+  let pixelsEscurosNaMargem = 0;
+  for (let y = 0; y < info.height; y++) {
+    for (let x = 0; x < info.width; x++) {
+      if (x >= margem && x < info.width - margem) continue;
+      const i = (y * info.width + x) * info.channels;
+      if (Math.min(data[i], data[i + 1], data[i + 2]) < 245) pixelsEscurosNaMargem++;
+    }
+  }
+  expect(pixelsEscurosNaMargem, 'margens laterais do PDF devem sair totalmente brancas').toBe(0);
+
+  const sombras = await page.locator('.pn-modal, .pn-modal-caixa, .pn-comanda').evaluateAll(els => els.map(el => getComputedStyle(el).boxShadow));
+  expect(sombras).toEqual(['none', 'none', 'none']);
 });

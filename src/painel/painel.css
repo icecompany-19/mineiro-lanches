@@ -402,12 +402,15 @@
    A medida da página (72 mm × a altura do cupom) é posta por imprimirComanda() em painel.js; aqui só a base sem margem. */
 @page { margin: 0; }
 @media print {
-  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; color: #000 !important; color-scheme: light !important; -webkit-print-color-adjust: economy; print-color-adjust: economy; }
   body > *:not(.pn-modal) { display: none !important; }
+  /* A térmica não deve rasterizar o tema escuro nem a sombra da janela como faixas. */
+  .pn-modal, .pn-modal * { background: transparent !important; color: #000 !important; border-color: #000 !important; box-shadow: none !important; text-shadow: none !important; filter: none !important; }
+  .pn-modal::before, .pn-modal::after, .pn-modal *::before, .pn-modal *::after { display: none !important; }
   .pn-modal { position: static !important; display: block !important; padding: 0 !important; background: none !important; animation: none !important; }
-  .pn-modal-caixa { width: auto !important; max-height: none !important; overflow: visible !important; padding: 0 !important; border: 0 !important; background: none !important; animation: none !important; gap: 0 !important; }
+  .pn-modal-caixa { display: block !important; width: auto !important; max-height: none !important; overflow: visible !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; animation: none !important; gap: 0 !important; }
   .pn-modal-acoes, .pn-modal-t { display: none !important; }
-  .pn-comanda { width: 72mm !important; max-width: none !important; box-shadow: none; background: #fff; color: #000; break-inside: avoid; page-break-inside: avoid; }
+  .pn-comanda { width: 72mm !important; max-width: none !important; background: #fff !important; break-inside: avoid; page-break-inside: avoid; }
   .pn-comanda hr { border-top-color: #000; }
 }
 
