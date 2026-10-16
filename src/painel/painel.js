@@ -99,6 +99,8 @@
     const txt = 'Olá, ' + nomeCli(p) + '! Aqui é o ' + ML.CONFIG.nome + ' sobre o seu pedido ' + ML.fmt.numero(p.numero) + '.';
     return ML.whatsapp.link(txt, telWa(p));
   }
+  // No celular, a navegação direta permite ao navegador encaminhar para o app do WhatsApp.
+  const alvoWa = () => window.matchMedia('(pointer: coarse)').matches ? '_self' : '_blank';
   function linkMaps(p) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.endereco); }
 
   /* ---------- toast, som, título ---------- */
@@ -249,7 +251,7 @@
         ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : ''}
         <div class="pn-acoes-sec">
           <button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}" aria-label="Imprimir comanda do pedido ${num}">${ic('impressora')}Imprimir</button>
-          ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="_blank" rel="noopener" aria-label="Chamar ${esc(nome)} no WhatsApp">${ic('chat')}WhatsApp</a>` : ''}
+          ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nome)} no WhatsApp">${ic('chat')}WhatsApp</a>` : ''}
           ${ATIVOS.includes(st) ? `<button type="button" class="pn-btn pn-btn--perigo" data-act="cancelar" data-id="${esc(p.id)}" aria-label="Cancelar pedido ${num}">${ic('x')}Cancelar</button>` : ''}
         </div>
       </div>
@@ -554,7 +556,7 @@
     q('[data-mobile]').innerHTML = lista.length ? '<ul class="pn-m-lista">' + lista.map(p => {
       const prox = ML.regras.proximoStatus(p);
       return `<li class="pn-m-item"><div class="pn-m-t"><b class="pn-num">${ML.fmt.numero(p.numero)}</b> <span>${esc(nomeCli(p))}</span> ${statusChip(p.status)}${tagsOrigem(p)}</div>
-        <p>${esc(itensTxt(p))}</p><div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="_blank" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : ''}</div></div></li>`;
+        <p>${esc(itensTxt(p))}</p><div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : ''}</div></div></li>`;
     }).join('') + '</ul>' : `<div class="pn-vazio">${ic('truck', 'pn-vazio-ic')}<p>${esc(textoVazio())}</p></div>`;
   }
 
@@ -752,7 +754,7 @@
         <ol class="pn-linha">${(p.historico || []).map(h => `<li><span class="pn-linha-h">${esc(dataHora(h.em))}</span><b>${esc((ML.STATUS[h.status] || { label: h.status }).label)}</b>${h.motivo ? `<small>Motivo: ${esc(h.motivo)}</small>` : ''}</li>`).join('')}</ol>
       </div>
       <footer class="pn-lat-acoes"><button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}">${ic('impressora')}Imprimir comanda</button>
-        ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="_blank" rel="noopener">${ic('chat')}WhatsApp</a>` : ''}</footer>`;
+        ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener">${ic('chat')}WhatsApp</a>` : ''}</footer>`;
   }
   function abrirDetalhe(id) {
     S.lateralAnt = document.activeElement;

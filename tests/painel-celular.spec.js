@@ -45,7 +45,7 @@ test('lista do celular: botão de WhatsApp chama o cliente (só quando há telef
   const href = await wa.getAttribute('href');
   expect(href).toMatch(/^https:\/\/wa\.me\/5511985720150\?text=/);
   expect(decodeURIComponent(href)).toContain('pedido #0031');
-  await expect(wa).toHaveAttribute('target', '_blank');
+  await expect(wa).toHaveAttribute('target', '_self');
   await expect(wa).toHaveAttribute('rel', /noopener/);
   // telefone que já vem com 55 não duplica o código do país
   expect(await item(33).getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/5511999990033\?/);
@@ -64,4 +64,11 @@ test('lista do celular: botão de WhatsApp chama o cliente (só quando há telef
   const avanco = await item(31).getByRole('button', { name: 'Aceitar e preparar' }).boundingBox();
   expect(caixa.x).toBeGreaterThanOrEqual(cartao.x);
   expect(avanco.x + avanco.width).toBeLessThanOrEqual(cartao.x + cartao.width + 1);
+
+  // O clique sai na própria aba, com o telefone e a mensagem corretos, sem abrir popup.
+  // Intercepta o destino para não abrir o app nem contactar o WhatsApp durante o teste.
+  await page.route('https://wa.me/**', r => r.fulfill({ contentType: 'text/html', body: '<p>WhatsApp de teste</p>' }));
+  await wa.click();
+  await expect(page).toHaveURL(href);
+  expect(page.context().pages()).toHaveLength(1);
 });

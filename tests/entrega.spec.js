@@ -85,6 +85,7 @@ test('CEP preenche rua, bairro e cidade; com o número vem a taxa e ela entra no
   const chamadas = await simular(page);
   await irAoCheckout(page, { nome: NOME + ' cep' });
   await expect(page.locator('#chk-taxa')).toHaveText('taxa calculada pelo endereço');
+  await expect(page.locator('#taxa-msg')).toHaveText('Digite o CEP para ver a taxa de entrega.');
   await page.locator('#f-cep').fill('08674185');
   await expect(page.locator('#f-cep')).toHaveValue('08674-185');
   await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');

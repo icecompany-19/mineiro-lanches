@@ -673,9 +673,9 @@ export function iniciarApp() {
     }
     if (entr.estado === 'calculando') return { chk: 'calculando…', msg: 'Calculando a taxa de entrega…', cls: '' };
     if (entr.estado === 'sem-numero') return { chk: taxaEntregaTxt(), msg: 'Informe o número da casa para calcular a taxa de entrega.', cls: '' };
-    if (entr.estado === 'falha') return { chk: 'a combinar', msg: 'Não conseguimos calcular a taxa agora. Pode enviar o pedido: o truck combina o valor da entrega com você.', cls: 'falha' };
+    if (entr.estado === 'falha') return { chk: 'a combinar', msg: 'Não conseguimos calcular a taxa agora. Confira o endereço e tente novamente.', cls: 'falha' };
     // modo entrega, ainda sem CEP resolvido: o CEP é o caminho para ver a taxa; escrevendo o endereço à mão, o truck combina o valor
-    return { chk: taxaEntregaTxt(), msg: $('#f-cep').value ? '' : 'Digite o CEP para ver a taxa de entrega. Sem o CEP, o valor é combinado com o truck.', cls: '' };
+    return { chk: taxaEntregaTxt(), msg: $('#f-cep').value ? '' : 'Digite o CEP para ver a taxa de entrega.', cls: '' };
   }
   function renderTaxa() {
     var t = textoTaxa(), box = $('#taxa-msg');
