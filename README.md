@@ -38,6 +38,8 @@ O checkout começa pelo telefone e recupera nome e endereços já salvos **neste
 
 O histórico fica na chave local `mineiro:v2:cadastros`. Ele não consulta a tabela privada `clientes` por telefone. Recuperar o cadastro em outro aparelho exige confirmar a posse do telefone antes de liberar nomes e endereços; essa integração não faz parte do histórico local.
 
+O cálculo da entrega tenta a rua e a cidade sem o bairro quando o ViaCEP e o mapa usam nomes diferentes (caso do CEP 08555-120). O formulário conserva o número preenchido antes da resposta do CEP, invalida a taxa ao trocar de endereço e aguarda CEP/rota antes de enviar. Em falhas temporárias da rota, o cliente pode tocar em **Recalcular entrega**.
+
 ```bash
 npm ci
 source scripts/supabase-local/ambiente-windows.sh   # só no Windows (Git Bash): PATH do Postgres 17 e do PostgREST

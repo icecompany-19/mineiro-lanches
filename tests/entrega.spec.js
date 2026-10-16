@@ -109,6 +109,117 @@ test('CEP preenche rua, bairro e cidade; com o número vem a taxa e ela entra no
   await expect(page.locator('#ped-total')).toHaveText('R$ 24,90 (com entrega de R$ 8,00)');
 });
 
+test('CEP 08555-120: bairro diferente no mapa não impede atualizar entrega, comanda e total', async ({ page }) => {
+  await simular(page, { cep: { cep: '08555-120', logradouro: 'Rua Mantiqueira', bairro: 'Jardim Santa Luiza', localidade: 'Poá', uf: 'SP' } });
+  const consultas = [];
+  await page.route('https://nominatim.openstreetmap.org/**', r => {
+    const texto = new URL(r.request().url()).searchParams.get('q');
+    consultas.push(texto);
+    return r.fulfill({ json: texto.includes('Jardim Santa Luiza') ? [] : [{ lat: '-23.5094328', lon: '-46.3599048' }] });
+  });
+  await irAoCheckout(page, { nome: NOME + ' bairro divergente' });
+  await page.locator('#f-cep').fill('08555120');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Mantiqueira, ');
+  await digitar(page, '100');
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00', { timeout: 10_000 });
+  await expect(page.locator('#taxa-msg')).toHaveText('Taxa de entrega: R$ 8,00');
+  await expect(totalCheckout(page)).toHaveText('R$ 24,90');
+  await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 24,90');
+  expect(consultas.some(q => q.includes('Rua Mantiqueira') && q.includes('Poá') && !q.includes('Jardim Santa Luiza'))).toBe(true);
+  await page.locator('#btn-enviar').click();
+  await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
+  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} bairro divergente'`)).toBe('8.00|24.90');
+});
+
+test('preenchimento rápido do celular conserva rua e número enquanto o CEP responde', async ({ page }) => {
+  await simular(page);
+  let liberar;
+  const espera = new Promise(resolve => { liberar = resolve; });
+  await page.route('https://viacep.com.br/**', async r => {
+    await espera;
+    await r.fulfill({ json: VIACEP });
+  });
+  await irAoCheckout(page);
+  const consulta = page.waitForRequest('https://viacep.com.br/**');
+  await page.locator('#f-cep').fill('08674185');
+  await consulta;
+  await page.locator('#f-end').fill('Rua Eliziel Alves Costa, 300');
+  liberar();
+  await expect(page.locator('#f-bairro')).toHaveValue('Centro · Suzano/SP');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Eliziel Alves Costa, 300');
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+  await expect(totalCheckout(page)).toHaveText('R$ 24,90');
+});
+
+test('enviar enquanto o CEP responde espera a taxa e não grava um pedido sem entrega', async ({ page }) => {
+  await simular(page);
+  let liberar;
+  const espera = new Promise(resolve => { liberar = resolve; });
+  await page.route('https://viacep.com.br/**', async r => {
+    await espera;
+    await r.fulfill({ json: VIACEP });
+  });
+  let envios = 0;
+  page.on('request', r => { if (r.url().includes('/rpc/criar_pedido')) envios++; });
+  await irAoCheckout(page, { nome: NOME + ' cep pendente' });
+  const consulta = page.waitForRequest('https://viacep.com.br/**');
+  await page.locator('#f-cep').fill('08674185');
+  await consulta;
+  await page.locator('#f-end').fill('Rua Eliziél Alves Costa, 300');
+  await page.locator('#btn-enviar').click();
+  await expect(page.locator('#form-pedido')).toHaveAttribute('aria-busy', 'true');
+  expect(envios).toBe(0);
+  liberar();
+  await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
+  expect(envios).toBe(1);
+  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} cep pendente'`)).toBe('8.00|24.90');
+});
+
+test('trocar o CEP remove a taxa anterior até calcular o endereço novo', async ({ page }) => {
+  await simular(page);
+  await irAoCheckout(page);
+  await page.locator('#f-cep').fill('08674185');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
+  await digitar(page, '300');
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+
+  let liberar;
+  const espera = new Promise(resolve => { liberar = resolve; });
+  await page.route('https://viacep.com.br/ws/08555120/**', async r => {
+    await espera;
+    await r.fulfill({ json: { logradouro: 'Rua Mantiqueira', bairro: 'Jardim Santa Luiza', localidade: 'Poá', uf: 'SP' } });
+  });
+  const consulta = page.waitForRequest('https://viacep.com.br/ws/08555120/**');
+  await page.locator('#f-cep').fill('08555120');
+  await consulta;
+  await expect(page.locator('#chk-taxa')).not.toHaveText('R$ 8,00');
+  await expect(totalCheckout(page)).toHaveText('R$ 16,90');
+  liberar();
+  await expect(page.locator('#f-end')).toHaveValue('Rua Mantiqueira, ');
+  await digitar(page, '100');
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+  await expect(totalCheckout(page)).toHaveText('R$ 24,90');
+});
+
+test('se o serviço de rota voltar, Recalcular entrega substitui a combinar pelo valor', async ({ page }) => {
+  await simular(page);
+  let indisponivel = true;
+  await page.route('https://router.project-osrm.org/**', r => indisponivel ? r.abort() : r.fulfill({ json: { code: 'Ok', routes: [{ distance: 3200 }] } }));
+  await irAoCheckout(page);
+  await page.locator('#f-cep').fill('08674185');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
+  await digitar(page, '300');
+  await expect(page.locator('#chk-taxa')).toHaveText('a combinar');
+  await expect(page.getByRole('button', { name: 'Recalcular entrega' })).toBeVisible();
+  indisponivel = false;
+  await page.getByRole('button', { name: 'Recalcular entrega' }).click();
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+  await expect(page.locator('#taxa-msg')).toHaveText('Taxa de entrega: R$ 8,00');
+  await expect(totalCheckout(page)).toHaveText('R$ 24,90');
+  await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 24,90');
+  await expect(page.getByRole('button', { name: 'Recalcular entrega' })).toBeHidden();
+});
+
 test('mudar o número recalcula a taxa; resultado repetido vem do cache (sem nova consulta)', async ({ page }) => {
   const chamadas = await simular(page, { metros: 10_000 });
   await irAoCheckout(page);

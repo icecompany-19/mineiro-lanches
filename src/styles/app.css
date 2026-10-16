@@ -723,6 +723,7 @@ html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-s
 .campo input[readonly]{background:var(--chapa);color:var(--osso-2);border-style:dashed}
 .taxa-msg{margin:12px 0 0;padding:12px 14px;border-radius:var(--r-md);border:1.5px dashed var(--borda-campo);background:var(--chapa);font:600 14px/1.4 var(--f-corpo);color:var(--osso)}
 .taxa-msg.ok{border-style:solid;border-color:var(--neon-aberto)}
+.taxa-tentar{margin-top:12px}
 .taxa-msg.falha{border-style:solid;border-color:var(--fio)}
 .prazo-nota{font:500 13px/1.4 var(--f-corpo);color:var(--osso-2);margin:0}
 .prazo-nota:empty{display:none}

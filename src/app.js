@@ -663,6 +663,7 @@ export function iniciarApp() {
   function temNumero(txt) { return /\d/.test(txt) || /\bs\s*\/?\s*n\b/i.test(txt); }
   function textoTaxa() {
     if (st.modo !== 'entrega') return { chk: 'sem taxa', msg: '', cls: '' };
+    if (entr.estado === 'buscando-cep') return { chk: 'calculando…', msg: 'Buscando o endereço para calcular a entrega…', cls: '' };
     if (!ML.entrega.ativa()) return { chk: 'a combinar', msg: '', cls: '' };
     if (entr.estado === 'ok') {
       // só o valor calculado para o endereço: a regra (km + valor fixo) não aparece para o cliente
@@ -680,18 +681,31 @@ export function iniciarApp() {
     box.hidden = !t.msg || st.modo !== 'entrega';
     box.textContent = t.msg;
     box.className = 'taxa-msg' + (t.cls ? ' ' + t.cls : '');
+    $('#taxa-tentar').hidden = st.modo !== 'entrega' || entr.estado !== 'falha';
     atualizarContadores();
   }
   function geocodificar(rua, bairro, cidade, uf) {
     function consulta(txt) { return buscarJSON('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&q=' + encodeURIComponent(txt), 9000); }
-    var resto = [bairro, cidade, uf].filter(Boolean);
-    return consulta([rua].concat(resto).join(', ')).then(function (r) {
-      if (r && r[0]) return r[0];
-      // o número nem sempre está no mapa: tenta só a rua (a distância fica pela rua, e a taxa sempre arredonda para cima)
-      var soRua = rua.replace(/[,\s]*(\d|s\s*\/?\s*n\b).*$/i, '').trim();
-      if (!soRua || soRua === rua) return null;
-      return new Promise(function (ok) { setTimeout(ok, 1100); }).then(function () { return consulta([soRua].concat(resto).join(', ')); }).then(function (r2) { return r2 && r2[0] ? r2[0] : null; });
-    });
+    // O bairro do ViaCEP pode ter outro nome no mapa (ex.: CEP 08555-120).
+    // Conserva rua, cidade e UF em todas as buscas; nunca usa só o centro da cidade.
+    var soRua = rua.replace(/,\s*(?:\d|s\s*\/?\s*n\b).*$/i, '').trim();
+    if (soRua === rua) soRua = rua.replace(/\s+(?:\d+[A-Za-z]?|s\s*\/?\s*n)\s*$/i, '').trim();
+    var tentativas = [];
+    function incluir(partes) {
+      var txt = partes.filter(Boolean).join(', ');
+      if (tentativas.indexOf(txt) < 0) tentativas.push(txt);
+    }
+    incluir([rua, bairro, cidade, uf]);
+    incluir([rua, cidade, uf]);
+    if (soRua && soRua !== rua) { incluir([soRua, bairro, cidade, uf]); incluir([soRua, cidade, uf]); }
+    function tentar(i) {
+      return consulta(tentativas[i]).then(function (r) {
+        if (r && r[0]) return r[0];
+        if (i + 1 === tentativas.length) return null;
+        return new Promise(function (ok) { setTimeout(ok, 1100); }).then(function () { return tentar(i + 1); });
+      });
+    }
+    return tentar(0);
   }
   function kmDaRota(destino) {
     var o = C.entrega.origem;
@@ -726,11 +740,12 @@ export function iniciarApp() {
     }
     renderTaxa();
   }
-  // o envio espera o cálculo que estiver em andamento (no máximo 12 s) para não mandar o pedido sem a taxa à toa
+  function entregaPendente() { return entr.estado === 'calculando' || entr.estado === 'buscando-cep'; }
+  // O envio reavalia o endereço e a taxa antes de mandar o pedido.
   function esperarTaxa() {
     return new Promise(function (ok) {
       var t0 = Date.now();
-      (function olhar() { if (entr.estado !== 'calculando' || Date.now() - t0 > 12000) ok(); else setTimeout(olhar, 150); })();
+      (function olhar() { if (!entregaPendente() || Date.now() - t0 > 12000) ok(); else setTimeout(olhar, 150); })();
     });
   }
   function dicaCep(txt, cls) { var d = $('#cep-dica'); d.textContent = txt; d.className = 'campo-dica' + (cls ? ' ' + cls : ''); }
@@ -740,15 +755,22 @@ export function iniciarApp() {
     dicaCep('Digite o CEP e a rua, o bairro e a cidade vêm sozinhos.');
   }
   function buscarCep(cep, manterRua) {
-    var seq = ++entr.cepSeq;
+    // Um CEP novo invalida imediatamente a taxa e as consultas do endereço anterior.
+    limparCep();
+    var seq = entr.cepSeq;
+    entr.cep = cep;
+    agendarTaxa();
+    if (st.modo === 'entrega') { entr.estado = 'buscando-cep'; renderTaxa(); }
     dicaCep('Buscando o CEP…');
     buscarJSON('https://viacep.com.br/ws/' + cep + '/json/', 8000).then(function (j) {
       if (seq !== entr.cepSeq) return;
-      if (!j || j.erro) { entr.ok = false; dicaCep('CEP não encontrado. Confira os números ou escreva o endereço abaixo.', 'erro'); agendarTaxa(); return; }
+      if (!j || j.erro) { entr.cep = ''; entr.ok = false; dicaCep('CEP não encontrado. Confira os números ou escreva o endereço abaixo.', 'erro'); agendarTaxa(); return; }
       entr.cep = cep; entr.ok = true; entr.bairro = j.bairro || ''; entr.cidade = j.localidade || ''; entr.uf = j.uf || '';
       var campo = $('#f-end'), rua = j.logradouro || '';
-      // Uma busca nova preenche a rua; ao restaurar um endereço, conserva o texto e o número salvos.
-      if (rua && !(manterRua && campo.value.trim())) campo.value = rua + ', ';
+      // O preenchimento automático do celular pode trazer rua e número antes da resposta do CEP.
+      var normalizarRua = function (v) { return v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase(); };
+      var mesmaRua = rua && normalizarRua(campo.value).indexOf(normalizarRua(rua)) === 0;
+      if (rua && !(campo.value.trim() && (manterRua || mesmaRua))) campo.value = rua + ', ';
       $('#f-bairro').value = [entr.bairro, entr.cidade && entr.uf ? entr.cidade + '/' + entr.uf : entr.cidade].filter(Boolean).join(' · ');
       $('#c-bairro').hidden = !$('#f-bairro').value;
       dicaCep(rua ? 'Agora é só informar o número da casa.' : 'Este CEP não tem rua própria: escreva a rua e o número.', 'ok');
@@ -757,7 +779,7 @@ export function iniciarApp() {
       agendarTaxa(true);
     }, function () {
       if (seq !== entr.cepSeq) return;
-      entr.ok = false; dicaCep('Não conseguimos buscar o CEP agora. Escreva o endereço completo abaixo.', 'erro'); agendarTaxa();
+      entr.cep = ''; entr.ok = false; dicaCep('Não conseguimos buscar o CEP agora. Escreva o endereço completo abaixo.', 'erro'); agendarTaxa();
     });
   }
   // endereço que vai no pedido: o que o cliente escreveu + bairro, cidade/UF e CEP do ViaCEP
@@ -776,6 +798,7 @@ export function iniciarApp() {
     else dicaCep('Digite o CEP e a rua, o bairro e a cidade vêm sozinhos.');
   });
   $('#f-end').addEventListener('input', function () { if (entr.ok) agendarTaxa(); });
+  $('#taxa-tentar').addEventListener('click', function () { agendarTaxa(true); });
   // rascunho com CEP: refaz a busca (sem apagar a rua e o número já digitados) só quando o cliente chega ao checkout
   var restaurarCep = $('#f-cep').value.replace(/\D/g, '').length === 8;
 
@@ -971,8 +994,8 @@ export function iniciarApp() {
     if (envio.enviando) return;
     if (!sacola.length) { navegar('cardapio'); return; }
     if (!validar()) return;
-    // a taxa ainda está sendo calculada: espera terminar (no máximo 12 s) e envia de novo com ela
-    if (entr.estado === 'calculando') {
+    // CEP ou rota pendentes: espera terminar e valida novamente antes de enviar.
+    if (st.modo === 'entrega' && entregaPendente()) {
       travarEnvio(true);
       esperarTaxa().then(function () { travarEnvio(false); var f = $('#form-pedido'); if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', { cancelable: true })); });
       return;
