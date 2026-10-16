@@ -10,7 +10,7 @@ Fonte: conversa de WhatsApp com Cauan Oliveira, de 06 a 12/10/2026, exportada em
 | Horário | Todos os dias, das 19:00 às 00:00. Sexta e sábado, das 19:00 às 01:00. **Domingo abre**, das 19:00 às 00:00 |
 | Prensado | "Avisar antes; não cobramos para prensar" |
 | Prazo de espera | **Até 50 minutos, podendo chegar antes** (16/10/2026). Aparece no checkout, no acompanhamento e na seção "onde" do site |
-| Taxa de entrega | **km de distância + R$ 4, sempre arredondando para cima** (16/10/2026: "10 km + 4 reais" = R$ 14). Lido como R$ 1 por km rodado + R$ 4 fixos; **confirmar com o dono**. Distância pela rota de carro, do truck até o endereço do cliente. `CONFIG.entrega.taxa` |
+| Taxa de entrega | **km de distância + R$ 4, sempre arredondando para cima** (16/10/2026: "10 km + 4 reais" = R$ 14). Lido como R$ 1 por km rodado + R$ 4 fixos; **confirmar com o dono**. O cliente **não vê a regra**: só o valor calculado para o endereço dele (decisão de 16/10/2026). Distância pela rota de carro, do truck até o endereço do cliente. `CONFIG.entrega.taxa` |
 | Impressora da comanda | Térmica, papel **72 mm × 210 mm** (203 dpi), foto do dono em 16/10/2026. A comanda sai em negrito |
 | Endereço do cliente | Por CEP: o cliente digita o CEP, vêm rua, bairro e cidade; ele completa o número |
 | QR code | **Não é necessário agora.** Só vai ser usado quando alugarem o salão ao lado. A estrutura fica pronta, mas não é prioridade e não precisa aparecer na apresentação |

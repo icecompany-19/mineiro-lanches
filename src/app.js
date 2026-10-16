@@ -668,12 +668,8 @@ export function iniciarApp() {
     if (st.modo !== 'entrega') return { chk: 'sem taxa', msg: '', cls: '' };
     if (!ML.entrega.ativa()) return { chk: 'a combinar', msg: '', cls: '' };
     if (entr.estado === 'ok') {
-      var cob = ML.entrega.kmCobrados(entr.km), real = String(Math.round(entr.km * 10) / 10).replace('.', ',');
-      return {
-        chk: brl(entr.taxa),
-        msg: 'Taxa de entrega: ' + brl(entr.taxa) + ' · ' + cob + ' km' + (cob !== entr.km ? ' (distância de ' + real + ' km, sempre arredondada para cima)' : ''),
-        cls: 'ok'
-      };
+      // só o valor calculado para o endereço: a regra (km + valor fixo) não aparece para o cliente
+      return { chk: brl(entr.taxa), msg: 'Taxa de entrega: ' + brl(entr.taxa), cls: 'ok' };
     }
     if (entr.estado === 'calculando') return { chk: 'calculando…', msg: 'Calculando a taxa de entrega…', cls: '' };
     if (entr.estado === 'sem-numero') return { chk: taxaEntregaTxt(), msg: 'Informe o número da casa para calcular a taxa de entrega.', cls: '' };

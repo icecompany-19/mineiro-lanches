@@ -39,7 +39,7 @@
     // taxaAtiva: o estado_cardapio liga quando o banco já calcula a taxa (taxaKm); sem isso o checkout deixa "a combinar" e o total não diverge do servidor
     entrega: { prazoMin: 50, taxa: { porKm: 1, fixa: 4 }, origem: { lat: -23.5409777, lon: -46.312935 }, taxaAtiva: false },
     modos: [
-      { id: 'entrega', label: 'Entrega', desc: 'Suzano e região · R$ 1 por km + R$ 4' },
+      { id: 'entrega', label: 'Entrega', desc: 'Suzano e região · taxa calculada pelo endereço' },
       { id: 'local', label: 'Comer no local', desc: 'Consumo no truck' }
     ],
     pagamentos: null, // a confirmar; ex.: ['Pix', 'Cartão', 'Dinheiro']
@@ -308,7 +308,7 @@
     out.push('');
     pedido.itens.forEach(function (i) { out.push(i.qtd + '× ' + i.nome + ' — ' + brl(i.subtotal)); out.push('   ' + i.resumo); });
     out.push('');
-    if (pedido.modo === 'entrega' && pedido.taxaEntrega != null) out.push('Taxa de entrega' + (pedido.distanciaKm ? ' (' + kmCobrados(pedido.distanciaKm) + ' km)' : '') + ': ' + brl(pedido.taxaEntrega));
+    if (pedido.modo === 'entrega' && pedido.taxaEntrega != null) out.push('Taxa de entrega: ' + brl(pedido.taxaEntrega));
     out.push('Total: ' + brl(pedido.total) + (pedido.modo === 'entrega' && pedido.taxaEntrega == null ? ' (taxa de entrega a combinar)' : ''));
     out.push(modoTxt);
     if (pedido.modo === 'entrega') out.push('Endereço: ' + (pedido.endereco || 'a informar') + (pedido.referencia ? ' (' + pedido.referencia + ')' : ''));

@@ -645,7 +645,7 @@ Itens com escolha obrigatória (bebida com sabor, combo com refri quando houver 
   - stepper;
   - "Editar", que reabre a ficha com o estado.
 - **Oferta "Vira combo por +R$ 14,90? Quero combo":** painel `--chapa-2` com fio `--fio`, só se houver lanche sem combo.
-- **Resumo como comanda de papel:** Subtotal, "Entrega: taxa combinada" (do `CONFIG.modos`) e Total.
+- **Resumo como comanda de papel:** Subtotal, "Entrega: taxa calculada pelo endereço" (do `CONFIG.modos`; vira o valor depois do CEP e do número) e Total.
 - **Botões:** "Finalizar pedido · R$ X" (primário, fixo no pé) e "Adicionar mais itens" (secundário).
 - **Vazia:** ícone da categoria em `--anel` e "Ver cardápio".
 
@@ -656,7 +656,7 @@ Itens com escolha obrigatória (bebida com sabor, combo com refri quando houver 
 **390:** uma página só.
 
 1. **Quem:** `#f-nome` (`autocomplete="name"`) e `#f-tel` (`type="tel"`, `inputmode="tel"`, `autocomplete="tel"`). Vêm do rascunho `mineiro:v2:`, então o cliente que volta só confere.
-2. **Como receber:** cartões grandes `[data-modo]` gerados de `CONFIG.modos`. Hoje são 2: "Entrega · Suzano e região · taxa combinada" e "Comer no local · Consumo no truck". O selecionado tem borda `--fio` e ✓. A mesa vem do QR, quando existir.
+2. **Como receber:** cartões grandes `[data-modo]` gerados de `CONFIG.modos`. Hoje são 2: "Entrega · Suzano e região · taxa calculada pelo endereço" e "Comer no local · Consumo no truck". O selecionado tem borda `--fio` e ✓. A mesa vem do QR, quando existir.
 3. **Endereço:** só na entrega, com `autocomplete="street-address"`.
 4. **Pagamento:** como hoje (`CONFIG.pagamentos` está null, "a confirmar").
 5. **Observação** e aviso de LGPD.

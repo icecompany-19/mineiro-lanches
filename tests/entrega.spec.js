@@ -50,7 +50,8 @@ async function irAoCheckout(page, { nome = NOME } = {}) {
   await page.locator('#btn-continuar').click();
   await expect(page.locator('[data-screen="checkout"]')).toBeVisible();
   await page.locator('#f-nome').fill(nome);
-  await page.locator('#f-tel').fill('11985720150');
+  // telefone próprio de cada teste: o limite é de 5 pedidos por telefone em 10 min, e os outros testes usam o 11985720150
+  await page.locator('#f-tel').fill('1198' + String(1_000_000 + Math.floor(Math.random() * 8_999_999)));
   await page.locator('[data-modo="entrega"]').click();
 }
 const totalCheckout = (page) => page.locator('[data-screen="checkout"] .resumo .total [data-total]');
@@ -83,7 +84,7 @@ test('prazo de até 50 minutos, podendo chegar antes, no checkout e no acompanha
 test('CEP preenche rua, bairro e cidade; com o número vem a taxa e ela entra no total e no banco', async ({ page }) => {
   const chamadas = await simular(page);
   await irAoCheckout(page, { nome: NOME + ' cep' });
-  await expect(page.locator('#chk-taxa')).toHaveText('R$ 1 por km + R$ 4');
+  await expect(page.locator('#chk-taxa')).toHaveText('taxa calculada pelo endereço');
   await page.locator('#f-cep').fill('08674185');
   await expect(page.locator('#f-cep')).toHaveValue('08674-185');
   await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
@@ -94,7 +95,7 @@ test('CEP preenche rua, bairro e cidade; com o número vem a taxa e ela entra no
   expect(chamadas.osrm).toBe(0);
   await digitar(page, '300');
   // 3,2 km → 4 km × R$ 1 + R$ 4 = R$ 8,00
-  await expect(page.locator('#taxa-msg')).toContainText('Taxa de entrega: R$ 8,00 · 4 km (distância de 3,2 km, sempre arredondada para cima)');
+  await expect(page.locator('#taxa-msg')).toHaveText('Taxa de entrega: R$ 8,00');
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
   await expect(totalCheckout(page)).toHaveText('R$ 24,90'); // X-Burguer 16,90 + 8,00
   await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 24,90');
@@ -113,8 +114,8 @@ test('mudar o número recalcula a taxa; resultado repetido vem do cache (sem nov
   await page.locator('#f-cep').fill('08674-185');
   await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
   await digitar(page, '12');
-  await expect(page.locator('#taxa-msg')).toContainText('R$ 14,00 · 10 km'); // 10 km exatos: sem "arredondada"
-  await expect(page.locator('#taxa-msg')).not.toContainText('arredondada');
+  await expect(page.locator('#taxa-msg')).toHaveText('Taxa de entrega: R$ 14,00'); // 10 km: R$ 10 + R$ 4; a regra não aparece para o cliente
+  await expect(page.locator('#taxa-msg')).not.toContainText(/km|arredondada/i);
   expect(chamadas.osrm).toBe(1);
   await page.keyboard.press('Backspace');
   await page.keyboard.press('Backspace');
