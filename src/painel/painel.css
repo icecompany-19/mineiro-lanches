@@ -329,7 +329,8 @@
 .pn-m-item { padding: .85rem 1rem; border: 1px solid var(--linha); border-radius: var(--r-lg); box-shadow: var(--sombra-card); display: flex; flex-direction: column; gap: .4rem; }
 .pn-m-t { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
 .pn-m-item p { color: var(--pn-tinta-2); font-size: .9rem; }
-.pn-m-b { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.pn-m-b { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.pn-m-acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; margin-left: auto; }
 .pn-m-b strong { font: 600 1.2rem var(--f-placa); color: var(--pn-tinta); }
 
 /* toasts */
