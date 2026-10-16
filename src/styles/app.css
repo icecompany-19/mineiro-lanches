@@ -329,7 +329,8 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .ficha[open]{display:flex;flex-direction:column;animation:sobe-gaveta var(--t-folha) var(--suave)}
 .ficha.fecha{animation:desce-gaveta .24s ease forwards}
 .ficha.fecha::backdrop{opacity:0;transition:opacity .24s}
-.ficha-rolar{overflow-y:auto;overscroll-behavior:contain;flex:1}
+/* Base auto evita que o WebKit reduza o conteúdo a zero no dialog com altura automática. */
+.ficha-rolar{overflow-y:auto;overscroll-behavior:contain;flex:1 1 auto;min-height:0}
 .ficha-alca{position:absolute;z-index:4;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--borda-campo);box-shadow:0 0 0 1px rgba(18,11,9,.35);touch-action:none}
 .ficha-arraste{position:absolute;z-index:3;top:0;left:0;right:0;height:40px;touch-action:none;cursor:grab}
 .ficha-fechar{position:absolute;z-index:4;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,243,224,.25);background:rgba(18,11,9,.72);color:var(--osso);display:grid;place-items:center}

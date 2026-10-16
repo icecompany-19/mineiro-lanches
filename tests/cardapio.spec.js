@@ -126,7 +126,7 @@ test('checkout: o erro de cada campo chega ao leitor de tela (aria-invalid e des
   await page.locator('[data-modo="entrega"]').click();
   await page.locator('#btn-enviar').click();
   const nome = page.locator('#f-nome');
-  await expect(nome).toBeFocused();
+  await expect(page.locator('#f-tel')).toBeFocused(); // telefone é o primeiro campo do cadastro
   await expect(nome).toHaveAttribute('aria-invalid', 'true');
   await expect(nome).toHaveAccessibleDescription('Escreva seu nome para o truck chamar você.');
   await expect(page.locator('#f-tel')).toHaveAccessibleDescription('Informe o telefone com DDD para o truck falar com você.');

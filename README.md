@@ -42,6 +42,7 @@ O cálculo da entrega tenta a rua e a cidade sem o bairro quando o ViaCEP e o ma
 
 ```bash
 npm ci
+npx playwright install chromium webkit # navegadores dos testes; WebKit cobre a ficha no iPhone
 source scripts/supabase-local/ambiente-windows.sh   # só no Windows (Git Bash): PATH do Postgres 17 e do PostgREST
 npm run db:local                 # Supabase local de teste: Postgres :54322, PostgREST :54323, API :54321 (sem Realtime)
 psql postgresql://postgres@localhost:54322/postgres -f supabase/setup.sql
@@ -53,6 +54,8 @@ node scripts/testar-paridade.mjs       # preço e resumo do servidor = core.js
 node --test tests/qrcode.test.mjs      # leitura dos QR
 npx playwright test                    # imagens, navegação, cardápio, CSP/headers e E2E com dois aparelhos
 ```
+
+O projeto de testes `iphone` usa WebKit e verifica a abertura da ficha pelo nome e pela foto, a rolagem dos opcionais e a personalização salva na sacola. Em Linux, as dependências dos navegadores podem ser instaladas com `npx playwright install-deps chromium webkit`.
 
 - **Mudou preço ou item no `CONFIG` (`src/core.js`)?** Rode `npm run seed && npm run setup-sql` e aplique o `setup.sql` de novo no Supabase.
 - **Origem do código:** a prévia aprovada foi a `icecompany-19/gasplab-previews`, pasta `mineiro-lanche/`, commit `a7aee46`. Ela foi importada no commit `f7ff674` e removida depois da migração; continua no histórico do git.
