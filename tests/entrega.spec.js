@@ -284,7 +284,7 @@ test('CEP inexistente: avisa e deixa escrever o endereço à mão (sem taxa)', a
   expect(psql(`select endereco, taxa_entrega is null from pedidos where cliente_nome = '${NOME} manual'`)).toBe('Rua das Flores, 100, Centro|t');
 });
 
-test('comer no local não tem taxa nem pede CEP', async ({ page }) => {
+test('retirada no local não tem taxa nem pede CEP', async ({ page }) => {
   await simular(page);
   await irAoCheckout(page);
   await page.locator('[data-modo="local"]').click();

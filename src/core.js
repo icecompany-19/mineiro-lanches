@@ -24,7 +24,7 @@
     whatsapp: '5511985720150',
     whatsappTexto: '(11) 98572-0150',
     instagram: 'https://www.instagram.com/mineirolanchesuzano/',
-    bio: ['Hambúrguer artesanal', 'Hot dog com Doritos', 'Consumo no local', 'Entregas'],
+    bio: ['Hambúrguer artesanal', 'Hot dog com Doritos', 'Retirada no local', 'Entregas'],
     frases: {
       fome: 'Quando bater aquela fome, chama o Mineiro Lanche!',
       cheddar: 'Diretamente pros amantes de cheddar!',
@@ -40,7 +40,7 @@
     entrega: { prazoMin: 50, taxa: { porKm: 1, fixa: 4 }, origem: { lat: -23.5409777, lon: -46.312935 }, taxaAtiva: false },
     modos: [
       { id: 'entrega', label: 'Entrega', desc: 'Suzano e região · taxa calculada pelo endereço' },
-      { id: 'local', label: 'Comer no local', desc: 'Consumo no truck' }
+      { id: 'local', label: 'Retirada no local', desc: 'Retire seu pedido no truck' }
     ],
     pagamentos: null, // a confirmar; ex.: ['Pix', 'Cartão', 'Dinheiro']
     regras: {
@@ -301,7 +301,8 @@
 
   // ================= mensagem de WhatsApp =================
   function mensagem(pedido) {
-    var modoTxt = ({ entrega: 'Entrega', local: 'Comer no local' }[pedido.modo] || pedido.modo) + (pedido.modo === 'local' && pedido.mesa ? ' · Mesa ' + pedido.mesa : '');
+    var modo = CONFIG.modos.filter(function (m) { return m.id === (pedido.modo === 'retirada' ? 'local' : pedido.modo); })[0];
+    var modoTxt = (modo ? modo.label : pedido.modo) + (pedido.modo === 'local' && pedido.mesa ? ' · Mesa ' + pedido.mesa : '');
     var out = ['Olá, ' + CONFIG.nome + '! ' + (pedido.origem === 'qrcode' ? 'Vim pelo QR code do truck' : 'Vim pelo link da bio') + ' e quero fazer um pedido.'];
     // sem número quando o pedido não chegou ao servidor (plano B do checkout)
     if (pedido.numero) out.push('Pedido ' + numeroTxt(pedido.numero));

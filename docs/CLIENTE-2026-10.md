@@ -2,6 +2,8 @@
 
 Fonte: conversa de WhatsApp com Cauan Oliveira, de 06 a 12/10/2026, exportada em 12/10. Só os fatos do negócio foram transcritos aqui. Este documento **substitui** os pontos equivalentes de `docs/PREVIA-DECISOES.md`.
 
+**Atualização de 16/10/2026:** o modo antes exibido como "Comer no local" passa a ser **"Retirada no local"**, conforme solicitado. O site, o checkout, o painel, a comanda e as mensagens usam essa identificação; o identificador interno `local` é preservado para os pedidos existentes.
+
 ## Loja
 
 | Item | Valor |

@@ -130,7 +130,7 @@ export function iniciarApp() {
     try { o = JSON.parse(sessionStorage.getItem(CHAVE_ORIGEM) || 'null'); } catch { o = null; }
     return o && o.origem === 'qrcode' ? o : null;
   })();
-  // mesa do QR: o checkout já abre em "Comer no local · Mesa N"
+  // QR com mesa: o checkout já abre em "Retirada no local · Mesa N"
   if (origemQR && origemQR.mesa) st.modo = 'local';
   // item que não dá para pedir agora: esgotado hoje ou fora do cardápio (estado_cardapio do banco)
   function indisponivel(id) { var p = ML.produtos[id]; return !p || !!p.inativo || !!ML.store.esgotados()[id]; }
@@ -232,8 +232,8 @@ export function iniciarApp() {
     });
     return lista.slice(0, 10);
   }
-  var ICONE_BIO = { 'Hambúrguer artesanal': 'burger', 'Hot dog com Doritos': 'hotdog', 'Consumo no local': 'mesa', 'Entregas': 'moto' };
-  var ICONE_MODO = { entrega: 'moto', local: 'mesa' };
+  var ICONE_BIO = { 'Hambúrguer artesanal': 'burger', 'Hot dog com Doritos': 'hotdog', 'Retirada no local': 'sacola', 'Entregas': 'moto' };
+  var ICONE_MODO = { entrega: 'moto', local: 'sacola' };
   // texto da taxa de entrega: último trecho do desc da entrega no CONFIG.modos; o HTML nasce vazio e o JS preenche
   function taxaEntregaTxt() {
     var ent = C.modos.filter(function (m) { return m.id === 'entrega'; })[0];
@@ -636,7 +636,7 @@ export function iniciarApp() {
     [['f-nome', 'nome'], ['f-tel', 'tel'], ['f-cep', 'cep'], ['f-end', 'end'], ['f-ref', 'ref'], ['f-obs', 'obs']].forEach(function (c) { if (r[c[1]]) $('#' + c[0]).value = r[c[1]]; });
     // Aproveita o formulário que já estava guardado antes do histórico por telefone.
     if (!historicoClientes.buscar(r.tel)) historicoClientes.salvar({ telefone: r.tel, nome: r.nome, endereco: { cep: r.cep, end: r.end, ref: r.ref } });
-    // o modo escolhido também, a não ser que o QR da mesa mande "Comer no local"
+    // o modo escolhido também, a não ser que o QR da mesa mande "Retirada no local"
     if (!(origemQR && origemQR.mesa) && C.modos.some(function (m) { return m.id === r.modo; })) st.modo = r.modo;
   })();
   function salvarRascunho() {

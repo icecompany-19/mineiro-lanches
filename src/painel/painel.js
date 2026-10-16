@@ -22,7 +22,7 @@
     relatorio: { t: 'Relatório', i: 'grafico' },
     config: { t: 'Configurações', i: 'config' }
   };
-  const MODO_IC = { entrega: 'moto', retirada: 'sacola', local: 'mesa' };
+  const MODO_IC = { entrega: 'moto', retirada: 'sacola', local: 'sacola' };
   const COLS = [
     { id: 'novos', titulo: 'Novos' },
     { id: 'preparo', titulo: 'Em preparo' },
@@ -53,7 +53,7 @@
   const ehHoje = iso => diaOp(iso) === diaOp(Date.now());
   const hhmm = iso => { const d = new Date(iso); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
   const dataHora = iso => { const d = new Date(iso); return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + hhmm(iso); };
-  const modoLabel = m => { const x = ML.CONFIG.modos.find(o => o.id === m); return x ? x.label : m; };
+  const modoLabel = m => { const x = ML.CONFIG.modos.find(o => o.id === (m === 'retirada' ? 'local' : m)); return x ? x.label : m; };
   const statusPainel = s => (ML.STATUS[s] || { painel: s }).painel;
   const nomeCli = p => (p.cliente && p.cliente.nome) || 'Sem nome';
   const itensTxt = p => p.itens.map(i => i.qtd + '× ' + i.nome).join(', ');

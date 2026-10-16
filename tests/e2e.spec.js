@@ -227,7 +227,7 @@ test('pedido pelo QR da mesa 3 chega ao painel com os selos, e o status volta ao
   });
   // mesa do QR já marcada; aviso de privacidade (LGPD) visível
   await expect(celular.locator('[data-modo="local"]')).toHaveAttribute('aria-pressed', 'true');
-  await expect(celular.locator('[data-modo="local"] strong')).toHaveText('Comer no local · Mesa 3');
+  await expect(celular.locator('[data-modo="local"] strong')).toHaveText('Retirada no local · Mesa 3');
   await expect(celular.getByText('Usamos seus dados só para preparar e entregar este pedido.')).toBeVisible();
   const totalCheckout = (await celular.locator('[data-screen="checkout"] .resumo .total [data-total]').textContent()).trim();
   expect(totalCheckout).toBe('R$ 57,30');
@@ -491,7 +491,7 @@ test('preço adulterado no navegador: vale o total do servidor', async ({ browse
     window.ML.produtos['gran-burger'].preco = 1;
   });
   await montarPedido(celular, { produto: 'gran-burger', nome: 'Carla Teste', telefone: '11955554444', local: true });
-  // rascunho do checkout (D6): endereço digitado na entrega e observação; o pedido sai em "Comer no local" (não leva endereço)
+  // rascunho do checkout (D6): endereço digitado na entrega e observação; o pedido sai em "Retirada no local" (não leva endereço)
   await celular.locator('[data-modo="entrega"]').click();
   await celular.locator('#f-end').fill('Rua das Flores, 100');
   await celular.locator('[data-modo="local"]').click();
