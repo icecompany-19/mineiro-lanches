@@ -89,9 +89,11 @@ on conflict (id) do update set
 update public.adicionais set ativo = false
 where ativo and id not in ('catupiry', 'bacon', 'doritos', 'queijo', 'pizza');
 
--- loja: cria se não existir; depois só horarios e combo_preco vêm do CONFIG (modo e aceita_fechada são do painel)
-insert into public.loja (id, modo, aceita_fechada, combo_preco, horarios)
-values (1, 'auto', false, 14.90, '{"0":["19:00","00:00"],"1":["19:00","00:00"],"2":["19:00","00:00"],"3":["19:00","00:00"],"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb)
+-- loja: cria se não existir; depois só horarios, combo_preco e taxa de entrega vêm do CONFIG (modo e aceita_fechada são do painel)
+insert into public.loja (id, modo, aceita_fechada, combo_preco, taxa_km, taxa_fixa, horarios)
+values (1, 'auto', false, 14.90, 1.00, 4.00, '{"0":["19:00","00:00"],"1":["19:00","00:00"],"2":["19:00","00:00"],"3":["19:00","00:00"],"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb)
 on conflict (id) do update set
   horarios = excluded.horarios,
-  combo_preco = excluded.combo_preco;
+  combo_preco = excluded.combo_preco,
+  taxa_km = excluded.taxa_km,
+  taxa_fixa = excluded.taxa_fixa;

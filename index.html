@@ -208,8 +208,11 @@
             <h2 id="modo-tit">Como você quer receber?</h2>
             <div class="modos" id="modos"></div>
             <div id="bloco-endereco">
-              <div class="campo" id="c-end"><label for="f-end">Endereço para entrega</label><input id="f-end" autocomplete="street-address" maxlength="140" placeholder="Rua, número e bairro"><span class="msg-erro" id="erro-end" hidden>Informe o endereço para a entrega.</span></div>
-              <div class="campo"><label for="f-ref">Referência (opcional)</label><input id="f-ref" maxlength="80" placeholder="Ex.: portão azul, perto da praça"></div>
+              <div class="campo" id="c-cep"><label for="f-cep">CEP</label><input id="f-cep" inputmode="numeric" autocomplete="postal-code" maxlength="9" placeholder="00000-000"><span class="campo-dica" id="cep-dica" role="status" aria-live="polite">Digite o CEP e a rua, o bairro e a cidade vêm sozinhos.</span></div>
+              <div class="campo" id="c-end"><label for="f-end">Rua e número</label><input id="f-end" autocomplete="street-address" maxlength="110" placeholder="Rua e número da casa"><span class="msg-erro" id="erro-end" hidden>Informe o endereço para a entrega.</span></div>
+              <div class="campo" id="c-bairro" hidden><label for="f-bairro">Bairro e cidade</label><input id="f-bairro" readonly tabindex="-1"></div>
+              <div class="campo"><label for="f-ref">Complemento ou referência (opcional)</label><input id="f-ref" maxlength="80" placeholder="Ex.: apto 12, portão azul, perto da praça"></div>
+              <p class="taxa-msg" id="taxa-msg" role="status" aria-live="polite" hidden></p>
             </div>
           </section>
           <section class="bloco" aria-labelledby="pag-tit">
@@ -231,6 +234,7 @@
           <div class="enviar-wrap pe-fixo">
             <button type="submit" class="btn btn-vermelho" id="btn-enviar"><svg class="ic" aria-hidden="true"><use href="#i-truck"/></svg><span>Enviar pedido</span><span class="btn-valor" data-total>R$ 0,00</span></button>
             <span>O pedido vai direto para o painel do truck.</span>
+            <span class="prazo-nota" data-prazo></span>
           </div>
         </form>
       </section>
@@ -259,7 +263,7 @@
           <span class="fumaca" aria-hidden="true"><i></i><i></i><i></i></span>
         </div>
         <div class="form">
-          <section class="bloco" aria-labelledby="st-tit"><h2 id="st-tit">Status</h2><ol class="linha-tempo" id="linha-tempo"></ol></section>
+          <section class="bloco" aria-labelledby="st-tit"><h2 id="st-tit">Status</h2><p class="prazo-nota" data-prazo></p><ol class="linha-tempo" id="linha-tempo"></ol></section>
           <section class="bloco" aria-labelledby="it-tit"><h2 id="it-tit">Itens</h2><div id="ped-itens"></div><div class="comanda-sombra"><div class="resumo comanda"><div class="total"><span>Total</span><span id="ped-total">R$ 0,00</span></div></div></div></section>
           <a class="btn btn-borda" id="ped-wa" href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>Avisar também pelo WhatsApp</a>
           <button type="button" class="btn btn-borda" data-novo-pedido>Fazer outro pedido</button>
@@ -612,7 +616,7 @@
           <div class="onde-lado">
             <div class="onde-cartao rv">
               <p class="onde-end"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg><span id="onde-end">Rua Eliziel Alves Costa, 300 · Centro · Suzano/SP</span></p>
-              <ul class="onde-modos"><li><svg class="ic" aria-hidden="true"><use href="#i-moto"/></svg><span>Entrega<small>Suzano e região · taxa combinada</small></span></li><li><svg class="ic" aria-hidden="true"><use href="#i-mesa"/></svg><span>Comer no local<small>Consumo no truck</small></span></li></ul>
+              <ul class="onde-modos"><li><svg class="ic" aria-hidden="true"><use href="#i-moto"/></svg><span>Entrega<small>Suzano e região · R$ 1 por km + R$ 4</small><small data-prazo></small></span></li><li><svg class="ic" aria-hidden="true"><use href="#i-mesa"/></svg><span>Comer no local<small>Consumo no truck</small></span></li></ul>
               <a class="btn btn-vermelho" id="onde-mapa" href="https://www.google.com/maps/search/?api=1&amp;query=Rua%20Eliziel%20Alves%20Costa%2C%20300%2C%20Centro%2C%20Suzano%2FSP" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg>Abrir no mapa</a>
             </div>
             <nav class="links rv" aria-label="Contato">

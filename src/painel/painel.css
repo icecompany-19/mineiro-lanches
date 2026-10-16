@@ -179,6 +179,7 @@
 .pn-end-t small { color: var(--pn-tinta-2); }
 .pn-end-b { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .4rem; }
 .pn-end-b .pn-btn { flex: 1 1 auto; }
+.pn-taxa { margin: 0; font: 600 .85rem var(--f-placa); letter-spacing: .04em; text-transform: uppercase; color: var(--pn-tinta-2, var(--tinta-2)); }
 .pn-rodape { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
 .pn-card .pn-rodape { margin-top: 0; padding-top: 0; border-top: 0; font-size: inherit; color: inherit; }
 .pn-pag { font-size: .85rem; color: var(--pn-tinta-2); }
@@ -346,7 +347,7 @@
 .pn-modal-acoes { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
 .pn-modal .pn-ic { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; }
 .pn-csv { width: 100%; min-height: 14rem; padding: .6rem; font: 12px/1.4 ui-monospace, Consolas, monospace; border: 1.5px solid var(--borda-campo); border-radius: var(--r-sm); background: var(--carvao); color: var(--creme); }
-.pn-comanda { width: 80mm; max-width: 100%; padding: 5mm 4mm; background: var(--papel); color: var(--tinta); font: 13px/1.35 ui-monospace, 'Courier New', Consolas, monospace; box-shadow: var(--sombra-card); }
+.pn-comanda { box-sizing: border-box; width: 72mm; max-width: 100%; padding: 3mm; background: var(--papel); color: var(--tinta); font: 700 13px/1.35 ui-monospace, 'Courier New', Consolas, monospace; box-shadow: var(--sombra-card); }
 .pn-comanda p { margin: 0 0 2px; }
 .pn-comanda hr { border: 0; border-top: 1px dashed var(--tinta); margin: 6px 0; }
 .pn-c-loja { text-align: center; font-weight: 700; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
@@ -356,8 +357,10 @@
 .pn-c-peq { text-align: center; font-size: 12px; }
 .pn-c-item { margin-bottom: 5px; }
 .pn-c-lin { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
-.pn-c-sel { padding-left: 14px; font-size: 12px; overflow-wrap: anywhere; }
-.pn-c-obs { font-weight: 700; border: 1px solid var(--tinta); padding: 3px; }
+.pn-c-sel { padding-left: 14px; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.pn-c-obs { font-weight: 800; border: 2px solid var(--tinta); padding: 3px; }
+.pn-c-v { font-weight: 800; }
+.pn-c-taxa { font-weight: 800; }
 .pn-c-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 18px; margin-top: 4px; }
 
 /* ---------- animações ---------- */
@@ -393,14 +396,17 @@
   .pn-seg-b[aria-pressed="true"] { background: Highlight; color: HighlightText; forced-color-adjust: none; }
 }
 
-/* ---------- impressão: só a comanda ---------- */
-@page { size: 80mm auto; margin: 3mm; }
+/* ---------- impressão: só a comanda ----------
+   A medida da página (72 mm × a altura do cupom) é posta por imprimirComanda() em painel.js; aqui só a base sem margem. */
+@page { margin: 0; }
 @media print {
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body > *:not(.pn-modal) { display: none !important; }
   .pn-modal { position: static !important; display: block !important; padding: 0 !important; background: none !important; animation: none !important; }
-  .pn-modal-caixa { width: auto !important; max-height: none !important; overflow: visible !important; padding: 0 !important; border: 0 !important; background: none !important; animation: none !important; }
+  .pn-modal-caixa { width: auto !important; max-height: none !important; overflow: visible !important; padding: 0 !important; border: 0 !important; background: none !important; animation: none !important; gap: 0 !important; }
   .pn-modal-acoes, .pn-modal-t { display: none !important; }
-  .pn-comanda { width: 74mm; box-shadow: none; padding: 0; }
+  .pn-comanda { width: 72mm !important; max-width: none !important; box-shadow: none; background: #fff; color: #000; break-inside: avoid; page-break-inside: avoid; }
+  .pn-comanda hr { border-top-color: #000; }
 }
 
 /* ---------- acesso (login da equipe, antes do quadro) ---------- */

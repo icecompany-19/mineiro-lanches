@@ -208,6 +208,10 @@
     }
     return `<span class="pn-tempo pn-tempo--fixo" title="Hora do pedido">${ic('relogio')}<span class="pn-tempo-v">${hhmm(p.criadoEm)}</span></span>`;
   }
+  // entrega: taxa por distância (R$ e km cobrados) ou "a combinar" quando a rota não pôde ser calculada
+  const taxaTxt = p => p.modo !== 'entrega' ? '' : p.taxaEntrega != null
+    ? 'Entrega ' + brl(p.taxaEntrega) + (p.distanciaKm ? ' · ' + ML.entrega.kmCobrados(p.distanciaKm) + ' km' : '')
+    : 'Taxa de entrega a combinar';
   const pagTxt = p => 'Pagamento: ' + (p.pagamento || 'a combinar') + (p.troco ? ' · troco para ' + p.troco : '');
   const tagExemplo = p => p.origem === 'exemplo' ? '<span class="pn-tag pn-tag--exemplo">Pedido de exemplo</span>' : '';
   // quem pediu pelo QR do truck (e de qual mesa)
@@ -229,6 +233,7 @@
       ${itensHTML(p, false)}
       ${p.obs ? `<p class="pn-obs"><strong>Obs:</strong> ${esc(p.obs)}</p>` : ''}
       ${end}
+      ${p.modo === 'entrega' ? `<p class="pn-taxa">${esc(taxaTxt(p))}</p>` : ''}
       <div class="pn-rodape"><span class="pn-pag">${esc(pagTxt(p))}</span><strong class="pn-total">${brl(p.total)}</strong></div>
       <div class="pn-acoes">
         ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : ''}
@@ -650,7 +655,7 @@
       const b = e.target.closest('[data-m]');
       if (!b) return;
       if (b.dataset.m === 'fechar') fecharModal();
-      else if (b.dataset.m === 'imprimir') { try { window.print(); } catch { toast('A impressão não está disponível aqui. Use a visualização da comanda.'); } }
+      else if (b.dataset.m === 'imprimir') { try { imprimirComanda(); } catch { toast('A impressão não está disponível aqui. Use a visualização da comanda.'); } }
       else if (b.dataset.m === 'copiar-csv') { const ta = m.querySelector('textarea'); copiar(ta.value).then(ok => { if (!ok) ta.select(); toast(ok ? 'CSV copiado' : 'Selecione o texto e copie com Ctrl+C'); }); }
     });
     m.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); fecharModal(); } else prenderFoco(e, m); });
@@ -667,7 +672,20 @@
     if (ant && ant.isConnected && ant.focus) ant.focus();
   }
 
-  /* ---------- comanda (80 mm) ---------- */
+  /* ---------- comanda (cupom de 72 mm, impressora térmica) ---------- */
+  const COMANDA_MM = 72; // largura útil da impressora (papel 72 mm × 210 mm, 203 dpi)
+  // A página de impressão ganha a medida do próprio cupom (72 mm de largura × a altura que a comanda ocupa), sem margem:
+  // o cupom sai com as mesmas proporções da visualização, venha a impressão do cartão, do detalhe ou da própria comanda.
+  function imprimirComanda() {
+    const c = document.querySelector('.pn-comanda');
+    if (!c) return;
+    const alturaMm = Math.max(40, Math.ceil(c.getBoundingClientRect().height * 25.4 / 96) + 2);
+    let el = document.getElementById('pn-pagina-impressao');
+    if (!el) { el = document.createElement('style'); el.id = 'pn-pagina-impressao'; document.head.appendChild(el); }
+    el.textContent = '@page { size: ' + COMANDA_MM + 'mm ' + alturaMm + 'mm; margin: 0; }';
+    window.addEventListener('afterprint', () => el.remove(), { once: true });
+    window.print();
+  }
   function comandaHTML(p) {
     const itens = p.itens.map(it => {
       const l = [];
@@ -684,12 +702,13 @@
       <p class="pn-c-num">${ML.fmt.numero(p.numero)}</p>
       <p class="pn-c-modo">${esc(modoLabel(p.modo))}${p.mesa ? ' · MESA ' + esc(p.mesa) : ''}${p.origem === 'qrcode' ? ' · QR' : ''}</p>
       <p class="pn-c-peq">${esc(dataHora(p.criadoEm))}</p><hr>
-      <p><b>Cliente:</b> ${esc(nomeCli(p))}</p>
-      ${p.cliente && p.cliente.telefone ? `<p><b>Tel:</b> ${esc(p.cliente.telefone)}</p>` : ''}
-      ${p.modo === 'entrega' && p.endereco ? `<p><b>Endereço:</b> ${esc(p.endereco)}</p>` : ''}
-      ${p.referencia ? `<p><b>Ref.:</b> ${esc(p.referencia)}</p>` : ''}
+      <p><b>Cliente:</b> <b class="pn-c-v">${esc(nomeCli(p))}</b></p>
+      ${p.cliente && p.cliente.telefone ? `<p><b>Tel:</b> <b class="pn-c-v">${esc(p.cliente.telefone)}</b></p>` : ''}
+      ${p.modo === 'entrega' && p.endereco ? `<p><b>Endereço:</b> <b class="pn-c-v">${esc(p.endereco)}</b></p>` : ''}
+      ${p.referencia ? `<p><b>Ref.:</b> <b class="pn-c-v">${esc(p.referencia)}</b></p>` : ''}
       <hr>${itens}<hr>
       ${p.obs ? `<p class="pn-c-obs"><b>OBS:</b> ${esc(p.obs)}</p><hr>` : ''}
+      ${p.modo === 'entrega' ? `<p class="pn-c-taxa">${esc(p.taxaEntrega != null ? taxaTxt(p).replace(/^Entrega /, 'ENTREGA: ') : taxaTxt(p).toUpperCase())}</p>` : ''}
       <p>${esc(pagTxt(p))}</p>
       <p class="pn-c-total"><span>TOTAL</span><span>${brl(p.total)}</span></p>
     </div>`;
@@ -713,6 +732,7 @@
           <div><dt>Origem</dt><dd>${esc(ORIGEM_TXT[p.origem] || p.origem)}</dd></div>
           <div><dt>Feito em</dt><dd>${esc(dataHora(p.criadoEm))}</dd></div>
           ${p.modo === 'entrega' && p.endereco ? `<div><dt>Endereço</dt><dd>${esc(p.endereco)}${p.referencia ? ' (' + esc(p.referencia) + ')' : ''}</dd></div>` : ''}
+          ${p.modo === 'entrega' ? `<div><dt>Entrega</dt><dd>${esc(taxaTxt(p).replace(/^Entrega /, ''))}</dd></div>` : ''}
           <div><dt>Pagamento</dt><dd>${esc(pagTxt(p).replace('Pagamento: ', ''))}</dd></div>
         </dl>
         ${itensHTML(p, true)}
@@ -750,9 +770,10 @@
       if (/^[=+\-@]/.test(s)) s = "'" + s;
       return '"' + s.replace(/"/g, '""') + '"';
     };
-    const cab = ['Numero', 'Data e hora', 'Cliente', 'Telefone', 'Modo', 'Itens', 'Total', 'Pagamento', 'Status', 'Origem', 'Mesa'];
+    const cab = ['Numero', 'Data e hora', 'Cliente', 'Telefone', 'Modo', 'Itens', 'Taxa de entrega', 'Distancia (km)', 'Total', 'Pagamento', 'Status', 'Origem', 'Mesa'];
     const linhas = lista.map(p => [ML.fmt.numero(p.numero), dataHora(p.criadoEm), nomeCli(p), (p.cliente && p.cliente.telefone) || '', modoLabel(p.modo),
-      p.itens.map(i => i.qtd + 'x ' + i.nome + (i.resumo ? ' (' + i.resumo + ')' : '')).join(' | '), p.total.toFixed(2).replace('.', ','), p.pagamento || 'a combinar', statusPainel(p.status), p.origem, p.mesa || ''].map(cel).join(';'));
+      p.itens.map(i => i.qtd + 'x ' + i.nome + (i.resumo ? ' (' + i.resumo + ')' : '')).join(' | '),
+      p.taxaEntrega != null ? p.taxaEntrega.toFixed(2).replace('.', ',') : '', p.distanciaKm != null ? String(p.distanciaKm).replace('.', ',') : '', p.total.toFixed(2).replace('.', ','), p.pagamento || 'a combinar', statusPainel(p.status), p.origem, p.mesa || ''].map(cel).join(';'));
     return '﻿' + [cab.map(cel).join(';')].concat(linhas).join('\r\n');
   }
   function mostrarCSV(csv) {

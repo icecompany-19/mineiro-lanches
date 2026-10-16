@@ -506,6 +506,7 @@ test('preço adulterado no navegador: vale o total do servidor', async ({ browse
   expect(await celular.evaluate(() => JSON.parse(localStorage.getItem('mineiro:v2:rascunho')))).toEqual({
     nome: 'Carla Teste',
     tel: '11955554444',
+    cep: '',
     end: 'Rua das Flores, 100',
     ref: '',
     obs: '',

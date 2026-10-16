@@ -2,7 +2,7 @@
 // Uso: node scripts/gerar-seed.mjs [caminho/do/core.js]   (padrão: src/core.js)
 // O seed é idempotente: atualiza nome, preço, categoria, ordem, ingredientes, tipo e foto pelo id, sem mexer
 // em esgotado_dia. O CONFIG manda no ativo: o que está nele fica ativo (inclusive o que saiu e voltou) e o que
-// saiu fica inativo. Loja: insere se não existir e só atualiza horarios e combo_preco.
+// saiu fica inativo. Loja: insere se não existir e só atualiza horarios, combo_preco e a taxa de entrega.
 // Produto com preco null no CONFIG ("Preço a confirmar") vai com preco null: aparece no cardápio, mas o
 // criar_pedido recusa.
 import fs from 'node:fs';
@@ -108,6 +108,8 @@ export function montarSeed(CONFIG, origem = 'src/core.js') {
   const adicionais = CONFIG.adicionais || [];
   const combo = CONFIG.regras && CONFIG.regras.combo ? CONFIG.regras.combo.preco : null;
   if (typeof combo !== 'number') throw new Error('CONFIG.regras.combo.preco ausente');
+  const taxa = CONFIG.entrega && CONFIG.entrega.taxa ? CONFIG.entrega.taxa : null;
+  if (!taxa || typeof taxa.porKm !== 'number' || typeof taxa.fixa !== 'number') throw new Error('CONFIG.entrega.taxa ausente (porKm e fixa)');
   // {"0": null, "1": ["19:00","00:00"], ...}
   const horarios = {};
   Object.keys(CONFIG.horarios || {}).forEach((d) => (horarios[String(d)] = CONFIG.horarios[d] || null));
@@ -152,12 +154,14 @@ on conflict (id) do update set
 update public.adicionais set ativo = false
 where ativo and id not in (${adicionais.map((a) => txt(a.id)).join(', ')});
 
--- loja: cria se não existir; depois só horarios e combo_preco vêm do CONFIG (modo e aceita_fechada são do painel)
-insert into public.loja (id, modo, aceita_fechada, combo_preco, horarios)
-values (1, 'auto', false, ${num(combo)}, ${txt(JSON.stringify(horarios))}::jsonb)
+-- loja: cria se não existir; depois só horarios, combo_preco e taxa de entrega vêm do CONFIG (modo e aceita_fechada são do painel)
+insert into public.loja (id, modo, aceita_fechada, combo_preco, taxa_km, taxa_fixa, horarios)
+values (1, 'auto', false, ${num(combo)}, ${num(taxa.porKm)}, ${num(taxa.fixa)}, ${txt(JSON.stringify(horarios))}::jsonb)
 on conflict (id) do update set
   horarios = excluded.horarios,
-  combo_preco = excluded.combo_preco;
+  combo_preco = excluded.combo_preco,
+  taxa_km = excluded.taxa_km,
+  taxa_fixa = excluded.taxa_fixa;
 `;
 }
 

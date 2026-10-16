@@ -46,6 +46,8 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | `modo` | `auto` · `aberta` · `fechada` |
 | `aceita_fechada` | `false` |
 | `combo_preco` | `14.90` |
+| `taxa_km` | `1.00` (R$ por km cobrado; vem do `CONFIG.entrega.taxa.porKm`) |
+| `taxa_fixa` | `4.00` (R$ somado à entrega; vem do `CONFIG.entrega.taxa.fixa`) |
 | `horarios` | `jsonb`, igual ao `CONFIG.horarios`: `{"0":["19:00","00:00"],…,"5":["19:00","01:00"],"6":["19:00","01:00"]}` (0 = domingo; `null` = fechado naquele dia) |
 | `atualizado_em` | |
 
@@ -78,6 +80,8 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | `referencia` | |
 | `pagamento` | |
 | `troco` | |
+| `distancia_km` | `numeric(6,3)` null: km da rota informados pelo checkout (entrega); null = taxa a combinar |
+| `taxa_entrega` | `numeric(10,2)` null: taxa calculada pelo banco (já somada ao `total`); null = a combinar |
 | `obs` | |
 | `itens` | `jsonb` |
 | `total` | `numeric(10,2)` |
@@ -109,7 +113,7 @@ Entrada: o que o checkout já monta, com os itens no formato de `itemDoPedido` d
 {
   "cliente": { "nome": "Ana", "telefone": "11985720150" },
   "modo": "entrega", "endereco": "Rua X, 10", "referencia": "", "pagamento": null, "troco": "", "obs": "",
-  "origem": "cardapio", "mesa": null, "idempotencia": "uuid gerado pelo navegador a cada envio novo",
+  "distanciaKm": 3.2, "origem": "cardapio", "mesa": null, "idempotencia": "uuid gerado pelo navegador a cada envio novo",
   "itens": [{ "produtoId": "gran-bacon-onion", "qtd": 1, "completo": false, "removidos": ["Cebola roxa"],
               "prensado": true, "combo": { "ativo": true, "refri": "Guaraná" },
               "adicionais": [{ "id": "bacon", "qtd": 1 }], "sabor": "" }]
@@ -119,6 +123,7 @@ Entrada: o que o checkout já monta, com os itens no formato de `itemDoPedido` d
 **Validação e normalização no servidor** (espelho exato do `core.js`):
 
 - `nome`: 2 a 80 caracteres. `telefone`: só dígitos, 10 ou 11. `modo` válido. `endereco` obrigatório e com 5 a 200 caracteres quando `modo = 'entrega'`. Limites: `referencia` ≤ 120, `obs` ≤ 300, `troco` ≤ 40, `pagamento` ≤ 30, `mesa` ≤ 10.
+- **Taxa de entrega (migration `20261016000001`).** Só em `modo = 'entrega'`, o navegador manda `distanciaKm` (km da rota de carro do truck até o endereço, de 0 a 100, número JSON; qualquer outro tipo, 0, negativo ou acima de 100 → `dados_invalidos`). O banco guarda `distancia_km` (3 casas) e calcula `taxa_entrega = ceil(distancia_km) × loja.taxa_km + loja.taxa_fixa`, **sempre arredondando os km para cima** (3,2 km = 4 km; 3,0004 km = 3 km, porque a conta é em metros). A taxa **entra no `total`**. Sem `distanciaKm` (falha da consulta de endereço, ou modo `local`) a taxa e a distância ficam `null` = "a combinar", e o `total` é só dos itens. Tudo que o navegador mandar de taxa ou total é ignorado.
 - `origem`: `cardapio` ou `qrcode`; `exemplo` só se `is_equipe()`.
 - Itens: de 1 a 30 linhas; `qtd` de 1 a 20; produto existe, está ativo, **tem preço** (`preco` não é `null`) e não está esgotado no dia. Item sem preço recusa o pedido inteiro com `produto_invalido`, também para a equipe.
 - `removidos` filtrados para os que estão em `ingredientes` e ordenados; `completo = (removidos vazio)`.
@@ -141,7 +146,7 @@ Entrada: o que o checkout já monta, com os itens no formato de `itemDoPedido` d
   "itens": [{ "produtoId": "...", "nome": "...", "categoria": "...", "tipo": "lanche", "precoBase": 34.9, "precoUnit": 57.3, "qtd": 1,
               "completo": false, "removidos": ["Cebola roxa"], "prensado": true, "combo": { "ativo": true, "refri": "Guaraná" },
               "adicionais": [{ "id": "bacon", "nome": "Bacon", "qtd": 1, "preco": 7.5 }], "sabor": "", "resumo": "...", "subtotal": 57.3 }],
-  "total": 57.3, "status": "novo", "historico": [{ "status": "novo", "em": "..." }] }
+  "total": 57.3, "distanciaKm": 3.2, "taxaEntrega": 8, "status": "novo", "historico": [{ "status": "novo", "em": "..." }] }
 ```
 
 Os números saem como números JSON, não como texto.
@@ -154,7 +159,7 @@ Devolve `{ numero, criadoEm, status, historico, modo, total, itens: [{ nome, qtd
 
 ```json
 { "diaOperacional": "2026-10-08", "esgotados": ["gran-crispy"], "inativos": [], "precos": { "gran-burger": 25.9 },
-  "adicionais": { "bacon": 7.5 }, "loja": { "modo": "auto", "aceitaFechada": false, "comboPreco": 14.9, "horarios": { } } }
+  "adicionais": { "bacon": 7.5 }, "loja": { "modo": "auto", "aceitaFechada": false, "comboPreco": 14.9, "taxaKm": 1, "taxaFixa": 4, "horarios": { } } }
 ```
 
 `precos` traz todos os produtos, inclusive os inativos; o de um item sem preço vem `null` (ex.: `"dog-cbo-turbo": null`). Hoje o adaptador (`store-supabase.js`) só aplica preços numéricos: um `null` do banco mantém o preço do `CONFIG`, que é o mesmo do seed.

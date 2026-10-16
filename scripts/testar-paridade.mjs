@@ -196,9 +196,12 @@ async function main() {
   try {
     for (const ped of pedidos) {
       const modo = escolher(['entrega', 'local', 'local']);
+      // entrega com distância informada na maioria dos pedidos (km de 0,001 a 40 em 3 casas); o resto fica sem taxa (a combinar)
+      const km = modo === 'entrega' && int(5) > 0 ? (1 + int(40000)) / 1000 : null;
       const payload = {
         cliente: { nome: 'Paridade ' + ped.idx, telefone: ped.telefone },
         modo,
+        distanciaKm: km,
         endereco: modo === 'entrega' ? 'Rua das Flores, 123' : '',
         referencia: '',
         pagamento: null,
@@ -228,8 +231,10 @@ async function main() {
       if (!ok(r.status === 200 && r.json && r.json.id, `pedido ${ped.idx}: criado (HTTP ${r.status})`, r.texto)) continue;
       criados.push({ ped, payload, resp: r.json });
       const esperados = itensCore.slice(ped.de, ped.ate);
-      const total = Math.round(esperados.reduce((s, i) => s + i.subtotal, 0) * 100) / 100;
+      const taxa = km == null ? null : ML.entrega.taxa(km);
+      const total = Math.round((esperados.reduce((s, i) => s + i.subtotal, 0) + (taxa || 0)) * 100) / 100;
       ok(r.json.total === total, `pedido ${ped.idx}: total ${r.json.total} = core ${total}`);
+      ok(r.json.taxaEntrega === taxa, `pedido ${ped.idx}: taxa de entrega ${r.json.taxaEntrega} = core ${taxa} (distância ${km})`);
       ok(r.json.itens.length === esperados.length, `pedido ${ped.idx}: ${esperados.length} itens`);
       r.json.itens.forEach((it, j) => {
         const dif = diferencas(it, esperados[j]);

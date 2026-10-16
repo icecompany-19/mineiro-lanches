@@ -35,7 +35,8 @@ const CSP = {
   'style-src': ["'self'", "'unsafe-inline'"],
   'img-src': ["'self'", 'data:', 'blob:'],
   'font-src': ["'self'"],
-  'connect-src': ["'self'", `https://${SUPABASE}`, `wss://${SUPABASE}`],
+  // + consulta de CEP (ViaCEP), endereço (Nominatim/OpenStreetMap) e rota (OSRM) da taxa de entrega
+  'connect-src': ["'self'", `https://${SUPABASE}`, `wss://${SUPABASE}`, 'https://viacep.com.br', 'https://nominatim.openstreetmap.org', 'https://router.project-osrm.org'],
   'manifest-src': ["'self'"],
   'media-src': ["'self'"],
   'worker-src': ["'self'", 'blob:'],

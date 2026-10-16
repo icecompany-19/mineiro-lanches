@@ -34,8 +34,12 @@
     // null = fechado naquele dia (o banco pode mandar outros horários pelo estado_cardapio)
     horarios: { 0: ['19:00', '00:00'], 1: ['19:00', '00:00'], 2: ['19:00', '00:00'], 3: ['19:00', '00:00'], 4: ['19:00', '00:00'], 5: ['19:00', '01:00'], 6: ['19:00', '01:00'] },
     horarioTexto: ['Domingo a quinta, das 19h à meia-noite', 'Sexta e sábado, das 19h à 1h'],
+    // entrega (cliente, 16/10/2026): prazo de até 50 min, podendo chegar antes; taxa = km rodado (arredondado para cima) x porKm + fixa.
+    // origem: Rua Eliziel Alves Costa, trecho do nº 300 (CEP 08674-185), coordenadas do OpenStreetMap no nível da rua; confirmar o ponto exato do truck.
+    // taxaAtiva: o estado_cardapio liga quando o banco já calcula a taxa (taxaKm); sem isso o checkout deixa "a combinar" e o total não diverge do servidor
+    entrega: { prazoMin: 50, taxa: { porKm: 1, fixa: 4 }, origem: { lat: -23.5409777, lon: -46.312935 }, taxaAtiva: false },
     modos: [
-      { id: 'entrega', label: 'Entrega', desc: 'Suzano e região · taxa combinada' },
+      { id: 'entrega', label: 'Entrega', desc: 'Suzano e região · R$ 1 por km + R$ 4' },
       { id: 'local', label: 'Comer no local', desc: 'Consumo no truck' }
     ],
     pagamentos: null, // a confirmar; ex.: ['Pix', 'Cartão', 'Dinheiro']
@@ -202,6 +206,19 @@
     };
   }
 
+  // ================= entrega: prazo e taxa por distância =================
+  // km informados pelo navegador (rota até o endereço); o banco recalcula igual (criar_pedido) e é ele quem vale.
+  // Sempre para cima: 3,2 km = 4 km. A conta usa 3 casas, como o banco (3,0004 km vira 3 km, 3,001 vira 4).
+  function kmCobrados(km) {
+    var k = Math.round(+km * 1000) / 1000;
+    return k > 0 && isFinite(k) ? Math.ceil(k) : null;
+  }
+  function taxaEntrega(km) {
+    var n = kmCobrados(km);
+    return n == null ? null : arred(n * CONFIG.entrega.taxa.porKm + CONFIG.entrega.taxa.fixa);
+  }
+  function prazoTxt() { return 'até ' + CONFIG.entrega.prazoMin + ' minutos, podendo chegar antes'; }
+
   // ================= horário (America/Sao_Paulo) =================
   var DIAS = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   var NOMES_DIA = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
@@ -291,7 +308,8 @@
     out.push('');
     pedido.itens.forEach(function (i) { out.push(i.qtd + '× ' + i.nome + ' — ' + brl(i.subtotal)); out.push('   ' + i.resumo); });
     out.push('');
-    out.push('Total: ' + brl(pedido.total) + (pedido.modo === 'entrega' ? ' (taxa de entrega a combinar)' : ''));
+    if (pedido.modo === 'entrega' && pedido.taxaEntrega != null) out.push('Taxa de entrega' + (pedido.distanciaKm ? ' (' + kmCobrados(pedido.distanciaKm) + ' km)' : '') + ': ' + brl(pedido.taxaEntrega));
+    out.push('Total: ' + brl(pedido.total) + (pedido.modo === 'entrega' && pedido.taxaEntrega == null ? ' (taxa de entrega a combinar)' : ''));
     out.push(modoTxt);
     if (pedido.modo === 'entrega') out.push('Endereço: ' + (pedido.endereco || 'a informar') + (pedido.referencia ? ' (' + pedido.referencia + ')' : ''));
     if (pedido.cliente.nome) out.push('Nome: ' + pedido.cliente.nome);
@@ -311,6 +329,7 @@
     fmt: { brl: brl, semPreco: SEM_PRECO, esc: esc, numero: numeroTxt, hora: horaTxt, relogio: relogio, dia: function (d) { return NOMES_DIA[d]; } },
     regras: { podeCombo: podeCombo, podePrensar: podePrensar, podeAdicionais: podeAdicionais, temPreco: temPreco, proximoStatus: proximoStatus },
     precos: { normalizar: normalizar, unitario: precoUnitario, chave: chave, resumo: resumo, item: itemDoPedido },
+    entrega: { kmCobrados: kmCobrados, taxa: taxaEntrega, prazo: prazoTxt, ativa: function () { return !!CONFIG.entrega.taxaAtiva; } },
     horario: { agora: agoraSP, situacao: situacao, situacaoNo: situacaoNo, turnos: TURNOS, definir: definirHorarios },
     store: store,
     whatsapp: { mensagem: mensagem, consulta: mensagemConsulta, link: waLink }

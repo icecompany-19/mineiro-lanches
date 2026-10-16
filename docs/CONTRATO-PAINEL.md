@@ -146,8 +146,9 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
    - **Apagar todos os pedidos de teste** (confirmação dentro da página, porque `confirm()` não funciona no artefato);
    - texto explicando o limite: "Os pedidos ficam guardados neste navegador. Cardápio e painel abertos no mesmo computador sincronizam na hora; pedidos feitos em outro aparelho precisam de um servidor (próxima etapa)."
 8. **Comanda para impressão:**
-   - abre um diálogo dentro da página com a comanda formatada em 80 mm (fonte mono, número grande, itens com selos em texto, obs, total, modo, endereço) e o botão "Imprimir" (`window.print()`);
+   - abre um diálogo dentro da página com a comanda formatada em **72 mm** (impressora térmica: papel 72 mm × 210 mm, 203 dpi; fonte mono **em negrito**, número grande, itens com selos em texto, obs, taxa de entrega, total, modo, endereço) e o botão "Imprimir" (`window.print()`);
    - `@media print` mostra só a comanda;
+   - antes de imprimir, `imprimirComanda()` (painel.js) põe `@page { size: 72mm <altura do cupom>mm; margin: 0 }`: o cupom sai com as proporções da visualização numa página só, venha a impressão do cartão, do detalhe ou da própria comanda (teste: `tests/comanda-impressao.spec.js`);
    - no artefato do claude.ai o print é bloqueado: o diálogo continua útil como visualização.
 9. **Menos de 1024 px:** aviso "O painel foi pensado para computador" + lista simples dos pedidos de hoje com o botão de avançar.
 

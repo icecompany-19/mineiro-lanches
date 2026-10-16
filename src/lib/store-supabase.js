@@ -96,6 +96,9 @@ export function linhaParaPedido(r) {
     obs: r.obs || '',
     itens: (r.itens || []).map(itemDe),
     total: num(r.total),
+    // taxa de entrega por distância (null = a combinar): km da rota e valor gravados pelo servidor
+    distanciaKm: r.distancia_km == null ? null : Number(r.distancia_km),
+    taxaEntrega: r.taxa_entrega == null ? null : Number(r.taxa_entrega),
     status: r.status,
     historico: r.historico || []
   };
@@ -103,7 +106,9 @@ export function linhaParaPedido(r) {
 // saída das RPCs (pedido_json) → mesmo formato, com os números como Number
 export function pedidoDoServidor(j) {
   const c = j.cliente || {};
-  return linhaParaPedido(Object.assign({}, j, { criado_em: j.criadoEm, cliente_nome: c.nome, cliente_telefone: c.telefone }));
+  return linhaParaPedido(
+    Object.assign({}, j, { criado_em: j.criadoEm, cliente_nome: c.nome, cliente_telefone: c.telefone, distancia_km: j.distanciaKm, taxa_entrega: j.taxaEntrega })
+  );
 }
 // o que o acompanhamento guarda (sem nome, telefone nem endereço)
 function acompanhamentoDe(p) {
@@ -116,6 +121,8 @@ function acompanhamentoDe(p) {
     modo: p.modo,
     mesa: p.mesa || null,
     total: num(p.total),
+    distanciaKm: p.distanciaKm == null ? null : Number(p.distanciaKm),
+    taxaEntrega: p.taxaEntrega == null ? null : Number(p.taxaEntrega),
     itens: (p.itens || []).map((i) =>
       i.produtoId ? itemDe(i) : { nome: i.nome, qtd: num(i.qtd), resumo: i.resumo || '', subtotal: num(i.subtotal) }
     )
@@ -150,6 +157,8 @@ function entradaDoPedido(ML, dados) {
     modo: dados.modo || 'entrega',
     endereco: t(dados.endereco),
     referencia: t(dados.referencia),
+    // km da rota até o endereço (o servidor refaz a conta da taxa); sem ele, a taxa fica a combinar
+    distanciaKm: dados.modo !== 'local' && dados.modo !== 'retirada' && Number(dados.distanciaKm) > 0 ? Number(dados.distanciaKm) : null,
     pagamento: dados.pagamento || null,
     troco: t(dados.troco),
     obs: t(dados.obs),
@@ -208,7 +217,7 @@ export function criarStoreSupabase(opc) {
     precos: Object.fromEntries(Object.keys(ML.produtos).map((id) => [id, ML.produtos[id].preco])),
     inativos: [],
     adicionais: Object.fromEntries(ADICIONAIS.map((a) => [a.id, a.preco])),
-    loja: { aceitaFechada: false, comboPreco: C.regras.combo.preco, horarios: C.horarios }
+    loja: { aceitaFechada: false, comboPreco: C.regras.combo.preco, taxaKm: C.entrega.taxa.porKm, taxaFixa: C.entrega.taxa.fixa, horarios: C.horarios }
   });
 
   // ---------- eventos ----------
@@ -381,13 +390,16 @@ export function criarStoreSupabase(opc) {
     C.adicionais.splice(0, C.adicionais.length, ...ADICIONAIS.filter((a) => adic[a.id] != null));
     const l = e.loja || {};
     if (l.comboPreco != null) C.regras.combo.preco = Number(l.comboPreco);
+    C.entrega.taxaAtiva = l.taxaKm != null && l.taxaFixa != null; // banco antigo (sem a migration 20261016000001): taxa a combinar
+    if (l.taxaKm != null) C.entrega.taxa.porKm = Number(l.taxaKm);
+    if (l.taxaFixa != null) C.entrega.taxa.fixa = Number(l.taxaFixa);
     if (l.horarios) ML.horario.definir(l.horarios);
 
     const nova = assinatura({
       precos,
       inativos: [...inativos].sort(),
       adicionais: adic,
-      loja: { aceitaFechada: !!l.aceitaFechada, comboPreco: Number(l.comboPreco), horarios: l.horarios || C.horarios }
+      loja: { aceitaFechada: !!l.aceitaFechada, comboPreco: Number(l.comboPreco), taxaKm: Number(l.taxaKm), taxaFixa: Number(l.taxaFixa), horarios: l.horarios || C.horarios }
     });
     const mudouCardapio = nova !== assinaturaCardapio;
     assinaturaCardapio = nova;
