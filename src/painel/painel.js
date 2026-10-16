@@ -124,19 +124,29 @@
       if (S.audio && S.audio.state === 'suspended') S.audio.resume();
     } catch { S.audio = null; }
   }
-  function tocar() {
-    if (!S.cfg.som || !S.interagiu || !S.audio) return;
+  // Aviso de pedido novo: alto e inconfundível no meio do barulho da cozinha. Três "ding-dong" (cerca de 1,9 s) em onda quadrada,
+  // a 1568 e 2093 Hz (a faixa em que o ouvido é mais sensível), no volume máximo que o navegador permite; um compressor
+  // segura a distorção. O resto do volume é o do computador (o botão "Testar o som" em Configurações ajuda a regular).
+  function tocar(forcar) {
+    if ((!S.cfg.som && !forcar) || !S.interagiu || !S.audio) return;
     try {
-      const ac = S.audio, t0 = ac.currentTime + 0.02;
-      [[880, 0], [1318.5, 0.16]].forEach(par => {
-        const o = ac.createOscillator(), g = ac.createGain();
-        o.type = 'sine'; o.frequency.value = par[0];
-        g.gain.setValueAtTime(0.0001, t0 + par[1]);
-        g.gain.exponentialRampToValueAtTime(0.25, t0 + par[1] + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + par[1] + 0.22);
-        o.connect(g); g.connect(ac.destination);
-        o.start(t0 + par[1]); o.stop(t0 + par[1] + 0.25);
-      });
+      const ac = S.audio, t0 = ac.currentTime + 0.03;
+      const comp = ac.createDynamicsCompressor();
+      comp.threshold.value = -14; comp.ratio.value = 6; comp.attack.value = 0.003; comp.release.value = 0.1;
+      comp.connect(ac.destination);
+      for (let rep = 0; rep < 3; rep++) {
+        [[1568, 0], [2093, 0.21]].forEach(par => {
+          const ini = t0 + rep * 0.64 + par[1];
+          const o = ac.createOscillator(), g = ac.createGain();
+          o.type = 'square'; o.frequency.value = par[0];
+          g.gain.setValueAtTime(0.0001, ini);
+          g.gain.exponentialRampToValueAtTime(0.9, ini + 0.01);
+          g.gain.setValueAtTime(0.9, ini + 0.17);
+          g.gain.exponentialRampToValueAtTime(0.0001, ini + 0.21);
+          o.connect(g); g.connect(comp);
+          o.start(ini); o.stop(ini + 0.23);
+        });
+      }
     } catch { /* sem áudio */ }
   }
   function atualizarTitulo() {
@@ -309,7 +319,7 @@
           <section class="pn-sec" data-view="config" aria-label="Configurações" hidden>
             <div class="pn-cfg">
               <div class="pn-card-cfg"><h3>Som</h3>
-                <button type="button" class="pn-sw" role="switch" aria-checked="true" data-act="cfg-som"><span class="pn-sw-rot">Som de novo pedido</span><span class="pn-sw-trilho" aria-hidden="true"><span class="pn-sw-bola"></span></span></button></div>
+                <button type="button" class="pn-sw" role="switch" aria-checked="true" data-act="cfg-som"><span class="pn-sw-rot">Som de novo pedido</span><span class="pn-sw-trilho" aria-hidden="true"><span class="pn-sw-bola"></span></span></button><button type="button" class="pn-btn" data-act="cfg-testar-som">${ic('som')}Testar o som</button><p class="pn-cfg-dica">Para o aviso ficar bem alto, deixe o volume do computador no máximo.</p></div>
               <div class="pn-card-cfg"><h3>Tempo de espera</h3>
                 <div class="pn-cfg-l">
                   <label class="pn-campo"><span class="pn-campo-r">Atenção a partir de (min)</span><input type="number" min="1" max="240" class="pn-input" data-cfg="atencaoMin"></label>
@@ -873,6 +883,7 @@
         break;
       }
       case 'som': ML.store.salvarConfig({ som: !S.cfg.som }); S.cfg = ML.store.config(); renderChrome(); if (S.cfg.som) { marcarInteracao(); tocar(); } break;
+      case 'cfg-testar-som': marcarInteracao(); tocar(true); break;
       case 'cfg-som': ML.store.salvarConfig({ som: !S.cfg.som }); S.cfg = ML.store.config(); renderChrome(); break;
       case 'simular': simular(); break;
       case 'abrir-cardapio': abrirCardapio(); break;

@@ -214,8 +214,7 @@ test('rota acima de 100 km (o banco só aceita até 100): taxa a combinar', asyn
 
 test('rascunho com CEP: refaz a busca só no checkout e mantém a rua e o número digitados', async ({ page }) => {
   const chamadas = await simular(page);
-  await page.goto('/');
-  await page.evaluate(() => localStorage.setItem('mineiro:v2:rascunho', JSON.stringify({ nome: 'Rascunho', tel: '11985720150', cep: '08674-185', end: 'Rua Eliziél Alves Costa, 77', ref: '', obs: '', modo: 'entrega' })));
+  await page.addInitScript(() => localStorage.setItem('mineiro:v2:rascunho', JSON.stringify({ nome: 'Rascunho', tel: '11985720150', cep: '08674-185', end: 'Rua Eliziél Alves Costa, 77', ref: '', obs: '', modo: 'entrega' })));
   await page.goto('/#cardapio');
   await expect.poll(() => page.evaluate(() => window.ML.store.loja().modo)).toBe('aberta');
   expect(chamadas.viacep, 'nada de consulta de CEP fora do checkout').toBe(0);
