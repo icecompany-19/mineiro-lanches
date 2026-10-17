@@ -29,7 +29,7 @@ const cabecalho = `-- ==========================================================
 --  e gatilhos; pode confirmar.)
 -- Idempotente: rodar de novo não dá erro nem duplica dados, policies ou tabelas no Realtime.
 -- Roda numa transação só: se algo falhar, nada fica pela metade.
--- Depois: dê acesso ao painel com o comando comentado no fim do arquivo.
+-- Depois: dê acesso ao painel (e ao motoboy) com os comandos comentados no fim do arquivo.
 -- =====================================================================================
 
 begin;
@@ -46,6 +46,12 @@ commit;
 -- trocando EMAIL_AQUI pelo e-mail dele:
 --
 -- insert into equipe (user_id, nome) select id, 'Dono' from auth.users where email = 'EMAIL_AQUI' on conflict do nothing;
+--
+-- Acesso do motoboy (tela /motoboy/): crie o usuário em Authentication → Users (e-mail e senha, Auto Confirm) e rode,
+-- trocando EMAIL_AQUI pelo e-mail dele. O motoboy NÃO entra na equipe: ele só enxerga as entregas em rota.
+-- Para cortar o acesso sem apagar o usuário: update public.motoboys set ativo = false where user_id = (select id from auth.users where email = 'EMAIL_AQUI');
+--
+-- insert into public.motoboys (user_id, nome) select id, 'Motoboy' from auth.users where email = 'EMAIL_AQUI' on conflict do nothing;
 -- =====================================================================================
 `;
 

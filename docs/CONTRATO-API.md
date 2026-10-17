@@ -14,9 +14,11 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | `produto_esgotado` | Item esgotado no dia de operação |
 | `loja_fechada` | Loja fechada e `aceita_fechada = false` |
 | `muitos_pedidos` | Mais de 5 pedidos do mesmo telefone em 10 min (só `anon`) |
-| `sem_permissao` | Função de equipe chamada por quem não está em `equipe` |
-| `transicao_invalida` | Mudança de status fora da ordem |
+| `sem_permissao` | Função de equipe chamada por quem não está em `equipe`; função do motoboy chamada por quem não está em `motoboys` (ativo) nem em `equipe` |
+| `transicao_invalida` | Mudança de status fora da ordem; `confirmar_entrega` num pedido ainda `novo` |
 | `nao_encontrado` | Id ou token inexistente |
+| `nao_e_entrega` | `confirmar_entrega` num pedido que não é de entrega (`local` ou `retirada`) |
+| `pedido_cancelado` | `confirmar_entrega` num pedido cancelado |
 
 - **Dia de operação.** `dia_operacional()` devolve `((now() at time zone 'America/Sao_Paulo') - interval '4 hours')::date`. É o mesmo corte de 4h do painel (`DIA_OP_OFFSET`).
 
@@ -92,6 +94,16 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 
 **`equipe`**: `user_id uuid pk references auth.users on delete cascade`, `nome text`.
 
+**`motoboys`** (migration `20261017000001`): quem pode confirmar entregas pela tela `/motoboy/`. **O motoboy nunca entra em `equipe`** (daria o painel inteiro e os dados de todos os clientes).
+
+| Coluna | Tipo |
+|---|---|
+| `user_id` | `uuid` pk `references auth.users on delete cascade` |
+| `nome` | `text not null default ''` |
+| `ativo` | `boolean not null default true`. `false` corta o acesso sem apagar a linha |
+
+Liberar um motoboy (usuário criado em Authentication → Users com Auto Confirm): `insert into public.motoboys (user_id, nome) select id, 'Motoboy' from auth.users where email = 'EMAIL_AQUI' on conflict do nothing;` (o comando também está no rodapé do `setup.sql`). Cortar: `update public.motoboys set ativo = false where user_id = (select id from auth.users where email = 'EMAIL_AQUI');`.
+
 ### RLS
 
 | Tabela | `anon` | `authenticated` |
@@ -99,8 +111,10 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | `produtos`, `adicionais`, `loja` | select | select |
 | `pedidos`, `clientes` | nada | select só se `is_equipe()` |
 | `equipe` | nada | select da própria linha |
+| `motoboys` | nada | select da própria linha, só se `ativo` (policy `motoboys_proprio`; um motoboy desativado não enxerga nem a própria linha) |
 
 - **Nenhum insert, update ou delete direto**: tudo passa por RPC. Revogar das tabelas os privilégios de escrita de `anon` e `authenticated`.
+- O motoboy **não** lê `pedidos`, `clientes` nem `equipe` e não chama as funções da equipe (`mudar_status` etc.): tudo o que ele vê de um pedido vem das duas funções do motoboy abaixo.
 - **Realtime:** `pedidos`, `produtos` e `loja` na publicação `supabase_realtime`.
 
 ## RPCs (`supabase.rpc(nome, args)`)
@@ -188,6 +202,44 @@ Quando o dono mandar o preço: troque o `null` pelo valor no `CONFIG`, rode `npm
 | `definir_loja(p_modo text)` | `jsonb` | O mesmo bloco `loja` do `estado_cardapio`. |
 | `remover_testes()` | `int` | Apaga os pedidos com `origem = 'exemplo'`. |
 
+### Funções do motoboy (`authenticated`; dentro, `is_motoboy()` ou `is_equipe()` decide)
+
+Migration `20261017000001_motoboy.sql`. O QR da comanda leva a `https://<domínio>/motoboy/#<id do pedido>` (só pedidos de entrega); a tela do motoboy, depois do login, chama `confirmar_entrega` com esse `id`. A segurança vem do login e destas funções, não do QR. Quem não está em `motoboys` (ativo) nem em `equipe` recebe `sem_permissao` antes de qualquer outra validação; `anon` leva 42501 (sem `execute`).
+
+| Função | Retorno | Regra |
+|---|---|---|
+| `entregas_em_rota()` | `jsonb` (lista de `entrega_json`) | Só `modo = 'entrega'`, `status = 'rota'` e criados no **dia de operação atual** (mesmo corte de 4h do `dia_operacional()`): os pedidos presos em `rota` de dias anteriores ficam de fora. Mais antigo primeiro. Sem nenhum: `[]`. A equipe também pode chamar. |
+| `confirmar_entrega(p_id uuid)` | `{ ok, jaEntregue, pedido }` | Marca o pedido como entregue. `pedido` é o `entrega_json` do pedido já atualizado. Regras abaixo. |
+
+**`entrega_json`** (interna, sem grant): o recorte que o motoboy enxerga de um pedido, **sem itens, sem token e sem histórico**. Chaves exatas:
+
+```json
+{ "id": "uuid", "numero": 11, "status": "rota",
+  "cliente": { "nome": "Ana", "telefone": "11985720150" },
+  "endereco": "Rua X, 10", "referencia": "Portão azul", "obs": "Sem cebola",
+  "total": 32.9, "taxaEntrega": 7, "distanciaKm": 2.5,
+  "saiuEm": "2026-10-17T21:10:00.000+00:00", "entregueEm": null }
+```
+
+`taxaEntrega` e `distanciaKm` são `null` quando a taxa ficou "a combinar". `saiuEm` e `entregueEm` vêm do `historico` (o `em` do último evento com esse status) e são `null` enquanto o pedido não passou por esse status. Números saem como números JSON.
+
+**Regras do `confirmar_entrega`** (a linha do pedido é travada com `for update`):
+
+| Situação do pedido | Resultado |
+|---|---|
+| `id` nulo | `dados_invalidos` |
+| `id` inexistente | `nao_encontrado` |
+| `modo` diferente de `entrega` (qualquer status) | `nao_e_entrega` |
+| `entregue` | `{ ok: true, jaEntregue: true, pedido }` **sem update**: o histórico e o `atualizado_em` não mudam (ler o QR duas vezes, ou depois da equipe, não é erro) |
+| `cancelado` | `pedido_cancelado` |
+| `novo` (a equipe ainda nem aceitou) | `transicao_invalida` |
+| `rota` ou `pronto` | grava `entregue` |
+| `preparo` | grava `rota` e depois `entregue` (os dois eventos com o mesmo `em`), para o histórico e a tela do cliente continuarem em ordem |
+
+Todo evento gravado por `confirmar_entrega` leva `"por"`: `{ "status": "entregue", "em": "...", "por": "motoboy" }`. O `por` é `motoboy` para quem está em `motoboys` (ativo) e `equipe` para quem está só em `equipe`; quem está nas duas tabelas conta como `motoboy`, porque esta é a função da tela do motoboy. Os eventos de `mudar_status` continuam sem `por`. Pedido de origem `exemplo` segue as mesmas regras (não tem a exceção do `mudar_status`).
+
+Funções internas novas (sem grant a `anon` nem `authenticated`): `is_motoboy()` (considera `ativo`) e `entrega_json(pedidos)`.
+
 ### Leitura do painel
 
 ```js
@@ -207,6 +259,7 @@ bash scripts/supabase-local/iniciar.sh   # Postgres 16/17 :54322 + PostgREST :54
 
 - Para aplicar o SQL: `psql postgresql://postgres@localhost:54322/postgres -f supabase/setup.sql`; em seguida, `notify pgrst, 'reload schema'`.
 - Login da equipe: `equipe@teste.local` com qualquer senha. Esse usuário precisa estar em `equipe`: o `supabase/tests/` insere.
+- Login do motoboy: `moto@teste.local` (id `00000000-0000-4000-8000-000000000003`, criado pelo `stub.sql`) com qualquer senha. Precisa estar em `motoboys`: o `supabase/tests/_ajuda.sql` e o `scripts/testar-paridade.mjs` inserem (`on conflict do nothing`).
 - Não existe Realtime local. O front **precisa** funcionar só com o plano B de consulta periódica: painel a cada 5 s, cardápio a cada 60 s, acompanhamento a cada 10 s.
 - **Atualização por cima da versão anterior.** O `setup.sql` novo roda sobre o de 08/10/2026 (`preco` era `not null`; o `0001` faz `alter column preco drop not null`). Pedidos, clientes, esgotados e o modo da loja ficam como estavam; preços, composições e horários vêm do `CONFIG`. Para testar sem mexer no banco `postgres` compartilhado, use um banco à parte:
 

@@ -50,12 +50,12 @@ select pg_temp.igual((select count(*) from produtos)::text, '57', 'seed repetido
 select pg_temp.igual((select count(*) from adicionais)::text, '6', 'seed repetido: não duplica adicionais');
 
 -- RLS e Realtime
-select pg_temp.ok((select bool_and(relrowsecurity) and count(*) = 6 from pg_class
-                   where oid in ('produtos'::regclass, 'adicionais'::regclass, 'loja'::regclass, 'clientes'::regclass, 'pedidos'::regclass, 'equipe'::regclass)),
-  'RLS ligado nas 6 tabelas');
+select pg_temp.ok((select bool_and(relrowsecurity) and count(*) = 7 from pg_class
+                   where oid in ('produtos'::regclass, 'adicionais'::regclass, 'loja'::regclass, 'clientes'::regclass, 'pedidos'::regclass, 'equipe'::regclass, 'motoboys'::regclass)),
+  'RLS ligado nas 7 tabelas');
 select pg_temp.igual((select string_agg(tablename || ':' || policyname, ',' order by tablename) from pg_policies where schemaname = 'public'),
-  'adicionais:adicionais_leitura,clientes:clientes_equipe,equipe:equipe_propria,loja:loja_leitura,pedidos:pedidos_equipe,produtos:produtos_leitura',
-  '6 policies, sem duplicar');
+  'adicionais:adicionais_leitura,clientes:clientes_equipe,equipe:equipe_propria,loja:loja_leitura,motoboys:motoboys_proprio,pedidos:pedidos_equipe,produtos:produtos_leitura',
+  '7 policies, sem duplicar');
 select pg_temp.igual((select string_agg(tablename, ',' order by tablename) from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public'),
   'loja,pedidos,produtos', 'Realtime: loja, pedidos e produtos (uma vez cada)');
 
@@ -65,7 +65,11 @@ select pg_temp.ok(not exists (
     where table_schema = 'public' and grantee in ('anon', 'authenticated', 'PUBLIC') and privilege_type <> 'SELECT'),
   'anon e authenticated sem insert/update/delete/truncate em nenhuma tabela');
 select pg_temp.ok(not has_table_privilege('anon', 'pedidos', 'select') and not has_table_privilege('anon', 'clientes', 'select')
-                  and not has_table_privilege('anon', 'equipe', 'select'), 'anon sem select em pedidos, clientes e equipe');
+                  and not has_table_privilege('anon', 'equipe', 'select') and not has_table_privilege('anon', 'motoboys', 'select'),
+  'anon sem select em pedidos, clientes, equipe e motoboys');
+select pg_temp.ok(has_table_privilege('authenticated', 'motoboys', 'select') and not has_table_privilege('authenticated', 'motoboys', 'insert')
+                  and not has_table_privilege('authenticated', 'motoboys', 'update') and not has_table_privilege('authenticated', 'motoboys', 'delete'),
+  'authenticated só com select em motoboys (a policy deixa ler só a própria linha ativa)');
 select pg_temp.ok(has_table_privilege('anon', 'produtos', 'select') and has_table_privilege('anon', 'adicionais', 'select')
                   and has_table_privilege('anon', 'loja', 'select'), 'anon com select em produtos, adicionais e loja');
 select pg_temp.ok(not has_sequence_privilege('anon', pg_get_serial_sequence('pedidos', 'numero'), 'usage'), 'anon sem acesso à sequência do número');
@@ -86,10 +90,14 @@ select pg_temp.ok((select bool_and(has_function_privilege('anon', f, 'execute') 
 select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execute') and has_function_privilege('authenticated', f, 'execute'))
                    from unnest(array['mudar_status(uuid,text,text)', 'marcar_esgotado(text,boolean)', 'definir_loja(text)', 'remover_testes()']) f),
   'funções da equipe: só authenticated (dentro, is_equipe() decide)');
+select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execute') and has_function_privilege('authenticated', f, 'execute'))
+                   from unnest(array['entregas_em_rota()', 'confirmar_entrega(uuid)']) f),
+  'funções do motoboy: só authenticated (dentro, is_motoboy() ou is_equipe() decide)');
 select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execute') and not has_function_privilege('authenticated', f, 'execute'))
                    from unnest(array['pedido_json(pedidos)', 'resumo_item(jsonb,numeric)', 'loja_json()', 'horario_aberto(jsonb,timestamptz)',
                                      'turno_minutos(jsonb)', 'campo_texto(jsonb,integer)', 'campo_inteiro(jsonb,integer,integer,integer)',
-                                     'aparar(text)', 'minusculas(text)', 'data_iso(timestamptz)', 'horarios_validos(jsonb)', 'tocar_atualizado_em()']) f),
+                                     'aparar(text)', 'minusculas(text)', 'data_iso(timestamptz)', 'horarios_validos(jsonb)', 'tocar_atualizado_em()',
+                                     'is_motoboy()', 'entrega_json(pedidos)']) f),
   'funções internas fechadas para anon e authenticated');
 
 -- checks
