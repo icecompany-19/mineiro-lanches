@@ -33,7 +33,7 @@ node --test tests/*.test.mjs
 npx playwright test
 ```
 
-Última execução verde (`0ffe541`, antes do WIP `690fed3`): 65 Playwright, 331 SQL, 292 paridade, 48 node:test (os 48 incluem `tests/logo.test.mjs`, que precisa do poppler). O N2 já roda nesta máquina (ver Ambiente).
+Última execução (17/10, fase 3 integrada, `3441859`): lint e build ok; 514 verificações SQL; paridade 318; node:test 87 (66 ok, 21 pulados por falta de poppler); Playwright celular + desktop + e2e em 19,7 min: 514 ok, 55 pulados e 1 falha intermitente antiga (`site-ii.spec.js:587`, véu do S5, que falha 4 de 6 vezes no front de antes da fase 3). O projeto `iphone` não roda aqui (sem WebKit). Linha de base e detalhes em `docs/PLANO-FASE-3.md` §7.
 
 ## Ambiente desta máquina (Windows 11, conferido em 12/10/2026)
 

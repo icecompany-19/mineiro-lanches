@@ -160,6 +160,12 @@ Modelos: **O** = Opus (contrato, integração, revisão de segurança), **S** = 
 - F3-42: com a loja em Automático, o sábado fica fechado até as 18h. O pedido de teste é feito com "Aberta" só durante o teste, com alguém olhando o painel, e volta para "Automático" na hora; ou então às 18h, na abertura.
 - Ordem de corte se atrasar: (1) leitor de QR dentro da tela e o cabeçalho de câmera; (2) QR do cartaz; (3) logo na comanda; (4) www e cadastro aberto ficam para de manhã.
 
+**Produção (17/10, de madrugada, com o OK do Felipe):**
+- 01h30: migration `20261017000001_motoboy` aplicada no Supabase (`puwylyfmwcvpfsftsrta`; histórico registra a versão `20261017043046`). Conferido: RLS em `motoboys`, anon sem leitura e sem `execute`, só as duas RPCs abertas a quem está logado; o linter do Supabase não acusou tabela sem RLS.
+- 01h53: `loja.horarios` = 18h–0h com a quarta `null` e `loja.modo = 'auto'` (estava "Fechada" à mão, sem pedido ativo). `loja_aberta` conferida: sábado 17h59 fechado, 18h e 23h59 aberto, domingo 0h30 fechado, quarta 20h fechado, quinta 18h aberto.
+- 01h54: push `893cedb..7047e59` (19 commits) e deploy de produção na Vercel com sucesso. Smoke 11/11 em `mineirolanches.store` e em `mineiro-lanches.vercel.app`: câmera liberada só em `/motoboy/` (a Vercel aceitou a regra com lookahead), redirect `/motoboy`, canonical e JSON-LD novos, robots e sitemap. No navegador: "Fechado agora · abre hoje às 18h", quarta "fechado" na semana, tela "Entregas" do entregador. As RPCs novas respondem 401 a quem não está logado.
+- Não feito por falta de sessão no navegador (a extensão do Chrome não conectou e o navegador embutido não está logado na Vercel nem no Supabase): www → apex na Vercel (F3-33) e desligar o cadastro aberto + Site URL no Supabase (F3-34). Ficam para o aceite, com F3-40 a F3-44.
+
 ## 8. Fora de hoje (registrar em pendências)
 
 - Aviso no painel quando o motoboy confirma (hoje o cartão vai para "Concluídos" em silêncio; o som é só para pedido novo).
