@@ -1,7 +1,7 @@
 // Paridade core.js ⇄ banco: monta seleções variadas, calcula item, resumo e total com o próprio core.js (node:vm)
 // e compara com o que o criar_pedido devolve pela API HTTP local, centavo a centavo e caractere a caractere.
 // Confere também o horário (situacaoNo × horario_aberto), o "Preço a confirmar" (preco null no CONFIG: o banco
-// guarda null, o estado_cardapio devolve null e o criar_pedido recusa) e o acesso pela API (anon, logado e equipe).
+// guarda null, o estado_cardapio devolve null e o criar_pedido recusa) e o acesso pela API (anon, logado, motoboy e equipe).
 // Uso: node scripts/testar-paridade.mjs [caminho/do/core.js]
 //   API_URL (padrão http://localhost:54321), PG_URL (padrão postgresql://postgres@localhost:54322/postgres), SEMENTE
 // Pré-requisito: bash scripts/supabase-local/iniciar.sh e o supabase/setup.sql aplicado.
@@ -14,6 +14,7 @@ const PG = process.env.PG_URL || 'postgresql://postgres@localhost:54322/postgres
 const CHAVE = 'sb_publishable_local';
 const SEGREDO_LOCAL = process.env.JWT_SECRET || 'segredo-local-de-teste-com-mais-de-32-caracteres'; // só do Supabase local
 const EQUIPE = '00000000-0000-4000-8000-000000000001';
+const MOTO = '00000000-0000-4000-8000-000000000003';
 const SEMENTE = Number(process.env.SEMENTE || 20261008);
 
 let falhas = 0;
@@ -99,7 +100,9 @@ async function main() {
 
   // ponto de partida: loja aberta e usuário de teste na equipe
   sql(`update loja set modo = 'aberta' where id = 1;
-       insert into equipe (user_id, nome) values ('${EQUIPE}', 'Equipe teste') on conflict do nothing;`);
+       insert into equipe (user_id, nome) values ('${EQUIPE}', 'Equipe teste') on conflict do nothing;
+       insert into auth.users (id, email) values ('${MOTO}', 'moto@teste.local') on conflict do nothing;
+       insert into motoboys (user_id, nome) values ('${MOTO}', 'Motoboy teste') on conflict do nothing;`);
   const ping = await http('GET', '/rest/v1/loja?select=modo');
   if (ping.status !== 200) throw new Error('API local fora do ar ou sem schema (' + ping.status + '): ' + ping.texto);
 
@@ -311,9 +314,9 @@ async function main() {
     }
 
     // ================= acesso pela API =================
-    const tabelas = { produtos: 'id', adicionais: 'id', loja: 'id', pedidos: 'id', clientes: 'telefone', equipe: 'user_id' };
+    const tabelas = { produtos: 'id', adicionais: 'id', loja: 'id', pedidos: 'id', clientes: 'telefone', equipe: 'user_id', motoboys: 'user_id' };
     const valor = { id: 'gran-burger', telefone: telefones[0], user_id: EQUIPE };
-    for (const t of ['pedidos', 'clientes', 'equipe']) {
+    for (const t of ['pedidos', 'clientes', 'equipe', 'motoboys']) {
       const r = await http('GET', `/rest/v1/${t}?select=*`);
       ok(r.status >= 400, `anon GET /${t}: erro (HTTP ${r.status})`, r.texto.slice(0, 200));
     }
@@ -345,6 +348,9 @@ async function main() {
       ['marcar_esgotado', { p_produto: 'gran-burger', p_esgotado: true }],
       ['definir_loja', { p_modo: 'fechada' }],
       ['remover_testes', {}],
+      ['entregas_em_rota', {}],
+      ['confirmar_entrega', { p_id: criados[0].resp.id }],
+      ['is_motoboy', {}],
       ['resumo_item', { p_item: {}, p_combo_preco: 1 }]
     ]) {
       const r = await http('POST', `/rest/v1/rpc/${fn}`, { corpo: args });
@@ -377,6 +383,49 @@ async function main() {
       negado.status >= 400 && negado.json && negado.json.message === 'sem_permissao',
       'logado fora da equipe: mudar_status → sem_permissao'
     );
+    const listaMotoboys = await http('GET', '/rest/v1/motoboys?select=user_id', { token: estranho });
+    ok(listaMotoboys.status === 200 && Array.isArray(listaMotoboys.json) && listaMotoboys.json.length === 0, 'logado fora dos motoboys: GET /motoboys vem vazio');
+    for (const [fn, args] of [
+      ['entregas_em_rota', {}],
+      ['confirmar_entrega', { p_id: criados[0].resp.id }]
+    ]) {
+      const r = await http('POST', `/rest/v1/rpc/${fn}`, { corpo: args, token: estranho });
+      ok(r.status >= 400 && r.json && r.json.message === 'sem_permissao', `logado fora dos motoboys: ${fn} → sem_permissao`);
+    }
+
+    // motoboy pelo login do proxy: lê só a própria linha, não lê pedidos nem muda status, e vê só a lista de entregas em rota
+    const loginMoto = await http('POST', '/auth/v1/token?grant_type=password', {
+      corpo: { email: 'moto@teste.local', password: 'qualquer' }
+    });
+    const tokenMoto = loginMoto.json && loginMoto.json.access_token;
+    if (ok(loginMoto.status === 200 && tokenMoto, 'login do motoboy (moto@teste.local)')) {
+      const proprio = await http('GET', '/rest/v1/motoboys?select=user_id,ativo', { token: tokenMoto });
+      ok(
+        proprio.status === 200 && Array.isArray(proprio.json) && proprio.json.length === 1 && proprio.json[0].user_id === MOTO && proprio.json[0].ativo === true,
+        'motoboy: GET /motoboys traz só a própria linha'
+      );
+      for (const t of ['pedidos', 'clientes', 'equipe']) {
+        const r = await http('GET', `/rest/v1/${t}?select=*`, { token: tokenMoto });
+        ok(r.status === 200 && Array.isArray(r.json) && r.json.length === 0, `motoboy: GET /${t} vem vazio`);
+      }
+      const mudou = await http('POST', '/rest/v1/rpc/mudar_status', {
+        corpo: { p_id: criados[0].resp.id, p_status: 'preparo' },
+        token: tokenMoto
+      });
+      ok(mudou.status >= 400 && mudou.json && mudou.json.message === 'sem_permissao', 'motoboy: mudar_status → sem_permissao');
+      const escreveu = await http('PATCH', `/rest/v1/pedidos?id=eq.${criados[0].resp.id}`, { corpo: { status: 'entregue' }, token: tokenMoto });
+      ok(escreveu.status >= 400, `motoboy: PATCH /pedidos: erro (HTTP ${escreveu.status})`);
+      const lista = await http('POST', '/rest/v1/rpc/entregas_em_rota', { corpo: {}, token: tokenMoto });
+      ok(
+        lista.status === 200 && Array.isArray(lista.json) && lista.json.every((e) => !('itens' in e) && !('token' in e)),
+        'motoboy: entregas_em_rota devolve uma lista sem itens e sem token'
+      );
+      const sumiu = await http('POST', '/rest/v1/rpc/confirmar_entrega', {
+        corpo: { p_id: '00000000-0000-4000-8000-00000000abcd' },
+        token: tokenMoto
+      });
+      ok(sumiu.status >= 400 && sumiu.json && sumiu.json.message === 'nao_encontrado', 'motoboy: confirmar_entrega de id inexistente → nao_encontrado');
+    }
 
     // equipe pelo login do proxy: lê pedidos e muda status
     const login = await http('POST', '/auth/v1/token?grant_type=password', {

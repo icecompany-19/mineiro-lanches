@@ -10,6 +10,7 @@
 set client_min_messages = notice;
 
 \set equipe 00000000-0000-4000-8000-000000000001
+\set moto 00000000-0000-4000-8000-000000000003
 \set estranho 00000000-0000-4000-8000-0000000000ff
 
 create function pg_temp.ok(p_cond boolean, p_msg text) returns void language plpgsql as $$
@@ -90,10 +91,12 @@ create function pg_temp.erro_item(p_id text, p_extra jsonb default '{}') returns
   select pg_temp.erro_pedido(pg_temp.pedido(jsonb_build_array(pg_temp.item(p_id, p_extra)), pg_temp.cliente(pg_temp.tel_novo())));
 $$;
 
--- ponto de partida igual para todos: loja aberta, nada esgotado, tudo ativo, usuário de teste na equipe
+-- ponto de partida igual para todos: loja aberta, nada esgotado, tudo ativo, usuário de teste na equipe e motoboy de teste cadastrado
 delete from pedidos where cliente_telefone like '119000%' or origem = 'exemplo';
 delete from clientes where telefone like '119000%';
 update loja set modo = 'aberta', aceita_fechada = false, combo_preco = 14.90;
 update produtos set esgotado_dia = null, ativo = true;
 update adicionais set ativo = true;
 insert into equipe (user_id, nome) values (:'equipe', 'Equipe teste') on conflict do nothing;
+insert into auth.users (id, email) values (:'moto', 'moto@teste.local') on conflict do nothing;
+insert into motoboys (user_id, nome) values (:'moto', 'Motoboy teste') on conflict do nothing;

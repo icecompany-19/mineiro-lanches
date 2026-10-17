@@ -36,3 +36,6 @@ alter default privileges in schema public grant all on sequences to anon, authen
 
 -- Usuário da equipe para testes (login local: equipe@teste.local / qualquer senha)
 insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000001', 'equipe@teste.local') on conflict do nothing;
+
+-- Motoboy para testes (login local: moto@teste.local / qualquer senha). Precisa estar em motoboys: o supabase/tests/ insere.
+insert into auth.users (id, email) values ('00000000-0000-4000-8000-000000000003', 'moto@teste.local') on conflict do nothing;
