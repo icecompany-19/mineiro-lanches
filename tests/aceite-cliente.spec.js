@@ -65,18 +65,20 @@ const FIO = 'rgb(255, 204, 0)';
 const PLACA_ESCURA = 'rgb(150, 4, 10)';
 const VERMELHO_LUZ = 'rgb(255, 106, 92)';
 const NEON_ABERTO = 'rgb(91, 227, 138)';
-// quarta-feira, 14/10/2026: o turno é 19h–0h. 20:00 em São Paulo = 23:00Z (aberto); 14:00 = 17:00Z (fechado)
-const AS_20H = new Date('2026-10-14T23:00:00Z');
-const AS_14H = new Date('2026-10-14T17:00:00Z');
+// quinta-feira, 15/10/2026 (um dia normal: aberta das 18h à meia-noite): 20:00 em São Paulo = 23:00Z (aberto); 14:00 = 17:00Z (fechado)
+const AS_20H = new Date('2026-10-15T23:00:00Z');
+const AS_14H = new Date('2026-10-15T17:00:00Z');
+// quarta-feira, 14/10/2026, 20:00 em São Paulo: a loja não abre às quartas (horarios[3] = null)
+const QUARTA_20H = new Date('2026-10-14T23:00:00Z');
 const TOKEN = '8c1f6a52-4b7e-4d3a-9f10-2a6b5c4d3e21';
 // saída de acompanhar_pedido (pedido_json): o acompanhamento não grava nada no banco
 const pedidoNoStatus = (status) => ({
   numero: 7,
-  criadoEm: '2026-10-14T22:52:00+00:00',
+  criadoEm: '2026-10-15T22:52:00+00:00',
   status,
   modo: 'entrega',
   total: 42.8,
-  historico: [{ status: 'novo', em: '2026-10-14T22:52:00+00:00' }].concat(status === 'novo' ? [] : [{ status: 'preparo', em: '2026-10-14T22:55:00+00:00' }]),
+  historico: [{ status: 'novo', em: '2026-10-15T22:52:00+00:00' }].concat(status === 'novo' ? [] : [{ status: 'preparo', em: '2026-10-15T22:55:00+00:00' }]),
   itens: [
     { nome: 'Gran Burger', qtd: 1, resumo: 'Completo', subtotal: 25.9 },
     { nome: 'X-Burguer', qtd: 1, resumo: 'Completo', subtotal: 16.9 }
@@ -344,7 +346,8 @@ test.describe('aba oculta pausa as animações infinitas', () => {
 // ---------- 5. a luz segue o truck ----------
 const CASOS_DE_LUZ = [
   { modo: 'auto', hora: AS_20H, rotulo: 'automático às 20h', luz: 'acesa', motivo: 'turno', classe: 'aberto', cor: NEON_ABERTO, texto: /^Aberto agora · até meia-noite$/ },
-  { modo: 'auto', hora: AS_14H, rotulo: 'automático às 14h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre hoje às 19h$/ },
+  { modo: 'auto', hora: AS_14H, rotulo: 'automático às 14h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre hoje às 18h$/ },
+  { modo: 'auto', hora: QUARTA_20H, rotulo: 'automático numa quarta às 20h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre amanhã às 18h$/ },
   { modo: 'fechada', hora: AS_20H, rotulo: 'fechada dentro do horário (20h)', luz: 'apagada', motivo: 'pausa', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · o truck pausou os pedidos$/ },
   { modo: 'aberta', hora: AS_14H, rotulo: 'aberta fora do horário (14h)', luz: 'acesa', motivo: 'turno', classe: 'aberto', cor: NEON_ABERTO, texto: /^Aberto agora \(horário estendido\)$/ }
 ];

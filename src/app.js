@@ -185,15 +185,15 @@ export function iniciarApp() {
   }
   // de minuto em minuto, na virada do minuto (o texto "abre às 19h" muda na hora certa)
   function agendarStatus() { setTimeout(function () { atualizarStatus(); agendarStatus(); }, 60000 - (Date.now() % 60000) + 50); }
-  // 7 lâmpadas (hoje acesa) e a régua de cada dia: escala 18h → 2h (480 min)
+  // 7 lâmpadas (hoje acesa) e a régua de cada dia: escala 18h → 0h (360 min); o que o banco mandar fora dessa janela é cortado na ponta da régua
   function renderSemana(el) {
-    var a = ML.horario.agora(), ini = 1080, faixa = 480;
+    var a = ML.horario.agora(), ini = 1080, faixa = 360;
     var turnoAtual = ML.horario.situacaoNo(a.dia, a.min);
     var ordem = [0, 1, 2, 3, 4, 5, 6];
     el.innerHTML = ordem.map(function (d) {
       var t = ML.horario.turnos[d], hoje = d === a.dia, nome = ML.fmt.dia(d);
       var barra, hora;
-      if (t) { barra = '<span class="faixa" style="left:' + ((t.abre - ini) / faixa * 100) + '%;width:' + ((t.fecha - t.abre) / faixa * 100) + '%"></span>'; hora = ML.fmt.hora(t.abre) + '–' + ML.fmt.hora(t.fecha).replace('meia-noite', '0h'); }
+      if (t) { var de = Math.max(t.abre, ini), ate = Math.min(t.fecha, ini + faixa); barra = '<span class="faixa" style="left:' + ((de - ini) / faixa * 100) + '%;width:' + (Math.max(ate - de, 0) / faixa * 100) + '%"></span>'; hora = ML.fmt.hora(t.abre) + '–' + ML.fmt.hora(t.fecha).replace('meia-noite', '0h'); }
       else { barra = ''; hora = 'fechado'; }
       var marca = '';
       var minRel = turnoAtual.aberto && turnoAtual.turnoDia === d ? (a.min < ini ? a.min + 1440 : a.min) : (hoje ? a.min : -1);

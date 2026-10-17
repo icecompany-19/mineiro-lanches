@@ -30,10 +30,10 @@
       cheddar: 'Diretamente pros amantes de cheddar!',
       regiao: 'Suzano e região'
     },
-    // 0 = domingo. Todos os dias das 19h à meia-noite; sexta e sábado até 1h (o dono confirmou o domingo em 10/2026).
+    // 0 = domingo. Todos os dias das 18h à meia-noite (sexta e sábado também fecham à meia-noite) e fechado às quartas (pedido do dono em 16/10/2026).
     // null = fechado naquele dia (o banco pode mandar outros horários pelo estado_cardapio)
-    horarios: { 0: ['19:00', '00:00'], 1: ['19:00', '00:00'], 2: ['19:00', '00:00'], 3: ['19:00', '00:00'], 4: ['19:00', '00:00'], 5: ['19:00', '01:00'], 6: ['19:00', '01:00'] },
-    horarioTexto: ['Domingo a quinta, das 19h à meia-noite', 'Sexta e sábado, das 19h à 1h'],
+    horarios: { 0: ['18:00', '00:00'], 1: ['18:00', '00:00'], 2: ['18:00', '00:00'], 3: null, 4: ['18:00', '00:00'], 5: ['18:00', '00:00'], 6: ['18:00', '00:00'] },
+    horarioTexto: ['Todos os dias, das 18h à meia-noite', 'Fechado às quartas'],
     // entrega (cliente, 16/10/2026): prazo de até 50 min, podendo chegar antes; taxa = km rodado (arredondado para cima) x porKm + fixa.
     // origem: Rua Eliziel Alves Costa, trecho do nº 300 (CEP 08674-185), coordenadas do OpenStreetMap no nível da rua; confirmar o ponto exato do truck.
     // taxaAtiva: o estado_cardapio liga quando o banco já calcula a taxa (taxaKm); sem isso o checkout deixa "a combinar" e o total não diverge do servidor
