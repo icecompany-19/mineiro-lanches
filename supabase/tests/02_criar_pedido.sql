@@ -93,8 +93,8 @@ set local role anon;
 select pg_temp.igual(pg_temp.erro_item('x-burguer', '{"adicionais":[{"id":"pizza","qtd":1}]}'), 'produto_invalido', 'adicional inativo: produto_invalido');
 
 -- ================= removidos: só os ingredientes, ordenados =================
-select pg_temp.ok(pg_temp.um('gran-bacon-onion', '{"completo":false,"removidos":["Tomate em rodelas","Abacaxi","Bacon em fatias","Cebola roxa","3 onion rings","Tomate em rodelas","Bacon"]}')
-                  @> '{"completo":false,"removidos":["3 onion rings","Bacon em fatias","Cebola roxa","Tomate em rodelas"],"resumo":"Sem 3 onion rings, bacon em fatias, cebola roxa, tomate em rodelas · Não prensado"}',
+select pg_temp.ok(pg_temp.um('gran-bacon-onion', '{"completo":false,"removidos":["Tomate em rodelas","Abacaxi","Bacon em fatias","Cebola roxa","2 onion rings","Tomate em rodelas","Bacon"]}')
+                  @> '{"completo":false,"removidos":["2 onion rings","Bacon em fatias","Cebola roxa","Tomate em rodelas"],"resumo":"Sem 2 onion rings, bacon em fatias, cebola roxa, tomate em rodelas · Não prensado"}',
   'removidos fora dos ingredientes descartados (Abacaxi; Bacon, que aqui é "Bacon em fatias"), sem repetir e em ordem');
 select pg_temp.ok(pg_temp.um('gran-big-tudo', '{"completo":false,"removidos":["Requeijão","Batata palha"]}')
                   @> '{"removidos":["Batata palha","Requeijão"],"resumo":"Sem batata palha, requeijão · Não prensado"}',

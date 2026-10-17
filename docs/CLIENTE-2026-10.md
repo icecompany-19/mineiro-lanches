@@ -36,7 +36,7 @@ Fonte: conversa de WhatsApp com Cauan Oliveira, de 06 a 12/10/2026, exportada em
 | Item | Composição |
 |---|---|
 | Gran Bacon | Pão seladinho na chapa, maionese grill, barbecue, hambúrguer angus 200 g, cheddar cremoso, mussarela, bacon em tiras, alface americana, tomate em rodelas, cebola roxa |
-| Gran Bacon Onion | Pão seladinho na chapa, maionese grill, barbecue, hambúrguer angus 200 g, cheddar cremoso, bacon em fatias, 3 onion rings, alface americana, tomate em rodelas, cebola roxa |
+| Gran Bacon Onion | Pão seladinho na chapa, maionese grill, barbecue, hambúrguer angus 200 g, cheddar cremoso, bacon em fatias, 2 onion rings, alface americana, tomate em rodelas, cebola roxa |
 | Gran Salada | Pão seladinho na chapa, maionese grill, hambúrguer angus 200 g, cheddar cremoso, mussarela, barbecue, alface americana, tomate em rodelas, cebola roxa |
 
 **Tradicionais** (hambúrguer de 90 g):

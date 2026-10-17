@@ -13,7 +13,7 @@ select pg_temp.ok((select combo_preco = 14.90 and horarios = '{"0":["19:00","01:
   'seed: loja com combo 14,90 e horários do CONFIG (seg/ter/qui 19h–0h e sex/sáb/dom 19h–1h, quarta fechada)');
 select pg_temp.igual((select string_agg(id, ',' order by ordem) from (select id, ordem from produtos order by ordem limit 3) t),
   'gran-burger,gran-burger-bacon,gran-salada', 'seed: ordem do CONFIG');
-select pg_temp.ok((select ingredientes = array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '3 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']
+select pg_temp.ok((select ingredientes = array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '2 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']
                    and categoria = 'artesanais' and preco = 34.90 and foto = 'gran-bacon-onion' from produtos where id = 'gran-bacon-onion'),
   'seed: ingredientes = ing do CONFIG, com categoria, preço e foto');
 select pg_temp.ok((select foto is null and ingredientes = '{}' and nome = 'Porção de batata turbinada' and preco = 39.90 from produtos where id = 'porcao-batata'),
