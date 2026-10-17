@@ -166,7 +166,8 @@ Modelos: **O** = Opus (contrato, integração, revisão de segurança), **S** = 
 
 - Forma de pagamento e troco no checkout, para o motoboy saber o que cobrar (`CONFIG.pagamentos = null`).
 - Volta automática do modo manual para "Automático" (pg_cron) e `horarioTexto` derivado de `horarios`.
-- Prova de entrega no endereço (código mostrado ao cliente ou geolocalização); hoje o QR prova só que a comanda estava na mão do motoboy.
+- Prova de entrega no endereço (código mostrado ao cliente ou geolocalização). Hoje o QR **não** prova nem que a comanda estava com o motoboy: o `id` do pedido volta ao cliente no `criar_pedido`, então o próprio cliente consegue montar o link e mandá-lo ao entregador. O dano é limitado (precisa de um motoboy logado abrindo o link). Saídas: o link pedir um toque de confirmação, ou o QR levar um código curto que não seja o `id`.
+- Revisão de segurança (17/10, veredito PASS), pendências baixas: `confirmar_entrega` não recorta o dia de operação (um motoboy com o `id` de um pedido antigo vê nome, telefone e endereço; no caminho "já entregue", devolver só `{id, numero, status}`); o `acompanhar_pedido` mostra ao cliente o campo `por` ("motoboy"/"equipe") do histórico; o filtro por `dia_operacional` em `entregas_em_rota` não usa índice (irrelevante com ~30 pedidos por dia); falta teste de duas leituras simultâneas do QR (o `for update` cobre, sem prova automatizada).
 - Herói do site dizer "amanhã" numa quarta (`hero.js`, título animado).
 - Versionar no repositório o gatilho `entrar_na_equipe` e completar o histórico de migrations do Supabase.
 - Instalar o WebKit do Playwright; aposentar o N1 nos documentos.
