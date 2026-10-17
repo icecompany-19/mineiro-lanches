@@ -31,7 +31,10 @@ create function pg_temp.chaves(p jsonb) returns text language sql as $$
   select string_agg(k, ',' order by k collate "C") from jsonb_object_keys(p) k
 $$;
 
-update motoboys set ativo = true where user_id = :'moto';
+-- a linha do motoboy de teste pode já existir com outro nome ou desativada (sobra do e2e ou de quem mexeu antes): o teste não depende disso
+update motoboys set nome = 'Motoboy teste', ativo = true where user_id = :'moto';
+-- e nenhum outro motoboy cadastrado antes interfere nas contagens de "só a própria linha" (a transação desfaz tudo no fim)
+delete from motoboys where user_id <> :'moto';
 -- pedidos de outras sessões que estejam em rota hoje estragariam a contagem das listas (a transação desfaz tudo no fim)
 update pedidos set status = 'entregue' where status = 'rota';
 
