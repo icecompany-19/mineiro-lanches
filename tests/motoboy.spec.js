@@ -22,11 +22,11 @@ const lerEnv = (arq) =>
 const API = new URL(lerEnv('.env.development').VITE_SUPABASE_URL).origin;
 const HOST_PRODUCAO = new URL(lerEnv('.env.production').VITE_SUPABASE_URL).host;
 
-// CSP e Permissions-Policy de produção, com o host do Supabase trocado pelo do build de teste e sem o
-// upgrade-insecure-requests (a página de teste é http://localhost)
+// CSP e Permissions-Policy de produção de /motoboy/ (regra própria do entregador, que repete os cabeçalhos da global),
+// com o host do Supabase trocado pelo do build de teste e sem o upgrade-insecure-requests (a página de teste é http://localhost)
 const VERCEL = JSON.parse(readFileSync(join(RAIZ, 'vercel.json'), 'utf8'));
 const cabecalho = (fonte, chave) => VERCEL.headers.find((r) => r.source === fonte).headers.find((h) => h.key === chave).value;
-const CSP = cabecalho('/(.*)', 'Content-Security-Policy')
+const CSP = cabecalho('/motoboy/(.*)', 'Content-Security-Policy')
   .replaceAll('https://' + HOST_PRODUCAO, API)
   .replaceAll('wss://' + HOST_PRODUCAO, API.replace(/^http/, 'ws'))
   .replace(/;\s*upgrade-insecure-requests/, '');

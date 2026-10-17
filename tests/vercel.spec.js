@@ -217,6 +217,27 @@ test('Permissions-Policy: câmera liberada só em /motoboy/', async ({ request }
   expect(outra.headers()['permissions-policy']).toBe(PERMISSOES);
 });
 
+// C4 (plano, seção 7): em vez de depender de como a Vercel junta duas regras que dão o mesmo cabeçalho, a regra global
+// não alcança /motoboy/ e a regra do entregador repete os mesmos cabeçalhos (CSP incluída) com camera=(self).
+// Este teste pega a CSP ou qualquer outro cabeçalho que mude numa das regras e não na outra.
+test('vercel.json: a regra do entregador repete os cabeçalhos da global (só a câmera muda)', () => {
+  const cfg = JSON.parse(readFileSync(join(RAIZ, 'vercel.json'), 'utf8'));
+  const global = cfg.headers[0]; // tests/apoio/aceite.js lê a CSP de headers[0]
+  const moto = cfg.headers.find((r) => r.source === '/motoboy/(.*)');
+  expect(global.source).toBe('/((?!motoboy(?:/|$)).*)');
+  expect(moto, 'regra /motoboy/(.*)').toBeTruthy();
+  const mapa = (regra) => Object.fromEntries(regra.headers.map((h) => [h.key, h.value]));
+  const { 'Permissions-Policy': camGlobal, ...restoGlobal } = mapa(global);
+  const { 'Permissions-Policy': camMoto, 'X-Robots-Tag': robots, ...restoMoto } = mapa(moto);
+  expect(restoMoto).toEqual(restoGlobal);
+  expect(camGlobal).toBe(PERMISSOES);
+  expect(camMoto).toBe(PERMISSOES_MOTOBOY);
+  expect(robots).toBe('noindex, nofollow');
+  // nenhuma outra regra mexe em Permissions-Policy
+  const outras = cfg.headers.filter((r) => r !== global && r !== moto && r.headers.some((h) => h.key === 'Permissions-Policy'));
+  expect(outras).toEqual([]);
+});
+
 test('manifestos e ícones', async ({ request }) => {
   const manifestos = {
     '/manifest.webmanifest': {
