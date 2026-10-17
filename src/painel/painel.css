@@ -352,7 +352,8 @@
 .pn-comanda { box-sizing: border-box; width: 72mm; max-width: 100%; padding: 3mm; background: var(--papel); color: var(--tinta); font: 700 13px/1.35 ui-monospace, 'Courier New', Consolas, monospace; box-shadow: var(--sombra-card); }
 .pn-comanda p { margin: 0 0 2px; }
 .pn-comanda hr { border: 0; border-top: 1px dashed var(--tinta); margin: 6px 0; }
-.pn-c-loja { text-align: center; font-weight: 700; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; }
+/* logo oficial no topo do cupom (arte intacta: sem filter, blend nem máscara); a altura vem do width/height do <img> */
+.pn-c-logo { display: block; width: 38mm; height: auto; margin: 0 auto 2mm; }
 .pn-c-ex { text-align: center; font-weight: 700; }
 .pn-c-num { text-align: center; font-weight: 700; font-size: 44px; line-height: 1.1; }
 .pn-c-modo { text-align: center; font-weight: 700; font-size: 16px; text-transform: uppercase; }
@@ -364,6 +365,11 @@
 .pn-c-v { font-weight: 800; }
 .pn-c-taxa { font-weight: 800; }
 .pn-c-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 18px; margin-top: 4px; }
+/* QR do entregador (só em pedido de entrega): o <svg> traz o tamanho em mm; a legenda e o número repetido saem em negrito */
+.pn-c-qr { text-align: center; break-inside: avoid; page-break-inside: avoid; }
+.pn-c-qr svg { display: block; margin: 0 auto; max-width: 100%; }
+.pn-c-qr .pn-c-qr-t { margin: 2mm 0 0; font-weight: 800; font-size: 12px; letter-spacing: .02em; }
+.pn-c-qr .pn-c-qr-n { margin: 0; font-weight: 800; font-size: 22px; line-height: 1.15; }
 
 /* ---------- animações ---------- */
 @keyframes pn-entra { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }

@@ -688,15 +688,53 @@
   const COMANDA_MM = 72; // largura útil da impressora (papel 72 mm × 210 mm, 203 dpi)
   // A página de impressão ganha a medida do próprio cupom (72 mm de largura × a altura que a comanda ocupa), sem margem:
   // o cupom sai com as mesmas proporções da visualização, venha a impressão do cartão, do detalhe ou da própria comanda.
-  function imprimirComanda() {
-    const c = document.querySelector('.pn-comanda');
-    if (!c) return;
+  function imprimirAgora(c) {
     const alturaMm = Math.max(40, Math.ceil(c.getBoundingClientRect().height * 25.4 / 96) + 2);
     let el = document.getElementById('pn-pagina-impressao');
     if (!el) { el = document.createElement('style'); el.id = 'pn-pagina-impressao'; document.head.appendChild(el); }
     el.textContent = '@page { size: ' + COMANDA_MM + 'mm ' + alturaMm + 'mm; margin: 0; }';
     window.addEventListener('afterprint', () => el.remove(), { once: true });
     window.print();
+  }
+  // A logo da comanda é uma <img>. Se ela ainda não chegou (primeira vez, rede lenta), a impressão espera por ela, no máximo
+  // ESPERA_IMG_MS, para não sair cupom sem a arte nem medir a altura antes da hora. Com as imagens prontas (o caso comum)
+  // segue síncrona, como sempre: os testes leem window.__impressoes logo depois do clique.
+  const ESPERA_IMG_MS = 2000;
+  function esperarImagem(img) {
+    if (img.decode) return img.decode().catch(() => {});
+    return new Promise(ok => { img.addEventListener('load', ok, { once: true }); img.addEventListener('error', ok, { once: true }); });
+  }
+  const aguardando = new WeakSet(); // comandas já esperando a imagem: um segundo clique em Imprimir não imprime duas vezes
+  function imprimirComanda() {
+    const c = document.querySelector('.pn-comanda');
+    if (!c) return;
+    const pendentes = Array.from(c.querySelectorAll('img')).filter(i => !i.complete);
+    if (!pendentes.length) { imprimirAgora(c); return; }
+    if (aguardando.has(c)) return;
+    aguardando.add(c);
+    let seguiu = false;
+    const limite = setTimeout(() => seguir(), ESPERA_IMG_MS);
+    const seguir = () => {
+      if (seguiu) return;
+      seguiu = true;
+      aguardando.delete(c);
+      clearTimeout(limite);
+      if (!c.isConnected) return; // o diálogo foi fechado durante a espera: não imprime
+      try { imprimirAgora(c); } catch { toast('A impressão não está disponível aqui. Use a visualização da comanda.'); }
+    };
+    Promise.all(pendentes.map(esperarImagem)).then(seguir);
+  }
+  // QR do entregador: só em pedido de entrega com id e com o gerador carregado (window.MLQr, de main-painel.js).
+  // Carrega <site>/motoboy/#<id do pedido>; a leitura marca o pedido como entregue (docs/PLANO-FASE-3.md, C3).
+  // Se falhar ao gerar, a comanda sai sem o QR, nunca sem a comanda.
+  function qrEntregaHTML(p) {
+    const Q = window.MLQr;
+    if (p.modo !== 'entrega' || !p.id || !Q || typeof Q.qrSvg !== 'function') return '';
+    try {
+      const num = ML.fmt.numero(p.numero);
+      const svg = Q.qrSvg(Q.base + '/motoboy/#' + p.id, { rotulo: 'QR code da entrega do pedido ' + num });
+      return `<hr><div class="pn-c-qr">${svg}<p class="pn-c-qr-t">ENTREGADOR: LEIA AO ENTREGAR</p><p class="pn-c-qr-n">${esc(num)}</p></div>`;
+    } catch { return ''; }
   }
   function comandaHTML(p) {
     const itens = p.itens.map(it => {
@@ -709,7 +747,7 @@
       return `<div class="pn-c-item"><div class="pn-c-lin"><span>${it.qtd}x ${esc(it.nome)}</span><span>${brl(it.subtotal)}</span></div>${l.length ? `<div class="pn-c-sel">${esc(l.join('  '))}</div>` : ''}</div>`;
     }).join('');
     return `<div class="pn-comanda" data-comanda>
-      <p class="pn-c-loja">${esc(ML.CONFIG.nome)}</p>
+      <img class="pn-c-logo" src="/assets/logo/logo-512.webp" width="512" height="416" alt="Mineiro Lanche food truck" decoding="sync">
       ${p.origem === 'exemplo' ? '<p class="pn-c-ex">** PEDIDO DE EXEMPLO **</p>' : ''}
       <p class="pn-c-num">${ML.fmt.numero(p.numero)}</p>
       <p class="pn-c-modo">${esc(modoLabel(p.modo))}${p.mesa ? ' · MESA ' + esc(p.mesa) : ''}${p.origem === 'qrcode' ? ' · QR' : ''}</p>
@@ -723,6 +761,7 @@
       ${p.modo === 'entrega' ? `<p class="pn-c-taxa">${esc(p.taxaEntrega != null ? taxaTxt(p).replace(/^Entrega /, 'ENTREGA: ') : taxaTxt(p).toUpperCase())}</p>` : ''}
       <p>${esc(pagTxt(p))}</p>
       <p class="pn-c-total"><span>TOTAL</span><span>${brl(p.total)}</span></p>
+      ${qrEntregaHTML(p)}
     </div>`;
   }
   function abrirComanda(id) {
