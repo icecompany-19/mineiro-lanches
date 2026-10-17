@@ -1,6 +1,6 @@
 // Trava dos seletores e textos que os testes usam (docs/DIRECAO-VISUAL.md §5.0): node --test tests/seletores.test.mjs
 // Sem navegador nem banco. Falha se algum id, data-*, classe ou texto protegido sumir do front (index.html,
-// src/**/*.js, src/**/*.css, painel/index.html). Renomear um deles quebra o Playwright; aqui o aviso vem em 1 s.
+// src/**/*.js, src/**/*.css, painel/index.html, motoboy/index.html). Renomear um deles quebra o Playwright; aqui o aviso vem em 1 s.
 import { test as teste } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -22,7 +22,7 @@ function arquivos(pasta) {
 }
 
 const FONTES = NODE_TEST
-  ? [join(RAIZ, 'index.html'), join(RAIZ, 'painel', 'index.html'), ...arquivos(join(RAIZ, 'src'))].map((f) => ({
+  ? [join(RAIZ, 'index.html'), join(RAIZ, 'painel', 'index.html'), join(RAIZ, 'motoboy', 'index.html'), ...arquivos(join(RAIZ, 'src'))].map((f) => ({
       f: f.slice(RAIZ.length + 1),
       txt: readFileSync(f, 'utf8')
     }))

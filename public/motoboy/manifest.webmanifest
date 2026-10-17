@@ -1,0 +1,18 @@
+{
+  "id": "/motoboy/",
+  "name": "Entregas · Mineiro Lanche",
+  "short_name": "Entregas",
+  "description": "Confirmação das entregas do Mineiro Lanche, para o entregador.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/motoboy/",
+  "scope": "/motoboy/",
+  "display": "standalone",
+  "theme_color": "#120B09",
+  "background_color": "#120B09",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

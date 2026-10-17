@@ -7,11 +7,12 @@
   "redirects": [
     { "source": "/q", "destination": "/?origem=qrcode", "statusCode": 302 },
     { "source": "/q/:mesa", "destination": "/?origem=qrcode&mesa=:mesa", "statusCode": 302 },
-    { "source": "/painel", "destination": "/painel/", "statusCode": 302 }
+    { "source": "/painel", "destination": "/painel/", "statusCode": 302 },
+    { "source": "/motoboy", "destination": "/motoboy/", "statusCode": 302 }
   ],
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/((?!motoboy(?:/|$)).*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
@@ -27,6 +28,19 @@
     { "source": "/", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
     { "source": "/painel/", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
     { "source": "/painel/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] },
+    { "source": "/motoboy/", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+    {
+      "source": "/motoboy/(.*)",
+      "headers": [
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://puwylyfmwcvpfsftsrta.supabase.co wss://puwylyfmwcvpfsftsrta.supabase.co https://viacep.com.br https://nominatim.openstreetmap.org https://router.project-osrm.org; manifest-src 'self'; media-src 'self'; worker-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(self), microphone=(), geolocation=(), payment=()" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
     { "source": "/_app/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
     { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }] },
     { "source": "/qr/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] },

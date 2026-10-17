@@ -7,7 +7,7 @@ const SPRITE = resolve(RAIZ, 'src/partials/sprite.svg');
 const MARCADOR = '<!-- sprite -->';
 const FOTOS = resolve(RAIZ, 'public/assets/fotos.json');
 
-// Injeta o sprite de ícones (src/partials/sprite.svg) no lugar de <!-- sprite --> das duas páginas.
+// Injeta o sprite de ícones (src/partials/sprite.svg) no lugar de <!-- sprite --> das três páginas.
 // Os <use href="#i-…"> continuam apontando para o mesmo documento.
 function sprite() {
   const ler = () =>
@@ -69,7 +69,7 @@ function preloadLetreiro() {
   };
 }
 
-// Duas páginas: cliente (bio, cardápio, site, acompanhar) e painel (equipe, com login).
+// Três páginas: cliente (bio, cardápio, site, acompanhar), painel (equipe, com login) e motoboy (entregador, com login).
 // Os bundles do Vite vão para /_app (hash no nome, cache imutável); as fotos ficam em /assets (public/).
 export default defineConfig({
   plugins: [sprite(), fotos(), preloadLetreiro()],
@@ -79,7 +79,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         cliente: resolve(RAIZ, 'index.html'),
-        painel: resolve(RAIZ, 'painel/index.html')
+        painel: resolve(RAIZ, 'painel/index.html'),
+        motoboy: resolve(RAIZ, 'motoboy/index.html')
       }
     }
   },
