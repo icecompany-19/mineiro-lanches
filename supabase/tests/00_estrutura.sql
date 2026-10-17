@@ -22,10 +22,10 @@ select pg_temp.ok((select foto is null and ingredientes = '{}' and nome = 'Porç
 -- "Preço a confirmar": preco null no CONFIG vai null para o banco (o criar_pedido recusa; 02 e 05)
 select pg_temp.ok((select is_nullable = 'YES' from information_schema.columns
                    where table_schema = 'public' and table_name = 'produtos' and column_name = 'preco'), 'produtos.preco aceita null');
-select pg_temp.ok((select preco is null and ativo and tipo = 'lanche' and categoria = 'hotdog' and nome = 'Hot Dog CBO Turbo'
+select pg_temp.ok((select preco = 34.90 and ativo and tipo = 'lanche' and categoria = 'hotdog' and nome = 'Hot Dog CBO Turbo'
                    and 'Mussarela gratinada' = any (ingredientes) from produtos where id = 'dog-cbo-turbo'),
-  'seed: Hot Dog CBO Turbo ativo, no hot dog, com preço null');
-select pg_temp.igual((select string_agg(id, ',') from produtos where preco is null), 'dog-cbo-turbo', 'seed: só o CBO Turbo sem preço');
+  'seed: Hot Dog CBO Turbo ativo, no hot dog, por 34,90');
+select pg_temp.ok(not exists (select 1 from produtos where preco is null), 'seed: todos os produtos têm preço confirmado');
 select pg_temp.igual(pg_temp.erro($$update produtos set preco = -0.01 where id = 'gran-burger'$$), '23514', 'check: preço negativo continua recusado');
 
 -- seed de novo: não mexe em esgotado, o CONFIG manda no ativo (quem saiu e voltou é reativado; quem saiu fica
@@ -40,7 +40,7 @@ insert into adicionais (id, nome, preco) values ('saiu-do-config', 'Antigo', 7.5
 select pg_temp.ok((select preco = 25.90 and esgotado_dia = dia_operacional() from produtos where id = 'gran-burger'),
   'seed repetido: volta o preço e preserva esgotado_dia');
 select pg_temp.ok((select ativo from produtos where id = 'gran-burger'), 'seed repetido: produto que voltou ao CONFIG fica ativo de novo');
-select pg_temp.ok((select preco is null from produtos where id = 'dog-cbo-turbo'), 'seed repetido: preço null do CONFIG vale por cima do banco');
+select pg_temp.ok((select preco = 34.90 from produtos where id = 'dog-cbo-turbo'), 'seed repetido: preço 34,90 do CONFIG vale por cima do banco');
 select pg_temp.ok((select ativo and preco = 7.50 from adicionais where id = 'bacon'), 'seed repetido: adicional que voltou ao CONFIG fica ativo de novo');
 select pg_temp.ok((select not ativo from produtos where id = 'saiu-do-config'), 'seed repetido: produto fora do CONFIG fica inativo');
 select pg_temp.ok((select not ativo from adicionais where id = 'saiu-do-config'), 'seed repetido: adicional fora do CONFIG fica inativo');

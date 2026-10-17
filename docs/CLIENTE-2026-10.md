@@ -28,7 +28,7 @@ Fonte: conversa de WhatsApp com Cauan Oliveira, de 06 a 12/10/2026, exportada em
 - **Base:** pão médio, maionese, ketchup, alface, purê de batata, azeite, sal, batata palha, cheddar e catupiry.
 - **Médio:** 1 salsicha. **Max:** 2 salsichas. **Super:** 3 salsichas. As versões Frango seguem como estão no cardápio impresso.
 - **Dog Bacon:** a base com bacon. **Dog Pizza:** a base com a cobertura pizza. É o adicional "Pizza" (queijo gratinado e orégano, como na foto do "Hot Dog Super Pizza").
-- **Hot Dog CBO Turbo** (item novo): pão de dog, 3 salsichas Perdigão, maionese, ketchup, alface, azeite, sal, purê de batata, batata palha, cheddar, catupiry, queijo mussarela gratinado e bacon. **Preço não informado** ("depois mando os valores separado").
+- **Hot Dog CBO Turbo**: pão de dog, 3 salsichas Perdigão, maionese, ketchup, alface, azeite, sal, purê de batata, batata palha, cheddar, catupiry, queijo mussarela gratinado e bacon. **R$ 34,90**, confirmado pelo dono em 17/10/2026.
 - Os três tamanhos podem usar a mesma foto (a do Dog Max).
 
 **Artesanais** (hambúrguer angus 200 g, "pão seladinho na chapa"):

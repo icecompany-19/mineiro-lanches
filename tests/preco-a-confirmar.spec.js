@@ -1,4 +1,4 @@
-// Item com "Preço a confirmar" (preco null no CONFIG e no banco) e dados da loja de outubro (docs/CLIENTE-2026-10.md):
+// Preço do CBO Turbo confirmado em R$ 34,90 e proteção caso um produto perca o preço no banco:
 // o card mostra "Preço a confirmar", a ficha não deixa adicionar e oferece "Consultar no WhatsApp" com a mensagem
 // pronta, e o item nunca fica na sacola. O horário da semana mostra o domingo aberto.
 // Só comportamento: o visual definitivo é do agente de design.
@@ -12,7 +12,13 @@ const sacolaGuardada = (page) => page.evaluate(() => JSON.parse(localStorage.get
 test('Preço a confirmar: aparece no cardápio, não vai para a sacola e oferece o WhatsApp', async ({ page }) => {
   const erros = [];
   page.on('pageerror', (e) => erros.push(e.message));
-  // o estado do banco também diz null (o front não inventa preço)
+  // simula o preço retirado no banco (o CBO Turbo de produção custa R$ 34,90).
+  await page.route('**/rest/v1/rpc/estado_cardapio', async (r) => {
+    const resposta = await r.fetch();
+    const j = await resposta.json();
+    j.precos[ID] = null;
+    await r.fulfill({ response: resposta, json: j });
+  });
   const estado = page.waitForResponse('**/rest/v1/rpc/estado_cardapio');
   await page.goto('/#cardapio');
   expect((await (await estado).json()).precos[ID]).toBeNull();
@@ -58,28 +64,23 @@ test('Preço a confirmar: aparece no cardápio, não vai para a sacola e oferece
   expect(erros).toEqual([]);
 });
 
-test('Preço a confirmar: linha antiga guardada no aparelho sai da sacola ao abrir', async ({ page }) => {
-  const linha = (produtoId) => ({
-    chave: produtoId + '|teste',
-    sel: {
-      produtoId,
-      completo: true,
-      removidos: [],
-      prensado: false,
-      combo: { ativo: false, refri: '' },
-      adicionais: {},
-      sabor: '',
-      qtd: 1
-    }
-  });
-  await page.goto('/');
-  await page.evaluate((s) => localStorage.setItem('mineiro:v2:sacola', JSON.stringify(s)), [linha(ID), linha('x-burguer')]);
-  await page.goto('about:blank');
+test('CBO Turbo por R$ 34,90 pode ser personalizado e adicionado à sacola', async ({ page }) => {
+  await page.goto('/#cardapio');
+  const card = page.locator('#prod-' + ID);
+  await expect(card.locator('.preco')).toHaveText('R$ 34,90');
+  await expect(card.locator('.selo-combo')).toContainText('Vira combo');
+  await card.click();
+  await expect(page.locator('#ficha-total')).toHaveText('R$ 34,90');
+  await expect(page.locator('#ficha-add')).toHaveAttribute('aria-disabled', 'false');
+  await expect(page.locator('#ficha [data-adic="bacon"][data-d="1"]')).toHaveCount(1);
+  await page.locator('#ficha-add').click();
+  await expect(page.locator('#ficha')).toBeHidden();
   await page.goto('/#sacola');
-  const linhas = page.locator('#sacola-linhas .linha');
-  await expect(linhas).toHaveCount(1);
-  await expect(linhas.first()).toContainText('X-Burguer');
-  await expect(page.locator('#sacola-linhas')).not.toContainText('CBO Turbo');
+  const linha = page.locator('#sacola-linhas .linha');
+  await expect(linha).toHaveCount(1);
+  await expect(linha).toContainText('Hot Dog CBO Turbo');
+  await expect(linha.locator('.linha-nome .preco')).toHaveText('R$ 34,90');
+  expect((await sacolaGuardada(page))[0].sel.produtoId).toBe(ID);
 });
 
 test('horário da semana: domingo abre das 19h à 1h e a quarta aparece fechada', async ({ page }) => {

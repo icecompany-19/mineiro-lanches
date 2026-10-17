@@ -510,7 +510,7 @@ As classes atuais continuam (os testes dependem delas; ver 5.0). Aqui está só 
   - "+" de 44 px à direita.
 - **Item sem foto:** ícone da categoria em `--anel` sobre `--chapa-2`, com a parede desfocada a 25% por baixo.
 - **Esgotado:** o conteúdo vai a opacidade .45, com a etiqueta "Esgotado hoje" (fundo `--chapa-2`, texto `--vermelho-luz`, borda `--vermelho-luz`). A cor da foto não muda, e a etiqueta é texto (nunca só cor).
-- **Preço null** (CBO Turbo): no lugar do preço, "Preço a confirmar" em Oswald 600, 14 px, `--osso-2`. No lugar do "+", o botão secundário "Consultar" com o ícone de WhatsApp, usando `ML.whatsapp.consulta`. Não vai para a sacola.
+- **Preço null** (se um produto ficar sem preço): no lugar do preço, "Preço a confirmar" em Oswald 600, 14 px, `--osso-2`. No lugar do "+", o botão secundário "Consultar" com o ícone de WhatsApp, usando `ML.whatsapp.consulta`. Não vai para a sacola.
 - **Destaque 3:4** ("Saindo da chapa", site):
   - quadro 3:4, largura de 62% (390) ou 220 px (1280), foto `-540` com `foco`;
   - degradê no pé até `--noite`, nome em Oswald 700, 18 px, caixa alta, e preço `--fio`;
@@ -826,7 +826,7 @@ export const ROTEIRO = {
   - salsichas desenhadas em CSS (pílulas) caindo na bandeja com mola;
   - chips da base (`ING_DOG`) e o `DICA_DOG`;
   - "Adicionar" (adição rápida do tamanho escolhido) e "Personalizar" (ficha);
-  - card do Hot Dog CBO Turbo com a foto 'nova', "Preço a confirmar" e "Consultar no WhatsApp".
+  - card do Hot Dog CBO Turbo com a foto 'nova', R$ 34,90 e botão "Pedir" (preço confirmado pelo dono em 17/10).
 - **Movimento reduzido:** troca direta de preço; salsichas paradas.
 - **Peso:** 2 fotos de cerca de 27 KB, lazy.
 
@@ -969,7 +969,7 @@ Capturas obrigatórias em **390×844 (DPR 3)** e **1280×800**, nos estados **ab
 
 **Dados**
 
-- [ ] Preços, horário, composições, modos e combo vêm do `CONFIG`. O CBO Turbo aparece como "Preço a confirmar" e não entra na sacola.
+- [ ] Preços, horário, composições, modos e combo vêm do `CONFIG`. O CBO Turbo aparece por R$ 34,90 e pode ser adicionado à sacola.
 - [ ] Nenhum "Retirada", nenhuma previsão de tempo, moto ou taxa inventada.
 - [ ] O domínio `mineirolanches.com.br` não aparece; o QR não aparece na apresentação.
 - [ ] Com `loja.modo = 'fechada'` no Supabase local, a parede apaga e o neon diz fechado, mesmo dentro do horário. Com `aberta`, acende fora do horário.

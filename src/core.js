@@ -94,7 +94,7 @@
         // o Hot Dog Super com o adicional Pizza (foto "Hot Dog Super Pizza" do dono; 18,90 + 7,50)
         { id: 'dog-pizza', nome: 'Hot Dog Pizza', preco: 26.40, tipo: 'lanche', foto: 'dog-pizza', ing: ING_DOG.concat(['Queijo gratinado', 'Orégano']), base: 'Hot Dog Super (3 salsichas Perdigão) com o adicional Pizza' },
         // item novo; o dono ainda vai mandar o preço: null = "Preço a confirmar" (não vai para a sacola; consulta pelo WhatsApp)
-        { id: 'dog-cbo-turbo', nome: 'Hot Dog CBO Turbo', preco: null, tipo: 'lanche', foto: 'dog-cbo-turbo', ing: ['Maionese', 'Ketchup', 'Alface', 'Azeite e sal', 'Purê de batata', 'Batata palha', 'Cheddar', 'Catupiry', 'Mussarela gratinada', 'Bacon'], base: 'Pão de dog e 3 salsichas Perdigão' }
+        { id: 'dog-cbo-turbo', nome: 'Hot Dog CBO Turbo', preco: 34.90, tipo: 'lanche', foto: 'dog-cbo-turbo', ing: ['Maionese', 'Ketchup', 'Alface', 'Azeite e sal', 'Purê de batata', 'Batata palha', 'Cheddar', 'Catupiry', 'Mussarela gratinada', 'Bacon'], base: 'Pão de dog e 3 salsichas Perdigão' }
       ] },
       { id: 'baguetes', label: 'Baguetes', icone: 'baguete', desc: 'Na baguete, do jeito mineiro', itens: [
         { id: 'carne-maluca', nome: 'Carne Maluca', preco: 26.90, tipo: 'lanche', ing: ['Maionese', 'Barbecue', 'Milho', 'Batata palha', 'Vinagrete com cebola', 'Purê', 'Requeijão', 'Cheddar'], base: 'Baguete e carne desfiada' },

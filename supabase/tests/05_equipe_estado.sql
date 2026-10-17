@@ -81,6 +81,7 @@ select pg_temp.ok((select esgotado_dia = dia_operacional() from produtos where i
 update produtos set ativo = false where id = 'combo-casal';
 update adicionais set ativo = false where id = 'pizza';
 update produtos set esgotado_dia = dia_operacional() - 1 where id = 'gran-chicken';
+update produtos set preco = null where id = 'dog-cbo-turbo'; -- cenário de teste: preço retirado pela equipe
 select pg_temp.sou(null);
 set local role anon;
 select estado_cardapio() as e \gset

@@ -371,20 +371,19 @@ test.describe('S4 · hot dog: 1, 2 ou 3 salsichas', () => {
     await expect(preco(page)).toHaveAttribute('data-preco-de', 'dog-super');
   });
 
-  test('card do CBO Turbo: Preço a confirmar, sem botão de sacola e consulta no WhatsApp', async ({ page }) => {
+  test('card do CBO Turbo: R$ 34,90 e botão Pedir abre a personalização', async ({ page }) => {
     await abrir(page);
     const card = page.locator('#dog-cbo');
     await card.scrollIntoViewIfNeeded();
     await expect(card).toContainText('Hot Dog CBO Turbo');
     await expect(card).toContainText('3 salsichas Perdigão');
-    await expect(card.locator('#dog-cbo-preco')).toHaveText('Preço a confirmar');
+    await expect(card.locator('#dog-cbo-preco')).toHaveText('R$ 34,90');
     await expect(card.locator('img')).toHaveAttribute('src', /\/dog-cbo-turbo-540\.webp$/);
-    await expect(card.getByRole('button')).toHaveCount(0); // o "Pedir" só aparece com preço
-    const wa = card.getByRole('link', { name: 'Consultar no WhatsApp' });
-    await expect(wa).toHaveAttribute('target', '_blank');
-    const href = await wa.getAttribute('href');
-    expect(href).toMatch(/^https:\/\/wa\.me\/5511985720150\?text=/);
-    expect(decodeURIComponent(href.split('?text=')[1])).toBe('Olá, Mineiro Lanche! Vi o Hot Dog CBO Turbo no cardápio e quero saber o preço. Como faço para pedir?');
+    await expect(card.locator('#dog-cbo-wa')).toBeHidden();
+    await card.getByRole('button', { name: 'Pedir', exact: true }).click();
+    await expect(page.locator('#ficha-nome')).toHaveText('Hot Dog CBO Turbo');
+    await expect(page.locator('#ficha-total')).toHaveText('R$ 34,90');
+    await expect(page.locator('#ficha-add')).toHaveAttribute('aria-disabled', 'false');
     expect(await sacola(page)).toEqual([]);
   });
 
@@ -438,7 +437,7 @@ test.describe('S5 · vira combo + pilha de combos', () => {
     await expect(page.locator('.s-combos [data-combo-inclui]')).toHaveText(CONFIG.regras.combo.inclui.join(' + ').toLowerCase());
     await expect(page.locator('#combo-chips .chip')).toHaveText(lanches());
     expect(lanches()).toEqual(expect.arrayContaining(['Gran Bacon Onion', 'Gran Crispy', 'Hot Dog Max', 'X-Churrasco']));
-    expect(lanches()).not.toContain('Hot Dog CBO Turbo'); // sem preço não vira combo
+    expect(lanches()).toContain('Hot Dog CBO Turbo'); // preço confirmado: também vira combo
     await expect(page.locator('#combo-chips .chip[aria-pressed="true"]')).toHaveCount(1);
     await expect(cartas(page).locator('.carta-nome')).toHaveText(NOMES);
     expect(await page.locator('.s-combos').textContent()).not.toContain('Casal');

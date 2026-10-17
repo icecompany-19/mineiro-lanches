@@ -374,7 +374,7 @@ export function criarStoreSupabase(opc) {
     const precos = e.precos || {};
     Object.keys(ML.produtos).forEach((id) => {
       const p = ML.produtos[id];
-      if (precos[id] != null) p.preco = Number(precos[id]);
+      if (Object.prototype.hasOwnProperty.call(precos, id)) p.preco = precos[id] == null ? null : Number(precos[id]);
       p.inativo = inativos.has(id);
     });
     C.categorias.forEach((c) => {

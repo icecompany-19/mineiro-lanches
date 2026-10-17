@@ -41,7 +41,7 @@
 .dog-acoes{display:grid;gap:10px}
 .dog-acoes .btn.esgotado{opacity:.6}
 
-/* card do CBO Turbo: "Preço a confirmar" em vez do preço e consulta no WhatsApp; nunca vai para a sacola */
+/* Card do CBO Turbo: preço confirmado e botão Pedir; consulta disponível se o banco retirar o preço. */
 .dog-cbo{margin-top:48px;display:grid;grid-template-columns:38% minmax(0,1fr);gap:16px;max-width:760px;padding:12px;border-radius:var(--r-lg);background:var(--chapa);border:1px solid var(--borda);box-shadow:var(--sombra-card)}
 .dog-cbo[hidden]{display:none}
 .dog-cbo.sem-foto{grid-template-columns:1fr}

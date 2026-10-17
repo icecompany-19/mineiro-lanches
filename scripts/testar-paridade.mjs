@@ -162,6 +162,7 @@ async function main() {
   const sels = produtos.map((p) => selecao(p, false));
   const comOpcoes = produtos.filter((p) => p.tipo === 'lanche' || p.tipo === 'combo');
   for (let i = 0; i < 30; i++) sels.push(selecao(escolher(comOpcoes), true));
+  sels[0].qtd = 20; // limite máximo garantido mesmo quando muda a quantidade de produtos com preço
   const itensCore = sels.map((s) => {
     const it = JSON.parse(JSON.stringify(ML.precos.item(s)));
     delete it.chave;

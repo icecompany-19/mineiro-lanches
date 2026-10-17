@@ -4,7 +4,7 @@
    ML.produtos); o preço rola como odômetro (WAAPI, translateY por dígito, 240 ms) e as salsichas, desenhadas em CSS,
    caem na bandeja com mola. "Adicionar" é a adição rápida do tamanho escolhido (ML.app.adicionarRapido, que põe o
    toast) e "Personalizar" abre a ficha. O preço escrito é [data-preco-de] do tamanho escolhido: o app o mantém igual
-   ao do banco. O card do CBO Turbo é "Preço a confirmar": fora da sacola, só consulta no WhatsApp.
+   ao do banco. O card do CBO Turbo acompanha o preço do banco e abre a personalização pelo botão Pedir.
    Movimento reduzido: troca direta de preço e salsichas paradas. */
 import { ROTEIRO, primeiroComFotoNova, temFotoNova } from '../roteiro.js';
 import { reduz } from '../base.js';
@@ -157,7 +157,7 @@ export function iniciar(ctx) {
   add.addEventListener('click', () => ctx.app.adicionarRapido(sel, cena));
   $('#dog-pers').addEventListener('click', () => ctx.app.abrirFicha(sel, { origem: cena }));
 
-  // o CBO Turbo: sem preço no CONFIG nem no banco, fica "Preço a confirmar" e consulta pelo WhatsApp; com preço, vira "Pedir"
+  // CBO Turbo com preço confirmado mostra "Pedir"; se o banco retirar o preço, oferece consulta pelo WhatsApp.
   function cbo() {
     const p = P[CBO];
     const card = $('#dog-cbo');

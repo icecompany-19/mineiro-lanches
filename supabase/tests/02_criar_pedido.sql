@@ -139,6 +139,10 @@ set local role anon;
 select pg_temp.igual(pg_temp.erro_item('gran-egg'), 'produto_invalido', 'produto inativo: produto_invalido');
 
 -- ================= "Preço a confirmar" (preco null): está no cardápio, mas não se vende pelo site =================
+select pg_temp.ok(pg_temp.um('dog-cbo-turbo') @> '{"precoBase":34.90,"precoUnit":34.90,"subtotal":34.90}', 'CBO Turbo custa 34,90 no pedido');
+reset role;
+update produtos set preco = null where id = 'dog-cbo-turbo'; -- cenário de teste: produto que perdeu o preço
+set local role anon;
 select pg_temp.igual(pg_temp.erro_item('dog-cbo-turbo'), 'produto_invalido', 'item sem preço (CBO Turbo): produto_invalido');
 select pg_temp.igual(pg_temp.erro_item('dog-cbo-turbo', '{"qtd":2,"prensado":true,"combo":{"ativo":true,"refri":"Coca"},"adicionais":[{"id":"bacon","qtd":1}],"precoUnit":30,"subtotal":60}'),
   'produto_invalido', 'item sem preço com combo, adicional e preço mandado pelo navegador: produto_invalido');
