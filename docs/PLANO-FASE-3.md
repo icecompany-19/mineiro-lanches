@@ -144,7 +144,25 @@ Modelos: **O** = Opus (contrato, integração, revisão de segurança), **S** = 
 - [ ] Cadastro aberto desligado no Supabase.
 - [ ] N2 sem falha nova em relação à linha de base; nenhum servidor local rodando.
 
-## 7. Fora de hoje (registrar em pendências)
+## 7. Execução: linha de base e ajustes da revisão adversarial (17/10, 00:45)
+
+**Linha de base no HEAD `893cedb` (F3-01, 00:26–00:37):** lint e build ok; SQL 353 verificações ok (a linha 65 do `01_horario.sql` usa `now()` e só passa com o truck aberto); paridade ok; node:test 60 (38 ok, 22 pulados por falta de poppler, 0 falhas); Playwright desktop + e2e em 8,9 min: 214 ok, 22 pulados e 3 falhas antigas: `comanda-impressao.spec.js:242` (precisa do `pdftoppm`), `site-ii.spec.js:587` (véu do S5; ver se é intermitente) e `e2e.spec.js:246`. Esta última falha porque o texto do aviso de dados mudou no `d7b1c09` e o teste ficou com o antigo; por ser serial, impede outros 9 casos do e2e de rodar. Os gates passam a ser "sem falha nova em relação a esta base".
+
+**Poppler:** o pacote do winget (25.07.0) quebra nesta máquina com qualquer PDF (violação de acesso, até num PDF mínimo) e foi desinstalado. Plano B aplicado em `d47fc0e`: o `scripts/qrcode.mjs` gera o PNG com o selo do `logo-selo.svg` quando falta o `pdftocairo`.
+
+**Ajustes decididos depois dos dois críticos:**
+- C1: `grant select on public.motoboys to authenticated` junto da policy (sem isso, a policy não libera nada); `entregas_em_rota` também começa com a porta `is_motoboy() or is_equipe()`; o 07 testa um usuário de fora nas duas RPCs.
+- O JSON de horários do `00_estrutura.sql` e a linha 65 do `01_horario.sql` (instante fixo em vez de `now()`) são acertados na F3-20, junto com seed + setup + `testar-sql --do-zero` + paridade, logo depois da junção.
+- Os Playwright de horário (navegacao, cardapio, preco-a-confirmar, site, site-ii, aceite-cliente) dependem do banco local com o seed novo: rodam na integração, não nas trilhas.
+- F3-21 começa corrigindo o `e2e.spec.js:231` e põe o motoboy num `describe` próprio, para uma falha anterior não pulá-lo.
+- C4: em vez de confiar em "a última regra vence" na Vercel, a regra global passa a excluir o motoboy (`/((?!motoboy(?:/|$)).*)`) e a regra do motoboy repete os cabeçalhos com `camera=(self)`. A regra global continua sendo `headers[0]` (o `tests/apoio/aceite.js` lê a CSP dali). Conferência por `curl` na produção, porque o preview pode estar protegido pela Vercel e usa o Supabase de produção (não fazer pedido no preview).
+- Quem é da equipe e abre `/motoboy/` vê "Sem acesso": se o dono também entregar, ele ganha uma linha em `motoboys`.
+- F3-42: com a loja em Automático, o sábado fica fechado até as 18h. O pedido de teste é feito com "Aberta" só durante o teste, com alguém olhando o painel, e volta para "Automático" na hora; ou então às 18h, na abertura.
+- Ordem de corte se atrasar: (1) leitor de QR dentro da tela e o cabeçalho de câmera; (2) QR do cartaz; (3) logo na comanda; (4) www e cadastro aberto ficam para de manhã.
+
+## 8. Fora de hoje (registrar em pendências)
+
+- Aviso no painel quando o motoboy confirma (hoje o cartão vai para "Concluídos" em silêncio; o som é só para pedido novo).
 
 - Forma de pagamento e troco no checkout, para o motoboy saber o que cobrar (`CONFIG.pagamentos = null`).
 - Volta automática do modo manual para "Automático" (pg_cron) e `horarioTexto` derivado de `horarios`.
