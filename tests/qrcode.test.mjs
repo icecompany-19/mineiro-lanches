@@ -110,17 +110,8 @@ test('LEIA-ME traz o destino e como regenerar', () => {
   assert.ok(leia.includes('npm run qrcode -- --base https://dominio-final'));
 });
 
-// Gerar QR novo renderiza o selo a partir do PDF da logo (pdftocairo, do poppler). Pula se o poppler não estiver instalado.
-const temPdftocairo = (() => {
-  try {
-    execFileSync('pdftocairo', ['-v'], { stdio: 'ignore' });
-    return true;
-  } catch (e) {
-    return e.code !== 'ENOENT';
-  }
-})();
-
-test('linha de comando: --base e QR de mesa', { skip: !temPdftocairo && 'pdftocairo (poppler) não instalado' }, async () => {
+// Gerar QR novo renderiza o selo a partir do PDF da logo (pdftocairo, do poppler) ou, sem o poppler, do logo-selo.svg.
+test('linha de comando: --base e QR de mesa', async () => {
   const pasta = mkdtempSync(join(tmpdir(), 'mineiro-qr-'));
   try {
     execFileSync(

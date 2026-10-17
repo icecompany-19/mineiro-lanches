@@ -4,6 +4,7 @@
 // Opções: --base URL (padrão: VITE_SITE_URL do .env.production) · --mesas 1-10 ou 1,3,5
 //         --saida pasta (padrão: public/qr) · --sem-pdf (não gera os PDFs do cartaz)
 /* global document */ // só dentro de pagina.evaluate (roda no navegador)
+import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, unlinkSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
@@ -27,8 +28,10 @@ const FOLGA = 0.6; // respiro creme entre a borda do selo e o módulo mais próx
 const LIMITE_AREA = 0.2; // plano: o selo ocupa no máximo 20% da área do símbolo
 const LADO_PNG = 2048;
 // Selo do centro: a logo oficial (scripts/logo.mjs). No SVG entra o logo-selo.svg (vetor + bitmaps originais, a arte
-// inteira dentro do círculo inscrito); no PNG, a logo renderizada direto do PDF no tamanho final.
+// inteira dentro do círculo inscrito); no PNG, a logo renderizada direto do PDF no tamanho final. Sem o poppler
+// (pdftocairo), o PNG usa o mesmo logo-selo.svg rasterizado pelo sharp.
 const SELO = join(RAIZ, 'public', 'assets', 'logo-selo.svg');
+const TEM_PDFTOCAIRO = !spawnSync('pdftocairo', ['-v'], { stdio: 'ignore' }).error;
 
 // ---------- base e destino ----------
 
@@ -241,6 +244,19 @@ export async function pngDoQr(q, lado = LADO_PNG) {
     .png()
     .toBuffer();
   const pxPorModulo = lado / q.lado;
+  if (!TEM_PDFTOCAIRO) {
+    const ladoSelo = Math.round(2 * q.raioSelo * pxPorModulo);
+    const selo = await sharp(SELO, { density: (72 * ladoSelo) / LADO_SELO })
+      .resize(ladoSelo, ladoSelo)
+      .png()
+      .toBuffer();
+    const canto = Math.round(q.centro * pxPorModulo - ladoSelo / 2);
+    return sharp(base)
+      .composite([{ input: selo, left: canto, top: canto }])
+      .removeAlpha()
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+  }
   const dados = await lerDados();
   const escala = (q.raioSelo * pxPorModulo) / dados.raio; // px por pt
   const logo = renderizarLogo(dados, escala);
