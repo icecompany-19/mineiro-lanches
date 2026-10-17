@@ -28,7 +28,10 @@ const SEGURANCA = {
   'x-frame-options': 'DENY',
   'strict-transport-security': 'max-age=63072000; includeSubDomains'
 };
-const PERMISSOES = ['camera=()', 'microphone=()', 'geolocation=()', 'payment=()'];
+// Permissions-Policy: a câmera só é liberada (para o próprio site) na tela do entregador, em /motoboy/; no resto, fechada.
+const PERMISSOES = 'camera=(), microphone=(), geolocation=(), payment=()';
+const PERMISSOES_MOTOBOY = 'camera=(self), microphone=(), geolocation=(), payment=()';
+const permissoesDe = (rota) => (rota.startsWith('/motoboy/') ? PERMISSOES_MOTOBOY : PERMISSOES);
 const CSP = {
   'default-src': ["'self'"],
   'script-src': ["'self'"],
@@ -55,9 +58,10 @@ const CACHE = {
 const REDIRECTS = [
   ['/q', '/?origem=qrcode'],
   ['/q/3', '/?origem=qrcode&mesa=3'],
-  ['/painel', '/painel/']
+  ['/painel', '/painel/'],
+  ['/motoboy', '/motoboy/']
 ];
-const PAGINAS = ['/', '/#cardapio', '/#site', '/q', '/q/3', '/painel/'];
+const PAGINAS = ['/', '/#cardapio', '/#site', '/q', '/q/3', '/painel/', '/motoboy/'];
 // Cartaz do QR (public/qr/cartaz.html, fora do Vite): também é servido com a mesma CSP.
 const CARTAZ = '/qr/cartaz';
 
@@ -97,7 +101,8 @@ function lerCsp(valor) {
 
 function conferirSeguranca(h, rota) {
   for (const [k, v] of Object.entries(SEGURANCA)) expect(h[k], `${k} em ${rota}`).toBe(v);
-  for (const p of PERMISSOES) expect(h['permissions-policy'] || '', `Permissions-Policy em ${rota}`).toContain(p);
+  // valor exato: se a Vercel somasse as duas regras, "camera=()" continuaria no cabeçalho e a câmera ficaria bloqueada
+  expect(h['permissions-policy'], `Permissions-Policy em ${rota}`).toBe(permissoesDe(rota));
   expect(h['content-security-policy'], `CSP em ${rota}`).toBeTruthy();
   const csp = lerCsp(h['content-security-policy']);
   for (const [diretiva, fontes] of Object.entries(CSP)) {
@@ -169,6 +174,8 @@ test('cabeçalhos de segurança e de cache', async ({ request }) => {
     ['/', { 'cache-control': CACHE.html }],
     ['/painel/', { 'cache-control': CACHE.html, 'x-robots-tag': 'noindex, nofollow' }],
     ['/painel/manifest.webmanifest', { 'x-robots-tag': 'noindex, nofollow' }],
+    ['/motoboy/', { 'cache-control': CACHE.html, 'x-robots-tag': 'noindex, nofollow' }],
+    ['/motoboy/manifest.webmanifest', { 'x-robots-tag': 'noindex, nofollow' }],
     ['/_app/' + appJs, { 'cache-control': CACHE.app }],
     ['/assets/og.jpg', { 'cache-control': CACHE.assets }],
     ['/manifest.webmanifest', {}],
@@ -187,8 +194,27 @@ test('cabeçalhos de segurança e de cache', async ({ request }) => {
     const h = r.headers();
     conferirSeguranca(h, rota);
     for (const [k, v] of Object.entries(esperado)) expect(h[k], `${k} em ${rota}`).toBe(v);
-    if (!rota.startsWith('/painel/')) expect(h['x-robots-tag'], `X-Robots-Tag fora do painel (${rota})`).toBeUndefined();
+    if (!rota.startsWith('/painel/') && !rota.startsWith('/motoboy/')) expect(h['x-robots-tag'], `X-Robots-Tag fora do painel e do entregador (${rota})`).toBeUndefined();
   }
+});
+
+// Câmera: só /motoboy/ (e o que está debaixo dele) recebe camera=(self); o resto do site continua com camera=().
+// Assim o cliente e a equipe nunca pedem a câmera, e o entregador consegue abrir o leitor de QR.
+test('Permissions-Policy: câmera liberada só em /motoboy/', async ({ request }) => {
+  const fechadas = ['/', '/painel/', '/painel/manifest.webmanifest', '/manifest.webmanifest', '/robots.txt', '/sitemap.xml', '/icons/icon-192.png', '/assets/og.jpg'];
+  for (const rota of fechadas) {
+    const r = await request.get(base + rota, { maxRedirects: 0 });
+    expect(r.status(), rota).toBe(200);
+    expect(r.headers()['permissions-policy'], `Permissions-Policy em ${rota}`).toBe(PERMISSOES);
+  }
+  for (const rota of ['/motoboy/', '/motoboy/manifest.webmanifest']) {
+    const r = await request.get(base + rota, { maxRedirects: 0 });
+    expect(r.status(), rota).toBe(200);
+    expect(r.headers()['permissions-policy'], `Permissions-Policy em ${rota}`).toBe(PERMISSOES_MOTOBOY);
+  }
+  // "/motoboyx/" não é a tela do entregador: nada de câmera
+  const outra = await request.get(base + '/motoboyx/', { maxRedirects: 0 });
+  expect(outra.headers()['permissions-policy']).toBe(PERMISSOES);
 });
 
 test('manifestos e ícones', async ({ request }) => {
@@ -206,6 +232,15 @@ test('manifestos e ícones', async ({ request }) => {
       short_name: 'Painel',
       start_url: '/painel/',
       scope: '/painel/',
+      background_color: '#120B09'
+    },
+    '/motoboy/manifest.webmanifest': {
+      id: '/motoboy/',
+      name: 'Entregas · Mineiro Lanche',
+      short_name: 'Entregas',
+      start_url: '/motoboy/',
+      scope: '/motoboy/',
+      theme_color: '#120B09',
       background_color: '#120B09'
     }
   };
@@ -243,6 +278,7 @@ test('manifestos e ícones', async ({ request }) => {
 test('robots.txt e sitemap.xml', async ({ request }) => {
   const robots = await (await request.get(base + '/robots.txt')).text();
   expect(robots).toMatch(/^Disallow: \/painel\/$/m);
+  expect(robots).toMatch(/^Disallow: \/motoboy\/$/m);
   expect(robots).toContain(`Sitemap: ${SITE}/sitemap.xml`);
   const sitemap = await request.get(base + '/sitemap.xml');
   expect(sitemap.status()).toBe(200);

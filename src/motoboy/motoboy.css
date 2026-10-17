@@ -1,0 +1,64 @@
+/* Mineiro Lanche · tela do entregador (/motoboy/). Tudo sob .mb- (a tela) ou .painel (o molde do login, vindo de painel.css).
+   Cores só pelos tokens do :root (styles/base.css). Uso no celular, na rua: alvos de toque de 56 px ou mais, letra grande,
+   alto contraste. Só transform e opacity se mexem, e nada se mexe com "menos movimento" ligado. */
+
+.mb-app { --mb-ok: var(--neon-aberto); --mb-ja: var(--fio); --mb-erro: var(--vermelho-luz); width: min(100%, 36rem); margin: 0 auto; padding: max(var(--e4), env(safe-area-inset-top)) var(--calha) max(var(--e7), env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--e5); font-size: 17px; line-height: 1.4; }
+.mb-app .pn-btn { min-height: 56px; min-width: 56px; font-size: 1rem; }
+.mb-app p, .mb-app h1, .mb-app h2 { overflow-wrap: anywhere; }
+
+/* ---------- topo ---------- */
+.mb-topo { display: flex; align-items: center; gap: var(--e3); }
+.mb-logo { width: 48px; height: 48px; flex: none; }
+.mb-topo-t { flex: 1 1 auto; min-width: 0; }
+.mb-titulo { margin: 0; font: 400 1.7rem/1.05 var(--f-letreiro); color: var(--letreiro); text-shadow: 0 .06em 0 var(--placa); }
+.mb-usuario { margin: 0; font-size: .85rem; color: var(--osso-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-sair { flex: none; }
+
+/* ---------- resultado de uma leitura ---------- */
+.mb-res { padding: var(--e5) var(--e4); border: 2px solid var(--borda-campo); border-radius: var(--r-xl); background: var(--chapa); text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--e2); animation: mb-entra var(--t-ui) var(--suave); }
+.mb-res-t { margin: 0; font: 400 clamp(2.4rem, 14vw, 3.4rem)/1 var(--f-letreiro); color: var(--osso); }
+.mb-res-num { margin: 0; font: 600 2.4rem/1 var(--f-placa); letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--osso); }
+.mb-res-nome { margin: 0; font: 600 1.5rem/1.2 var(--f-corpo); color: var(--osso); }
+.mb-res--ok { border-color: var(--mb-ok); background: color-mix(in srgb, var(--mb-ok) 14%, var(--chapa)); }
+.mb-res--ok .mb-res-t { color: var(--mb-ok); }
+.mb-res--ja { border-color: var(--mb-ja); background: color-mix(in srgb, var(--mb-ja) 12%, var(--chapa)); }
+.mb-res--ja .mb-res-t { color: var(--mb-ja); font-size: clamp(2rem, 11vw, 2.8rem); }
+.mb-res--erro { border-color: var(--mb-erro); background: color-mix(in srgb, var(--mb-erro) 12%, var(--chapa)); }
+.mb-res--erro .mb-res-t { font: 600 1.3rem/1.35 var(--f-corpo); color: var(--mb-erro); }
+.mb-res--espera .mb-res-t, .mb-res--aviso .mb-res-t { font: 600 1.2rem/1.35 var(--f-corpo); color: var(--osso-2); }
+.mb-res--aviso { border-style: dashed; border-color: var(--fio); }
+.mb-res-b { width: 100%; margin-top: var(--e2); }
+@keyframes mb-entra { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---------- ler QR ---------- */
+.mb-ler { width: 100%; min-height: 84px; gap: var(--e3); font-size: 1.3rem; }
+.mb-ler .pn-ic { width: 1.6em; height: 1.6em; }
+.mb-leitor { display: flex; flex-direction: column; gap: var(--e3); }
+.mb-video-caixa { position: relative; overflow: hidden; border: 2px solid var(--borda-campo); border-radius: var(--r-xl); background: var(--chapa-2); }
+.mb-video-caixa::after { content: ''; position: absolute; inset: 16%; border: 3px solid var(--fio); border-radius: var(--r-lg); pointer-events: none; }
+.mb-video { display: block; width: 100%; aspect-ratio: 3 / 4; max-height: 62vh; object-fit: cover; background: var(--chapa-2); }
+.mb-dica { margin: 0; text-align: center; color: var(--osso-2); }
+.mb-fechar { width: 100%; }
+
+/* ---------- lista Em rota ---------- */
+.mb-rota { display: flex; flex-direction: column; gap: var(--e3); }
+.mb-rota-cab { display: flex; align-items: center; justify-content: space-between; gap: var(--e3); }
+.mb-rota-t { margin: 0; font: 600 1.3rem/1.1 var(--f-placa); letter-spacing: .08em; text-transform: uppercase; color: var(--fio); }
+.mb-vazio { margin: 0; padding: var(--e5) var(--e4); border: 1px dashed var(--borda-campo); border-radius: var(--r-lg); text-align: center; color: var(--osso-2); }
+.mb-vazio.pn-erro { color: var(--mb-erro); border-color: var(--mb-erro); }
+.mb-lista { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--e3); }
+.mb-item { display: flex; flex-direction: column; gap: var(--e2); padding: var(--e4); border: 1px solid var(--borda); border-radius: var(--r-lg); background: var(--chapa); box-shadow: var(--sombra-card); }
+.mb-item p { margin: 0; }
+.mb-item-cab { display: flex; align-items: baseline; gap: var(--e3); }
+.mb-item-num { flex: none; font: 600 1.5rem/1 var(--f-placa); letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--fio); }
+.mb-item-nome { min-width: 0; font: 600 1.15rem/1.2 var(--f-corpo); overflow-wrap: anywhere; }
+.mb-item-end { font-size: 1.05rem; }
+.mb-item-ref, .mb-item-obs, .mb-item-total { color: var(--osso-2); font-size: .95rem; }
+.mb-item-total b { color: var(--osso); }
+.mb-item-acoes { display: flex; gap: var(--e3); margin-top: var(--e2); }
+.mb-ligar { flex: 0 0 auto; padding: 0 var(--e5); }
+.mb-entregue { flex: 1 1 auto; font-size: 1.15rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mb-res { animation: none; }
+}

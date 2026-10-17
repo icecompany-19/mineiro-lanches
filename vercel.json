@@ -7,7 +7,8 @@
   "redirects": [
     { "source": "/q", "destination": "/?origem=qrcode", "statusCode": 302 },
     { "source": "/q/:mesa", "destination": "/?origem=qrcode&mesa=:mesa", "statusCode": 302 },
-    { "source": "/painel", "destination": "/painel/", "statusCode": 302 }
+    { "source": "/painel", "destination": "/painel/", "statusCode": 302 },
+    { "source": "/motoboy", "destination": "/motoboy/", "statusCode": 302 }
   ],
   "headers": [
     {
@@ -27,6 +28,14 @@
     { "source": "/", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
     { "source": "/painel/", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
     { "source": "/painel/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] },
+    { "source": "/motoboy/", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] },
+    {
+      "source": "/motoboy/(.*)",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
+        { "key": "Permissions-Policy", "value": "camera=(self), microphone=(), geolocation=(), payment=()" }
+      ]
+    },
     { "source": "/_app/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
     { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }] },
     { "source": "/qr/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] },

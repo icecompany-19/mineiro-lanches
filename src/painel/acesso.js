@@ -5,7 +5,15 @@
       Fora da equipe: "Sem acesso", com o botão Sair.
    4. Na equipe: instala a store do Supabase, espera a primeira carga e só então monta o painel
       (assim os pedidos que já existiam não tocam som como se fossem novos).
-   Sessão expirada (o servidor recusa o token e a renovação falha): volta para o login. */
+   Sessão expirada (o servidor recusa o token e a renovação falha): volta para o login.
+
+   Opções (todas opcionais; sem elas vale exatamente o acima, o painel da equipe):
+   - titulo, sub: texto do cabeçalho do login.
+   - tabela: tabela em que o usuário precisa ter uma linha (padrão 'equipe'; o motoboy usa 'motoboys').
+   - chave: chave da sessão no aparelho (padrão CHAVE_SESSAO). O Sair apaga as chaves que começam por ela.
+   - textoSemAcesso: texto da tela "Sem acesso".
+   - aoAbrir(usuario, { sb, sair }): outra tela no lugar do painel. Com ele, não instala a store do Supabase nem
+     chama window.MLPainel; aoEsconder() é chamado quando a sessão expira com a tela aberta. */
 import { obterSupabase, CHAVE_SESSAO } from '../lib/supabase.js';
 import { instalarStoreSupabase } from '../lib/store-supabase.js';
 
@@ -13,6 +21,8 @@ export function iniciarAcesso(opc) {
   const ML = window.ML;
   const esc = ML.fmt.esc;
   const quadro = opc.el;
+  const chaveSessao = opc.chave || CHAVE_SESSAO;
+  const tabela = opc.tabela || 'equipe';
   quadro.hidden = true;
 
   const tela = document.createElement('section');
@@ -20,8 +30,8 @@ export function iniciarAcesso(opc) {
   tela.setAttribute('aria-labelledby', 'pn-acesso-tit');
   tela.innerHTML = `<div class="pn-acesso-caixa">
       <img class="pn-acesso-logo" src="/assets/logo/selo-256.webp" alt="" width="84" height="84">
-      <h1 class="pn-acesso-tit" id="pn-acesso-tit">Painel de pedidos</h1>
-      <p class="pn-acesso-sub">${esc(ML.CONFIG.nome)} · acesso da equipe</p>
+      <h1 class="pn-acesso-tit" id="pn-acesso-tit">${esc(opc.titulo || 'Painel de pedidos')}</h1>
+      <p class="pn-acesso-sub">${esc(opc.sub || ML.CONFIG.nome + ' · acesso da equipe')}</p>
       <div class="pn-acesso-corpo" data-corpo></div>
     </div>`;
   quadro.parentNode.insertBefore(tela, quadro);
@@ -113,7 +123,7 @@ export function iniciarAcesso(opc) {
   // ---------- equipe ----------
   async function entrar(usuario) {
     aguarde('Conferindo o acesso…');
-    const { data, error } = await sb.from('equipe').select('user_id').eq('user_id', usuario.id).maybeSingle();
+    const { data, error } = await sb.from(tabela).select('user_id').eq('user_id', usuario.id).maybeSingle();
     if (error) {
       if (/jwt/i.test(error.message || '') || /^PGRST30/.test(error.code || ''))
         return mostrarLogin('Sua sessão expirou. Entre de novo para continuar.');
@@ -123,9 +133,12 @@ export function iniciarAcesso(opc) {
     abrirPainel(usuario);
   }
   function semAcesso(usuario) {
+    const motivo = opc.textoSemAcesso
+      ? `<p>${esc(opc.textoSemAcesso)}</p><p>Entrou como <strong>${esc(usuario.email || '')}</strong>.</p>`
+      : `<p>O usuário <strong>${esc(usuario.email || '')}</strong> não está na equipe do painel. Peça ao responsável do truck para liberar este e-mail.</p>`;
     etapa(
       `<div class="pn-acesso-sem" role="alert"><h2>Sem acesso</h2>
-        <p>O usuário <strong>${esc(usuario.email || '')}</strong> não está na equipe do painel. Peça ao responsável do truck para liberar este e-mail.</p></div>
+        ${motivo}</div>
         <button type="button" class="pn-btn pn-acesso-b" data-sair>Sair</button>`,
       '[data-sair]'
     );
@@ -136,6 +149,14 @@ export function iniciarAcesso(opc) {
   async function abrirPainel(usuario) {
     // login novo depois de uma sessão recusada na primeira carga: recomeça do zero (a store antiga já parou)
     expirou = false;
+    // outra tela no lugar do painel (entregador): sem store, sem Realtime, sem MLPainel
+    if (opc.aoAbrir) {
+      tela.hidden = true;
+      quadro.hidden = false;
+      montado = true;
+      opc.aoAbrir(usuario, { sb, sair });
+      return;
+    }
     aguarde('Carregando os pedidos…');
     const minha = instalarStoreSupabase({ papel: 'painel', aoSessaoExpirada: conferirSessao });
     store = minha;
@@ -172,7 +193,10 @@ export function iniciarAcesso(opc) {
     if (expirou || saindo) return;
     expirou = true;
     if (store) store.parar();
-    if (montado) window.MLPainel.esconder();
+    if (montado) {
+      if (opc.aoEsconder) opc.aoEsconder();
+      else if (!opc.aoAbrir) window.MLPainel.esconder();
+    }
     quadro.hidden = true;
     mostrarLogin('Sua sessão expirou. Entre de novo para continuar.');
   }
@@ -194,7 +218,7 @@ export function iniciarAcesso(opc) {
     try {
       if (r && r.error) {
         Object.keys(localStorage)
-          .filter((k) => k.indexOf(CHAVE_SESSAO) === 0)
+          .filter((k) => k.indexOf(chaveSessao) === 0)
           .forEach((k) => localStorage.removeItem(k));
       }
       localStorage.removeItem('mineiro:v2:rascunho');
@@ -208,7 +232,7 @@ export function iniciarAcesso(opc) {
   async function comecar() {
     aguarde('Conferindo o acesso…');
     try {
-      sb = await obterSupabase({ sessao: true });
+      sb = await obterSupabase({ sessao: true, chave: chaveSessao });
     } catch {
       return semRede('Não foi possível carregar o painel. Confira a internet.', comecar);
     }

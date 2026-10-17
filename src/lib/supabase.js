@@ -11,7 +11,9 @@ export const CHAVE_SESSAO = 'mineiro:v2:sessao';
 
 let promessa = null;
 
-// opc.sessao: true no painel (login guardado no aparelho e renovado sozinho); false no cliente (sem login).
+// opc.sessao: true no painel e na tela do entregador (login guardado no aparelho e renovado sozinho); false no cliente (sem login).
+// opc.chave: onde a sessão fica guardada (padrão CHAVE_SESSAO); o entregador usa a própria, que não pode começar por
+// CHAVE_SESSAO (o Sair do painel apaga por prefixo).
 // Vale a opção da primeira chamada: cada página tem um cliente só.
 export function obterSupabase(opc) {
   const sessao = !!(opc && opc.sessao);
@@ -20,7 +22,7 @@ export function obterSupabase(opc) {
       .then(({ createClient }) =>
         createClient(URL_SUPABASE, CHAVE, {
           auth: sessao
-            ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: CHAVE_SESSAO }
+            ? { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: (opc && opc.chave) || CHAVE_SESSAO }
             : { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
           realtime: { params: { eventsPerSecond: 5 } }
         })
