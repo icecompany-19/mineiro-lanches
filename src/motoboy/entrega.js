@@ -1,6 +1,7 @@
-/* Mineiro Lanche · entregador: as duas chamadas ao banco (supabase/migrations/20261017000001_motoboy.sql).
+/* Mineiro Lanche · entregador: as duas chamadas ao banco (supabase/migrations/20261017000001_motoboy.sql e 20261017000002).
    - confirmarEntrega(sb, id): marca o pedido como entregue. Idempotente no servidor: ler a comanda de novo devolve
-     jaEntregue: true, sem erro (por isso "tentar de novo" depois de uma falha de rede é seguro).
+     jaEntregue: true, sem erro (por isso "tentar de novo" depois de uma falha de rede é seguro). Nesse caso o pedido vem só
+     com id, numero e status: sem nome, a tela mostra "Já estava entregue" e o número.
    - entregasEmRota(sb): pedidos de entrega em rota do dia, para o plano B sem câmera.
    Erros: raise exception '<codigo>' (P0001) vira Error com .codigo e .mensagem (texto para o entregador). Qualquer
    outra falha (sem rede, tempo esgotado, 5xx) é 'rede'; token recusado é 'sessao'. */

@@ -54,9 +54,10 @@ const pedido = (extra) => ({
   ...extra
 });
 const emRota = (extra) => pedido({ status: 'rota', ...extra });
+// já entregue (migration 20261017000002): o pedido volta só com id, numero e status, sem dados do cliente
 const confirmou =
   (jaEntregue = false) =>
-  (corpo) => ({ json: { ok: true, jaEntregue, pedido: pedido({ id: corpo.p_id }) } });
+  (corpo) => ({ json: { ok: true, jaEntregue, pedido: jaEntregue ? { id: corpo.p_id, numero: 11, status: 'entregue' } : pedido({ id: corpo.p_id }) } });
 // erro de regra do banco: raise exception '<codigo>' (P0001), o texto da mensagem é só o código
 const recusa = (codigo) => () => ({ status: 400, json: { code: 'P0001', details: null, hint: null, message: codigo } });
 
@@ -401,7 +402,7 @@ test('ler de novo: "Já estava entregue" sem erro', async ({ page, baseURL }) =>
   const r = resultado(page);
   await expect(r.getByText('Já estava entregue')).toBeVisible();
   await expect(r).toContainText('#0011');
-  await expect(r).toContainText('Maria Souza');
+  await expect(r.locator('.mb-res-nome'), 'sem o nome do cliente (o banco não manda mais)').toHaveCount(0);
   await expect(r.getByRole('button')).toHaveCount(0);
   expect(s.c.confirmar).toEqual([ID_A]);
 });

@@ -802,7 +802,7 @@ test.describe('entregador (/motoboy/)', () => {
     await expect(res).toHaveClass(/mb-res--ja/);
     await expect(res.locator('.mb-res-t')).toHaveText('Já estava entregue');
     await expect(res.locator('.mb-res-num')).toHaveText(num);
-    await expect(res.locator('.mb-res-nome')).toHaveText('Elisa Entrega');
+    await expect(res.locator('.mb-res-nome'), 'já entregue: o banco não manda mais o nome do cliente').toHaveCount(0);
     expect(estado(), 'histórico e atualizado_em intactos').toBe(antes);
     expect(psql(`select status from pedidos where id = '${pedido.id}'`)).toBe('entregue');
 

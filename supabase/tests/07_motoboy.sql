@@ -1,4 +1,4 @@
--- Motoboy (migration 20261017000001): tabela motoboys, is_motoboy, entregas_em_rota e confirmar_entrega.
+-- Motoboy (migrations 20261017000001 e 20261017000002): tabela motoboys, is_motoboy, entregas_em_rota e confirmar_entrega.
 -- O motoboy lê o QR da comanda e a leitura já marca o pedido como entregue. Ele não é da equipe: não lê pedidos,
 -- clientes nem equipe, não muda status pela API e só enxerga as entregas em rota do dia, sem itens e sem token.
 -- 42501 = sem privilégio (o PostgREST devolve 401/403). Dentro de $$...$$ o psql não troca :'variavel': por isso format().
@@ -251,11 +251,15 @@ set local role authenticated;
 select confirmar_entrega(:'ea_id') as r2 \gset
 reset role;
 select pg_temp.ok(:'r2'::jsonb @> '{"ok":true,"jaEntregue":true}' and (:'r2'::jsonb #>> '{pedido,status}') = 'entregue', 'segunda leitura: jaEntregue = true, sem erro');
-select pg_temp.igual(pg_temp.chaves(:'r2'::jsonb -> 'pedido'), 'cliente,distanciaKm,endereco,entregueEm,id,numero,obs,referencia,saiuEm,status,taxaEntrega,total', 'segunda leitura: pedido com as mesmas chaves');
+-- migration 20261017000002: já entregue devolve só id, numero e status (um id antigo não mostra mais nome, telefone nem endereço)
+select pg_temp.igual(pg_temp.chaves(:'r2'::jsonb -> 'pedido'), 'id,numero,status', 'segunda leitura: o pedido vem só com id, numero e status');
+select pg_temp.ok((:'r2'::jsonb #>> '{pedido,id}') = :'ea_id' and (:'r2'::jsonb #>> '{pedido,numero}') = (:'r1'::jsonb #>> '{pedido,numero}'),
+  'segunda leitura: id e numero do pedido lido');
+select pg_temp.ok(position('Davi Entrega' in :'r2') = 0 and position('11900000090' in :'r2') = 0 and position('Rua da Entrega' in :'r2') = 0,
+  'segunda leitura: sem nome, telefone nem endereço do cliente');
 select pg_temp.igual(pg_temp.fluxo(:'ea_id'), 'novo>preparo>rota>entregue', 'segunda leitura: o histórico não cresce');
 select pg_temp.igual(pg_temp.quem(:'ea_id'), '-,-,-,motoboy', 'segunda leitura: nenhum evento novo');
 select pg_temp.ok((select atualizado_em = '2000-01-01' from pedidos where id = :'ea_id'), 'segunda leitura: sem update (atualizado_em intacto)');
-select pg_temp.ok((:'r2'::jsonb #>> '{pedido,entregueEm}') = (:'r1'::jsonb #>> '{pedido,entregueEm}'), 'segunda leitura: entregueEm continua o da primeira');
 -- pedido que a equipe já tinha entregue também responde jaEntregue
 select pg_temp.sou(:'moto');
 set local role authenticated;

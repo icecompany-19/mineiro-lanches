@@ -204,12 +204,12 @@ Quando o dono mandar o preço: troque o `null` pelo valor no `CONFIG`, rode `npm
 
 ### Funções do motoboy (`authenticated`; dentro, `is_motoboy()` ou `is_equipe()` decide)
 
-Migration `20261017000001_motoboy.sql`. O QR da comanda leva a `https://<domínio>/motoboy/#<id do pedido>` (só pedidos de entrega); a tela do motoboy, depois do login, chama `confirmar_entrega` com esse `id`. A segurança vem do login e destas funções, não do QR. Quem não está em `motoboys` (ativo) nem em `equipe` recebe `sem_permissao` antes de qualquer outra validação; `anon` leva 42501 (sem `execute`).
+Migrations `20261017000001_motoboy.sql` e `20261017000002_confirmar_entrega_ja_entregue.sql` (17/10: o caminho "já entregue" deixa de mandar os dados do cliente). O QR da comanda leva a `https://<domínio>/motoboy/#<id do pedido>` (só pedidos de entrega); a tela do motoboy, depois do login, chama `confirmar_entrega` com esse `id`. A segurança vem do login e destas funções, não do QR. Quem não está em `motoboys` (ativo) nem em `equipe` recebe `sem_permissao` antes de qualquer outra validação; `anon` leva 42501 (sem `execute`).
 
 | Função | Retorno | Regra |
 |---|---|---|
 | `entregas_em_rota()` | `jsonb` (lista de `entrega_json`) | Só `modo = 'entrega'`, `status = 'rota'` e criados no **dia de operação atual** (mesmo corte de 4h do `dia_operacional()`): os pedidos presos em `rota` de dias anteriores ficam de fora. Mais antigo primeiro. Sem nenhum: `[]`. A equipe também pode chamar. |
-| `confirmar_entrega(p_id uuid)` | `{ ok, jaEntregue, pedido }` | Marca o pedido como entregue. `pedido` é o `entrega_json` do pedido já atualizado. Regras abaixo. |
+| `confirmar_entrega(p_id uuid)` | `{ ok, jaEntregue, pedido }` | Marca o pedido como entregue. `pedido` é o `entrega_json` do pedido já atualizado; se ele já estava entregue, só `{ id, numero, status }`. Regras abaixo. |
 
 **`entrega_json`** (interna, sem grant): o recorte que o motoboy enxerga de um pedido, **sem itens, sem token e sem histórico**. Chaves exatas:
 
@@ -230,7 +230,7 @@ Migration `20261017000001_motoboy.sql`. O QR da comanda leva a `https://<domíni
 | `id` nulo | `dados_invalidos` |
 | `id` inexistente | `nao_encontrado` |
 | `modo` diferente de `entrega` (qualquer status) | `nao_e_entrega` |
-| `entregue` | `{ ok: true, jaEntregue: true, pedido }` **sem update**: o histórico e o `atualizado_em` não mudam (ler o QR duas vezes, ou depois da equipe, não é erro) |
+| `entregue` | `{ ok: true, jaEntregue: true, pedido: { id, numero, status } }` **sem update**: o histórico e o `atualizado_em` não mudam (ler o QR duas vezes, ou depois da equipe, não é erro). Sem nome, telefone nem endereço: a função não recorta o dia de operação, e um `id` antigo não deve mostrar o cliente |
 | `cancelado` | `pedido_cancelado` |
 | `novo` (a equipe ainda nem aceitou) | `transicao_invalida` |
 | `rota` ou `pronto` | grava `entregue` |
