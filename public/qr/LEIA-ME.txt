@@ -1,7 +1,7 @@
 QR CODE DO CARDÁPIO · MINEIRO LANCHE
 =====================================
 
-Destino do QR: https://mineiro-lanches.vercel.app/q
+Destino do QR: https://mineirolanches.store/q
   O /q redireciona (vercel.json) para o cardápio com origem=qrcode. Assim o
   impresso continua valendo mesmo que a rota do cardápio mude.
 Mesas: nenhuma gerada (use --mesas 1-10 se o cliente quiser um QR por mesa).
@@ -14,18 +14,18 @@ ARQUIVOS
   cartaz-a5.pdf    cartaz pronto em A5 (14,8 x 21 cm)
 
 ESPECIFICAÇÃO
-  Correção de erro H · versão 5 (37 x 37 módulos) · máscara 2 · margem de 4 módulos
+  Correção de erro H · versão 4 (33 x 33 módulos) · máscara 3 · margem de 4 módulos
   Módulos carvão #1A1414 sobre creme #FFF6E0
   Selo no centro: a logo oficial (design/logo/LOGOTIPO_MINEIRO.pdf, sem alteração), inteira dentro
-  de um círculo de 5,7% da área do símbolo (limite do plano: 20%), sobre um círculo
-  creme sem módulos (8,8% da área).
-  O tamanho do selo é calculado: ele estraga no máximo 5 das 11 palavras que cada
+  de um círculo de 2,6% da área do símbolo (limite do plano: 20%), sobre um círculo
+  creme sem módulos (5,6% da área).
+  O tamanho do selo é calculado: ele estraga no máximo 4 das 8 palavras que cada
   bloco de correção consegue recuperar. O resto fica de reserva para luz fraca, reflexo
   e foco ruim. Selo maior que isso deixa o QR frágil.
 
 IMPRESSÃO
   - Só imprima depois de definir o domínio final.
-  - Lado mínimo: 4 cm só do código, sem contar a margem creme (com a margem, 4,9 cm).
+  - Lado mínimo: 4 cm só do código, sem contar a margem creme (com a margem, 5,0 cm).
     Os cartazes A6 e A5 já passam disso.
   - Regra prática: a distância de leitura é cerca de 10 vezes o lado do QR. Para ler a
     1 m, use 10 cm ou mais.

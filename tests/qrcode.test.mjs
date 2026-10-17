@@ -179,7 +179,8 @@ for (const tamanho of ['a6', 'a5']) {
     try {
       assert.deepEqual(problemas, [], 'sem violação de CSP nem erro de JS');
       await pagina.emulateMedia({ media: 'print' });
-      const captura = await pagina.screenshot({ fullPage: true });
+      // lê o QR como ele sai no cartaz renderizado; a página inteira em escala 1 às vezes engana o jsQR (A5, 17/10)
+      const captura = await pagina.locator('#qr').screenshot();
       assert.equal(await ler(captura), ESPERADO);
 
       const info = await pagina.evaluate(() => ({

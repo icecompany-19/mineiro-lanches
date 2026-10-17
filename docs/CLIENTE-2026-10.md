@@ -16,7 +16,8 @@ Fonte: conversa de WhatsApp com Cauan Oliveira, de 06 a 12/10/2026, exportada em
 | Impressora da comanda | Térmica, papel **72 mm × 210 mm** (203 dpi), foto do dono em 16/10/2026. A comanda sai em negrito |
 | Endereço do cliente | Por CEP: o cliente digita o CEP, vêm rua, bairro e cidade; ele completa o número |
 | QR code | **Não é necessário agora.** Só vai ser usado quando alugarem o salão ao lado. A estrutura fica pronta, mas não é prioridade e não precisa aparecer na apresentação |
-| Domínio | `mineirolanches.com.br` **não é do cliente** (pertence a outra empresa). Não usar. Até haver domínio próprio, a URL é `https://mineiro-lanches.vercel.app` |
+| Entregador (motoboy) | Pedido do dono em 16/10/2026: o motoboy tem **usuário próprio**, lê o **QR da comanda** e o pedido já fica como entregue. Tela em `/motoboy/`; o QR da comanda leva a `https://mineirolanches.store/motoboy/#<pedido>` e só sai em pedido de entrega. É outro QR, não o do cardápio da linha acima |
+| Domínio | **`https://mineirolanches.store`** (decisão de 17/10/2026): registrado na Hostinger em 15/10/2026 e já apontado para a Vercel (apex e www com HTTPS). `mineirolanches.site` não está registrado. `mineirolanches.com.br` **não é do cliente** (pertence a outra empresa). `https://mineiro-lanches.vercel.app` continua respondendo |
 | Identidade | Logo oficial: `design/logo/LOGOTIPO_MINEIRO.pdf` (CorelDRAW, vetor e bitmap). Usar **exatamente** essa arte, sem redesenho, sem IA e sem mudar cor ou forma |
 | Estética | Fotos novas num cenário de **parede de tijolinho** ("colocar o tijolinho no site, vai conversar bem"). O cliente pediu que o site seja **inspirado na prévia Gorilas Point** (gasplab-previews.vercel.app/gorilas-point) |
 

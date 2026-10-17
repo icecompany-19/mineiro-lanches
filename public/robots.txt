@@ -3,4 +3,4 @@ Allow: /
 Disallow: /painel/
 Disallow: /motoboy/
 
-Sitemap: https://mineiro-lanches.vercel.app/sitemap.xml
+Sitemap: https://mineirolanches.store/sitemap.xml
