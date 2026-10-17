@@ -786,6 +786,8 @@ test.describe('entregador (/motoboy/)', () => {
     await expect(concluido).toBeVisible({ timeout: 12_000 });
     await expect(concluido.locator('.pn-num')).toHaveText(num);
     await expect(painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' })).toHaveCount(0);
+    // e avisa, sem som, que foi o entregador
+    await expect(painel.locator('.pn-toast', { hasText: num + ' entregue pelo motoboy · Elisa Entrega' })).toBeVisible();
 
     // a lista do entregador, atualizada, não tem mais o pedido
     await moto.getByRole('button', { name: 'Atualizar' }).click();

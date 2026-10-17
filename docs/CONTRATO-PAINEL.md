@@ -127,6 +127,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
      - toast "Novo pedido #0007 · Nome · R$ 00,00";
      - som curto **gerado por WebAudio** (dois tons, sem arquivo), só se o som estiver ligado e depois do primeiro clique na página;
      - `document.title` vira "(N) Novo pedido · Mineiro Lanche" até a aba ser focada ou o pedido aceito.
+   - Pedido **entregue por outro aparelho** (o motoboy leu o QR da comanda, ou outro computador da equipe concluiu; 17/10/2026): o card vai para "Concluídos" e sai um toast discreto, sem som, "#0011 entregue pelo motoboy · Nome" (sem "pelo motoboy" quando o último evento do histórico não tem `por: "motoboy"`; "N pedidos entregues" se forem vários de uma vez). O que o próprio painel conclui fica só com o toast do avanço.
    - **Estado vazio** desenhado: ícone do truck + "Nenhum pedido agora. Use 'Simular pedido' ou faça um pedido pelo cardápio ao lado."
 3. **Indicadores do dia** (acima do quadro): pedidos hoje, faturamento hoje (soma de `total` dos não cancelados de hoje), ticket médio e itens em preparo. Contagem animada ao mudar (respeitando movimento reduzido).
 4. **Relatório** (só com pedidos guardados; se houver pedidos de origem `exemplo`, mostrar o rótulo "Inclui pedidos de exemplo"):

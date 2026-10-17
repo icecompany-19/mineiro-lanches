@@ -35,6 +35,7 @@
   const S = {
     root: null, montado: false, visivel: false, view: 'pedidos',
     pedidos: [], cfg: ML.store.config(), cards: new Map(), conhecidos: null, iniciou: false,
+    statusDe: new Map(), concluidosAqui: new Set(),
     destacar: new Set(), naoVistos: new Set(), tituloBase: null,
     recolhido: false, boardOk: false, detalhe: null, focoId: null, sujo: false,
     hq: '', hst: 'todos', hper: 'hoje', tickId: null, tickN: 0, agendado: null,
@@ -581,7 +582,9 @@
       const novos = S.pedidos.filter(p => !S.conhecidos.has(p.id) && p.status === 'novo');
       S.conhecidos = ids;
       if (novos.length) anunciar(novos);
+      avisarEntregues();
     }
+    S.statusDe = new Map(S.pedidos.map(p => [p.id, p.status]));
     if (!S.visivel) { S.sujo = true; atualizarTitulo(); return; }
     S.sujo = false;
     renderTudo();
@@ -613,6 +616,19 @@
     tocar();
     const fora = document.hidden || !document.hasFocus() || !S.visivel;
     if (fora) novos.forEach(p => S.naoVistos.add(p.id));
+  }
+  // Pedido que virou "entregue" em outro aparelho (o motoboy leu o QR da comanda, ou outro computador da equipe): aviso discreto,
+  // sem som (o som é só de pedido novo). O que este painel mesmo concluiu já teve o aviso em avancar() e fica de fora.
+  function avisarEntregues() {
+    const entregues = S.pedidos.filter(p => {
+      const antes = S.statusDe.get(p.id);
+      if (p.status !== 'entregue' || !antes || antes === 'entregue') return false;
+      return !S.concluidosAqui.delete(p.id);
+    });
+    if (!entregues.length || !S.visivel) return;
+    if (entregues.length > 1) { toast(entregues.length + ' pedidos entregues'); return; }
+    const p = entregues[0], ultimo = (p.historico || []).slice(-1)[0] || {};
+    toast(ML.fmt.numero(p.numero) + ' entregue' + (ultimo.por === 'motoboy' ? ' pelo motoboy' : '') + ' · ' + nomeCli(p));
   }
 
   /* ---------- tick de 1 s ---------- */
@@ -849,6 +865,7 @@
     const p = pedidoPorId(id), prox = p && ML.regras.proximoStatus(p);
     if (!prox) return;
     S.focoId = id;
+    if (prox === 'entregue') S.concluidosAqui.add(id);
     ML.store.avancar(id);
     toast(ML.fmt.numero(p.numero) + ': ' + statusPainel(prox), { dur: 2500 });
     S.naoVistos.delete(id); atualizarTitulo();
@@ -1067,6 +1084,7 @@
     S.cfg = ML.store.config();
     S.pedidos = ML.store.pedidos();
     S.conhecidos = new Set(S.pedidos.map(p => p.id)); S.iniciou = true;
+    S.statusDe = new Map(S.pedidos.map(p => [p.id, p.status]));
     irPara('pedidos');
     renderChrome();
   }
