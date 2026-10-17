@@ -463,16 +463,16 @@ test('head de produção: SEO na página do cliente, noindex só no painel, sem 
     addressCountry: 'BR'
   });
   expect(ld.hasMenu).toMatch(/\/#cardapio$/);
-  // pedido do dono em 16/10 (docs/CLIENTE-2026-10.md): todos os dias das 18h à meia-noite, sexta e sábado também; fechado às quartas
-  expect(ld.openingHoursSpecification).toHaveLength(1);
+  // pedido do dono em 16/10 (docs/CLIENTE-2026-10.md): seg/ter/qui 19h–0h, sex/sáb/dom 19h–1h; quarta fechada
+  expect(ld.openingHoursSpecification).toHaveLength(2);
   const dias = Object.fromEntries(ld.openingHoursSpecification.flatMap((o) => o.dayOfWeek.map((d) => [d, o.opens + '-' + o.closes])));
   expect(dias).toEqual({
-    Sunday: '18:00-00:00',
-    Monday: '18:00-00:00',
-    Tuesday: '18:00-00:00',
-    Thursday: '18:00-00:00',
-    Friday: '18:00-00:00',
-    Saturday: '18:00-00:00'
+    Sunday: '19:00-01:00',
+    Monday: '19:00-00:00',
+    Tuesday: '19:00-00:00',
+    Thursday: '19:00-00:00',
+    Friday: '19:00-01:00',
+    Saturday: '19:00-01:00'
   });
   expect(dias).not.toHaveProperty('Wednesday');
   expect(painel).toContain('<meta name="robots" content="noindex, nofollow">');

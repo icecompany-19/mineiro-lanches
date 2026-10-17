@@ -82,12 +82,12 @@ test('Preço a confirmar: linha antiga guardada no aparelho sai da sacola ao abr
   await expect(page.locator('#sacola-linhas')).not.toContainText('CBO Turbo');
 });
 
-test('horário da semana: domingo abre das 18h à meia-noite e a quarta aparece fechada', async ({ page }) => {
+test('horário da semana: domingo abre das 19h à 1h e a quarta aparece fechada', async ({ page }) => {
   await page.goto('/#site');
   const domingo = page.locator('[data-semana] li', { hasText: 'Domingo' }).first();
-  await expect(domingo.locator('.hora')).toHaveText('18h–0h');
+  await expect(domingo.locator('.hora')).toHaveText('19h–1h');
   await expect(domingo.locator('.faixa')).toHaveCount(1);
-  // a régua vai de 18h a 0h: o turno ocupa a escala inteira
+  // a régua vai de 19h a 1h: o turno ocupa a escala inteira
   await expect(domingo.locator('.faixa')).toHaveAttribute('style', 'left:0%;width:100%');
   const quarta = page.locator('[data-semana] li', { hasText: 'Quarta' }).first();
   await expect(quarta.locator('.hora')).toHaveText('fechado');

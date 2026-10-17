@@ -1,5 +1,7 @@
 # Mineiro Lanche: Fase 3 (17/10/2026), horário automático, motoboy, comanda nova e domínio
 
+**Correção do dono em 17/10/2026:** o horário real passa a ser segunda, terça e quinta 19h–0h; sexta, sábado e domingo 19h–1h do dia seguinte; quarta fechada. Esta correção substitui os horários de 18h–0h registrados historicamente neste plano.
+
 **Pedido do cliente (16/10, à noite):** (R1) horário automático, aberto das 18h à meia-noite e fechado toda quarta; (R2) um usuário de motoboy que lê o QR code da comanda, e a leitura já marca o pedido como entregue; (R3) a comanda térmica sai com a logo, o número do pedido e esse QR; (R4) tudo no ar; (R5) domínio próprio na Vercel. Entrega ao cliente: **sábado, 17/10, antes das 18h**.
 
 **Como foi montado:** seis leitores mapearam o repositório no HEAD `893cedb` (horário, banco e papéis, comanda, front e build, deploy e domínio, testes e convenções), com consultas só de leitura no Supabase de produção, DNS e RDAP. O orquestrador conferiu os achados críticos. Formato e regras de `docs/PLANO-FASE-2.md`: uma tarefa por despacho, um commit por tarefa, só com o "verde" exigido. Os números de linha são de 17/10; quem executa localiza o trecho por `grep -n`.

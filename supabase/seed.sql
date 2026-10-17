@@ -91,7 +91,7 @@ where ativo and id not in ('catupiry', 'bacon', 'doritos', 'queijo', 'pizza');
 
 -- loja: cria se não existir; depois só horarios, combo_preco e taxa de entrega vêm do CONFIG (modo e aceita_fechada são do painel)
 insert into public.loja (id, modo, aceita_fechada, combo_preco, taxa_km, taxa_fixa, horarios)
-values (1, 'auto', false, 14.90, 1.00, 4.00, '{"0":["18:00","00:00"],"1":["18:00","00:00"],"2":["18:00","00:00"],"3":null,"4":["18:00","00:00"],"5":["18:00","00:00"],"6":["18:00","00:00"]}'::jsonb)
+values (1, 'auto', false, 14.90, 1.00, 4.00, '{"0":["19:00","01:00"],"1":["19:00","00:00"],"2":["19:00","00:00"],"3":null,"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb)
 on conflict (id) do update set
   horarios = excluded.horarios,
   combo_preco = excluded.combo_preco,

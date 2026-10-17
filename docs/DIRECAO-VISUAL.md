@@ -535,7 +535,7 @@ As classes atuais continuam (os testes dependem delas; ver 5.0). Aqui está só 
   - pílula de altura 32 com `min-width` reservada (16ch, para não haver CLS), ponto de 8 px e borda 1,5 px;
   - aberto: texto `--neon-aberto`, fundo `rgba(91,227,138,.12)` e `--brilho-neon`;
   - fechado: texto `--vermelho-luz` com brilho vermelho;
-  - texto vem de `ML.horario.situacao().txt` (versão curta permitida: "Aberto · até 0h", "Fechado · abre às 18h");
+  - texto vem de `ML.horario.situacao().txt` (versão curta permitida: "Aberto · até 0h", "Fechado · abre às 19h");
   - o "zumbido" a cada 7 s mexe só na opacidade da camada de brilho; o texto fica sólido;
   - `role="status"`. Em `forced-colors`, vira borda e texto.
 - **Faixa do combo** (`.faixa-combo` em `[data-screen="menu"]`):
@@ -585,7 +585,7 @@ As classes atuais continuam (os testes dependem delas; ver 5.0). Aqui está só 
 4. **Faixa do combo** (componente 4.4).
 5. **Stories:** anéis com `conic-gradient(var(--anel-claro), var(--anel), var(--anel-escuro), var(--anel-claro))`, com fotos 'nova' primeiro.
 6. **"Saindo da chapa":** trilho com `scroll-snap` de destaques 3:4 (62% de largura), só com fotos 'nova'. O toque abre a ficha direto.
-7. **Horário:** 7 lâmpadas (D S T Q Q S S; hoje com anel `--letreiro`) e a régua 18h–0h (rótulos 18h, 21h e 0h; a quarta sem faixa, "fechado"), de `CONFIG.horarios`, com o `[data-semana]`.
+7. **Horário:** 7 lâmpadas (D S T Q Q S S; hoje com anel `--letreiro`) e a régua 19h–1h (rótulos 19h, 22h e 1h; a quarta sem faixa, "fechado"), de `CONFIG.horarios`, com o `[data-semana]`.
 8. **Links em linhas escuras** (`--chapa`, 56 px): WhatsApp, Instagram, "Conheça o truck" e "Acompanhar meu pedido" (só se houver token).
 9. **"Onde":** "Rua Eliziel Alves Costa, 300 · Centro · Suzano/SP" (do `CONFIG.enderecoPartes`) e "Abrir no mapa" (link externo).
 
@@ -777,7 +777,7 @@ export const ROTEIRO = {
 
 - **Conteúdo:** duas faixas inclinadas (−3° e +2°) que se cruzam:
   1. placa `--placa` com fios `--fio` e nomes em Lilita `--letreiro`, separados por ★. Os nomes são os produtos com foto 'nova', vindos do `CONFIG`; o HTML traz a mesma lista como reserva;
-  2. faixa `--osso` com texto `--grafite` em Oswald 700: "Prensado? Avise antes, não cobramos ★ Qualquer lanche vira combo +R$ 14,90 ★ Domingo também, das 18h à meia-noite". Combo e horário vêm do `CONFIG`.
+  2. faixa `--osso` com texto `--grafite` em Oswald 700: "Prensado? Avise antes, não cobramos ★ Qualquer lanche vira combo +R$ 14,90 ★ Domingo também, das 19h à 1h". Combo e horário vêm do `CONFIG`.
 - **Interação:** o `playbackRate` (WAAPI) acompanha a velocidade da rolagem, de 1 a 6×.
 - **Técnica:** `translateX` em laço com o conteúdo duplicado (a cópia com `aria-hidden`); pausa fora da tela.
 - **Movimento reduzido:** faixas paradas.
@@ -845,7 +845,7 @@ export const ROTEIRO = {
 **S6 · Letreiro da noite** (horário; seção comum, não presa)
 
 - **Conteúdo:**
-  - "Todo dia, menos quarta · Todos os dias, das 18h à meia-noite · Fechado às quartas", de `CONFIG.horarioTexto`;
+  - "Todo dia, menos quarta · Segunda, terça e quinta, das 19h à meia-noite · Sexta, sábado e domingo, das 19h à 1h · Fechado às quartas", de `CONFIG.horarioTexto`;
   - 7 lâmpadas com hoje em anel `--letreiro` (`[data-semana]`);
   - relógio de Suzano (`ML.horario.agora`) em Lilita de 64 a 120 px;
   - status neon;

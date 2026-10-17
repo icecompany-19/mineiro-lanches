@@ -3,7 +3,7 @@
    da luz (html[data-luz] e [data-luz-motivo], escritos por src/app.js). Aqui:
    - as letras de cada título são embrulhadas a partir do texto do HTML e acendem em sequência (base.js);
    - [data-abre] diz a hora da próxima abertura dos turnos (ML.horario.turnos + ML.fmt.hora) e, quando ela não é hoje,
-     [data-abre-dia] diz o dia, como o neon do final: "A chapa acende amanhã às 18h." ou "A chapa acende quinta às 18h." (numa
+     [data-abre-dia] diz o dia, como o neon do final: "A chapa acende amanhã às 19h." ou "A chapa acende quinta às 19h." (numa
      quarta, que não tem turno). Refeito no evento da loja e a cada virada de minuto, e o aria-label do h1 acompanha o título visível;
    - tocar na placa: 2 piscadas, 1 brilho e um sopro de fumaça (como a bio, via ML.app);
    - a placa balança com a rolagem (mola amortecida, rAF só enquanto mexe);
@@ -101,7 +101,7 @@ function agendar() {
 }
 
 // ---------- textos que seguem os horários ----------
-// "18h" em [data-abre] e "amanhã " ou "quinta " em [data-abre-dia] (vazio quando abre hoje). Com as letras já embrulhadas,
+// "19h" em [data-abre] e "amanhã " ou "quinta " em [data-abre-dia] (vazio quando abre hoje). Com as letras já embrulhadas,
 // refaz só as letras do trecho que mudou e renumera o --i do título inteiro, para a sequência seguir a ordem de leitura
 function escreverAbre() {
   if (!abre) return;

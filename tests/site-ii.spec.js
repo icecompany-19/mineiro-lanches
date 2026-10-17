@@ -45,7 +45,7 @@ test.describe('S1 · fitas de letreiro', () => {
     expect(b).toEqual([
       'Prensado? Avise antes: não cobramos para prensar',
       'Qualquer lanche vira combo +R$ 14,90',
-      'Domingo também, das 18h à meia-noite'
+      'Domingo também, das 19h à 1h'
     ]);
     const texto = await page.locator('.fitas').textContent();
     for (const proibido of ['Combo Casal', 'Doritos', 'Hot Dog Pizza']) expect(texto).not.toContain(proibido);
@@ -642,10 +642,10 @@ test.describe('S9 · neon do final nos dias sem turno', () => {
   const EM = (dia, hhmm) => new Date(`2026-10-${dia}T${hhmm}:00-03:00`);
   const CASOS = [
     // quando, rótulo, texto do neon
-    [EM(14, '20:00'), 'quarta 20:00', 'Volta amanhã às 18h. A chapa espera.'],
-    [EM(14, '12:00'), 'quarta 12:00', 'Volta amanhã às 18h. A chapa espera.'],
-    [EM(13, '00:30'), 'terça 00:30 (a abertura é hoje)', 'Volta às 18h. A chapa espera.'],
-    [EM(15, '14:00'), 'quinta 14:00 (a abertura é hoje)', 'Volta às 18h. A chapa espera.'],
+    [EM(14, '20:00'), 'quarta 20:00', 'Volta amanhã às 19h. A chapa espera.'],
+    [EM(14, '12:00'), 'quarta 12:00', 'Volta amanhã às 19h. A chapa espera.'],
+    [EM(13, '00:30'), 'terça 00:30 (a abertura é hoje)', 'Volta às 19h. A chapa espera.'],
+    [EM(15, '14:00'), 'quinta 14:00 (a abertura é hoje)', 'Volta às 19h. A chapa espera.'],
     [EM(12, '20:00'), 'segunda 20:00 (aberto)', 'O Mineiro tá aceso']
   ];
   for (const [quando, rotulo, neon] of CASOS) {
@@ -668,6 +668,6 @@ test.describe('S9 · neon do final nos dias sem turno', () => {
     await page.goto('/#site');
     await expect(page.locator('#view-site')).toBeVisible();
     await estadoChegou;
-    await expect(page.locator('[data-fim-status]')).toHaveText('Volta sexta às 18h. A chapa espera.');
+    await expect(page.locator('[data-fim-status]')).toHaveText('Volta sexta às 19h. A chapa espera.');
   });
 });

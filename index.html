@@ -47,7 +47,8 @@
   "servesCuisine": ["Hambúrguer artesanal", "Hot dog", "Lanches"],
   "priceRange": "R$ 4,00 a R$ 99,90",
   "openingHoursSpecification": [
-    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Sunday", "Monday", "Tuesday", "Thursday", "Friday", "Saturday"], "opens": "18:00", "closes": "00:00" }
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Thursday"], "opens": "19:00", "closes": "00:00" },
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Friday", "Saturday", "Sunday"], "opens": "19:00", "closes": "01:00" }
   ],
   "hasMenu": "%VITE_SITE_URL%/#cardapio",
   "sameAs": ["https://www.instagram.com/mineirolanchesuzano/"]
@@ -116,7 +117,7 @@
             <div class="horario__cab"><h2 id="hor-tit">Horário</h2><span class="status" data-status></span></div>
             <p class="horario__txt" data-horario-txt></p>
             <ul class="semana" data-semana></ul>
-            <div class="escala" aria-hidden="true"><span>18h</span><span>21h</span><span>0h</span></div>
+            <div class="escala" aria-hidden="true"><span>19h</span><span>22h</span><span>1h</span></div>
           </div>
         </section>
         <section class="sec" aria-labelledby="links-tit">
@@ -333,11 +334,11 @@
         <div class="hero-txt">
           <h1 class="hero-tit" id="s-tit">
             <span class="hero-tit__e" data-estado="aberto">Acendeu: <span class="junto">a chapa</span> tá quente.</span>
-            <span class="hero-tit__e" data-estado="fechado">A chapa acende <span data-abre-dia></span>às <span class="junto"><span data-abre>18h</span>.</span></span>
+            <span class="hero-tit__e" data-estado="fechado">A chapa acende <span data-abre-dia></span>às <span class="junto"><span data-abre>19h</span>.</span></span>
             <span class="hero-tit__e" data-estado="pausa">Pausa na chapa.</span>
           </h1>
           <p class="hero-apoio">Hambúrguer artesanal, tradicional e hot dog</p>
-          <p class="hero-horario" data-hero-horario><span>Todos os dias, das 18h à meia-noite</span><span>Fechado às quartas</span></p>
+          <p class="hero-horario" data-hero-horario><span>Segunda, terça e quinta, das 19h à meia-noite</span><span>Sexta, sábado e domingo, das 19h à 1h</span><span>Fechado às quartas</span></p>
           <p class="status" data-status role="status"></p>
           <div class="s-ctas">
             <button type="button" class="btn btn-vermelho" data-go="menu"><svg class="ic" aria-hidden="true"><use href="#i-burger"/></svg>Fazer pedido</button>
@@ -361,7 +362,7 @@
     <!-- [S1] inicio: div.fitas (dono: site-II) -->
     <div class="fitas">
       <div class="fita"><div class="fita__trilho" data-fita="a"><span class="fita__grupo"><span class="fita__item">Gran Salada</span><span class="fita__item">Gran Bacon Onion</span><span class="fita__item">Gran Crispy</span><span class="fita__item">X-Salada</span><span class="fita__item">Ultra X-Salada Bacon</span><span class="fita__item">Exagerado X-Salada Egg Bacon</span><span class="fita__item">Big Mineiro</span><span class="fita__item">Hot Dog Max</span><span class="fita__item">Hot Dog CBO Turbo</span><span class="fita__item">X-Churrasco</span><span class="fita__item">Combo Gran Bacon Onion</span></span></div></div>
-      <div class="fita b"><div class="fita__trilho" data-fita="b"><span class="fita__grupo"><span class="fita__item">Prensado? Avise antes: não cobramos para prensar</span><span class="fita__item">Qualquer lanche vira combo +R$ 14,90</span><span class="fita__item">Domingo também, das 18h à meia-noite</span></span></div></div>
+      <div class="fita b"><div class="fita__trilho" data-fita="b"><span class="fita__grupo"><span class="fita__item">Prensado? Avise antes: não cobramos para prensar</span><span class="fita__item">Qualquer lanche vira combo +R$ 14,90</span><span class="fita__item">Domingo também, das 19h à 1h</span></span></div></div>
     </div>
     <!-- [S1] fim -->
 
@@ -562,7 +563,7 @@
         <div class="noite__cab">
           <p class="s-olho rv">Todo dia, menos quarta</p>
           <h2 class="s-h2 rv" id="noite-tit">Horário</h2>
-          <p class="noite__txt rv" data-horario-txt><span class="turno">Todos os dias, das 18h à <span class="nb">meia-noite</span>&nbsp;·</span> <span class="turno">Fechado às quartas</span></p>
+          <p class="noite__txt rv" data-horario-txt><span class="turno">Segunda, terça e quinta, das 19h à <span class="nb">meia-noite</span>&nbsp;·</span> <span class="turno">Sexta, sábado e domingo, das 19h à 1h&nbsp;·</span> <span class="turno">Fechado às quartas</span></p>
         </div>
         <div class="noite__relogio rv">
           <p class="noite__rotulo" id="noite-agora">Agora em Suzano</p>
@@ -571,7 +572,7 @@
         </div>
         <div class="horario rv">
           <ul class="semana" data-semana></ul>
-          <div class="escala" aria-hidden="true"><span>18h</span><span>21h</span><span>0h</span></div>
+          <div class="escala" aria-hidden="true"><span>19h</span><span>22h</span><span>1h</span></div>
         </div>
         <div class="noite__regua rv">
           <label class="noite__lbl" for="noite-regua">Simule um horário</label>
@@ -663,7 +664,7 @@
         <footer class="rodape fim__rodape">
           <p class="fim__marca"><strong>Mineiro Lanche</strong> · food truck no Centro de Suzano</p>
           <p class="fim__linha"><svg class="ic" aria-hidden="true"><use href="#i-pino"/></svg><span data-endereco>Rua Eliziel Alves Costa, 300 · Centro · Suzano/SP</span></p>
-          <p class="fim__linha"><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg><span data-horario-txt><span class="turno">Todos os dias, das 18h à <span class="nb">meia-noite</span>&nbsp;·</span> <span class="turno">Fechado às quartas</span></span></p>
+          <p class="fim__linha"><svg class="ic" aria-hidden="true"><use href="#i-relogio"/></svg><span data-horario-txt><span class="turno">Segunda, terça e quinta, das 19h à <span class="nb">meia-noite</span>&nbsp;·</span> <span class="turno">Sexta, sábado e domingo, das 19h à 1h&nbsp;·</span> <span class="turno">Fechado às quartas</span></span></p>
           <a class="fim__bio" href="#bio">Link da bio</a>
         </footer>
       </div>

@@ -185,9 +185,9 @@ export function iniciarApp() {
   }
   // de minuto em minuto, na virada do minuto (o texto "abre às 19h" muda na hora certa)
   function agendarStatus() { setTimeout(function () { atualizarStatus(); agendarStatus(); }, 60000 - (Date.now() % 60000) + 50); }
-  // 7 lâmpadas (hoje acesa) e a régua de cada dia: escala 18h → 0h (360 min); o que o banco mandar fora dessa janela é cortado na ponta da régua
+  // 7 lâmpadas (hoje acesa) e a régua de cada dia: escala 19h → 1h (360 min).
   function renderSemana(el) {
-    var a = ML.horario.agora(), ini = 1080, faixa = 360;
+    var a = ML.horario.agora(), ini = 1140, faixa = 360;
     var turnoAtual = ML.horario.situacaoNo(a.dia, a.min);
     var ordem = [0, 1, 2, 3, 4, 5, 6];
     el.innerHTML = ordem.map(function (d) {

@@ -65,7 +65,7 @@ const FIO = 'rgb(255, 204, 0)';
 const PLACA_ESCURA = 'rgb(150, 4, 10)';
 const VERMELHO_LUZ = 'rgb(255, 106, 92)';
 const NEON_ABERTO = 'rgb(91, 227, 138)';
-// quinta-feira, 15/10/2026 (um dia normal: aberta das 18h à meia-noite): 20:00 em São Paulo = 23:00Z (aberto); 14:00 = 17:00Z (fechado)
+// quinta-feira, 15/10/2026 (um dia normal: aberta das 19h à meia-noite): 20:00 em São Paulo = 23:00Z (aberto); 14:00 = 17:00Z (fechado)
 const AS_20H = new Date('2026-10-15T23:00:00Z');
 const AS_14H = new Date('2026-10-15T17:00:00Z');
 // quarta-feira, 14/10/2026, 20:00 em São Paulo: a loja não abre às quartas (horarios[3] = null)
@@ -346,8 +346,8 @@ test.describe('aba oculta pausa as animações infinitas', () => {
 // ---------- 5. a luz segue o truck ----------
 const CASOS_DE_LUZ = [
   { modo: 'auto', hora: AS_20H, rotulo: 'automático às 20h', luz: 'acesa', motivo: 'turno', classe: 'aberto', cor: NEON_ABERTO, texto: /^Aberto agora · até meia-noite$/ },
-  { modo: 'auto', hora: AS_14H, rotulo: 'automático às 14h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre hoje às 18h$/ },
-  { modo: 'auto', hora: QUARTA_20H, rotulo: 'automático numa quarta às 20h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre amanhã às 18h$/ },
+  { modo: 'auto', hora: AS_14H, rotulo: 'automático às 14h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre hoje às 19h$/ },
+  { modo: 'auto', hora: QUARTA_20H, rotulo: 'automático numa quarta às 20h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre amanhã às 19h$/ },
   { modo: 'fechada', hora: AS_20H, rotulo: 'fechada dentro do horário (20h)', luz: 'apagada', motivo: 'pausa', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · o truck pausou os pedidos$/ },
   { modo: 'aberta', hora: AS_14H, rotulo: 'aberta fora do horário (14h)', luz: 'acesa', motivo: 'turno', classe: 'aberto', cor: NEON_ABERTO, texto: /^Aberto agora \(horário estendido\)$/ }
 ];
