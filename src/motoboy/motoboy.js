@@ -81,6 +81,7 @@ export function montarMotoboy(el, usuario, { sb, sair }) {
     carregando: false, // a consulta da lista está no ar
     erroLista: '',
     emVoo: new Set(),
+    entregues: new Set(), // confirmados nesta tela: uma lista que chega atrasada não os traz de volta
     res: q('[data-res]'),
     areaLista: q('[data-lista]'),
     botaoLer: q('[data-act="ler-qr"]'),
@@ -185,6 +186,7 @@ async function confirmar(t, id, origem, botao) {
   try {
     const r = await confirmarEntrega(t.sb, id);
     if (aberta !== t) return;
+    t.entregues.add(id);
     t.lista = t.lista.filter((p) => p.id !== id);
     desenharLista(t);
     mostrarRes(t, { tipo: r.jaEntregue ? 'ja' : 'ok', pedido: r.pedido });
@@ -235,7 +237,7 @@ async function carregarLista(t) {
   t.estado = 'carregando';
   desenharLista(t);
   try {
-    t.lista = await entregasEmRota(t.sb);
+    t.lista = (await entregasEmRota(t.sb)).filter((p) => !t.entregues.has(p.id));
     t.estado = 'ok';
   } catch (e) {
     t.estado = 'erro';

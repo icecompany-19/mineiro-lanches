@@ -149,13 +149,16 @@ export function criarLeitor(opc) {
       ativo = false;
       throw erroLeitor('sem_camera');
     }
+    // desde já: esconder a aba durante a permissão ou o download do jsQR também desliga a câmera (parar() troca a geração)
+    document.addEventListener('visibilitychange', aoOcultar);
+    window.addEventListener('pagehide', aoSair);
     const pedidoQr = import('jsqr'); // baixa junto com o pedido de permissão
     pedidoQr.catch(() => {});
     let obtido;
     try {
       obtido = await md.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' } } });
     } catch (e) {
-      if (minha === geracao) ativo = false;
+      if (minha === geracao) parar();
       throw erroLeitor(codigoDaCamera(e), e);
     }
     if (minha !== geracao) {
@@ -167,7 +170,7 @@ export function criarLeitor(opc) {
       modulo = await pedidoQr;
     } catch (e) {
       pararFaixas(obtido);
-      if (minha === geracao) ativo = false;
+      if (minha === geracao) parar();
       throw erroLeitor('leitor', e);
     }
     if (minha !== geracao) {
@@ -176,12 +179,14 @@ export function criarLeitor(opc) {
     }
     jsQR = modulo.default || modulo;
     stream = obtido;
+    if (document.visibilityState === 'hidden') {
+      aoOcultar(); // a aba saiu da tela antes de a câmera começar
+      return;
+    }
     video.muted = true;
     video.playsInline = true;
     video.setAttribute('playsinline', '');
     video.srcObject = stream;
-    document.addEventListener('visibilitychange', aoOcultar);
-    window.addEventListener('pagehide', aoSair);
     // sem await: o play() só resolve com o primeiro quadro; o laço já espera os quadros chegarem
     const tocando = video.play();
     if (tocando && tocando.catch) tocando.catch(() => {});
