@@ -760,7 +760,7 @@ export const ROTEIRO = {
     | Estado | Título |
     |---|---|
     | Aberto | "Acendeu: a chapa tá quente." |
-    | Fechado | "A chapa acende às {hh}h.", com a próxima abertura dos turnos |
+    | Fechado | "A chapa acende às {hh}h.", com a próxima abertura dos turnos; quando ela não é hoje, "A chapa acende amanhã às {hh}h." ou "A chapa acende {dia} às {hh}h." (numa quarta, que não tem turno) |
     | Pausa manual (`loja.modo = 'fechada'`) | "Pausa na chapa." |
 
   - linha de apoio "Hambúrguer artesanal, tradicional e hot dog", com o `CONFIG.horarioTexto`;

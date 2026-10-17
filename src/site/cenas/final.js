@@ -9,7 +9,7 @@
      dele não tem hora). Refeito no evento da loja e a cada virada de minuto, e só com a view do site no ar;
    - a placa reacende UMA vez ao entrar na tela: um IntersectionObserver põe .entra nela (o CSS faz a entrada: a arte pisca 2 vezes,
      o halo sobe, o anel aparece) e, 700 ms depois, o brilho passa uma vez (ML.app.passarBrilho). Movimento reduzido: placa estática. */
-import { reduz } from '../base.js';
+import { proximaAbertura, quandoAbre, reduz } from '../base.js';
 
 let montada = false;
 let ctx = null;
@@ -75,21 +75,6 @@ function frase() {
   if (h2 && txt && h2.textContent !== txt) h2.textContent = txt;
 }
 
-// a próxima abertura dos turnos: { min, dias, dia } = minutos desde a meia-noite, quantos dias faltam (0 = hoje, se ainda não abriu;
-// 1 = amanhã) e o dia da semana (0 = domingo). Sem turno em nenhum dia: null
-function proximaAbertura() {
-  const H = ctx.ML.horario;
-  const a = H.agora();
-  const hoje = H.turnos[a.dia];
-  if (hoje && a.min < hoje.abre) return { min: hoje.abre, dias: 0, dia: a.dia };
-  for (let i = 1; i <= 7; i++) {
-    const dia = (a.dia + i) % 7;
-    const t = H.turnos[dia];
-    if (t) return { min: t.abre, dias: i, dia };
-  }
-  return null;
-}
-
 // o neon: aberto, "O Mineiro tá aceso"; fechado, "Volta às {hh}h. A chapa espera." (hoje) ou "Volta amanhã às {hh}h. A chapa espera."
 // (e "Volta quinta às {hh}h. ..." com mais de um dia de espera); pausa manual, "Pausa na chapa."
 function atualizar() {
@@ -100,12 +85,8 @@ function atualizar() {
   if (s.aberto) txt = 'O Mineiro tá aceso';
   else if (loja && loja.modo === 'fechada') txt = 'Pausa na chapa.';
   else {
-    const prox = proximaAbertura();
-    if (!prox) txt = 'Pausa na chapa.';
-    else {
-      const quando = prox.dias === 0 ? '' : (prox.dias === 1 ? 'amanhã ' : ctx.ML.fmt.dia(prox.dia) + ' ');
-      txt = 'Volta ' + quando + 'às ' + ctx.ML.fmt.hora(prox.min) + '. A chapa espera.';
-    }
+    const prox = proximaAbertura(ctx.ML.horario);
+    txt = prox ? 'Volta ' + quandoAbre(prox, ctx.ML.fmt) + 'às ' + ctx.ML.fmt.hora(prox.min) + '. A chapa espera.' : 'Pausa na chapa.';
   }
   if (neon.textContent !== txt) neon.textContent = txt;
   neon.classList.toggle('aberto', s.aberto);

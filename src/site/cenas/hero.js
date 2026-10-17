@@ -2,13 +2,14 @@
    O HTML traz a parede, a placa, os 3 títulos (aberto, fechado e pausa) e o status; o CSS mostra o título do estado
    da luz (html[data-luz] e [data-luz-motivo], escritos por src/app.js). Aqui:
    - as letras de cada título são embrulhadas a partir do texto do HTML e acendem em sequência (base.js);
-   - [data-abre] diz a próxima abertura dos turnos (ML.horario.turnos + ML.fmt.hora), refeito no evento da loja e a
-     cada virada de minuto, e o aria-label do h1 acompanha o título visível;
+   - [data-abre] diz a hora da próxima abertura dos turnos (ML.horario.turnos + ML.fmt.hora) e, quando ela não é hoje,
+     [data-abre-dia] diz o dia, como o neon do final: "A chapa acende amanhã às 18h." ou "A chapa acende quinta às 18h." (numa
+     quarta, que não tem turno). Refeito no evento da loja e a cada virada de minuto, e o aria-label do h1 acompanha o título visível;
    - tocar na placa: 2 piscadas, 1 brilho e um sopro de fumaça (como a bio, via ML.app);
    - a placa balança com a rolagem (mola amortecida, rAF só enquanto mexe);
    - em 1024+ com mouse, o cone da arandela segue o ponteiro (--mx na seção; o CSS faz o resto).
    Movimento reduzido: tudo estático e aceso (sem balanço, sem entrada, sem cone seguindo o mouse). */
-import { embrulharLetras, registrar, reduz } from '../base.js';
+import { embrulharLetras, proximaAbertura, quandoAbre, registrar, reduz } from '../base.js';
 
 const CHAVE_PLACA = 'mineiro:v2:placa-acesa'; // a mesma da bio (src/app.js): a placa acende uma vez por sessão
 const DESKTOP = window.matchMedia('(min-width: 1024px)');
@@ -19,7 +20,7 @@ let ctx = null;
 let sec = null;
 let h1 = null;
 let abre = null;
-let inicioAbre = 0;
+let abreDia = null;
 let letrado = false;
 let sai = null; // desliga a escuta da loja
 let timer = 0;
@@ -48,15 +49,10 @@ export function parar() {
 function montar() {
   h1 = ctx.$('#s-tit', sec);
   abre = ctx.$('[data-abre]', sec);
+  abreDia = ctx.$('[data-abre-dia]', sec);
   const placa = ctx.$('[data-placa]', sec);
-  // a hora certa antes de embrulhar as letras; o índice da 1ª letra da hora segue a contagem do título "fechado"
-  if (abre) {
-    const r = document.createRange();
-    r.setStart(abre.closest('[data-estado]'), 0);
-    r.setEndBefore(abre);
-    inicioAbre = r.toString().replace(/\s+/g, '').length;
-    escreverAbre();
-  }
+  // o dia e a hora certos antes de embrulhar as letras: o título "fechado" já nasce com o --i em sequência
+  escreverAbre();
   horarioTexto();
   // cada título embrulha as próprias letras; o aria-label fica no h1 (acompanha o título do estado, ver atualizar)
   ctx.$$('[data-estado]', h1).forEach((t) => {
@@ -105,32 +101,26 @@ function agendar() {
 }
 
 // ---------- textos que seguem os horários ----------
-// a próxima abertura dos turnos, em minutos desde a meia-noite (hoje, se ainda não abriu; senão o próximo dia com turno)
-function proximaAbertura() {
-  const H = ctx.ML.horario;
-  const a = H.agora();
-  const hoje = H.turnos[a.dia];
-  if (hoje && a.min < hoje.abre) return hoje.abre;
-  for (let i = 1; i <= 7; i++) {
-    const t = H.turnos[(a.dia + i) % 7];
-    if (t) return t.abre;
-  }
-  return null;
-}
-
-// "19h" em [data-abre]; com as letras já embrulhadas, refaz só as letras da hora
+// "18h" em [data-abre] e "amanhã " ou "quinta " em [data-abre-dia] (vazio quando abre hoje). Com as letras já embrulhadas,
+// refaz só as letras do trecho que mudou e renumera o --i do título inteiro, para a sequência seguir a ordem de leitura
 function escreverAbre() {
   if (!abre) return;
-  const min = proximaAbertura();
-  if (min == null) return;
-  const txt = ctx.ML.fmt.hora(min);
-  if (abre.textContent === txt) return;
-  abre.textContent = txt;
+  const prox = proximaAbertura(ctx.ML.horario);
+  if (!prox) return;
+  let mudou = trocar(abre, ctx.ML.fmt.hora(prox.min));
+  if (abreDia) mudou = trocar(abreDia, quandoAbre(prox, ctx.ML.fmt)) || mudou;
+  if (mudou && letrado) ctx.$$('.letra', abre.closest('[data-estado]')).forEach((l, i) => l.style.setProperty('--i', i));
+}
+
+function trocar(el, txt) {
+  if (el.textContent === txt) return false;
+  el.textContent = txt;
   if (letrado) {
-    abre.removeAttribute('data-embrulhado');
-    embrulharLetras(abre, inicioAbre);
-    abre.removeAttribute('aria-label');
+    el.removeAttribute('data-embrulhado');
+    embrulharLetras(el);
+    el.removeAttribute('aria-label');
   }
+  return true;
 }
 
 // as linhas do horário vêm do CONFIG (o HTML traz o mesmo texto para quem chega sem JS)

@@ -6,6 +6,8 @@
      alguma seção registrada visível; ele escreve --p (0 a 1) na seção e chama opcoes.quadro(p, info) a cada quadro.
    - revelar(raiz): os .rv abaixo da dobra sobem com opacidade quando entram (os de cima começam visíveis).
    - embrulharLetras(el): letra por letra em spans (animação por --i), palavras em nowrap e o texto no aria-label.
+   - proximaAbertura(H) e quandoAbre(prox, fmt): a próxima abertura dos turnos e o dia dela ("amanhã ", "quinta "), para o
+     título do herói e o neon do final.
    Só transform, opacity e clip-path animam; nada aqui usa setInterval. */
 
 const MQ = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -216,4 +218,25 @@ export function embrulharLetras(el, inicio) {
   });
   el.setAttribute('data-embrulhado', String(i));
   return i;
+}
+
+// ---------- próxima abertura (herói e final) ----------
+// H = ML.horario. Devolve { min, dias, dia }: minutos desde a meia-noite, quantos dias faltam (0 = hoje, se ainda não abriu;
+// 1 = amanhã) e o dia da semana (0 = domingo). Sem turno em nenhum dia: null
+export function proximaAbertura(H) {
+  const a = H.agora();
+  const hoje = H.turnos[a.dia];
+  if (hoje && a.min < hoje.abre) return { min: hoje.abre, dias: 0, dia: a.dia };
+  for (let i = 1; i <= 7; i++) {
+    const dia = (a.dia + i) % 7;
+    const t = H.turnos[dia];
+    if (t) return { min: t.abre, dias: i, dia };
+  }
+  return null;
+}
+
+// o dia da abertura para ir antes de "às {hh}h": '' (hoje), 'amanhã ' ou o nome do dia ('quinta '), com o espaço no fim
+export function quandoAbre(prox, fmt) {
+  if (!prox || prox.dias === 0) return '';
+  return (prox.dias === 1 ? 'amanhã' : fmt.dia(prox.dia)) + ' ';
 }

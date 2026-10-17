@@ -224,6 +224,65 @@ test.describe('luz do truck e título do herói', () => {
   }
 });
 
+// ---------- 3b. o herói diz o dia quando a próxima abertura não é hoje (horário: quarta fechada) ----------
+test.describe('título do herói nos dias sem turno', () => {
+  // 14/10/2026 é quarta; hh:mm(:ss) no horário de Brasília
+  const EM = (dia, hhmm) => new Date(`2026-10-${dia}T${hhmm}${hhmm.length === 5 ? ':00' : ''}-03:00`);
+  // as letras do título "fechado": o texto e o --i de cada uma (a animação acende na ordem de leitura, sem buraco nem repetição)
+  const letras = (page) =>
+    page.evaluate(() => [...document.querySelectorAll('.s-hero .hero-tit__e[data-estado="fechado"] .letra')].map((l) => [l.textContent, l.style.getPropertyValue('--i')]));
+  async function conferir(page, titulo) {
+    const visivel = page.locator('.hero-tit__e:visible');
+    await expect(visivel).toHaveCount(1);
+    await expect(visivel).toHaveAttribute('data-estado', 'fechado');
+    await expect(visivel).toHaveText(titulo);
+    await expect(page.locator('#s-tit')).toHaveAttribute('aria-label', titulo);
+    const ls = await letras(page);
+    expect(ls.map((l) => l[0]).join(''), 'uma .letra por caractere do título').toBe(titulo.replace(/\s+/g, ''));
+    expect(ls.map((l) => +l[1]), '--i das letras em sequência').toEqual(ls.map((_, i) => i));
+  }
+  async function abrir(page, quando) {
+    await page.clock.setFixedTime(quando);
+    const estadoChegou = page.waitForResponse((r) => r.url().includes('/rpc/estado_cardapio'));
+    await page.goto('/#site');
+    await expect(page.locator('#view-site')).toBeVisible();
+    await estadoChegou;
+  }
+  const CASOS = [
+    // quando, rótulo, título
+    [EM(14, '20:00'), 'quarta 20:00', `A chapa acende amanhã às ${ABRE}.`],
+    [EM(14, '12:00'), 'quarta 12:00', `A chapa acende amanhã às ${ABRE}.`],
+    [EM(13, '00:30'), 'terça 00:30 (a abertura é hoje)', `A chapa acende às ${ABRE}.`],
+    [EM(15, '14:00'), 'quinta 14:00 (a abertura é hoje)', `A chapa acende às ${ABRE}.`]
+  ];
+  for (const [quando, rotulo, titulo] of CASOS) {
+    test(`${rotulo}: "${titulo}"`, async ({ page }) => {
+      await abrir(page, quando);
+      await conferir(page, titulo);
+      // o título mais longo não empurra os botões do herói para baixo da dobra
+      const caixa = await page.locator('.s-hero').getByRole('button', { name: 'Fazer pedido' }).boundingBox();
+      expect(caixa.y + caixa.height, 'Fazer pedido acima da dobra').toBeLessThanOrEqual(await page.evaluate(() => innerHeight));
+    });
+  }
+
+  test('dois dias seguidos sem turno (o banco manda): o título diz o nome do dia', async ({ page }) => {
+    await mudarEstado(page, (j) => {
+      j.loja.horarios['4'] = null; // quinta também fechada: a quarta espera até a sexta
+    });
+    await abrir(page, EM(14, '20:00'));
+    await conferir(page, `A chapa acende sexta às ${ABRE}.`);
+  });
+
+  test('a virada da meia-noite de quarta para quinta refaz o título com as letras já embrulhadas', async ({ page }) => {
+    // 23:59:59,5: o relógio de minuto do herói dispara a cada ~0,5 s enquanto a hora fica parada aí
+    await abrir(page, EM(14, '23:59:59.500'));
+    await conferir(page, `A chapa acende amanhã às ${ABRE}.`);
+    await page.clock.setFixedTime(EM(15, '00:00:01'));
+    await expect(page.locator('.s-hero [data-abre-dia]')).toHaveText('');
+    await conferir(page, `A chapa acende às ${ABRE}.`);
+  });
+});
+
 // ---------- 4. movimento reduzido ----------
 // animação "viva": a que ainda não acabou e dura mais que um instante. O base.css zera as durações para 0,01 ms e uma volta (o fim é
 // imediato: a foto que carrega, por exemplo, acende numa transição dessas); laço infinito ou ligado à rolagem sempre conta.
