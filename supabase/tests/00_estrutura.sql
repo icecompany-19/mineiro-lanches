@@ -9,8 +9,8 @@ select pg_temp.igual(
   'bebida=8,combo=11,lanche=35,porcao=2', 'seed: 35 lanches, 11 combos, 2 porções, 8 bebidas');
 select pg_temp.igual((select count(*) from adicionais where preco = 7.50)::text, '5', 'seed: 5 adicionais a R$ 7,50');
 select pg_temp.igual((select count(*) from loja)::text, '1', 'seed: uma linha de loja');
-select pg_temp.ok((select combo_preco = 14.90 and horarios = '{"0":["19:00","00:00"],"1":["19:00","00:00"],"2":["19:00","00:00"],"3":["19:00","00:00"],"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb from loja),
-  'seed: loja com combo 14,90 e horários do CONFIG (domingo 19h–0h)');
+select pg_temp.ok((select combo_preco = 14.90 and horarios = '{"0":["18:00","00:00"],"1":["18:00","00:00"],"2":["18:00","00:00"],"3":null,"4":["18:00","00:00"],"5":["18:00","00:00"],"6":["18:00","00:00"]}'::jsonb from loja),
+  'seed: loja com combo 14,90 e horários do CONFIG (18h–0h, quarta fechada)');
 select pg_temp.igual((select string_agg(id, ',' order by ordem) from (select id, ordem from produtos order by ordem limit 3) t),
   'gran-burger,gran-burger-bacon,gran-salada', 'seed: ordem do CONFIG');
 select pg_temp.ok((select ingredientes = array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '3 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']
