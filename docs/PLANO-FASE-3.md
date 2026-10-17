@@ -168,13 +168,15 @@ Modelos: **O** = Opus (contrato, integração, revisão de segurança), **S** = 
 
 ## 8. Fora de hoje (registrar em pendências)
 
-- Aviso no painel quando o motoboy confirma (hoje o cartão vai para "Concluídos" em silêncio; o som é só para pedido novo).
+- ~~Aviso no painel quando o motoboy confirma~~ **Feito em 17/10, à tarde:** toast sem som "#0011 entregue pelo motoboy · Nome" quando o pedido vira entregue em outro aparelho; o som continua só para pedido novo.
+- ~~Herói do site dizer "amanhã" numa quarta~~ **Feito em 17/10, à tarde:** "A chapa acende amanhã às 18h." (ou o nome do dia), com `proximaAbertura` e `quandoAbre` no `src/site/base.js`, comuns ao herói e ao neon do final.
+- ~~`qrcode` e `jsqr` em `devDependencies`~~ **Feito em 17/10, à tarde:** os dois vão para o bundle (comanda e leitor do motoboy) e passaram para `dependencies`; o lockfile só perdeu as marcas `dev`.
 
 - Forma de pagamento e troco no checkout, para o motoboy saber o que cobrar (`CONFIG.pagamentos = null`).
 - Volta automática do modo manual para "Automático" (pg_cron) e `horarioTexto` derivado de `horarios`.
 - Prova de entrega no endereço (código mostrado ao cliente ou geolocalização). Hoje o QR **não** prova nem que a comanda estava com o motoboy: o `id` do pedido volta ao cliente no `criar_pedido`, então o próprio cliente consegue montar o link e mandá-lo ao entregador. O dano é limitado (precisa de um motoboy logado abrindo o link). Saídas: o link pedir um toque de confirmação, ou o QR levar um código curto que não seja o `id`.
-- Revisão de segurança (17/10, veredito PASS), pendências baixas: `confirmar_entrega` não recorta o dia de operação (um motoboy com o `id` de um pedido antigo vê nome, telefone e endereço; no caminho "já entregue", devolver só `{id, numero, status}`); o `acompanhar_pedido` mostra ao cliente o campo `por` ("motoboy"/"equipe") do histórico; o filtro por `dia_operacional` em `entregas_em_rota` não usa índice (irrelevante com ~30 pedidos por dia); falta teste de duas leituras simultâneas do QR (o `for update` cobre, sem prova automatizada).
-- Herói do site dizer "amanhã" numa quarta (`hero.js`, título animado).
+- Revisão de segurança (17/10, veredito PASS), pendências baixas: `confirmar_entrega` não recorta o dia de operação (um motoboy com o `id` de um pedido antigo vê nome, telefone e endereço; ~~no caminho "já entregue", devolver só `{id, numero, status}`~~ **feito em 17/10, à tarde, na migration `20261017000002_confirmar_entrega_ja_entregue.sql`, aplicada só no banco local: falta o OK para aplicar em produção**, e fica o caso de um pedido antigo ainda em `pronto` ou `rota`); o `acompanhar_pedido` mostra ao cliente o campo `por` ("motoboy"/"equipe") do histórico; o filtro por `dia_operacional` em `entregas_em_rota` não usa índice (irrelevante com ~30 pedidos por dia); falta teste de duas leituras simultâneas do QR (o `for update` cobre, sem prova automatizada).
 - Versionar no repositório o gatilho `entrar_na_equipe` e completar o histórico de migrations do Supabase.
 - Instalar o WebKit do Playwright; aposentar o N1 nos documentos.
+- `ficha.spec.js:4` intermitente (17/10, à tarde): depois de "Personalizar", o 1º ingrediente às vezes não está na tela (`toBeInViewport`, "viewport ratio 0"). Já acontece no `937aad3` (4 de 12 vezes, celular e desktop); falta ver se a ficha não rola até a lista ou se o teste confere cedo demais.
 - `mineirolanches.site`, se o dono quiser também esse nome (compra na Hostinger + mesmos passos de DNS).

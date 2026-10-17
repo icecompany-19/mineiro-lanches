@@ -33,7 +33,7 @@ node --test tests/*.test.mjs
 npx playwright test
 ```
 
-Última execução (17/10, fase 3 integrada, `3441859`): lint e build ok; 514 verificações SQL; paridade 318; node:test 87 (66 ok, 21 pulados por falta de poppler); Playwright celular + desktop + e2e em 19,7 min: 514 ok, 55 pulados e 1 falha intermitente antiga (`site-ii.spec.js:587`, véu do S5, que falha 4 de 6 vezes no front de antes da fase 3). O projeto `iphone` não roda aqui (sem WebKit). Linha de base e detalhes em `docs/PLANO-FASE-3.md` §7.
+Última execução (17/10, pendências baixas da fase 3, `82d31af`): lint e build ok; 515 verificações SQL; paridade 318; node:test 87 (66 ok, 21 pulados por falta de poppler); Playwright celular + desktop + e2e em 28,6 min: 524 ok, 56 pulados e 4 falhas intermitentes antigas: `site-ii.spec.js:587` (véu do S5, que falha 4 de 6 vezes no front de antes da fase 3) e 3 casos do `ficha.spec.js:4` (`toBeInViewport` do 1º ingrediente depois de "Personalizar"; no commit de base `937aad3` falha 4 de 12 vezes, com o mesmo erro). A anterior (`3441859`, 19,7 min) teve 514 ok, 55 pulados e só a do S5. O projeto `iphone` não roda aqui (sem WebKit). Linha de base e detalhes em `docs/PLANO-FASE-3.md` §7.
 
 ## Ambiente desta máquina (Windows 11, conferido em 12/10/2026)
 
