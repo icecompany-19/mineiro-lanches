@@ -1,4 +1,4 @@
-// Cenas do site imersivo da trilha site-II (docs/DIRECAO-VISUAL.md 6.2): S1 fitas, S1b placa do cardápio e S3 prensado.
+// Cenas do site imersivo da trilha site-II (docs/DIRECAO-VISUAL.md 6.2): S1 fitas, S1b placa do cardápio e S3 prensado; no fim, o neon do final (S9) nos dias sem turno (quarta fechada).
 // Cada cena confere o que o aceite do plano pede (docs/PLANO-FASE-2.md, B11 a B13). O estado do banco (estado_cardapio)
 // vem do Supabase local, alterado no caminho (page.route), sem mexer no banco.
 // Uso: npx playwright test tests/site-ii.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
@@ -45,7 +45,7 @@ test.describe('S1 · fitas de letreiro', () => {
     expect(b).toEqual([
       'Prensado? Avise antes: não cobramos para prensar',
       'Qualquer lanche vira combo +R$ 14,90',
-      'Domingo também, das 19h à meia-noite'
+      'Domingo também, das 18h à meia-noite'
     ]);
     const texto = await page.locator('.fitas').textContent();
     for (const proibido of ['Combo Casal', 'Doritos', 'Hot Dog Pizza']) expect(texto).not.toContain(proibido);
@@ -633,5 +633,41 @@ test.describe('S8 · onde', () => {
     expect(await medir(page)).toMatchObject({ traco: 0, x: 320, y: 56 });
     await mapa(page).scrollIntoViewIfNeeded();
     expect(await page.evaluate(() => document.getAnimations().filter((a) => a.effect && a.effect.getTiming().duration > 1 && a.effect.target.closest('.s-onde')).length)).toBe(0);
+  });
+});
+
+// ---------- S9 · o neon do final diz o dia quando a próxima abertura não é hoje (horário: quarta fechada) ----------
+test.describe('S9 · neon do final nos dias sem turno', () => {
+  // 14/10/2026 é quarta; hh:mm no horário de Brasília
+  const EM = (dia, hhmm) => new Date(`2026-10-${dia}T${hhmm}:00-03:00`);
+  const CASOS = [
+    // quando, rótulo, texto do neon
+    [EM(14, '20:00'), 'quarta 20:00', 'Volta amanhã às 18h. A chapa espera.'],
+    [EM(14, '12:00'), 'quarta 12:00', 'Volta amanhã às 18h. A chapa espera.'],
+    [EM(13, '00:30'), 'terça 00:30 (a abertura é hoje)', 'Volta às 18h. A chapa espera.'],
+    [EM(15, '14:00'), 'quinta 14:00 (a abertura é hoje)', 'Volta às 18h. A chapa espera.'],
+    [EM(12, '20:00'), 'segunda 20:00 (aberto)', 'O Mineiro tá aceso']
+  ];
+  for (const [quando, rotulo, neon] of CASOS) {
+    test(`${rotulo}: "${neon}"`, async ({ page }) => {
+      await page.clock.setFixedTime(quando);
+      const estadoChegou = page.waitForResponse((r) => r.url().includes('/rpc/estado_cardapio'));
+      await page.goto('/#site');
+      await expect(page.locator('#view-site')).toBeVisible();
+      await estadoChegou;
+      await expect(page.locator('[data-fim-status]')).toHaveText(neon);
+    });
+  }
+
+  test('dois dias seguidos sem turno (o banco manda): o neon diz o nome do dia', async ({ page }) => {
+    await mudarEstado(page, (j) => {
+      j.loja.horarios['4'] = null; // quinta também fechada: a quarta espera até a sexta
+    });
+    await page.clock.setFixedTime(EM(14, '20:00'));
+    const estadoChegou = page.waitForResponse((r) => r.url().includes('/rpc/estado_cardapio'));
+    await page.goto('/#site');
+    await expect(page.locator('#view-site')).toBeVisible();
+    await estadoChegou;
+    await expect(page.locator('[data-fim-status]')).toHaveText('Volta sexta às 18h. A chapa espera.');
   });
 });
