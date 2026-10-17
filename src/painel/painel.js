@@ -704,20 +704,23 @@
     if (img.decode) return img.decode().catch(() => {});
     return new Promise(ok => { img.addEventListener('load', ok, { once: true }); img.addEventListener('error', ok, { once: true }); });
   }
+  const aguardando = new WeakSet(); // comandas já esperando a imagem: um segundo clique em Imprimir não imprime duas vezes
   function imprimirComanda() {
     const c = document.querySelector('.pn-comanda');
     if (!c) return;
     const pendentes = Array.from(c.querySelectorAll('img')).filter(i => !i.complete);
     if (!pendentes.length) { imprimirAgora(c); return; }
+    if (aguardando.has(c)) return;
+    aguardando.add(c);
     let seguiu = false;
     const limite = setTimeout(() => seguir(), ESPERA_IMG_MS);
     const seguir = () => {
       if (seguiu) return;
       seguiu = true;
+      aguardando.delete(c);
       clearTimeout(limite);
-      const atual = document.querySelector('.pn-comanda'); // o diálogo pode ter sido fechado durante a espera
-      if (!atual) return;
-      try { imprimirAgora(atual); } catch { toast('A impressão não está disponível aqui. Use a visualização da comanda.'); }
+      if (!c.isConnected) return; // o diálogo foi fechado durante a espera: não imprime
+      try { imprimirAgora(c); } catch { toast('A impressão não está disponível aqui. Use a visualização da comanda.'); }
     };
     Promise.all(pendentes.map(esperarImagem)).then(seguir);
   }

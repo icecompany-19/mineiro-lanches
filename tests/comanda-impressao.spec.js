@@ -368,7 +368,7 @@ test.describe('logo e QR do entregador na comanda', () => {
     expect(m.preto).toBe('rgb(0, 0, 0)');
   });
 
-  test('a impressão espera a logo que ainda não chegou e imprime uma vez só', async ({ page }) => {
+  test('a impressão espera a logo que ainda não chegou e imprime uma vez só, mesmo com cliques repetidos em Imprimir', async ({ page }) => {
     let liberar;
     const solta = new Promise((ok) => (liberar = ok));
     await page.route('**/assets/logo/logo-512.webp', async (rota) => {
@@ -379,7 +379,8 @@ test.describe('logo e QR do entregador na comanda', () => {
     await page.locator('.pn-card[data-id$="25"] [data-act="imprimir"]').click();
     await expect(page.locator('.pn-comanda')).toBeVisible();
     expect(await page.locator('.pn-c-logo').evaluate((i) => i.complete), 'a logo ainda está a caminho').toBe(false);
-    await page.locator('.pn-modal [data-m="imprimir"]').click();
+    // quem não vê nada acontecer clica de novo: durante a espera, os cliques a mais não podem virar outras impressões
+    for (let i = 0; i < 3; i++) await page.locator('.pn-modal [data-m="imprimir"]').click();
     expect(await page.evaluate(() => window.__impressoes), 'espera a logo').toBe(0);
     liberar();
     await expect.poll(() => page.evaluate(() => window.__impressoes), { message: 'imprime quando a logo chega' }).toBe(1);
