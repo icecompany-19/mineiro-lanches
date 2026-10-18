@@ -236,6 +236,90 @@ test('mudar o número recalcula a taxa; resultado repetido vem do cache (sem nov
   expect(chamadas.osrm).toBe(1);
 });
 
+test('falha temporária de rede no CEP é repetida automaticamente e a taxa é calculada', async ({ page }) => {
+  await simular(page);
+  let tentativas = 0;
+  await page.route('https://viacep.com.br/**', r => ++tentativas === 1 ? r.abort() : r.fulfill({ json: VIACEP }));
+  await irAoCheckout(page);
+  await page.locator('#f-cep').fill('08674185');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
+  await digitar(page, '300');
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+  expect(tentativas).toBe(2);
+});
+
+test('rota responde 503 uma vez: recupera sem o cliente reenviar e grava a taxa', async ({ page }) => {
+  await simular(page);
+  let tentativas = 0;
+  await page.route('https://router.project-osrm.org/**', r => ++tentativas === 1
+    ? r.fulfill({ status: 503, json: { code: 'Unavailable' } })
+    : r.fulfill({ json: { code: 'Ok', routes: [{ distance: 3200 }] } }));
+  await irAoCheckout(page, { nome: NOME + ' rota recuperada' });
+  await page.locator('#f-cep').fill('08674185');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
+  await digitar(page, '300');
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+  expect(tentativas).toBe(2);
+  await page.locator('#btn-enviar').click();
+  await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
+  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} rota recuperada'`)).toBe('8.00|24.90');
+});
+
+test('mapa responde 429 uma vez: respeita o intervalo e recupera a taxa', async ({ page }) => {
+  await simular(page);
+  const consultas = [];
+  await page.route('https://nominatim.openstreetmap.org/**', r => {
+    consultas.push(Date.now());
+    return consultas.length === 1
+      ? r.fulfill({ status: 429, headers: { 'Retry-After': '2', 'Access-Control-Expose-Headers': 'Retry-After' }, json: { error: 'temporário' } })
+      : r.fulfill({ json: [{ lat: '-23.55', lon: '-46.33' }] });
+  });
+  await irAoCheckout(page);
+  await page.locator('#f-cep').fill('08674185');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
+  await digitar(page, '300');
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+  expect(consultas).toHaveLength(2);
+  expect(consultas[1] - consultas[0]).toBeGreaterThanOrEqual(1900);
+});
+
+test('Recalcular entrega refaz o CEP quando a consulta postal estava indisponível', async ({ page }) => {
+  await simular(page);
+  let indisponivel = true;
+  await page.route('https://viacep.com.br/**', r => indisponivel ? r.abort() : r.fulfill({ json: VIACEP }));
+  await irAoCheckout(page);
+  await page.locator('#f-cep').fill('08674185');
+  await page.locator('#f-end').fill('Rua Eliziél Alves Costa, 300');
+  await expect(page.getByRole('button', { name: 'Recalcular entrega' })).toBeVisible();
+  indisponivel = false;
+  await page.getByRole('button', { name: 'Recalcular entrega' }).click();
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, 300');
+});
+
+test('trocar o número cancela a busca antiga sem continuar as consultas daquele endereço', async ({ page }) => {
+  await simular(page);
+  const consultas = [];
+  let liberar;
+  const espera = new Promise(resolve => { liberar = resolve; });
+  await page.route('https://nominatim.openstreetmap.org/**', async r => {
+    const q = new URL(r.request().url()).searchParams.get('q');
+    consultas.push(q);
+    if (q.includes('300')) { await espera; await r.fulfill({ json: [] }); }
+    else await r.fulfill({ json: [{ lat: '-23.55', lon: '-46.33' }] });
+  });
+  await irAoCheckout(page);
+  await page.locator('#f-cep').fill('08674185');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
+  await digitar(page, '300');
+  await expect.poll(() => consultas.length).toBe(1);
+  await page.locator('#f-end').fill('Rua Eliziél Alves Costa, 301');
+  liberar();
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
+  expect(consultas).toHaveLength(2);
+  expect(consultas[1]).toContain('301');
+});
+
 test('sem o número da casa o envio é recusado com a mensagem certa', async ({ page }) => {
   await simular(page);
   await irAoCheckout(page);

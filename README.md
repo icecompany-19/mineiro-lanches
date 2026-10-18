@@ -46,6 +46,8 @@ O histórico fica na chave local `mineiro:v2:cadastros`. Ele não consulta a tab
 
 O cálculo da entrega tenta a rua e a cidade sem o bairro quando o ViaCEP e o mapa usam nomes diferentes (caso do CEP 08555-120). O formulário conserva o número preenchido antes da resposta do CEP, invalida a taxa ao trocar de endereço e aguarda CEP/rota antes de enviar. Em falhas temporárias da rota, o cliente pode tocar em **Recalcular entrega**.
 
+Desde 18/10, falhas temporárias de rede, prazo, HTTP 429 e 5xx têm uma nova tentativa automática. Consultas antigas são canceladas ao trocar o endereço, o mapa recebe uma consulta por vez com intervalo mínimo de 1,1 s e a rota pode responder em até 15 s por tentativa. **Recalcular entrega** também refaz uma consulta de CEP que falhou. Se ainda faltar taxa, a regra atual permite o pedido, mas o painel e a comanda destacam **Taxa de entrega pendente — não incluída no total**. O sistema não inventa uma taxa para esses pedidos.
+
 ```bash
 npm ci
 npx playwright install chromium webkit # navegadores dos testes; WebKit cobre a ficha no iPhone

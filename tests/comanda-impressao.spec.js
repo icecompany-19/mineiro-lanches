@@ -121,6 +121,19 @@ test('a comanda tem 72 mm, sai em negrito e a página de impressão tem o tamanh
   expect(Math.abs(pdf.caixas[0].alturaPt - Number(h) * (72 / 25.4)), 'altura da página = a medida posta').toBeLessThan(1.5);
 });
 
+test('entrega sem taxa fica destacada no painel e na comanda, sem parecer incluída no total', async ({ page }) => {
+  await entrar(page, [linha(16, { taxa_entrega: null, distancia_km: null, total: 97.7 })]);
+  const card = page.locator('.pn-card[data-id$="16"]');
+  await expect(card.locator('.pn-taxa--pendente')).toHaveText('Taxa de entrega pendente — não incluída no total');
+  await card.locator('[data-act="imprimir"]').click();
+  const taxa = page.locator('.pn-comanda .pn-c-taxa');
+  await expect(taxa).toHaveText('TAXA DE ENTREGA PENDENTE — NÃO INCLUÍDA NO TOTAL');
+  await expect(page.locator('.pn-comanda .pn-c-total')).toContainText('R$ 97,70');
+  await page.emulateMedia({ media: 'print' });
+  await expect(taxa).toHaveCSS('color', 'rgb(0, 0, 0)');
+  await expect(taxa).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+});
+
 test('imprimir pelo detalhe do pedido dá a mesma comanda e a mesma página que pelo cartão', async ({ page }) => {
   await entrar(page, [linha(12)]);
   const medir = async () => {
@@ -155,12 +168,6 @@ test('pedido com muitos itens continua em uma página só, com a altura ajustada
   const pdf = await pdfDaImpressao(page);
   expect(pdf.paginas).toBe(1);
   expect(Math.abs(pdf.caixas[0].larguraPt - PT_72MM)).toBeLessThan(1.5);
-});
-
-test('pedido sem taxa calculada mostra "TAXA DE ENTREGA A COMBINAR" na comanda', async ({ page }) => {
-  await entrar(page, [linha(14, { taxa_entrega: null, distancia_km: null, total: 97.7 })]);
-  await page.locator('.pn-card[data-id$="14"] [data-act="imprimir"]').click();
-  await expect(page.locator('.pn-comanda')).toContainText('TAXA DE ENTREGA A COMBINAR');
 });
 
 test('impressão térmica tem margens brancas, sem faixas escuras ou sombras do painel', async ({ page }, testInfo) => {

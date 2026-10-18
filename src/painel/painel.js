@@ -221,10 +221,10 @@
     }
     return `<span class="pn-tempo pn-tempo--fixo" title="Hora do pedido">${ic('relogio')}<span class="pn-tempo-v">${hhmm(p.criadoEm)}</span></span>`;
   }
-  // entrega: taxa por distância (R$ e km cobrados) ou "a combinar" quando a rota não pôde ser calculada
+  // Entrega: valor gravado no pedido ou aviso de que a taxa está pendente e fora do total.
   const taxaTxt = p => p.modo !== 'entrega' ? '' : p.taxaEntrega != null
     ? 'Entrega ' + brl(p.taxaEntrega) + (p.distanciaKm ? ' · ' + ML.entrega.kmCobrados(p.distanciaKm) + ' km' : '')
-    : 'Taxa de entrega a combinar';
+    : 'Taxa de entrega pendente — não incluída no total';
   const pagTxt = p => 'Pagamento: ' + (p.pagamento || 'a combinar') + (p.troco ? ' · troco para ' + p.troco : '');
   const tagExemplo = p => p.origem === 'exemplo' ? '<span class="pn-tag pn-tag--exemplo">Pedido de exemplo</span>' : '';
   // quem pediu pelo QR do truck (e de qual mesa)
@@ -246,7 +246,7 @@
       ${itensHTML(p, false)}
       ${p.obs ? `<p class="pn-obs"><strong>Obs:</strong> ${esc(p.obs)}</p>` : ''}
       ${end}
-      ${p.modo === 'entrega' ? `<p class="pn-taxa">${esc(taxaTxt(p))}</p>` : ''}
+      ${p.modo === 'entrega' ? `<p class="pn-taxa${p.taxaEntrega == null ? ' pn-taxa--pendente' : ''}">${esc(taxaTxt(p))}</p>` : ''}
       <div class="pn-rodape"><span class="pn-pag">${esc(pagTxt(p))}</span><strong class="pn-total">${brl(p.total)}</strong></div>
       <div class="pn-acoes">
         ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : ''}

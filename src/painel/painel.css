@@ -180,6 +180,7 @@
 .pn-end-b { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .4rem; }
 .pn-end-b .pn-btn { flex: 1 1 auto; }
 .pn-taxa { margin: 0; font: 600 .85rem var(--f-placa); letter-spacing: .04em; text-transform: uppercase; color: var(--pn-tinta-2, var(--tinta-2)); }
+.pn-taxa--pendente { padding: 8px; border: 2px solid currentColor; color: var(--placa-escura); font-weight: 800; }
 .pn-rodape { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
 .pn-card .pn-rodape { margin-top: 0; padding-top: 0; border-top: 0; font-size: inherit; color: inherit; }
 .pn-pag { font-size: .85rem; color: var(--pn-tinta-2); }

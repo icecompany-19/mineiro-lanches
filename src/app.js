@@ -647,17 +647,49 @@ export function iniciarApp() {
   // CEP -> ViaCEP (rua, bairro, cidade, UF). Rua e número -> Nominatim (OpenStreetMap) -> rota de carro do truck até lá (OSRM) -> km.
   // Taxa = km (sempre para cima) x porKm + fixa (CONFIG.entrega.taxa); o banco refaz a conta e é ele quem vale.
   // Qualquer falha (sem rede, endereço não achado) deixa a taxa "a combinar": o pedido continua podendo ser enviado.
-  var entr = { cep: '', ok: false, rua: '', bairro: '', cidade: '', uf: '', km: null, taxa: null, estado: 'vazio', seq: 0, timer: null, cepSeq: 0 };
+  var entr = { cep: '', ok: false, rua: '', bairro: '', cidade: '', uf: '', km: null, taxa: null, estado: 'vazio', seq: 0, timer: null, cepSeq: 0, ctl: null, cepCtl: null };
   var cacheKm = {};
+  var filaMapa = Promise.resolve(), ultimaConsultaMapa = 0;
   function mascaraCep(v) { var d = String(v || '').replace(/\D/g, '').slice(0, 8); return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d; }
-  function buscarJSON(url, ms) {
-    var ctl = typeof AbortController === 'function' ? new AbortController() : null;
-    var t = setTimeout(function () { if (ctl) ctl.abort(); }, ms || 8000);
-    return fetch(url, ctl ? { signal: ctl.signal } : undefined).then(function (r) {
-      clearTimeout(t);
-      if (!r.ok) throw new Error('http ' + r.status);
-      return r.json();
-    }, function (e) { clearTimeout(t); throw e; });
+  function esperarConsulta(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+  function conferirConsulta(sinal) { if (sinal && sinal.aborted) throw new DOMException('Consulta cancelada', 'AbortError'); }
+  function buscarJSON(url, ms, sinal) {
+    function consultar() {
+      conferirConsulta(sinal);
+      var ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      var abortar = function () { if (ctl) ctl.abort(); };
+      if (sinal) sinal.addEventListener('abort', abortar, { once: true });
+      var t = setTimeout(abortar, ms || 8000);
+      function limpar() { clearTimeout(t); if (sinal) sinal.removeEventListener('abort', abortar); }
+      return fetch(url, ctl ? { signal: ctl.signal } : undefined).then(function (r) {
+        if (!r.ok) {
+          var erro = new Error('http ' + r.status), depois = r.headers.get('Retry-After');
+          erro.status = r.status;
+          if (depois) { var atraso = /^\d+$/.test(depois) ? +depois * 1000 : Date.parse(depois) - Date.now(); if (isFinite(atraso)) erro.espera = Math.max(1100, atraso); }
+          throw erro;
+        }
+        return r.json(); // o prazo vale também enquanto o corpo da resposta está chegando
+      }).then(function (j) { limpar(); return j; }, function (e) { limpar(); throw e; });
+    }
+    function requisitar() {
+      if (url.indexOf('https://nominatim.openstreetmap.org/') !== 0) return Promise.resolve().then(consultar);
+      // Uma consulta por vez e pelo menos 1,1 s entre elas, inclusive entre tentativas automáticas.
+      var consulta = filaMapa.then(function () {
+        conferirConsulta(sinal);
+        return esperarConsulta(Math.max(0, 1100 - (Date.now() - ultimaConsultaMapa)));
+      }).then(function () { conferirConsulta(sinal); ultimaConsultaMapa = Date.now(); return consultar(); });
+      filaMapa = consulta.catch(function () {});
+      return consulta;
+    }
+    function tentar(n) {
+      return requisitar().catch(function (e) {
+        conferirConsulta(sinal);
+        // 4xx definitivos não melhoram repetindo a chamada; rede, prazo, 429 e 5xx têm uma nova tentativa.
+        if (n === 0 && (!e.status || e.status === 429 || e.status >= 500) && (e.espera || 1100) <= 15000) return esperarConsulta(e.espera || 1100).then(function () { return tentar(1); });
+        throw e;
+      });
+    }
+    return tentar(0);
   }
   function taxaCalculada() { return st.modo === 'entrega' && entr.estado === 'ok' ? entr.taxa : null; }
   function temNumero(txt) { return /\d/.test(txt) || /\bs\s*\/?\s*n\b/i.test(txt); }
@@ -684,8 +716,8 @@ export function iniciarApp() {
     $('#taxa-tentar').hidden = st.modo !== 'entrega' || entr.estado !== 'falha';
     atualizarContadores();
   }
-  function geocodificar(rua, bairro, cidade, uf) {
-    function consulta(txt) { return buscarJSON('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&q=' + encodeURIComponent(txt), 9000); }
+  function geocodificar(rua, bairro, cidade, uf, sinal) {
+    function consulta(txt) { return buscarJSON('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&q=' + encodeURIComponent(txt), 12000, sinal); }
     // O bairro do ViaCEP pode ter outro nome no mapa (ex.: CEP 08555-120).
     // Conserva rua, cidade e UF em todas as buscas; nunca usa só o centro da cidade.
     var soRua = rua.replace(/,\s*(?:\d|s\s*\/?\s*n\b).*$/i, '').trim();
@@ -707,29 +739,34 @@ export function iniciarApp() {
     }
     return tentar(0);
   }
-  function kmDaRota(destino) {
+  function kmDaRota(destino, sinal) {
     var o = C.entrega.origem;
     var url = 'https://router.project-osrm.org/route/v1/driving/' + o.lon + ',' + o.lat + ';' + destino.lon + ',' + destino.lat + '?overview=false';
-    return buscarJSON(url, 9000).then(function (j) {
+    return buscarJSON(url, 15000, sinal).then(function (j) {
       if (!j || j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error('rota');
       return Math.max(0.001, Math.round(j.routes[0].distance) / 1000);
     });
   }
   function executarCalculo(seq) {
+    if (seq !== entr.seq) return;
+    var sinal = entr.ctl && entr.ctl.signal;
     var rua = $('#f-end').value.trim(), chave = [rua, entr.bairro, entr.cidade, entr.uf].join('|').toLowerCase();
-    var busca = cacheKm[chave] != null ? Promise.resolve(cacheKm[chave]) : geocodificar(rua, entr.bairro, entr.cidade, entr.uf).then(function (g) {
+    var busca = cacheKm[chave] != null ? Promise.resolve(cacheKm[chave]) : geocodificar(rua, entr.bairro, entr.cidade, entr.uf, sinal).then(function (g) {
       if (!g) throw new Error('endereco');
-      return kmDaRota({ lat: +g.lat, lon: +g.lon });
-    }).then(function (km) { cacheKm[chave] = km; return km; });
+      return kmDaRota({ lat: +g.lat, lon: +g.lon }, sinal);
+    });
     busca.then(function (km) {
       if (seq !== entr.seq) return;
       if (!(km > 0 && km <= 100)) throw new Error('fora do alcance'); // o banco só aceita até 100 km
+      cacheKm[chave] = km;
       entr.km = km; entr.taxa = ML.entrega.taxa(km); entr.estado = 'ok';
     }).catch(function () { if (seq === entr.seq) entr.estado = 'falha'; }).then(function () { if (seq === entr.seq) renderTaxa(); });
   }
   // recalcula depois de mudar o CEP, a rua/número ou o modo; imediato = sem esperar o cliente parar de digitar
   function agendarTaxa(imediato) {
     clearTimeout(entr.timer);
+    if (entr.ctl) entr.ctl.abort();
+    entr.ctl = typeof AbortController === 'function' ? new AbortController() : null;
     var seq = ++entr.seq;
     entr.km = null; entr.taxa = null;
     if (st.modo !== 'entrega' || !entr.ok || !ML.entrega.ativa()) entr.estado = 'vazio';
@@ -750,6 +787,7 @@ export function iniciarApp() {
   }
   function dicaCep(txt, cls) { var d = $('#cep-dica'); d.textContent = txt; d.className = 'campo-dica' + (cls ? ' ' + cls : ''); }
   function limparCep() {
+    if (entr.cepCtl) entr.cepCtl.abort();
     entr.cep = ''; entr.ok = false; entr.bairro = ''; entr.cidade = ''; entr.uf = ''; entr.cepSeq++;
     $('#c-bairro').hidden = true; $('#f-bairro').value = '';
     dicaCep('Digite o CEP e a rua, o bairro e a cidade vêm sozinhos.');
@@ -758,11 +796,12 @@ export function iniciarApp() {
     // Um CEP novo invalida imediatamente a taxa e as consultas do endereço anterior.
     limparCep();
     var seq = entr.cepSeq;
+    entr.cepCtl = typeof AbortController === 'function' ? new AbortController() : null;
     entr.cep = cep;
     agendarTaxa();
     if (st.modo === 'entrega') { entr.estado = 'buscando-cep'; renderTaxa(); }
     dicaCep('Buscando o CEP…');
-    buscarJSON('https://viacep.com.br/ws/' + cep + '/json/', 8000).then(function (j) {
+    buscarJSON('https://viacep.com.br/ws/' + cep + '/json/', 10000, entr.cepCtl && entr.cepCtl.signal).then(function (j) {
       if (seq !== entr.cepSeq) return;
       if (!j || j.erro) { entr.cep = ''; entr.ok = false; dicaCep('CEP não encontrado. Confira os números ou escreva o endereço abaixo.', 'erro'); agendarTaxa(); return; }
       entr.cep = cep; entr.ok = true; entr.bairro = j.bairro || ''; entr.cidade = j.localidade || ''; entr.uf = j.uf || '';
@@ -779,7 +818,8 @@ export function iniciarApp() {
       agendarTaxa(true);
     }, function () {
       if (seq !== entr.cepSeq) return;
-      entr.cep = ''; entr.ok = false; dicaCep('Não conseguimos buscar o CEP agora. Escreva o endereço completo abaixo.', 'erro'); agendarTaxa();
+      entr.cep = ''; entr.ok = false; dicaCep('Não conseguimos buscar o CEP agora. Confira o CEP e tente novamente.', 'erro'); agendarTaxa();
+      entr.estado = 'falha'; renderTaxa();
     });
   }
   // endereço que vai no pedido: o que o cliente escreveu + bairro, cidade/UF e CEP do ViaCEP
@@ -798,7 +838,10 @@ export function iniciarApp() {
     else dicaCep('Digite o CEP e a rua, o bairro e a cidade vêm sozinhos.');
   });
   $('#f-end').addEventListener('input', function () { if (entr.ok) agendarTaxa(); });
-  $('#taxa-tentar').addEventListener('click', function () { agendarTaxa(true); });
+  $('#taxa-tentar').addEventListener('click', function () {
+    var cep = $('#f-cep').value.replace(/\D/g, '');
+    if (!entr.ok && cep.length === 8) buscarCep(cep, true); else agendarTaxa(true);
+  });
   // rascunho com CEP: refaz a busca (sem apagar a rua e o número já digitados) só quando o cliente chega ao checkout
   var restaurarCep = $('#f-cep').value.replace(/\D/g, '').length === 8;
 
