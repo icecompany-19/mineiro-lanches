@@ -2,7 +2,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/mapa-entrega.css';
 
-// Só mostra coordenadas independentes dos dados Google (CEP/GPS/ponto marcado pelo cliente).
+// Referências de endereço exigem uma marcação explícita antes de confirmar.
 export function abrirMapaEntrega({ ponto, signal }) {
   return new Promise((resolve) => {
     const dialog = document.createElement('dialog');
@@ -22,7 +22,9 @@ export function abrirMapaEntrega({ ponto, signal }) {
     );
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' +
+        (ponto?.fonte === 'geoapify' ? ' · <a href="https://www.geoapify.com/" target="_blank" rel="noopener">Geoapify</a>' : '')
     }).addTo(map);
     const icone = L.divIcon({
       className: 'mapa-entrega__pino',

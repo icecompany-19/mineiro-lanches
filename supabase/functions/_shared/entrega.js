@@ -94,17 +94,35 @@ export function candidatoGeoapify(j, postal, rua) {
   }
   return null;
 }
+export function referenciaGeoapify(j, postal) {
+  // Referência para posicionar o mapa, nunca para cobrar sem confirmação.
+  for (const g of j?.results || []) {
+    const p = { lat: g.lat, lon: g.lon };
+    if (!pontoValido(p) || !mesmaCidade(g, postal) || !['building', 'street', 'postcode'].includes(g.result_type)) continue;
+    const mesmoCep = String(g.postcode || '').replace(/\D/g, '') === postal.cep;
+    const mesmaRua = postal.rua && normalizar(g.street) === normalizar(postal.rua);
+    if (mesmoCep || mesmaRua) return { ...p, fonte: 'geoapify', confirmado: false };
+  }
+  return null;
+}
 export async function jsonHTTP(url, { fetcher = fetch, signal, body, headers = {}, prazo = 8000, tentativas = 2 } = {}) {
   for (let i = 0; i < tentativas; i++) {
     let status = 0,
       espera = 300;
+    // O runtime Edge pode não oferecer AbortSignal.any. Propagar o cancelamento
+    // explicitamente mantém o prazo da consulta e o limite de cada tentativa.
+    const ctl = new AbortController();
+    const cancelar = () => ctl.abort(signal?.reason);
+    if (signal?.aborted) cancelar();
+    else signal?.addEventListener('abort', cancelar, { once: true });
+    const timer = setTimeout(() => ctl.abort(new DOMException('Prazo da consulta excedido', 'TimeoutError')), prazo);
     try {
-      const limite = AbortSignal.timeout(prazo);
+      if (ctl.signal.aborted) throw ctl.signal.reason;
       const r = await fetcher(url, {
         method: body ? 'POST' : 'GET',
         headers,
         body: body ? JSON.stringify(body) : undefined,
-        signal: signal ? AbortSignal.any([signal, limite]) : limite
+        signal: ctl.signal
       });
       status = r.status;
       if (!r.ok) {
@@ -114,9 +132,20 @@ export async function jsonHTTP(url, { fetcher = fetch, signal, body, headers = {
       }
       return await r.json();
     } catch (e) {
+      console.warn(
+        'entrega_http',
+        JSON.stringify({
+          provedor: new URL(url).hostname,
+          status,
+          tipo: e?.name === 'TimeoutError' ? 'prazo' : e?.name === 'AbortError' ? 'cancelado' : 'consulta'
+        })
+      );
       if (signal?.aborted) throw signal.reason;
       if (i === tentativas - 1 || (status && status !== 429 && status < 500) || espera > 2000) throw e;
       await new Promise((resolve) => setTimeout(resolve, Math.max(300, espera)));
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', cancelar);
     }
   }
 }
@@ -141,18 +170,24 @@ export async function buscarPostal(cep, op = {}) {
 }
 export async function localizar(p, postal, { geoapifyKey, ...op }) {
   if (postal.rua && !ruaCompativel(p.rua, postal.rua)) throw erro('endereco_divergente');
+  let geo;
+  async function geocodificar() {
+    if (geo) return geo;
+    const u = new URL('https://api.geoapify.com/v1/geocode/search');
+    u.search = new URLSearchParams({
+      text: enderecoPostal(p.rua, postal),
+      filter: 'countrycode:br',
+      apiKey: geoapifyKey,
+      lang: 'pt',
+      format: 'json',
+      limit: '3'
+    });
+    geo = await jsonHTTP(u, op);
+    return geo;
+  }
   if (!p.ponto && !p.forcarConfirmacao && geoapifyKey) {
     try {
-      const u = new URL('https://api.geoapify.com/v1/geocode/search');
-      u.search = new URLSearchParams({
-        text: enderecoPostal(p.rua, postal),
-        filter: 'countrycode:br',
-        apiKey: geoapifyKey,
-        lang: 'pt',
-        format: 'json',
-        limit: '3'
-      });
-      const candidato = candidatoGeoapify(await jsonHTTP(u, op), postal, p.rua);
+      const candidato = candidatoGeoapify(await geocodificar(), postal, p.rua);
       if (candidato) return { ponto: candidato };
     } catch {
       /* consulta uma fonte independente; candidatos de CEP precisam de confirmação */
@@ -163,6 +198,28 @@ export async function localizar(p, postal, { geoapifyKey, ...op }) {
     centro = candidatoAwesome(await jsonHTTP(`https://cep.awesomeapi.com.br/json/${p.cep}`, op), postal);
   } catch {
     /* sem candidato confiável */
+  }
+  if (!centro && !p.ponto && geoapifyKey) {
+    try {
+      centro = referenciaGeoapify(await geocodificar(), postal);
+      if (!centro && postal.rua) {
+        // Número inexistente ou CEP ausente no mapa não devem impedir a busca
+        // da via. Ainda exige a mesma rua/município e confirmação do cliente.
+        const u = new URL('https://api.geoapify.com/v1/geocode/search');
+        u.search = new URLSearchParams({
+          text: [postal.rua, postal.cidade, postal.uf, 'Brasil'].join(', '),
+          type: 'street',
+          filter: 'countrycode:br',
+          apiKey: geoapifyKey,
+          lang: 'pt',
+          format: 'json',
+          limit: '3'
+        });
+        centro = referenciaGeoapify(await jsonHTTP(u, op), postal);
+      }
+    } catch {
+      /* GPS e marcação manual continuam disponíveis */
+    }
   }
   if (p.ponto) {
     if (centro && postal.rua && distanciaReta(centro, p.ponto) > 3) throw erro('localizacao_invalida');
@@ -204,7 +261,8 @@ export async function rotear(origem, destino, { geoapifyKey, orsKey, ...op }) {
       });
       const j = await jsonHTTP(u, op);
       const r = j?.results?.[0];
-      if (r?.distance_units !== 'Meters' || typeof r.distance !== 'number') throw erro('rota_invalida');
+      if (typeof r?.distance_units !== 'string' || r.distance_units.toLowerCase() !== 'meters' || typeof r.distance !== 'number')
+        throw erro('rota_invalida');
       return { km: conferir(r.distance), fonte: 'geoapify' };
     } catch {
       /* tenta outro provedor configurado; nunca usa distância em linha reta como rota */

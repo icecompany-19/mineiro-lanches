@@ -4,10 +4,10 @@ Implementação de 18/10/2026. Código em `supabase/functions/`, migrações `20
 
 ## Estado da implantação
 
-- Migrações aplicadas no Supabase de produção e função `cotar-entrega` v3 publicada, com Geoapify no lugar das APIs Google. Rotina de limpeza horária ativa no pg_cron.
+- Migrações aplicadas no Supabase de produção e função `cotar-entrega` v8 publicada, com Geoapify no lugar das APIs Google. Rotina de limpeza horária ativa no pg_cron.
 - Verificação real: função e consulta de CEP responderam HTTP 200; as credenciais administrativas do runtime alcançam as tabelas privadas.
-- A última consulta de saúde retornou `rotasConfiguradas: false`. Falta configurar uma chave de produção. `loja.cotacao_ativa` permanece `false` durante a transição; não ativar enquanto as rotas estiverem indisponíveis.
-- Não foram alterados pedidos antigos, seus valores ou sua localização. Testes completos de pedidos usam apenas o banco local e simulam os fornecedores externos. Isso não substitui o teste final da chave real.
+- Chave Geoapify configurada e validada em 18/10. Saúde: `rotasConfiguradas: true`, `geoapifyConfigurado: true`. As quatro rotas de referência emitiram cotações reais. A exigência de cotação é controlada por `loja.cotacao_ativa`; consulte a linha da loja para verificar o estado atual.
+- Não foram alterados pedidos antigos, seus valores ou sua localização. Testes completos de pedidos usam apenas o banco local; a integração com a chave real em produção foi validada emitindo cotações, sem criar pedidos.
 
 ## Configuração do provedor principal
 
@@ -72,7 +72,18 @@ O proxy `scripts/supabase-local/proxy.mjs` também atende `/functions/v1/cotar-e
 ## Validação desta entrega
 
 - Lint e build de produção passaram; setup local aplicado duas vezes, com 549 verificações SQL e 330 verificações de paridade.
-- 103 testes Node passaram. Incluem validação de precisão, recuperação por outro provedor, vínculo de endereço e validade do cache sem renovação indefinida.
-- 27 casos do fluxo novo passaram em Chromium/WebKit e painel: quatro endereços, GPS negado, troca de endereço, expiração, indisponibilidade, recuperação sem duplicação e confirmação explícita do total se o cálculo termina depois do primeiro clique.
+- 107 testes Node passaram. Incluem validação de precisão, recuperação por outro provedor, vínculo de endereço e validade do cache sem renovação indefinida.
+- 26 testes de checkout passaram em Chromium/WebKit, além dos três testes do painel da etapa anterior: quatro endereços, GPS negado, troca de endereço, expiração, indisponibilidade, recuperação sem duplicação e confirmação explícita do total se o cálculo termina depois do primeiro clique.
 - Regressão de cadastro, entrega anterior, comanda e Vercel: 76 casos aprovados. Dois testes de troca de telefone aguardavam resposta de uma consulta que agora é cancelada; foram corrigidos para verificar o cancelamento e passaram nos dois tamanhos de tela.
-- Função publicada, consultas reais dos quatro CEPs e permissões das tabelas verificadas em produção. O teste real das rotas permanece pendente da chave; não equiparar resultados simulados dos provedores a essa validação.
+- Função publicada, consultas reais dos quatro CEPs e permissões das tabelas verificadas em produção. A chave real Geoapify emitiu as quatro cotações abaixo; elas usam referências públicas de rua/CEP, não a entrada das casas dos pedidos históricos.
+
+| CEP de referência | Distância pela rota | Taxa na validação |
+|---|---:|---:|
+| 08680-120 | 3,699 km | R$ 8,00 |
+| 08615-050 | 3,875 km | R$ 8,00 |
+| 08501-500 | 7,646 km | R$ 12,00 |
+| 08676-140 | 2,747 km | R$ 7,00 |
+
+Não é uma tabela de cobrança por CEP: mudar o ponto confirmado, a origem ou os parâmetros da loja muda a cotação. Não usar esses valores para alterar pedidos antigos.
+
+A validação real encontrou `distance_units: "meters"` (a documentação também exemplifica `"Meters"`); o adaptador aceita ambas e rejeita milhas. A base auxiliar AwesomeAPI retornou HTTP 429 a partir do servidor: a referência Geoapify recupera essa etapa, inclusive buscando só rua/município quando número/CEP não constam no mapa. Referências sempre exigem confirmação e têm atribuição no mapa. O cancelamento HTTP não depende de `AbortSignal.any`, e seus testes cobrem cancelamento e prazo. Logs de falha registram apenas host, status e categoria, sem URL, chave ou endereço.

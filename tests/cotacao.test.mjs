@@ -4,6 +4,7 @@ import {
   buscarPostal,
   candidatoAwesome,
   candidatoGeoapify,
+  referenciaGeoapify,
   enderecoPostal,
   localizar,
   rotear,
@@ -242,4 +243,99 @@ test('CEP genérico com ponto marcado confere município por Geoapify; outro mun
     if (cidade === 'Suzano') assert.deepEqual((await tentativa).ponto, { ...ponto, fonte: 'cliente', confirmado: true });
     else await assert.rejects(tentativa, { codigo: 'localizacao_invalida' });
   }
+});
+
+test('HTTP funciona sem AbortSignal.any no runtime Edge e preserva o cancelamento', async () => {
+  const { jsonHTTP } = await import('../supabase/functions/_shared/entrega.js');
+  const original = AbortSignal.any;
+  AbortSignal.any = undefined;
+  try {
+    assert.deepEqual(
+      await jsonHTTP('https://provedor.invalid', {
+        signal: new AbortController().signal,
+        fetcher: async () => json({ ok: true })
+      }),
+      { ok: true }
+    );
+    const ctl = new AbortController();
+    const aguardando = jsonHTTP('https://provedor.invalid', {
+      signal: ctl.signal,
+      fetcher: async (u, { signal }) =>
+        new Promise((resolve, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+        })
+    });
+    ctl.abort(new DOMException('Consulta cancelada', 'AbortError'));
+    await assert.rejects(aguardando, { name: 'AbortError' });
+    await assert.rejects(
+      jsonHTTP('https://provedor.invalid', {
+        prazo: 5,
+        tentativas: 1,
+        fetcher: async (u, { signal }) =>
+          new Promise((resolve, reject) => {
+            signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+          })
+      }),
+      { name: 'TimeoutError' }
+    );
+  } finally {
+    AbortSignal.any = original;
+  }
+});
+
+test('Geoapify reconhece metros no retorno real e rejeita milhas', async () => {
+  for (const units of ['meters', 'Meters']) {
+    assert.deepEqual(
+      await rotear({ lat: -23.54, lon: -46.31 }, ponto, {
+        geoapifyKey: 'privada',
+        fetcher: async () => json({ results: [{ distance: 3200, distance_units: units }] })
+      }),
+      { km: 3.2, fonte: 'geoapify' }
+    );
+  }
+});
+test('limite da base auxiliar recupera referência Geoapify com confirmação obrigatória', async () => {
+  let geocodes = 0;
+  const resposta = geoapify('street');
+  resposta.results[0].rank.confidence = 0.6;
+  const op = {
+    geoapifyKey: 'privada',
+    tentativas: 1,
+    fetcher: async (u) => {
+      if (String(u).includes('awesomeapi')) return new Response('{}', { status: 429 });
+      geocodes++;
+      return json(resposta);
+    }
+  };
+  const local = await localizar(entrada, postal, op);
+  assert.equal(local.estado, 'confirmar');
+  assert.equal(local.ponto.fonte, 'geoapify');
+  assert.equal(local.ponto.confirmado, false);
+  assert.equal(geocodes, 1, 'reaproveita a consulta existente');
+  const forcar = await localizar({ ...entrada, forcarConfirmacao: true }, postal, op);
+  assert.equal(forcar.estado, 'confirmar');
+  assert.equal(forcar.ponto.confirmado, false);
+  for (const patch of [{ city: 'Poá' }, { result_type: 'city' }, { postcode: '08500000', street: 'Rua Outra' }])
+    assert.equal(referenciaGeoapify({ results: [{ ...resposta.results[0], ...patch }] }, postal), null);
+});
+
+test('referência sem número nem CEP no mapa é procurada pela rua e município antes de pedir GPS', async () => {
+  let geocodes = 0;
+  const local = await localizar({ ...entrada, forcarConfirmacao: true }, postal, {
+    geoapifyKey: 'privada',
+    tentativas: 1,
+    fetcher: async (u) => {
+      const url = new URL(u);
+      if (url.hostname.includes('awesomeapi')) return new Response('{}', { status: 429 });
+      geocodes++;
+      if (url.searchParams.get('type') !== 'street') return json({ results: [] });
+      assert.equal(url.searchParams.get('text'), 'Rua Professor Jeremia, Suzano, SP, Brasil');
+      const ref = geoapify('street');
+      delete ref.results[0].postcode;
+      return json(ref);
+    }
+  });
+  assert.equal(geocodes, 2);
+  assert.equal(local.estado, 'confirmar');
+  assert.equal(local.ponto.confirmado, false);
 });

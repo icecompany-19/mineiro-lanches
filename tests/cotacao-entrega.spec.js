@@ -40,7 +40,10 @@ test.afterAll(() => {
   );
 });
 
-async function preparar(page, { preciso = false, semRotas = false, principalFalha = false, expirar = false, aguardarRota = false } = {}) {
+async function preparar(
+  page,
+  { preciso = false, semRotas = false, principalFalha = false, expirar = false, aguardarRota = false, cepLimitado = false } = {}
+) {
   psql('delete from entrega_travas; delete from entrega_limites');
   const chamadas = { rota: 0, alternativa: 0, geocode: 0, envios: 0 };
   let liberar;
@@ -61,14 +64,16 @@ async function preparar(page, { preciso = false, semRotas = false, principalFalh
       return json(c ? { cep: c.cep, logradouro: c.rua, bairro: c.bairro, localidade: c.cidade, uf: 'SP' } : { erro: true });
     }
     if (s.includes('awesomeapi')) {
+      if (cepLimitado) return new Response('{}', { status: 429 });
       const c = casos.find((c) => s.includes(c.cep));
       return json(
         c ? { cep: c.cep, address: c.rua, city: c.cidade, state: 'SP', district: c.bairro, lat: String(c.lat), lng: String(c.lon) } : {}
       );
     }
+    if (s.includes('/geocode/reverse')) return json({ results: [{ city: 'Suzano', state_code: 'SP', country_code: 'br' }] });
     if (s.includes('/geocode/search')) {
       chamadas.geocode++;
-      if (!preciso) return json({ results: [] });
+      if (!preciso && !cepLimitado) return json({ results: [] });
       const c = casos.find((c) => s.includes(c.cep.slice(0, 5) + '-' + c.cep.slice(5)));
       return json({
         results: [
@@ -81,7 +86,7 @@ async function preparar(page, { preciso = false, semRotas = false, principalFalh
             street: c.rua,
             housenumber: '100',
             postcode: c.cep,
-            result_type: 'building',
+            result_type: cepLimitado ? 'street' : 'building',
             rank: { confidence: 1, match_type: 'full_match' }
           }
         ]
@@ -92,7 +97,7 @@ async function preparar(page, { preciso = false, semRotas = false, principalFalh
       await esperaRota;
       return semRotas || principalFalha
         ? new Response('{}', { status: 503 })
-        : json({ results: [{ distance: 10000, distance_units: 'Meters' }] });
+        : json({ results: [{ distance: 10000, distance_units: 'meters' }] });
     }
     if (s.includes('openrouteservice')) {
       chamadas.alternativa++;
@@ -277,4 +282,16 @@ test('taxa identifica o provedor com atribuição e a chave não chega ao navega
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 14,00');
   await expect(page.locator('#taxa-fonte a').first()).toHaveAttribute('href', 'https://www.geoapify.com/');
   expect(externas).toEqual([]);
+});
+
+test('CEP auxiliar limitado usa referência Geoapify no mapa, confirma e calcula a taxa', async ({ page }) => {
+  await preparar(page, { cepLimitado: true });
+  await checkout(page);
+  await expect(page.locator('#chk-taxa')).toHaveText('confirme o local');
+  await page.locator('#taxa-localizar').click();
+  const dialog = page.getByRole('dialog', { name: 'Onde vamos entregar?' });
+  await expect(dialog.locator('.leaflet-control-attribution a[href="https://www.geoapify.com/"]')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Marcar no centro do mapa' }).click();
+  await dialog.getByRole('button', { name: 'Confirmar local de entrega' }).click();
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 14,00');
 });

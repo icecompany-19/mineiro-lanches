@@ -1,6 +1,6 @@
 # Entrega confiável: diagnóstico e proposta de implementação
 
-Data: 18/10/2026. Base do diagnóstico: `405ed13`. A implementação foi solicitada pelo dono e realizada após esta análise: serviço de cotação, tabelas privadas, cache, adaptadores Geoapify/CEP/OpenRouteService, confirmação no mapa, garantia na criação do pedido e controles da equipe. **A ativação em produção aguarda a chave do provedor de rotas.** Consulte [operação e configuração](ENTREGA-OPERACAO.md). As seções seguintes preservam a justificativa e os critérios da solução.
+Data: 18/10/2026. Base do diagnóstico: `405ed13`. A implementação foi solicitada pelo dono e realizada após esta análise: serviço de cotação, tabelas privadas, cache, adaptadores Geoapify/CEP/OpenRouteService, confirmação no mapa, garantia na criação do pedido e controles da equipe. **A chave Geoapify foi configurada e quatro cotações reais foram validadas; o estado da ativação é controlado por `loja.cotacao_ativa`.** Consulte [operação e configuração](ENTREGA-OPERACAO.md). As seções seguintes preservam a justificativa e os critérios da solução.
 
 ## Resultado da investigação
 
