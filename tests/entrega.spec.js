@@ -131,6 +131,27 @@ test('CEP 08555-120: bairro diferente no mapa não impede atualizar entrega, com
   expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} bairro divergente'`)).toBe('8.00|24.90');
 });
 
+test('número sem vírgula e complemento: busca só a rua quando o mapa não reconhece o endereço completo', async ({ page }) => {
+  await simular(page, { cep: { cep: '08501-500', logradouro: 'Rua Benedito Leite', bairro: 'Vila Correa', localidade: 'Ferraz de Vasconcelos', uf: 'SP' } });
+  const consultas = [];
+  await page.route('https://nominatim.openstreetmap.org/**', r => {
+    const texto = new URL(r.request().url()).searchParams.get('q');
+    consultas.push(texto);
+    return r.fulfill({ json: texto === 'Rua Benedito Leite, Ferraz de Vasconcelos, SP' ? [{ lat: '-23.5405172', lon: '-46.3570208' }] : [] });
+  });
+  await irAoCheckout(page, { nome: NOME + ' complemento' });
+  await page.locator('#f-cep').fill('08501500');
+  await expect(page.locator('#f-end')).toHaveValue('Rua Benedito Leite, ');
+  await page.locator('#f-end').fill('Rua Benedito Leite 100, Casa');
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00', { timeout: 15_000 });
+  expect(consultas).toContain('Rua Benedito Leite, Ferraz de Vasconcelos, SP');
+  // A simplificação é só para a busca: o pedido conserva o número e o complemento.
+  await expect(page.locator('#f-end')).toHaveValue('Rua Benedito Leite 100, Casa');
+  await page.locator('#btn-enviar').click();
+  await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
+  expect(psql(`select endereco, taxa_entrega, total from pedidos where cliente_nome = '${NOME} complemento'`)).toBe('Rua Benedito Leite 100, Casa, Vila Correa, Ferraz de Vasconcelos/SP, CEP 08501-500|8.00|24.90');
+});
+
 test('preenchimento rápido do celular conserva rua e número enquanto o CEP responde', async ({ page }) => {
   await simular(page);
   let liberar;

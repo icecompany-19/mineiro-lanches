@@ -38,6 +38,8 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
    - rode `npm run qrcode -- --base https://dominio`;
    - só depois imprima o cartaz.
 
+**Banco de produção conferido em 18/10/2026:** horário solicitado pelo dono aplicado (quarta fechada), Hot Dog CBO Turbo a R$ 34,90 e Gran Bacon Onion avulso/combo com 2 onion rings. Foram atualizados somente esses campos, preservando os pedidos anteriores e o modo manual `aberta` selecionado no painel. Para o horário reger a abertura/fechamento, a equipe deve selecionar **Automático** no painel.
+
 ## Desenvolver e testar
 
 O checkout começa pelo telefone e recupera nome e endereços já salvos **neste navegador**. O cliente pode escolher um endereço anterior ou adicionar outro; cada pedido aceito guarda o endereço usado sem apagar os demais. O rascunho anterior é aproveitado na atualização. A taxa é calculada novamente para cada endereço escolhido. Dados de outro telefone não são reaproveitados no formulário.
@@ -45,6 +47,8 @@ O checkout começa pelo telefone e recupera nome e endereços já salvos **neste
 O histórico fica na chave local `mineiro:v2:cadastros`. Ele não consulta a tabela privada `clientes` por telefone. Recuperar o cadastro em outro aparelho exige confirmar a posse do telefone antes de liberar nomes e endereços; essa integração não faz parte do histórico local.
 
 O cálculo da entrega tenta a rua e a cidade sem o bairro quando o ViaCEP e o mapa usam nomes diferentes (caso do CEP 08555-120). O formulário conserva o número preenchido antes da resposta do CEP, invalida a taxa ao trocar de endereço e aguarda CEP/rota antes de enviar. Em falhas temporárias da rota, o cliente pode tocar em **Recalcular entrega**.
+
+A busca também retira o número e o complemento quando o endereço foi escrito sem vírgula antes do número (por exemplo, `Rua Exemplo 53, Casa`), preservando o endereço completo no pedido. A conferência de 18/10 no Supabase confirmou que os pedidos 0045, 0047, 0050 e 0051 chegaram sem distância e sem taxa. No teste dos endereços, o mapa não encontrou as ruas dos pedidos 0045, 0047 e 0051, mesmo sem número/bairro; no 0050, o complemento impedia a tentativa só pela rua. Ausência no mapa é uma limitação diferente de erro temporário de rede: repetir a consulta não garante resolver. Não foram alterados os valores dos pedidos históricos.
 
 Desde 18/10, falhas temporárias de rede, prazo, HTTP 429 e 5xx têm uma nova tentativa automática. Consultas antigas são canceladas ao trocar o endereço, o mapa recebe uma consulta por vez com intervalo mínimo de 1,1 s e a rota pode responder em até 15 s por tentativa. **Recalcular entrega** também refaz uma consulta de CEP que falhou. Se ainda faltar taxa, a regra atual permite o pedido, mas o painel e a comanda destacam **Taxa de entrega pendente — não incluída no total**. O sistema não inventa uma taxa para esses pedidos.
 

@@ -721,7 +721,8 @@ export function iniciarApp() {
     // O bairro do ViaCEP pode ter outro nome no mapa (ex.: CEP 08555-120).
     // Conserva rua, cidade e UF em todas as buscas; nunca usa só o centro da cidade.
     var soRua = rua.replace(/,\s*(?:\d|s\s*\/?\s*n\b).*$/i, '').trim();
-    if (soRua === rua) soRua = rua.replace(/\s+(?:\d+[A-Za-z]?|s\s*\/?\s*n)\s*$/i, '').trim();
+    // Também aceita número sem vírgula antes e complemento depois ("Rua Exemplo 53, Casa").
+    if (soRua === rua) soRua = rua.replace(/\s+(?:\d+[A-Za-z]?|s\s*\/?\s*n)(?:\s*,.*)?\s*$/i, '').trim();
     var tentativas = [];
     function incluir(partes) {
       var txt = partes.filter(Boolean).join(', ');
