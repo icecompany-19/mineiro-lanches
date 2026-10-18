@@ -40,7 +40,7 @@ test.afterAll(() => {
   );
 });
 
-async function preparar(page, { roof = false, semRotas = false, googleFalha = false, expirar = false, aguardarRota = false } = {}) {
+async function preparar(page, { preciso = false, semRotas = false, principalFalha = false, expirar = false, aguardarRota = false } = {}) {
   psql('delete from entrega_travas; delete from entrega_limites');
   const chamadas = { rota: 0, alternativa: 0, geocode: 0, envios: 0 };
   let liberar;
@@ -66,32 +66,33 @@ async function preparar(page, { roof = false, semRotas = false, googleFalha = fa
         c ? { cep: c.cep, address: c.rua, city: c.cidade, state: 'SP', district: c.bairro, lat: String(c.lat), lng: String(c.lon) } : {}
       );
     }
-    if (s.includes('/geocode/')) {
+    if (s.includes('/geocode/search')) {
       chamadas.geocode++;
-      if (!roof) return json({ status: 'ZERO_RESULTS' });
-      const c = casos.find((c) => s.includes(c.cep));
-      const comp = (n, t, short_name = n) => ({ long_name: n, short_name, types: [t] });
+      if (!preciso) return json({ results: [] });
+      const c = casos.find((c) => s.includes(c.cep.slice(0, 5) + '-' + c.cep.slice(5)));
       return json({
-        status: 'OK',
         results: [
           {
-            geometry: { location: { lat: c.lat, lng: c.lon }, location_type: 'ROOFTOP' },
-            address_components: [
-              comp('Brasil', 'country', 'BR'),
-              comp('São Paulo', 'administrative_area_level_1', 'SP'),
-              comp(c.cidade, 'administrative_area_level_2'),
-              comp(c.rua, 'route'),
-              comp('100', 'street_number'),
-              comp(c.cep, 'postal_code')
-            ]
+            lat: c.lat,
+            lon: c.lon,
+            country_code: 'br',
+            state_code: 'SP',
+            city: c.cidade,
+            street: c.rua,
+            housenumber: '100',
+            postcode: c.cep,
+            result_type: 'building',
+            rank: { confidence: 1, match_type: 'full_match' }
           }
         ]
       });
     }
-    if (s.includes('routes.googleapis')) {
+    if (s.includes('api.geoapify.com/v1/routing')) {
       chamadas.rota++;
       await esperaRota;
-      return semRotas || googleFalha ? new Response('{}', { status: 503 }) : json({ routes: [{ distanceMeters: 10000 }] });
+      return semRotas || principalFalha
+        ? new Response('{}', { status: 503 })
+        : json({ results: [{ distance: 10000, distance_units: 'Meters' }] });
     }
     if (s.includes('openrouteservice')) {
       chamadas.alternativa++;
@@ -103,7 +104,7 @@ async function preparar(page, { roof = false, semRotas = false, googleFalha = fa
   const adaptado = criarHandler({
     supabaseUrl: 'http://localhost:54323',
     serviceKey: token,
-    googleKey: 'teste',
+    geoapifyKey: 'teste',
     orsKey: 'teste',
     fetcher: (u, o) => fetcher(String(u).replace('http://localhost:54323/rest/v1/', 'http://localhost:54323/'), o)
   });
@@ -168,19 +169,19 @@ for (const [i, c] of casos.entries())
     await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 30,90');
     await page.locator('#btn-enviar').click();
     await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
-    expect(psql(`select taxa_entrega,total,cotacao_entrega_id is not null from pedidos where cliente_nome='${nome}'`)).toBe(
-      '14.00|30.90|t'
-    );
+    expect(
+      psql(`select taxa_entrega,total,cotacao_entrega_id is not null,entrega_destino is not null from pedidos where cliente_nome='${nome}'`)
+    ).toBe('14.00|30.90|t|t');
   });
 test('endereço preciso segue automaticamente; falha da rota principal recupera pelo segundo provedor', async ({ page }) => {
-  const chamadas = await preparar(page, { roof: true, googleFalha: true });
+  const chamadas = await preparar(page, { preciso: true, principalFalha: true });
   await checkout(page);
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 14,00');
   expect(chamadas.alternativa).toBe(1);
-  await expect(page.locator('#taxa-fonte')).toHaveText('OpenRouteService');
+  await expect(page.locator('#taxa-fonte')).toContainText('OpenRouteService');
 });
 test('falha completa preserva sacola e impede enviar pedido sem taxa', async ({ page }) => {
-  const chamadas = await preparar(page, { roof: true, semRotas: true });
+  const chamadas = await preparar(page, { preciso: true, semRotas: true });
   await checkout(page);
   await expect(page.locator('#chk-taxa')).toHaveText('taxa pendente');
   await page.locator('#btn-enviar').click();
@@ -189,7 +190,7 @@ test('falha completa preserva sacola e impede enviar pedido sem taxa', async ({ 
   await expect(page.locator('#chk-itens')).toHaveText('1 item');
 });
 test('cotação expira e o cliente precisa conferir o valor recalculado antes de enviar', async ({ page }) => {
-  const chamadas = await preparar(page, { roof: true, expirar: true });
+  const chamadas = await preparar(page, { preciso: true, expirar: true });
   await checkout(page);
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 14,00');
   await expect(page.locator('#chk-taxa')).toHaveText('atualize a taxa');
@@ -200,7 +201,7 @@ test('cotação expira e o cliente precisa conferir o valor recalculado antes de
   expect(chamadas.rota).toBe(1); // rota vigente foi reaproveitada pelo backend
 });
 test('resposta perdida após gravar: repetição depois da expiração recupera um único pedido', async ({ page }) => {
-  await preparar(page, { roof: true, expirar: true });
+  await preparar(page, { preciso: true, expirar: true });
   const nome = await checkout(page);
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 14,00');
   let perder = true;
@@ -240,7 +241,7 @@ test('GPS recusado permite marcar o mapa e concluir o cálculo', async ({ page }
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 14,00');
 });
 test('trocar de endereço invalida a cotação anterior e consulta o destino novo', async ({ page }) => {
-  const chamadas = await preparar(page, { roof: true });
+  const chamadas = await preparar(page, { preciso: true });
   await checkout(page);
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 14,00');
   await page.locator('#f-cep').fill(casos[1].cep);
@@ -251,7 +252,7 @@ test('trocar de endereço invalida a cotação anterior e consulta o destino nov
   expect(chamadas.rota).toBe(2);
 });
 test('enviar antes da cotação terminar exige conferir o total e confirmar de novo', async ({ page }) => {
-  const chamadas = await preparar(page, { roof: true, aguardarRota: true });
+  const chamadas = await preparar(page, { preciso: true, aguardarRota: true });
   await checkout(page);
   await expect.poll(() => chamadas.rota).toBe(1);
   await page.locator('#btn-enviar').click();
@@ -264,4 +265,16 @@ test('enviar antes da cotação terminar exige conferir o total e confirmar de n
   await page.locator('#btn-enviar').click();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
   expect(chamadas.envios).toBe(1);
+});
+
+test('taxa identifica o provedor com atribuição e a chave não chega ao navegador', async ({ page }) => {
+  const externas = [];
+  page.on('request', (r) => {
+    if (/api\.geoapify|api\.openrouteservice|googleapis/.test(r.url())) externas.push(r.url());
+  });
+  await preparar(page, { preciso: true });
+  await checkout(page);
+  await expect(page.locator('#chk-taxa')).toHaveText('R$ 14,00');
+  await expect(page.locator('#taxa-fonte a').first()).toHaveAttribute('href', 'https://www.geoapify.com/');
+  expect(externas).toEqual([]);
 });

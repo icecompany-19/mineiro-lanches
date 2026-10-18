@@ -77,7 +77,7 @@ select pg_temp.ok(not has_sequence_privilege('anon', pg_get_serial_sequence('ped
 -- funções
 select pg_temp.ok(not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and ((not p.prosecdef and p.proname not in ('reservar_entrega','emitir_cotacao_entrega'))
+    where n.nspname = 'public' and ((not p.prosecdef and p.proname not in ('reservar_entrega','emitir_cotacao_entrega','limpar_dados_entrega'))
       or not coalesce('search_path=public, pg_temp' = any (p.proconfig), false))),
   'RPCs têm search_path fixo; helpers de entrega mantêm privilégios do backend');
 select pg_temp.ok(not exists (

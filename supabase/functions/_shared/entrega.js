@@ -66,33 +66,31 @@ export function enderecoPostal(rua, postal) {
   const cep = postal.cep.slice(0, 5) + '-' + postal.cep.slice(5);
   return [rua.trim(), postal.bairro, postal.cidade + '/' + postal.uf, 'CEP ' + cep].filter(Boolean).join(', ').slice(0, 200);
 }
-export function candidatoGoogle(j, postal, rua) {
-  if (j?.status !== 'OK' || !Array.isArray(j.results)) return null;
+function mesmaCidade(g, postal) {
+  return g?.country_code === 'br' && g.state_code?.replace(/^BR-/, '') === postal.uf && normalizar(g.city) === normalizar(postal.cidade);
+}
+export function candidatoGeoapify(j, postal, rua) {
+  if (!Array.isArray(j?.results) || !postal.rua) return null;
+  const numero = normalizar(rua)
+    .slice(normalizar(postal.rua).length)
+    .trim()
+    .match(/^\d+[a-z]?\b/)?.[0];
   for (const g of j.results) {
-    const componentes = g.address_components || [];
-    const obter = (tipo, curto = false) => {
-      const c = componentes.find((c) => c.types?.includes(tipo));
-      return c?.[curto ? 'short_name' : 'long_name'] || '';
-    };
-    const p = { lat: g.geometry?.location?.lat, lon: g.geometry?.location?.lng };
-    const cidade = obter('administrative_area_level_2') || obter('locality');
+    const p = { lat: g.lat, lon: g.lon };
+    // full_match sozinho indica apenas o nível do resultado. Conferir todos os componentes.
     if (
       !pontoValido(p) ||
-      g.partial_match ||
-      obter('country', true) !== 'BR' ||
-      obter('administrative_area_level_1', true) !== postal.uf ||
-      normalizar(cidade) !== normalizar(postal.cidade) ||
-      obter('postal_code').replace(/\D/g, '') !== postal.cep ||
-      !ruaCompativel(obter('route'), postal.rua)
+      !mesmaCidade(g, postal) ||
+      String(g.postcode || '').replace(/\D/g, '') !== postal.cep ||
+      normalizar(g.street) !== normalizar(postal.rua) ||
+      !numero ||
+      normalizar(g.housenumber) !== numero ||
+      g.result_type !== 'building' ||
+      g.rank?.match_type !== 'full_match' ||
+      !(g.rank?.confidence >= 0.99)
     )
       continue;
-    // Só o número identificado com precisão segue automaticamente. Rua/CEP não é porta.
-    const numero = normalizar(rua)
-      .slice(normalizar(postal.rua).length)
-      .trim()
-      .match(/^\d+[a-z]?\b/)?.[0];
-    if (g.geometry.location_type !== 'ROOFTOP' || !numero || normalizar(obter('street_number')) !== numero) continue;
-    return { ...p, fonte: 'google', confirmado: false };
+    return { ...p, fonte: 'geoapify', confirmado: false };
   }
   return null;
 }
@@ -141,23 +139,23 @@ export async function buscarPostal(cep, op = {}) {
   }
   throw erro(invalido ? 'cep_invalido' : 'cep_indisponivel', invalido ? 422 : 503);
 }
-export async function localizar(p, postal, { googleKey, ...op }) {
+export async function localizar(p, postal, { geoapifyKey, ...op }) {
   if (postal.rua && !ruaCompativel(p.rua, postal.rua)) throw erro('endereco_divergente');
-  let candidato = null;
-  // A segunda base é independente dos nomes das vias OSM; nunca aceita seu ponto sem confirmação.
-  if (!p.ponto && !p.forcarConfirmacao && googleKey) {
+  if (!p.ponto && !p.forcarConfirmacao && geoapifyKey) {
     try {
-      const u = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+      const u = new URL('https://api.geoapify.com/v1/geocode/search');
       u.search = new URLSearchParams({
-        address: p.rua,
-        components: `country:BR|administrative_area:SP|postal_code:${p.cep}`,
-        key: googleKey,
-        language: 'pt-BR'
+        text: enderecoPostal(p.rua, postal),
+        filter: 'countrycode:br',
+        apiKey: geoapifyKey,
+        lang: 'pt',
+        format: 'json',
+        limit: '3'
       });
-      candidato = candidatoGoogle(await jsonHTTP(u, op), postal, p.rua);
+      const candidato = candidatoGeoapify(await jsonHTTP(u, op), postal, p.rua);
       if (candidato) return { ponto: candidato };
     } catch {
-      /* tenta fonte independente */
+      /* consulta uma fonte independente; candidatos de CEP precisam de confirmação */
     }
   }
   let centro;
@@ -169,50 +167,47 @@ export async function localizar(p, postal, { googleKey, ...op }) {
   if (p.ponto) {
     if (centro && postal.rua && distanciaReta(centro, p.ponto) > 3) throw erro('localizacao_invalida');
     if (!centro || !postal.rua) {
-      // CEP de município/área: o ponto é escolhido pelo cliente, e a cidade é conferida no servidor.
-      if (!googleKey) throw erro('localizacao_invalida');
-      const u = new URL('https://maps.googleapis.com/maps/api/geocode/json');
-      u.search = new URLSearchParams({ latlng: p.ponto.lat + ',' + p.ponto.lon, key: googleKey, language: 'pt-BR' });
+      // CEP genérico/ausente: conferir o município do ponto que o cliente marcou.
+      if (!geoapifyKey) throw erro('localizacao_invalida');
+      const u = new URL('https://api.geoapify.com/v1/geocode/reverse');
+      u.search = new URLSearchParams({
+        lat: String(p.ponto.lat),
+        lon: String(p.ponto.lon),
+        apiKey: geoapifyKey,
+        lang: 'pt',
+        format: 'json',
+        type: 'city',
+        limit: '1'
+      });
       const j = await jsonHTTP(u, op);
-      const cidadeValida =
-        j?.status === 'OK' &&
-        j.results?.some((g) => {
-          const c = (t) => g.address_components?.find((c) => c.types?.includes(t));
-          return (
-            c('country')?.short_name === 'BR' &&
-            c('administrative_area_level_1')?.short_name === postal.uf &&
-            normalizar(c('administrative_area_level_2')?.long_name || c('locality')?.long_name) === normalizar(postal.cidade)
-          );
-        });
-      if (!cidadeValida) throw erro('localizacao_invalida');
+      if (!j?.results?.some((g) => mesmaCidade(g, postal))) throw erro('localizacao_invalida');
     }
-    return { ponto: { ...p.ponto, fonte: 'cliente', confirmado: true } };
+    return { ponto: { lat: p.ponto.lat, lon: p.ponto.lon, fonte: 'cliente', confirmado: true } };
   }
   return { estado: 'confirmar', ponto: centro };
 }
-export async function rotear(origem, destino, { googleKey, orsKey, ...op }) {
+export async function rotear(origem, destino, { geoapifyKey, orsKey, ...op }) {
   const conferir = (metros) => {
     const km = Math.round(metros) / 1000;
     if (!Number.isFinite(km) || km <= 0 || km > 100 || km + 0.15 < distanciaReta(origem, destino)) throw erro('rota_invalida');
     return km;
   };
-  if (googleKey) {
+  if (geoapifyKey) {
     try {
-      const ll = (p) => ({ location: { latLng: { latitude: p.lat, longitude: p.lon } } });
-      const j = await jsonHTTP('https://routes.googleapis.com/directions/v2:computeRoutes', {
-        ...op,
-        headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': googleKey, 'X-Goog-FieldMask': 'routes.distanceMeters' },
-        body: {
-          origin: ll(origem),
-          destination: ll(destino),
-          travelMode: 'DRIVE',
-          routingPreference: 'TRAFFIC_UNAWARE',
-          computeAlternativeRoutes: false
-        }
+      const u = new URL('https://api.geoapify.com/v1/routing');
+      u.search = new URLSearchParams({
+        waypoints: `${origem.lat},${origem.lon}|${destino.lat},${destino.lon}`,
+        mode: 'drive',
+        units: 'metric',
+        format: 'json',
+        apiKey: geoapifyKey
       });
-      return { km: conferir(j?.routes?.[0]?.distanceMeters), fonte: 'google' };
+      const j = await jsonHTTP(u, op);
+      const r = j?.results?.[0];
+      if (r?.distance_units !== 'Meters' || typeof r.distance !== 'number') throw erro('rota_invalida');
+      return { km: conferir(r.distance), fonte: 'geoapify' };
     } catch {
-      /* outro provedor ou erro recuperável */
+      /* tenta outro provedor configurado; nunca usa distância em linha reta como rota */
     }
   }
   if (orsKey) {
@@ -232,5 +227,5 @@ export async function rotear(origem, destino, { googleKey, orsKey, ...op }) {
       /* não usar distância em linha reta como rota */
     }
   }
-  throw erro(googleKey || orsKey ? 'rota_indisponivel' : 'mapas_nao_configurados', 503);
+  throw erro(geoapifyKey || orsKey ? 'rota_indisponivel' : 'mapas_nao_configurados', 503);
 }

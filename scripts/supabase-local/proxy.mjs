@@ -40,7 +40,7 @@ const json = (res, code, obj) => { res.writeHead(code, { 'content-type': 'applic
 const entregaLocal=criarHandler({
   supabaseUrl:'http://localhost:54323',
   serviceKey:assinar({role:'service_role',exp:Math.floor(Date.now()/1000)+86400}),
-  anonKey:'sb_publishable_local',googleKey:process.env.GOOGLE_MAPS_API_KEY,orsKey:process.env.OPENROUTESERVICE_API_KEY,
+  anonKey:'sb_publishable_local',geoapifyKey:process.env.GEOAPIFY_API_KEY,orsKey:process.env.OPENROUTESERVICE_API_KEY,
   fetcher:(url,op)=>fetch(String(url).replace('http://localhost:54323/rest/v1/','http://localhost:54323/'),op)
 });
 

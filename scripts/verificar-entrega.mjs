@@ -38,7 +38,7 @@ try {
   console.log('Configuração de rotas:', JSON.stringify(saude));
   const cotar = process.argv.includes('--cotacoes');
   if (cotar && !saude.rotasConfiguradas)
-    throw new Error('Configure GOOGLE_MAPS_API_KEY ou OPENROUTESERVICE_API_KEY nos secrets antes de testar rotas.');
+    throw new Error('Configure GEOAPIFY_API_KEY ou OPENROUTESERVICE_API_KEY nos secrets antes de testar rotas.');
   const dispositivo = randomUUID();
   for (const cep of ['08680120', '08615050', '08501500', '08676140']) {
     const postal = await consultar({ acao: 'cep', cep, dispositivo });

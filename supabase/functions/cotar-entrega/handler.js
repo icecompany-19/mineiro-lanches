@@ -13,7 +13,7 @@ export async function sha256(s) {
   return Array.from(new Uint8Array(bytes), (v) => v.toString(16).padStart(2, '0')).join('');
 }
 
-export function criarHandler({ supabaseUrl, serviceKey, anonKey, googleKey, orsKey, fetcher = fetch, agora = () => Date.now() }) {
+export function criarHandler({ supabaseUrl, serviceKey, anonKey, geoapifyKey, orsKey, fetcher = fetch, agora = () => Date.now() }) {
   const base = supabaseUrl + '/rest/v1/';
   const headers = { 'Content-Type': 'application/json', apikey: serviceKey, Authorization: 'Bearer ' + serviceKey };
   async function banco(path, body, method) {
@@ -73,7 +73,11 @@ export function criarHandler({ supabaseUrl, serviceKey, anonKey, googleKey, orsK
         throw erro('dados_invalidos');
       }
       if (p.acao === 'saude')
-        return responder({ rotasConfiguradas: !!(googleKey || orsKey), googleConfigurado: !!googleKey, alternativaConfigurada: !!orsKey });
+        return responder({
+          rotasConfiguradas: !!(geoapifyKey || orsKey),
+          geoapifyConfigurado: !!geoapifyKey,
+          alternativaConfigurada: !!orsKey
+        });
       if (!/^\d{8}$/.test(p.cep) || !uuid(p.dispositivo)) throw erro('dados_invalidos');
       if (p.acao !== 'cep') validarEntrada(p);
       config = (await banco('loja?id=eq.1&select=entrega_origem,taxa_km,taxa_fixa&limit=1'))[0];
@@ -112,7 +116,7 @@ export function criarHandler({ supabaseUrl, serviceKey, anonKey, googleKey, orsK
       let ponto = c && Date.parse(c.local_valida_ate) > agora() && (!p.ponto || mesmoPonto) ? c.localizacao.ponto : null;
       const usouLocalCache = !!ponto;
       if (!ponto) {
-        const local = await localizar(p, postal, { ...op, googleKey });
+        const local = await localizar(p, postal, { ...op, geoapifyKey });
         if (!local.ponto || local.estado === 'confirmar') {
           codigo = 'confirmar_localizacao';
           return responder({ estado: 'confirmar', ponto: local.ponto || null });
@@ -131,20 +135,21 @@ export function criarHandler({ supabaseUrl, serviceKey, anonKey, googleKey, orsK
         c.distancia_km > 0;
       if (usouRotaCache) {
         rota = { km: Number(c.distancia_km), fonte: c.fonte_rota };
-      } else rota = await rotear(config.entrega_origem, ponto, { ...op, googleKey, orsKey });
+      } else rota = await rotear(config.entrega_origem, ponto, { ...op, geoapifyKey, orsKey });
       fonte = rota.fonte;
+      const localValidaAte = usouLocalCache ? c.local_valida_ate : new Date(agora() + 30 * 86400000).toISOString();
       const q = await rpc('emitir_cotacao_entrega', {
         p_endereco: endereco,
         p_km: rota.km,
         p_origem: config.entrega_origem,
-        p_fonte: fonte
+        p_fonte: fonte,
+        p_destino: ponto,
+        p_destino_ate: localValidaAte
       });
       await banco('entrega_cache', {
         chave,
         localizacao: { ponto },
-        local_valida_ate: usouLocalCache
-          ? c.local_valida_ate
-          : new Date(agora() + (ponto.fonte === 'google' ? 27 : 30) * 86400000).toISOString(),
+        local_valida_ate: localValidaAte,
         distancia_km: rota.km,
         rota_valida_ate: usouRotaCache ? c.rota_valida_ate : q.expiraEm,
         origem: config.entrega_origem,
@@ -152,7 +157,11 @@ export function criarHandler({ supabaseUrl, serviceKey, anonKey, googleKey, orsK
         atualizado_em: new Date(agora()).toISOString()
       });
       codigo = 'cotacao_ok';
-      return responder({ ...q, fonte: fonte === 'google' ? 'Google Maps' : 'OpenRouteService' });
+      return responder({
+        ...q,
+        fonte: fonte === 'geoapify' ? 'Geoapify' : 'OpenRouteService',
+        localizacaoFonte: ponto.fonte === 'geoapify' ? 'Geoapify' : null
+      });
     } catch (e) {
       codigo = e.codigo || 'servico_indisponivel';
       return responder({ codigo }, e.status || 503);

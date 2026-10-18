@@ -1,23 +1,25 @@
 # Cotação de entrega: configurar, verificar e operar
 
-Implementação de 18/10/2026. Código em `supabase/functions/`, migração `20261018023009_cotacao_entrega.sql`, checkout e `ML.store`. Não há chave privada no navegador.
+Implementação de 18/10/2026. Código em `supabase/functions/`, migrações `20261018023009_cotacao_entrega.sql` e `20261018031024_destino_entrega_e_limpeza.sql`, checkout e `ML.store`. Não há chave privada no navegador.
 
 ## Estado da implantação
 
-- Migração aplicada no Supabase de produção e função `cotar-entrega` publicada.
+- Migrações aplicadas no Supabase de produção e função `cotar-entrega` v3 publicada, com Geoapify no lugar das APIs Google. Rotina de limpeza horária ativa no pg_cron.
 - Verificação real: função e consulta de CEP responderam HTTP 200; as credenciais administrativas do runtime alcançam as tabelas privadas.
 - A última consulta de saúde retornou `rotasConfiguradas: false`. Falta configurar uma chave de produção. `loja.cotacao_ativa` permanece `false` durante a transição; não ativar enquanto as rotas estiverem indisponíveis.
 - Não foram alterados pedidos antigos, seus valores ou sua localização. Testes completos de pedidos usam apenas o banco local e simulam os fornecedores externos. Isso não substitui o teste final da chave real.
 
 ## Configuração do provedor principal
 
-1. No Google Cloud, usar um projeto com faturamento habilitado. Habilitar **Geocoding API** e **Routes API**.
-2. Criar uma chave restrita a essas duas APIs. Ela será usada por um servidor: não aplicar uma restrição de HTTP referrer de navegador. Definir limites de consumo adequados e alertas no projeto; os preços/franquias vigentes estão na documentação Google indicada na análise.
-3. Abrir [Secrets das Edge Functions do Mineiro](https://supabase.com/dashboard/project/puwylyfmwcvpfsftsrta/functions/secrets) e salvar `GOOGLE_MAPS_API_KEY`. Não colocar em variável `VITE_*`, arquivo versionado ou conversa.
-4. Para uma rota alternativa independente, é possível configurar também `OPENROUTESERVICE_API_KEY`, respeitando o plano/limites dessa conta. O adaptador está implementado. Sem essa chave, falha total do roteador principal só pode ser recuperada por uma rota ainda vigente em cache.
-5. Após mudar secrets, verificar o endpoint de saúde. Se a versão do runtime ainda não refletir a alteração, republicar a função usando os mesmos arquivos.
+1. Criar uma conta/projeto em [Geoapify MyProjects](https://myprojects.geoapify.com/). O plano gratuito permite uso comercial, sem cartão, dentro de 3.000 créditos diários, limites de requisições e atribuição. Créditos não são pedidos: geocodificação, consulta reversa, rota e novas tentativas consomem a franquia. Ver [preços e condições atuais](https://www.geoapify.com/pricing/).
+2. Na seção **API Keys**, copiar a chave do projeto. Ela será usada pelo servidor Supabase, não pelo navegador; uma restrição exclusiva de HTTP referrer bloquearia o backend. Não reutilizar chaves de exemplos/demonstrações.
+3. Abrir [Secrets das Edge Functions do Mineiro](https://supabase.com/dashboard/project/puwylyfmwcvpfsftsrta/functions/secrets) e salvar `GEOAPIFY_API_KEY`. Não colocar em variável `VITE_*`, arquivo versionado ou conversa. O cálculo não depende de APIs Google nem de faturamento Google.
+4. Para uma rota alternativa independente, configurar opcionalmente `OPENROUTESERVICE_API_KEY`, respeitando o plano/limites da conta. Sem essa chave, falha total do roteador principal só pode ser recuperada por uma rota vigente em cache. Com apenas ORS, CEPs com referência validada continuam permitindo confirmação; CEP genérico sem referência precisa da consulta reversa Geoapify.
+5. Após mudar secrets, executar a verificação abaixo. A presença de uma chave não comprova que ela funciona, que tem quota ou que permite a requisição. Se o runtime não refletir a alteração, republicar a função com os mesmos arquivos.
 
-A confirmação visual usa Leaflet empacotado e tiles OpenStreetMap com atribuição; não requer uma chave Google de navegador. Ela recebe somente pontos independentes de CEP/GPS ou pontos marcados pelo cliente. Resultados de localização Google não são exibidos nesse mapa. O valor de rota Google tem atribuição ao lado da taxa.
+A confirmação visual usa Leaflet empacotado e tiles OpenStreetMap com atribuição. A taxa mostra links de atribuição do provedor de rota/localização e dos dados OpenStreetMap. O nome/número/CEP/cidade/UF e a confiança do geocodificador devem coincidir para seguir automaticamente; `full_match` sozinho não comprova precisão. Endereços sem essa correspondência exigem confirmação visual do cliente, sem apresentar um ponto de CEP como número de porta.
+
+Os botões existentes de abrir o endereço no aplicativo Maps são links de navegação, não chamadas a uma API Google e não usam chave nem faturamento.
 
 ## Verificação e ativação
 
@@ -46,10 +48,10 @@ Depois da ativação, confirmar no banco que novos pedidos reais de entrega têm
 ## Cache, limites e privacidade
 
 - O cache de endereço confirmado é separado por identificador imprevisível do navegador e endereço completo, incluindo número. Digitar outro telefone não expõe cadastros ou localizações do servidor. O cadastro entre aparelhos continua exigindo um fluxo próprio de confirmação de posse do telefone.
-- Localização Google expira em 27 dias; ponto confirmado pelo cliente em 30 dias. A rota tem validade curta de 15 minutos. Reutilizar um registro não estende a validade original indefinidamente.
+- Localizações expiram em 30 dias; reutilizar cache preserva a validade original. O ponto confirmado acompanha a cotação e o pedido, permitindo que o painel abra o destino utilizado na rota. A rota tem validade curta de 15 minutos. Reutilizar um registro não estende a validade original indefinidamente.
 - Chave de rota inclui a origem e o destino por meio do registro do endereço; mudança de origem ou ponto exige outra rota. A cotação armazena a versão da origem e a configuração de preços, verificadas na criação do pedido.
 - Há trava de 90 s por endereço para evitar consultas simultâneas, limite compartilhado de 30 consultas por cliente de rede em 10 minutos e 1.000 por dia globalmente. Esses limites são operacionais, não uma promessa de franquia gratuita; a conta do provedor também precisa ter cotas adequadas.
-- Logs têm etapa/código, provedor e duração; não incluem telefone, nome, endereço completo, GPS ou chave externa. Cotações e eventos antigos são limpos depois de sete dias; registros de cache vencidos são removidos. A limpeza ocorre em novas reservas.
+- Logs têm etapa/código, provedor e duração; não incluem telefone, nome, endereço completo, GPS ou chave externa. Cotações e eventos antigos são limpos depois de sete dias; registros de cache vencidos são removidos. A limpeza de suporte ocorre em novas reservas e pela rotina privada `limpar_dados_entrega()`. No Supabase, o pg_cron executa essa rotina a cada hora, inclusive para apagar GPS vencido dos pedidos sem alterar seus valores ou seu endereço textual.
 - As cinco tabelas de suporte têm RLS e nenhum privilégio para `anon`/`authenticated`. O backend usa `service_role` somente no runtime. O aviso informativo do advisor sobre RLS sem policies nessas tabelas corresponde à negação de acesso direto por desenho; não adicionar policies públicas para eliminá-lo.
 - As RPCs de origem e resumo exigem equipe. Os helpers de reserva e emissão são `SECURITY INVOKER`, executáveis apenas pelo backend.
 
@@ -63,14 +65,14 @@ Não desligar a exigência de cotação como recuperação silenciosa de uma ind
 
 ## Desenvolvimento local
 
-O proxy `scripts/supabase-local/proxy.mjs` também atende `/functions/v1/cotar-entrega`, usando o mesmo handler e o PostgREST local. Assim, mudanças do serviço podem ser testadas sem deploy e sem credenciais administrativas de produção. Para usar mapas reais no desenvolvimento, fornecer `GOOGLE_MAPS_API_KEY`/`OPENROUTESERVICE_API_KEY` ao processo servidor (por exemplo, por um `.env.local` ignorado pelo Git, carregado com `node --env-file=.env.local`). Não prefixar essas chaves com `VITE_`.
+O proxy `scripts/supabase-local/proxy.mjs` também atende `/functions/v1/cotar-entrega`, usando o mesmo handler e o PostgREST local. Assim, mudanças do serviço podem ser testadas sem deploy e sem credenciais administrativas de produção. Para usar mapas reais no desenvolvimento, fornecer `GEOAPIFY_API_KEY`/`OPENROUTESERVICE_API_KEY` ao processo servidor (por exemplo, por um `.env.local` ignorado pelo Git, carregado com `node --env-file=.env.local`). Não prefixar essas chaves com `VITE_`.
 
 `npm run entrega:verificar -- --local` verifica a função local. Os testes Playwright substituem somente os fornecedores externos e usam cotações/pedidos reais no banco local. As migrações devem estar aplicadas, e `loja.cotacao_ativa` pode ser ativada no banco local para testar o checkout novo.
 
 ## Validação desta entrega
 
-- Lint e build de produção passaram; setup local aplicado duas vezes, com 545 verificações SQL e 330 verificações de paridade.
-- 101 testes Node passaram. Incluem validação de precisão, recuperação por outro provedor, vínculo de endereço e validade do cache sem renovação indefinida.
-- 24 casos do fluxo novo passaram em Chromium/WebKit e painel: quatro endereços, GPS negado, troca de endereço, expiração, indisponibilidade, recuperação sem duplicação e confirmação explícita do total se o cálculo termina depois do primeiro clique.
+- Lint e build de produção passaram; setup local aplicado duas vezes, com 549 verificações SQL e 330 verificações de paridade.
+- 103 testes Node passaram. Incluem validação de precisão, recuperação por outro provedor, vínculo de endereço e validade do cache sem renovação indefinida.
+- 27 casos do fluxo novo passaram em Chromium/WebKit e painel: quatro endereços, GPS negado, troca de endereço, expiração, indisponibilidade, recuperação sem duplicação e confirmação explícita do total se o cálculo termina depois do primeiro clique.
 - Regressão de cadastro, entrega anterior, comanda e Vercel: 76 casos aprovados. Dois testes de troca de telefone aguardavam resposta de uma consulta que agora é cancelada; foram corrigidos para verificar o cancelamento e passaram nos dois tamanhos de tela.
 - Função publicada, consultas reais dos quatro CEPs e permissões das tabelas verificadas em produção. O teste real das rotas permanece pendente da chave; não equiparar resultados simulados dos provedores a essa validação.

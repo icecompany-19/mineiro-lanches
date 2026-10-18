@@ -13,12 +13,12 @@ select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido(jsonb_build_array(pg_tem
   '{"modo":"entrega","endereco":"Rua Cotada, 100","cotacaoId":"00000000-0000-4000-8000-999999999999"}')),'cotacao_necessaria','cotação inexistente recusada');
 select pg_temp.ok((pg_temp.novo(jsonb_build_array(pg_temp.item('x-burguer')))->>'taxaEntrega') is null,'retirada continua sem taxa');
 select pg_temp.igual(pg_temp.erro($q$select * from cotacoes_entrega$q$),'42501','anon não lê cotações');
-select pg_temp.igual(pg_temp.erro($q$select emitir_cotacao_entrega('Rua X, 1',1,'{}','fake')$q$),'42501','anon não emite cotações');
+select pg_temp.igual(pg_temp.erro($q$select emitir_cotacao_entrega('Rua X, 1',1,'{}','fake','{"lat":-23.54,"lon":-46.31}',now()+interval '1 day')$q$),'42501','anon não emite cotações');
 select pg_temp.igual(pg_temp.erro($q$select * from entrega_cache$q$),'42501','anon não enumera localizações');
 reset role;
 select pg_temp.ok((select bool_and(relrowsecurity) from pg_class where oid in ('entrega_cache'::regclass,'cotacoes_entrega'::regclass,'entrega_travas'::regclass,'entrega_limites'::regclass,'entrega_eventos'::regclass)),'tabelas privadas têm RLS');
 set local role service_role;
-select emitir_cotacao_entrega('Rua Cotada, 100',3.2,(select entrega_origem from loja where id=1),'teste') as q \gset
+select emitir_cotacao_entrega('Rua Cotada, 100',3.2,(select entrega_origem from loja where id=1),'teste','{"lat":-23.54,"lon":-46.31,"fonte":"cliente","confirmado":true}',now()+interval '1 day') as q \gset
 select pg_temp.igual(:'q'::jsonb->>'taxa','8.00','backend calcula a taxa da cotação');
 select pg_temp.ok(reservar_entrega(repeat('a',64),repeat('b',64),'00000000-0000-4000-8000-000000000101'),'backend reserva endereço');
 select pg_temp.ok(not reservar_entrega(repeat('a',64),repeat('b',64),'00000000-0000-4000-8000-000000000102'),'segunda instância não consulta o mesmo endereço em paralelo');
@@ -32,6 +32,8 @@ select criar_pedido(:'entrada') as aceito \gset
 select pg_temp.igual(:'aceito'::jsonb->>'distanciaKm','3.200','servidor ignora distância adulterada e usa cotação');
 select pg_temp.igual(:'aceito'::jsonb->>'taxaEntrega','8.00','pedido grava taxa da cotação');
 select pg_temp.igual(:'aceito'::jsonb->>'total','24.90','total inclui entrega');
+select pg_temp.ok(:'aceito'::jsonb->'entregaDestino' @> '{"lat":-23.54,"lon":-46.31}'::jsonb,'pedido mantém o ponto usado para calcular a rota');
+select pg_temp.ok(not (acompanhar_pedido((:'aceito'::jsonb->>'token')::uuid)?'entregaDestino'),'acompanhamento por token não expõe GPS');
 select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido(jsonb_build_array(pg_temp.item('x-burguer')),
   jsonb_build_object('modo','entrega','endereco','Outra Rua, 100','cotacaoId',:'q'::jsonb->>'id'))),
   'cotacao_endereco_divergente','cotação não serve para outro endereço');
@@ -71,4 +73,10 @@ select pg_temp.sou(:'estranho');
 set local role authenticated;
 select pg_temp.igual(pg_temp.erro($q$select resumo_entregas()$q$),'sem_permissao','usuário fora da equipe não acessa métricas');
 select pg_temp.igual(pg_temp.erro($q$select definir_origem_entrega(-23.54,-46.31)$q$),'sem_permissao','usuário fora da equipe não altera origem');
+reset role;
+update pedidos set entrega_destino_ate=now()-interval '1 second' where id=(:'aceito'::jsonb->>'id')::uuid;
+update cotacoes_entrega set destino_ate=now()-interval '1 second';
+select limpar_dados_entrega();
+select pg_temp.ok((select entrega_destino is null and taxa_entrega=8 and total=24.9 from pedidos where id=(:'aceito'::jsonb->>'id')::uuid),'limpeza remove GPS vencido e preserva valores do pedido');
+select pg_temp.ok((select bool_and(destino is null) from cotacoes_entrega),'GPS vencido da cotação também é apagado');
 rollback;

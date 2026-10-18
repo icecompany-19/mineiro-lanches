@@ -93,6 +93,7 @@ export function linhaParaPedido(r) {
     cliente: { nome: r.cliente_nome || '', telefone: r.cliente_telefone || '' },
     modo: r.modo,
     endereco: r.endereco || '',
+    ...(r.entrega_destino?{entregaDestino:r.entrega_destino}:{}),
     referencia: r.referencia || '',
     pagamento: r.pagamento || null,
     troco: r.troco || '',
@@ -110,7 +111,7 @@ export function linhaParaPedido(r) {
 export function pedidoDoServidor(j) {
   const c = j.cliente || {};
   return linhaParaPedido(
-    Object.assign({}, j, { criado_em: j.criadoEm, cliente_nome: c.nome, cliente_telefone: c.telefone, distancia_km: j.distanciaKm, taxa_entrega: j.taxaEntrega })
+    Object.assign({}, j, { criado_em: j.criadoEm, cliente_nome: c.nome, cliente_telefone: c.telefone, distancia_km: j.distanciaKm, taxa_entrega: j.taxaEntrega, entrega_destino:j.entregaDestino })
   );
 }
 // o que o acompanhamento guarda (sem nome, telefone nem endereço)

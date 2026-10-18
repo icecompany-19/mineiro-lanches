@@ -728,7 +728,19 @@ export function iniciarApp() {
     $('#taxa-tentar').hidden = st.modo !== 'entrega' || (entr.estado !== 'falha' && entr.estado !== 'expirada');
     $('#taxa-localizar').hidden=st.modo!=='entrega' || !usaCotacao() || !entr.ok || !['confirmar','ok','expirada'].includes(entr.estado);
     $('#taxa-fonte').hidden=!usaCotacao() || !cotacaoValida() || !entr.cotacao.fonte;
-    $('#taxa-fonte').textContent=entr.cotacao && cotacaoValida()?entr.cotacao.fonte || '':'';
+    var fonteEl=$('#taxa-fonte'), fonte=entr.cotacao && cotacaoValida()?entr.cotacao.fonte || '':'';
+    fonteEl.textContent='';
+    if(fonte) {
+      var link=document.createElement('a');
+      link.href=fonte==='Geoapify'?'https://www.geoapify.com/':'https://openrouteservice.org/';
+      link.textContent=fonte;link.target='_blank';link.rel='noopener';
+      fonteEl.append('Rotas: ',link,' · ');
+      if(fonte!=='Geoapify' && entr.cotacao.localizacaoFonte==='Geoapify') {
+        var geo=document.createElement('a');geo.href='https://www.geoapify.com/';geo.textContent='Geoapify';geo.target='_blank';geo.rel='noopener';fonteEl.append(geo,' · ');
+      }
+      var osm=document.createElement('a');osm.href='https://www.openstreetmap.org/copyright';
+      osm.textContent='© OpenStreetMap';osm.target='_blank';osm.rel='noopener';fonteEl.append(osm);
+    }
     atualizarContadores();
   }
   function dadosCotacao() {return {cep:entr.cep,rua:$('#f-end').value.trim(),endereco:enderecoCompleto(),dispositivo:dispositivoEntrega,ponto:entr.ponto,confirmado:!!entr.ponto};}

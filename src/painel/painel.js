@@ -102,7 +102,10 @@
   }
   // No celular, a navegação direta permite ao navegador encaminhar para o app do WhatsApp.
   const alvoWa = () => window.matchMedia('(pointer: coarse)').matches ? '_self' : '_blank';
-  function linkMaps(p) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.endereco); }
+  function linkMaps(p) {
+    const d=p.entregaDestino,local=d && Number.isFinite(d.lat) && Number.isFinite(d.lon)?d.lat+','+d.lon:p.endereco;
+    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(local);
+  }
 
   /* ---------- toast, som, título ---------- */
   function toast(msg, opc) {

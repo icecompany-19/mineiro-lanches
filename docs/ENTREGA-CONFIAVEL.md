@@ -1,6 +1,6 @@
 # Entrega confiável: diagnóstico e proposta de implementação
 
-Data: 18/10/2026. Base do diagnóstico: `405ed13`. A implementação foi solicitada pelo dono e realizada após esta análise: serviço de cotação, tabelas privadas, cache, adaptadores Google/CEP/OpenRouteService, confirmação no mapa, garantia na criação do pedido e controles da equipe. **A ativação em produção aguarda a chave do provedor de rotas.** Consulte [operação e configuração](ENTREGA-OPERACAO.md). As seções seguintes preservam a justificativa e os critérios da solução.
+Data: 18/10/2026. Base do diagnóstico: `405ed13`. A implementação foi solicitada pelo dono e realizada após esta análise: serviço de cotação, tabelas privadas, cache, adaptadores Geoapify/CEP/OpenRouteService, confirmação no mapa, garantia na criação do pedido e controles da equipe. **A ativação em produção aguarda a chave do provedor de rotas.** Consulte [operação e configuração](ENTREGA-OPERACAO.md). As seções seguintes preservam a justificativa e os critérios da solução.
 
 ## Resultado da investigação
 
@@ -77,7 +77,7 @@ flowchart TD
 
 ### Contrato proposto entre cliente e servidor
 
-Adicionar `ML.store.cotarEntrega(...)`. O checkout fala com a store; ela chama a Edge Function. Normalização, validação e resolução ficam em módulos pequenos, testáveis sem navegador e com dependências injetáveis (`fetch`, relógio e provedores). Os adaptadores retornam um formato comum, sem espalhar detalhes de Google, CEP ou OSM pelo checkout.
+Adicionar `ML.store.cotarEntrega(...)`. O checkout fala com a store; ela chama a Edge Function. Normalização, validação e resolução ficam em módulos pequenos, testáveis sem navegador e com dependências injetáveis (`fetch`, relógio e provedores). Os adaptadores retornam um formato comum, sem espalhar detalhes de Geoapify, CEP ou OSM pelo checkout.
 
 Entrada da cotação: CEP, endereço preenchido e eventual ponto confirmado. Nome, telefone e itens da sacola não são necessários para localizar o destino.
 
@@ -115,7 +115,7 @@ A garantia deve ficar na criação do pedido, não apenas no botão do formulár
 | Cotação própria + geocodificador e roteador hospedados pela empresa | Maior controle de infraestrutura e armazenamento dos dados próprios | Exige hospedagem, atualização da malha, monitoramento e recuperação; mesma base OSM ainda pode conter nomes divergentes | Possível evolução; custo operacional maior |
 | Tabela de taxas por CEP/bairro/faixa aprovada pelo dono | Cobrança determinística, sem serviço de mapas a cada pedido | Altera a regra comercial atual, baseada em km de rota; manutenção da tabela | Só usar se o dono decidir mudar a regra |
 
-Google Maps Geocoding + Routes é uma opção gerenciada a avaliar no mesmo conjunto de testes. Não foi testada nesta análise, pois não há chave configurada no repositório. Não assumir que cobre todos os endereços, que é gratuito ou que seus resultados podem ser guardados indefinidamente. A confirmação em mapa e o cache precisam respeitar as regras de exibição/armazenamento do fornecedor; não misturar dados Google em um mapa de outra plataforma sem verificar as condições aplicáveis.
+A solução escolhida pelo dono não usa APIs Google. Geoapify assume geocodificação/consulta reversa e rotas, com OpenRouteService opcional para recuperação. O plano gratuito Geoapify permite uso comercial dentro da franquia e exige atribuição. Uma chave própria precisa ser configurada e verificada no runtime: nunca usar uma chave pública de demonstração como credencial da loja.
 
 Na tabela oficial consultada em 18/10, **Geocoding** e **Routes: Compute Routes Essentials** têm, cada um, franquia mensal de 10.000 eventos e primeira faixa paga de US$ 5 por 1.000 eventos. Por exemplo, 1.000 cotações no mês com exatamente uma consulta de cada API ficariam dentro dessas duas franquias. Isso não é estimativa da fatura real: tentativas, visitas sem compra, mapa, autocomplete e recursos de outros SKUs precisam entrar no dimensionamento. Verificar enquadramento, conta de faturamento e preços na configuração; impor cotas no provedor e teto de consumo no backend, além de alertas. Não foi habilitado faturamento nesta análise.
 
@@ -145,7 +145,7 @@ Casos obrigatórios de teste:
 - [OSRM: servidor de demonstração](https://github.com/Project-OSRM/osrm-backend/wiki/Demo-server): restrições e ausência de garantias operacionais.
 - [AwesomeAPI: CEP](https://docs.awesomeapi.com.br/api-cep) e [chaves](https://docs.awesomeapi.com.br/instrucoes-api-key.md): formato, coordenadas e configuração.
 - [BrasilAPI: resolução de coordenadas](https://github.com/BrasilAPI/BrasilAPI/blob/main/lib/fetchGeocoordinateFromBrazilLocation.js): fallback para coordenadas da cidade.
-- [Google: Geocoding](https://developers.google.com/maps/documentation/geocoding/requests-geocoding), [Routes](https://developers.google.com/maps/documentation/routes/compute_route_directions), [políticas de geocodificação](https://developers.google.com/maps/documentation/geocoding/policies) e [preços](https://developers.google.com/maps/billing-and-pricing/pricing).
+- [Geoapify: geocodificação](https://apidocs.geoapify.com/docs/geocoding/), [rotas](https://apidocs.geoapify.com/docs/routing/) e [plano gratuito comercial e atribuição](https://www.geoapify.com/pricing/).
 - [Supabase: Edge Functions](https://supabase.com/docs/guides/functions), [secrets](https://supabase.com/docs/guides/functions/secrets) e [segurança dos dados](https://supabase.com/docs/guides/database/secure-data).
 
 Nenhuma conta paga foi contratada, nenhum provedor novo foi ativado no checkout e nenhuma política de cobrança foi alterada nesta etapa de análise.

@@ -31,3 +31,37 @@ test('equipe confirma o ponto do truck pelo GPS e as próximas rotas usam a nova
   await expect(page.locator('[data-entrega-diagnostico]')).toContainText('Posição do truck atualizada');
   expect(JSON.parse(psql('select entrega_origem from loja where id=1')).lat).toBe(-23.5409);
 });
+test('Abrir no Maps usa o ponto confirmado, preservando a busca por texto nos pedidos antigos', async ({ page }) => {
+  const base = {
+    id: '00000000-0000-4000-8000-000000000901',
+    numero: 901,
+    criado_em: new Date().toISOString(),
+    origem: 'cardapio',
+    cliente_nome: 'Local confirmado',
+    cliente_telefone: '11900000000',
+    modo: 'entrega',
+    endereco: 'Rua Exemplo, 100',
+    referencia: '',
+    itens: [],
+    total: 24.9,
+    taxa_entrega: 8,
+    distancia_km: 3.2,
+    status: 'novo',
+    historico: []
+  };
+  await page.route('**/rest/v1/pedidos?*', (r) =>
+    r.fulfill({
+      json: [
+        { ...base, entrega_destino: { lat: -23.54, lon: -46.31 } },
+        { ...base, id: '00000000-0000-4000-8000-000000000902', numero: 902 }
+      ]
+    })
+  );
+  await entrar(page);
+  await page.locator('[data-nav="pedidos"]').click();
+  await expect(page.getByRole('link', { name: 'Abrir endereço do pedido #0901 no Maps' })).toHaveAttribute(
+    'href',
+    'https://www.google.com/maps/search/?api=1&query=-23.54%2C-46.31'
+  );
+  await expect(page.getByRole('link', { name: 'Abrir endereço do pedido #0902 no Maps' })).toHaveAttribute('href', /query=Rua%20Exemplo/);
+});
