@@ -4,6 +4,8 @@ Fonte: conversa de WhatsApp com Cauan Oliveira, de 06 a 12/10/2026, exportada em
 
 **Atualização de 16/10/2026:** o modo antes exibido como "Comer no local" passa a ser **"Retirada no local"**, conforme solicitado. O site, o checkout, o painel, a comanda e as mensagens usam essa identificação; o identificador interno `local` é preservado para os pedidos existentes.
 
+**Atualização de 18/10/2026:** o dono solicitou implementar a solução de entrega confiável recomendada. Com a cotação ativada, uma nova entrega só é aceita com taxa calculada e incluída no total. Localização ambígua pede confirmação no mapa; falha completa preserva a sacola para recuperação. A fórmula de cobrança continua a mesma, e pedidos históricos não têm valores alterados. Configuração/ativação em `docs/ENTREGA-OPERACAO.md`.
+
 ## Loja
 
 | Item | Valor |

@@ -29,14 +29,14 @@ const SEGURANCA = {
   'strict-transport-security': 'max-age=63072000; includeSubDomains'
 };
 // Permissions-Policy: a câmera só é liberada (para o próprio site) na tela do entregador, em /motoboy/; no resto, fechada.
-const PERMISSOES = 'camera=(), microphone=(), geolocation=(), payment=()';
+const PERMISSOES = 'camera=(), microphone=(), geolocation=(self), payment=()';
 const PERMISSOES_MOTOBOY = 'camera=(self), microphone=(), geolocation=(), payment=()';
 const permissoesDe = (rota) => (rota.startsWith('/motoboy/') ? PERMISSOES_MOTOBOY : PERMISSOES);
 const CSP = {
   'default-src': ["'self'"],
   'script-src': ["'self'"],
   'style-src': ["'self'", "'unsafe-inline'"],
-  'img-src': ["'self'", 'data:', 'blob:'],
+  'img-src': ["'self'", 'data:', 'blob:', 'https://tile.openstreetmap.org'],
   'font-src': ["'self'"],
   // + consulta de CEP (ViaCEP), endereço (Nominatim/OpenStreetMap) e rota (OSRM) da taxa de entrega
   'connect-src': ["'self'", `https://${SUPABASE}`, `wss://${SUPABASE}`, 'https://viacep.com.br', 'https://nominatim.openstreetmap.org', 'https://router.project-osrm.org'],

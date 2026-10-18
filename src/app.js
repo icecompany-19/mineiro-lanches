@@ -644,10 +644,14 @@ export function iniciarApp() {
   }
   $('#form-pedido').addEventListener('input', function () { salvarRascunho(); });
   // ================= endereço por CEP e taxa de entrega por distância =================
-  // CEP -> ViaCEP (rua, bairro, cidade, UF). Rua e número -> Nominatim (OpenStreetMap) -> rota de carro do truck até lá (OSRM) -> km.
-  // Taxa = km (sempre para cima) x porKm + fixa (CONFIG.entrega.taxa); o banco refaz a conta e é ele quem vale.
-  // Qualquer falha (sem rede, endereço não achado) deixa a taxa "a combinar": o pedido continua podendo ser enviado.
-  var entr = { cep: '', ok: false, rua: '', bairro: '', cidade: '', uf: '', km: null, taxa: null, estado: 'vazio', seq: 0, timer: null, cepSeq: 0, ctl: null, cepCtl: null };
+  // Com cotação ativa, ML.store consulta o backend e o banco exige cotação válida antes de criar a entrega.
+  // O caminho ViaCEP/Nominatim/OSRM permanece apenas durante a transição, com a flag desligada.
+  // Taxa = km (sempre para cima) x porKm + fixa; distância e valor são vinculados ao endereço no servidor.
+  var entr = { cep: '', ok: false, rua: '', bairro: '', cidade: '', uf: '', km: null, taxa: null, estado: 'vazio', seq: 0, timer: null, cepSeq: 0, ctl: null, cepCtl: null, cotacao: null, ponto: null, candidato: null, expiraTimer: null, codigo: '', cotacaoAtiva: false };
+  var dispositivoEntrega=lerLocal('mineiro:v2:entrega-dispositivo',null);
+  if(typeof dispositivoEntrega!=='string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dispositivoEntrega)) {dispositivoEntrega=novoUuid();gravarLocal('mineiro:v2:entrega-dispositivo',dispositivoEntrega);}
+  function usaCotacao() { return !!ML.store.loja().cotacaoAtiva; }
+  function cotacaoValida() { return entr.cotacao && Date.parse(entr.cotacao.expiraEm)>Date.now() && entr.estado==='ok'; }
   var cacheKm = {};
   var filaMapa = Promise.resolve(), ultimaConsultaMapa = 0;
   function mascaraCep(v) { var d = String(v || '').replace(/\D/g, '').slice(0, 8); return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d; }
@@ -691,11 +695,19 @@ export function iniciarApp() {
     }
     return tentar(0);
   }
-  function taxaCalculada() { return st.modo === 'entrega' && entr.estado === 'ok' ? entr.taxa : null; }
+  function taxaCalculada() { return st.modo === 'entrega' && entr.estado === 'ok' && (!usaCotacao() || cotacaoValida()) ? entr.taxa : null; }
   function temNumero(txt) { return /\d/.test(txt) || /\bs\s*\/?\s*n\b/i.test(txt); }
   function textoTaxa() {
     if (st.modo !== 'entrega') return { chk: 'sem taxa', msg: '', cls: '' };
     if (entr.estado === 'buscando-cep') return { chk: 'calculando…', msg: 'Buscando o endereço para calcular a entrega…', cls: '' };
+    if(usaCotacao()) {
+      if(entr.estado==='confirmar') return {chk:'confirme o local',msg:'Precisamos confirmar a entrada do endereço no mapa para calcular a entrega.',cls:''};
+      if(entr.estado==='expirada') return {chk:'atualize a taxa',msg:'A cotação venceu ou mudou. Recalcule a entrega e confira o total antes de enviar.',cls:'falha'};
+      if(entr.estado==='falha') {
+        var mensagens={endereco_divergente:'A rua precisa corresponder ao CEP informado. Confira o CEP e o endereço.',localizacao_invalida:'O ponto marcado não corresponde à região do CEP. Confira o endereço e marque a entrada no mapa.',mapas_nao_configurados:'O cálculo da entrega está temporariamente indisponível. Sua sacola continua salva.',muitas_cotacoes:'Aguarde um pouco antes de tentar calcular novamente.',consulta_em_andamento:'Já estamos consultando este endereço. Aguarde um pouco e tente novamente.',cep_invalido:'Confira o CEP para calcular a entrega.'};
+        return {chk:'taxa pendente',msg:mensagens[entr.codigo] || 'Não foi possível calcular a entrega agora. Tente novamente. Sua sacola está salva.',cls:'falha'};
+      }
+    }
     if (!ML.entrega.ativa()) return { chk: 'a combinar', msg: '', cls: '' };
     if (entr.estado === 'ok') {
       // só o valor calculado para o endereço: a regra (km + valor fixo) não aparece para o cliente
@@ -713,9 +725,36 @@ export function iniciarApp() {
     box.hidden = !t.msg || st.modo !== 'entrega';
     box.textContent = t.msg;
     box.className = 'taxa-msg' + (t.cls ? ' ' + t.cls : '');
-    $('#taxa-tentar').hidden = st.modo !== 'entrega' || entr.estado !== 'falha';
+    $('#taxa-tentar').hidden = st.modo !== 'entrega' || (entr.estado !== 'falha' && entr.estado !== 'expirada');
+    $('#taxa-localizar').hidden=st.modo!=='entrega' || !usaCotacao() || !entr.ok || !['confirmar','ok','expirada'].includes(entr.estado);
+    $('#taxa-fonte').hidden=!usaCotacao() || !cotacaoValida() || !entr.cotacao.fonte;
+    $('#taxa-fonte').textContent=entr.cotacao && cotacaoValida()?entr.cotacao.fonte || '':'';
     atualizarContadores();
   }
+  function dadosCotacao() {return {cep:entr.cep,rua:$('#f-end').value.trim(),endereco:enderecoCompleto(),dispositivo:dispositivoEntrega,ponto:entr.ponto,confirmado:!!entr.ponto};}
+  function executarCotacao(seq) {
+    ML.store.cotarEntrega(dadosCotacao(),entr.ctl && entr.ctl.signal).then(function(q){
+      if(seq!==entr.seq)return;
+      if(q.estado==='confirmar') {entr.estado='confirmar';entr.candidato=q.ponto;return;}
+      if(!q.id || !(q.distanciaKm>0) || !(q.taxa>=0) || !(Date.parse(q.expiraEm)>Date.now())) throw new Error('cotacao_invalida');
+      entr.km=q.distanciaKm;entr.taxa=q.taxa;entr.cotacao=q;entr.estado='ok';
+      clearTimeout(entr.expiraTimer);
+      entr.expiraTimer=setTimeout(function(){if(seq===entr.seq){entr.estado='expirada';renderTaxa();}},Math.max(1,Date.parse(q.expiraEm)-Date.now()));
+    }).catch(function(e){if(seq===entr.seq){entr.estado='falha';entr.codigo=e.codigo || 'rede';}}).then(function(){if(seq===entr.seq)renderTaxa();});
+  }
+  $('#taxa-localizar').addEventListener('click',function(){
+    if(!usaCotacao() || !entr.ok)return;
+    var seq=entr.seq,sinal=entr.ctl && entr.ctl.signal;
+    $('#taxa-localizar').disabled=true;
+    var candidato=entr.ponto || entr.candidato;
+    var busca=candidato?Promise.resolve({ponto:candidato}):ML.store.cotarEntrega(Object.assign(dadosCotacao(),{ponto:null,confirmado:false,forcarConfirmacao:true}),sinal);
+    busca.then(function(r){
+      if(seq!==entr.seq)return null;
+      return import('./lib/mapa-entrega.js').then(function(m){if(seq!==entr.seq)return null;return m.abrirMapaEntrega({ponto:r.ponto,signal:sinal});});
+    }).then(function(p){if(p && seq===entr.seq){entr.ponto=p;agendarTaxa(true,true);}}).catch(function(e){
+      if(seq===entr.seq){entr.estado='falha';entr.codigo=e.codigo || 'rede';renderTaxa();}
+    }).finally(function(){$('#taxa-localizar').disabled=false;});
+  });
   function geocodificar(rua, bairro, cidade, uf, sinal) {
     function consulta(txt) { return buscarJSON('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&q=' + encodeURIComponent(txt), 12000, sinal); }
     // O bairro do ViaCEP pode ter outro nome no mapa (ex.: CEP 08555-120).
@@ -750,6 +789,7 @@ export function iniciarApp() {
   }
   function executarCalculo(seq) {
     if (seq !== entr.seq) return;
+    if(usaCotacao()) {executarCotacao(seq);return;}
     var sinal = entr.ctl && entr.ctl.signal;
     var rua = $('#f-end').value.trim(), chave = [rua, entr.bairro, entr.cidade, entr.uf].join('|').toLowerCase();
     var busca = cacheKm[chave] != null ? Promise.resolve(cacheKm[chave]) : geocodificar(rua, entr.bairro, entr.cidade, entr.uf, sinal).then(function (g) {
@@ -764,11 +804,13 @@ export function iniciarApp() {
     }).catch(function () { if (seq === entr.seq) entr.estado = 'falha'; }).then(function () { if (seq === entr.seq) renderTaxa(); });
   }
   // recalcula depois de mudar o CEP, a rua/número ou o modo; imediato = sem esperar o cliente parar de digitar
-  function agendarTaxa(imediato) {
+  function agendarTaxa(imediato,manterPonto) {
     clearTimeout(entr.timer);
     if (entr.ctl) entr.ctl.abort();
     entr.ctl = typeof AbortController === 'function' ? new AbortController() : null;
     var seq = ++entr.seq;
+    clearTimeout(entr.expiraTimer);entr.cotacao=null;entr.candidato=null;entr.codigo='';
+    if(!manterPonto)entr.ponto=null;
     entr.km = null; entr.taxa = null;
     if (st.modo !== 'entrega' || !entr.ok || !ML.entrega.ativa()) entr.estado = 'vazio';
     else if (!temNumero($('#f-end').value)) entr.estado = 'sem-numero';
@@ -802,7 +844,9 @@ export function iniciarApp() {
     agendarTaxa();
     if (st.modo === 'entrega') { entr.estado = 'buscando-cep'; renderTaxa(); }
     dicaCep('Buscando o CEP…');
-    buscarJSON('https://viacep.com.br/ws/' + cep + '/json/', 10000, entr.cepCtl && entr.cepCtl.signal).then(function (j) {
+    var sinal=entr.cepCtl && entr.cepCtl.signal;
+    var consultaCep=usaCotacao()?ML.store.buscarCepEntrega(cep,dispositivoEntrega,sinal).then(function(j){return {cep:j.cep,logradouro:j.rua,bairro:j.bairro,localidade:j.cidade,uf:j.uf};}):buscarJSON('https://viacep.com.br/ws/'+cep+'/json/',10000,sinal);
+    consultaCep.then(function (j) {
       if (seq !== entr.cepSeq) return;
       if (!j || j.erro) { entr.cep = ''; entr.ok = false; dicaCep('CEP não encontrado. Confira os números ou escreva o endereço abaixo.', 'erro'); agendarTaxa(); return; }
       entr.cep = cep; entr.ok = true; entr.bairro = j.bairro || ''; entr.cidade = j.localidade || ''; entr.uf = j.uf || '';
@@ -924,6 +968,7 @@ export function iniciarApp() {
 
   function modoLabel(m) { return m.id === 'local' && origemQR && origemQR.mesa ? m.label + ' · Mesa ' + origemQR.mesa : m.label; }
   function renderCheckout() {
+    if(entr.cotacaoAtiva!==usaCotacao()) {entr.cotacaoAtiva=usaCotacao();if(entr.ok)agendarTaxa(true);}
     if (restaurarCep) { restaurarCep = false; buscarCep($('#f-cep').value.replace(/\D/g, ''), true); }
     $('#modos').innerHTML = C.modos.map(function (m) {
       return '<button type="button" class="modo" data-modo="' + m.id + '" aria-pressed="' + (st.modo === m.id) + '">' + ic(ICONE_MODO[m.id]) + '<span><strong>' + esc(modoLabel(m)) + '</strong><small>' + esc(m.desc) + '</small></span>' + ic('check', 'modo-check') + '</button>';
@@ -962,6 +1007,7 @@ export function iniciarApp() {
       cliente: { nome: $('#f-nome').value.trim(), telefone: digitosTel($('#f-tel').value) }, modo: st.modo,
       endereco: st.modo === 'entrega' ? enderecoCompleto() : '', referencia: st.modo === 'entrega' ? $('#f-ref').value.trim() : '',
       distanciaKm: st.modo === 'entrega' && entr.estado === 'ok' ? entr.km : null,
+      cotacaoId: st.modo==='entrega' && entr.cotacao?entr.cotacao.id:null,
       pagamento: st.pagamento, troco: '', obs: $('#f-obs').value.trim(),
       origem: origemQR ? 'qrcode' : 'cardapio', mesa: mesa,
       itens: sacola.map(function (l) { return l.sel; })
@@ -974,6 +1020,9 @@ export function iniciarApp() {
     return Object.assign({}, d, { numero: null, itens: itens, taxaEntrega: taxa, total: Math.round((itens.reduce(function (a, i) { return a + i.subtotal; }, 0) + (taxa || 0)) * 100) / 100 });
   }
   var ERRO_ENVIO = {
+    cotacao_necessaria:['Atualize a taxa de entrega',function(){return 'Recalcule a entrega, confira o total e envie novamente. Se a página estava aberta há algum tempo, atualize o site.';}],
+    cotacao_expirada:['Atualize a taxa de entrega',function(){return 'A cotação venceu ou mudou. Recalcule a entrega e confira o novo total antes de enviar.';}],
+    cotacao_endereco_divergente:['Confira o endereço de entrega',function(){return 'O endereço mudou após o cálculo. Recalcule a entrega antes de enviar.';}],
     loja_fechada: ['O truck não está recebendo pedidos agora', function () { return ML.horario.situacao().txt + '. Você pode chamar o ' + C.nome + ' pelo WhatsApp.'; }],
     produto_esgotado: ['Um item da sacola esgotou', function (d) { return (d.esgotados.length ? d.esgotados.join(', ') : 'Um dos itens') + ' acabou de esgotar hoje. Tire da sacola e envie de novo, ou peça pelo WhatsApp.'; }],
     produto_invalido: ['Um item da sacola saiu do cardápio', function (d) { return (d.esgotados.length ? d.esgotados.join(', ') + ' não está' : 'Um dos itens não está') + ' disponível agora. Ajuste a sacola e envie de novo.'; }],
@@ -1003,6 +1052,7 @@ export function iniciarApp() {
     $('[data-tentar]').hidden = ajustar || codigo === 'muitos_pedidos';
     $('[data-ajustar]').hidden = !ajustar;
     $('#envio-wa').href = ML.whatsapp.link(ML.whatsapp.mensagem(pedidoLocal(dados)));
+    $('#envio-wa').hidden=st.modo==='entrega' && usaCotacao() && !cotacaoValida();
     var box = $('#envio-erro');
     box.hidden = false;
     if (soTexto) return;
@@ -1041,14 +1091,30 @@ export function iniciarApp() {
     // CEP ou rota pendentes: espera terminar e valida novamente antes de enviar.
     if (st.modo === 'entrega' && entregaPendente()) {
       travarEnvio(true);
-      esperarTaxa().then(function () { travarEnvio(false); var f = $('#form-pedido'); if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', { cancelable: true })); });
+      esperarTaxa().then(function () {
+        travarEnvio(false);
+        if(usaCotacao()) {
+          // A taxa ainda não era conhecida no primeiro clique. Exige confirmação do total após calculá-la.
+          if(cotacaoValida()) {renderTaxa();$('#taxa-msg').textContent+=' Confira o total e toque em Enviar pedido.';}
+          return;
+        }
+        var f = $('#form-pedido'); if (f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event('submit', { cancelable: true }));
+      });
       return;
     }
     var dados = lerFormulario();
+    var negocio=Object.assign({},dados);delete negocio.cotacaoId;delete negocio.distanciaKm;
+    var assinatura=JSON.stringify(negocio);
+    // Repetição de um envio incerto mantém o UUID; o banco recupera o pedido antes de validar a cotação.
+    var recuperar=envio.uuid && envio.assinatura===assinatura;
+    if(st.modo==='entrega' && usaCotacao() && !cotacaoValida() && !recuperar) {
+      if(entr.estado==='ok')entr.estado='expirada';renderTaxa();
+      $('#taxa-msg').setAttribute('tabindex','-1');$('#taxa-msg').focus();$('#taxa-msg').scrollIntoView({block:'center'});
+      return;
+    }
     var cadastroEnviado = { telefone: dados.cliente.telefone, nome: dados.cliente.nome, endereco: dados.modo === 'entrega' ? lerEnderecoCliente() : null };
     // item que já se sabe esgotado nem vai ao servidor
     if (nomesIndisponiveis().length) { renderSacola(); mostrarErroEnvio(codigoIndisponivel(), dados); return; }
-    var assinatura = JSON.stringify(dados);
     if (!envio.uuid || envio.assinatura !== assinatura) { envio.uuid = novoUuid(); envio.assinatura = assinatura; }
     dados.idempotencia = envio.uuid;
     esconderErroEnvio();
@@ -1071,6 +1137,7 @@ export function iniciarApp() {
     }, function (err) {
       travarEnvio(false);
       var codigo = (err && err.codigo) || 'rede';
+      if(/^cotacao_/.test(codigo)) {entr.estado='expirada';renderTaxa();}
       // esgotou ou saiu do cardápio: busca o estado do cardápio para marcar o item na sacola
       if (codigo === 'produto_esgotado' || codigo === 'produto_invalido' || codigo === 'loja_fechada') {
         ML.store.recarregar().catch(function () {}).then(function () { renderSacola(); if (!$('#envio-erro').hidden) mostrarErroEnvio(codigo, dados, true); });
@@ -1514,7 +1581,7 @@ export function iniciarApp() {
       var lu = linhaDe(A('data-upsell'));
       if (lu) { var s2 = JSON.parse(JSON.stringify(lu.sel)); s2.combo = { ativo: true, refri: '' }; abrirFicha(s2.produtoId, { sel: s2, editar: lu.chave, origem: t.closest('[data-card]'), focoRefri: true }); }
     }
-    else if (t.hasAttribute('data-modo')) { st.modo = A('data-modo'); renderCheckout(); salvarRascunho(); }
+    else if (t.hasAttribute('data-modo')) { st.modo = A('data-modo'); agendarTaxa(true); renderCheckout(); salvarRascunho(); }
     else if (t.hasAttribute('data-pag')) { st.pagamento = A('data-pag'); renderCheckout(); }
     else if (t.hasAttribute('data-story-abrir')) abrirStory(+A('data-story-abrir'));
     else if (t.hasAttribute('data-story')) passarStory(+A('data-story'));

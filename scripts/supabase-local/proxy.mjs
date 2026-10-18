@@ -6,6 +6,7 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { criarHandler } from '../../supabase/functions/cotar-entrega/handler.js';
 
 const SEGREDO = process.env.JWT_SECRET || 'segredo-local-de-teste-com-mais-de-32-caracteres';
 const PG = process.env.PG_URL || 'postgresql://postgres@localhost:54322/postgres';
@@ -35,14 +36,25 @@ function sessao(id, email) {
     user: { id, aud: 'authenticated', role: 'authenticated', email, app_metadata: {}, user_metadata: {}, created_at: new Date().toISOString() } };
 }
 const json = (res, code, obj) => { res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': '*' }); res.end(JSON.stringify(obj)); };
+// O mesmo núcleo da Edge Function funciona localmente; credenciais de mapas vêm somente do processo servidor.
+const entregaLocal=criarHandler({
+  supabaseUrl:'http://localhost:54323',
+  serviceKey:assinar({role:'service_role',exp:Math.floor(Date.now()/1000)+86400}),
+  anonKey:'sb_publishable_local',googleKey:process.env.GOOGLE_MAPS_API_KEY,orsKey:process.env.OPENROUTESERVICE_API_KEY,
+  fetcher:(url,op)=>fetch(String(url).replace('http://localhost:54323/rest/v1/','http://localhost:54323/'),op)
+});
 
 http.createServer((req, res) => {
   const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS,HEAD', 'access-control-expose-headers': 'content-range' };
   if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
   let corpo = '';
   req.on('data', (c) => (corpo += c));
-  req.on('end', () => {
+  req.on('end', async () => {
     const url = new URL(req.url, 'http://x');
+    if(url.pathname==='/functions/v1/cotar-entrega') {
+      const r=await entregaLocal(new Request('http://localhost'+req.url,{method:req.method,headers:req.headers,body:corpo || undefined}));
+      res.writeHead(r.status,Object.fromEntries(r.headers));res.end(await r.text());return;
+    }
     if (url.pathname.startsWith('/auth/v1/')) {
       const rota = url.pathname.slice('/auth/v1'.length);
       if (rota === '/token') {
@@ -75,4 +87,4 @@ http.createServer((req, res) => {
     }
     json(res, 404, { msg: 'não simulado: ' + url.pathname });
   });
-}).listen(54321, () => console.log('proxy Supabase local em http://localhost:54321'));
+}).listen(Number(process.env.PORTA_GATEWAY || 54321), () => console.log('proxy Supabase local iniciado'));

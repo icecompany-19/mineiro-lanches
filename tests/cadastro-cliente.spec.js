@@ -104,14 +104,15 @@ test('trocar de telefone limpa os dados e a taxa; uma consulta antiga de CEP nã
   await page.locator('#f-tel').fill(TELEFONE);
   await consulta;
   await expect(page.locator('#f-end')).toHaveValue(CASA.end);
+  const cancelamento = page.waitForEvent('requestfailed', r => r.url().startsWith('https://viacep.com.br/'));
   await page.locator('#f-tel').fill('11900000009');
   await expect(page.locator('#f-nome')).toHaveValue('');
   await expect(page.locator('#f-end')).toHaveValue('');
   await expect(page.locator('#f-ref')).toHaveValue('');
   await expect(page.locator('#enderecos-salvos')).toBeHidden();
-  const resposta = page.waitForResponse('https://viacep.com.br/**');
   liberar();
-  await resposta;
+  const cancelada = await cancelamento;
+  expect(cancelada.failure().errorText).toMatch(/abort|cancel/i);
   await expect(page.locator('#f-end')).toHaveValue('');
   await expect(page.locator('#f-bairro')).toHaveValue('');
   await expect(page.locator('#chk-taxa')).toHaveText('taxa calculada pelo endereço');

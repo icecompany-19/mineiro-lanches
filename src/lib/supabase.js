@@ -11,6 +11,23 @@ export const CHAVE_SESSAO = 'mineiro:v2:sessao';
 
 let promessa = null;
 
+// Cotação pública com chave publishable/anon, sem expor credenciais do backend.
+export async function consultarEntrega(body, signal) {
+  const ctl=new AbortController(),abortar=()=>ctl.abort();
+  const timer=setTimeout(abortar,60000);
+  signal?.addEventListener('abort',abortar,{once:true});
+  if(signal?.aborted)abortar();
+  try {
+    const r=await fetch(URL_SUPABASE+'/functions/v1/cotar-entrega',{
+      method:'POST',headers:{apikey:CHAVE,Authorization:'Bearer '+CHAVE,'Content-Type':'application/json'},
+      body:JSON.stringify(body),signal:ctl.signal
+    });
+    const j=await r.json();
+    if(!r.ok) throw Object.assign(new Error(j.codigo || 'rede'),{codigo:j.codigo || 'rede'});
+    return j;
+  } finally {clearTimeout(timer);signal?.removeEventListener('abort',abortar);}
+}
+
 // opc.sessao: true no painel e na tela do entregador (login guardado no aparelho e renovado sozinho); false no cliente (sem login).
 // opc.chave: onde a sessão fica guardada (padrão CHAVE_SESSAO); o entregador usa a própria, que não pode começar por
 // CHAVE_SESSAO (o Sair do painel apaga por prefixo).

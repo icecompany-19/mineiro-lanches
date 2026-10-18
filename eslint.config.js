@@ -5,12 +5,16 @@ export default [
   { ignores: ['dist/', 'preview/', 'node_modules/', 'public/', 'test-results/', 'playwright-report/'] },
   js.configs.recommended,
   {
+    files: ['supabase/functions/**/*.js'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.browser, Deno: 'readonly' } }
+  },
+  {
     files: ['src/**/*.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.browser, ML: 'writable', MLPainel: 'writable' } },
     rules: { 'no-unused-vars': ['warn', { args: 'none' }], 'no-empty': ['error', { allowEmptyCatch: true }] }
   },
   {
-    files: ['scripts/**/*.{js,mjs}', 'tests/**/*.js', '*.config.js'],
+    files: ['scripts/**/*.{js,mjs}', 'tests/**/*.{js,mjs}', '*.config.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node } }
   }
 ];

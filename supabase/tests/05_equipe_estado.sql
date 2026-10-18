@@ -95,7 +95,7 @@ select pg_temp.ok((select count(*) from jsonb_object_keys(:'e'::jsonb -> 'precos
 select pg_temp.ok((:'e'::jsonb -> 'precos') ? 'dog-cbo-turbo' and jsonb_typeof(:'e'::jsonb #> '{precos,dog-cbo-turbo}') = 'null'
                   and not (:'e'::jsonb -> 'inativos') ? 'dog-cbo-turbo', 'estado_cardapio: item sem preço vem com preço null (e ativo)');
 select pg_temp.ok(:'e'::jsonb -> 'adicionais' = '{"bacon":7.50,"catupiry":7.50,"doritos":7.50,"queijo":7.50}', 'estado_cardapio: adicionais ativos com preço');
-select pg_temp.ok(:'e'::jsonb -> 'loja' = jsonb_build_object('modo', 'aberta', 'aceitaFechada', false, 'comboPreco', 14.90, 'taxaKm', 1.00, 'taxaFixa', 4.00, 'horarios', (select horarios from loja)),
+select pg_temp.ok(:'e'::jsonb -> 'loja' = jsonb_build_object('modo', 'aberta', 'aceitaFechada', false, 'comboPreco', 14.90, 'taxaKm', 1.00, 'taxaFixa', 4.00, 'horarios', (select horarios from loja),'cotacaoAtiva',false),
   'estado_cardapio: bloco loja');
 reset role;
 select pg_temp.sou(:'equipe');

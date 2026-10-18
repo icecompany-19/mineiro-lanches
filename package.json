@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "seed": "node scripts/gerar-seed.mjs",
     "setup-sql": "node scripts/montar-setup.mjs",
+    "entrega:verificar": "node scripts/verificar-entrega.mjs",
     "fotos": "node scripts/fotos.mjs design/fotos-cliente --mapa fotos-originais/mapa.json",
     "db:local": "bash scripts/supabase-local/iniciar.sh",
     "qrcode": "node scripts/qrcode.mjs",
@@ -26,6 +27,7 @@
     "@fontsource/rubik": "^5.2.6",
     "@supabase/supabase-js": "^2.57.4",
     "jsqr": "^1.4.0",
+    "leaflet": "1.9.4",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {

@@ -2,6 +2,10 @@
 
 Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptador (`src/lib/`). Mudou algo aqui? Os dois lados mudam juntos.
 
+**Cotação de entrega (18/10):** `loja_json()` inclui `cotacaoAtiva`. Ativa, `criar_pedido(p)` exige `p.cotacaoId` válido para uma nova entrega real e obtém a distância da tabela privada `cotacoes_entrega`, ignorando a distância do navegador. `pedidos.cotacao_entrega_id` vincula a emissão usada; os demais campos e o formato público dos pedidos continuam compatíveis. Retirada e histórico não exigem cotação. Repetição idempotente é resolvida antes da expiração, preservando pedidos já aceitos.
+
+`ML.store.buscarCepEntrega(cep, dispositivo, signal)` e `ML.store.cotarEntrega(dados, signal)` chamam a Edge Function `cotar-entrega`. A cotação recebe `{ cep, rua, endereco, dispositivo, ponto?, confirmado? }` e devolve `{ estado: 'ok', id, distanciaKm, taxa, expiraEm, fonte }` ou `{ estado: 'confirmar', ponto }`. Número faz parte de `rua`; `endereco` deve corresponder ao endereço completo normalizado pelos dados postais. `dispositivo` é UUID aleatório por navegador, nunca telefone. Não se consulta a tabela de clientes. O mapa recebe apenas pontos de CEP/GPS/cliente, sem coordenadas derivadas da geocodificação Google. Operação e configuração em [ENTREGA-OPERACAO.md](ENTREGA-OPERACAO.md).
+
 ## Convenções
 
 - Schema `public`. Funções `security definer`, `set search_path = public, pg_temp`, nomes em português.
@@ -19,6 +23,9 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 | `nao_encontrado` | Id ou token inexistente |
 | `nao_e_entrega` | `confirmar_entrega` num pedido que não é de entrega (`local` ou `retirada`) |
 | `pedido_cancelado` | `confirmar_entrega` num pedido cancelado |
+| `cotacao_necessaria` | Nova entrega sem identificador válido de cotação quando o serviço está ativado |
+| `cotacao_expirada` | Cotação vencida ou origem/regra de taxa alterada; exige recalcular e confirmar |
+| `cotacao_endereco_divergente` | Endereço do pedido difere do endereço vinculado à cotação |
 
 - **Dia de operação.** `dia_operacional()` devolve `((now() at time zone 'America/Sao_Paulo') - interval '4 hours')::date`. É o mesmo corte de 4h do painel (`DIA_OP_OFFSET`).
 

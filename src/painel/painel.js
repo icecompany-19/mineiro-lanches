@@ -321,6 +321,12 @@
           <section class="pn-sec" data-view="relatorio" aria-label="Relatório" hidden><div data-slot="relatorio"></div></section>
           <section class="pn-sec" data-view="config" aria-label="Configurações" hidden>
             <div class="pn-cfg">
+              <div class="pn-card-cfg"><h3>Entrega</h3>
+                <p class="pn-cfg-dica">Confirme a posição somente quando estiver no ponto do truck. Ela será a origem das próximas rotas.</p>
+                <button type="button" class="pn-btn" data-act="origem-entrega">Confirmar posição atual do truck</button>
+                <button type="button" class="pn-btn" data-act="resumo-entrega">Verificar cálculos das últimas 24 horas</button>
+                <p class="pn-cfg-dica" data-entrega-diagnostico role="status" aria-live="polite"></p>
+              </div>
               <div class="pn-card-cfg"><h3>Som</h3>
                 <button type="button" class="pn-sw" role="switch" aria-checked="true" data-act="cfg-som"><span class="pn-sw-rot">Som de novo pedido</span><span class="pn-sw-trilho" aria-hidden="true"><span class="pn-sw-bola"></span></span></button><button type="button" class="pn-btn" data-act="cfg-testar-som">${ic('som')}Testar o som</button><p class="pn-cfg-dica">Para o aviso ficar bem alto, deixe o volume do computador no máximo.</p></div>
               <div class="pn-card-cfg"><h3>Tempo de espera</h3>
@@ -943,6 +949,27 @@
       case 'som': ML.store.salvarConfig({ som: !S.cfg.som }); S.cfg = ML.store.config(); renderChrome(); if (S.cfg.som) { marcarInteracao(); tocar(); } break;
       case 'cfg-testar-som': marcarInteracao(); tocar(true); break;
       case 'cfg-som': ML.store.salvarConfig({ som: !S.cfg.som }); S.cfg = ML.store.config(); renderChrome(); break;
+      case 'resumo-entrega': {
+        const aviso=q('[data-entrega-diagnostico]');
+        aviso.textContent='Consultando os cálculos de entrega…';
+        ML.store.resumoEntregas().then(n=>{
+          const falhas=Object.keys(n).filter(k=>!['cep_ok','cotacao_ok','confirmar_localizacao'].includes(k)).reduce((s,k)=>s+Number(n[k]),0);
+          aviso.textContent=(ML.store.loja().cotacaoAtiva?'Cotação no servidor ativa. ':'Cotação no servidor aguardando ativação. ')+
+            (n.cotacao_ok || 0)+' cotações calculadas; '+(n.confirmar_localizacao || 0)+' solicitações de confirmação no mapa; '+falhas+' tentativas com falha nas últimas 24 horas.';
+        }).catch(()=>{aviso.textContent='Não conseguimos consultar os cálculos agora. Tente novamente.';});
+        break;
+      }
+      case 'origem-entrega': {
+        const aviso=q('[data-entrega-diagnostico]');
+        if(!navigator.geolocation){aviso.textContent='A localização não está disponível neste navegador.';break;}
+        aviso.textContent='Buscando a posição atual. Use esta função somente estando no truck.';
+        navigator.geolocation.getCurrentPosition(p=>{
+          if(p.coords.accuracy>50){aviso.textContent='A localização está imprecisa. Tente novamente no celular, estando no truck.';return;}
+          ML.store.definirOrigemEntrega({lat:p.coords.latitude,lon:p.coords.longitude}).then(()=>{aviso.textContent='Posição do truck atualizada. Novas entregas serão calculadas a partir deste ponto.';})
+            .catch(()=>{aviso.textContent='Não foi possível atualizar o ponto do truck. Tente novamente.';});
+        },()=>{aviso.textContent='Permita a localização ou tente em outro aparelho, estando no truck.';},{enableHighAccuracy:true,timeout:10000,maximumAge:0});
+        break;
+      }
       case 'simular': simular(); break;
       case 'abrir-cardapio': abrirCardapio(); break;
       case 'detalhe': abrirDetalhe(id); break;

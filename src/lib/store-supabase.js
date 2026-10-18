@@ -10,7 +10,7 @@
    Pedidos nunca voltam no tempo: o historico só cresce (+1 a cada mudança de status), então uma versão com
    historico menor que a do cache é mais velha; e a foto de uma consulta não desfaz o que chegou (Realtime ou
    RPC) enquanto ela estava no ar. */
-import { obterSupabase } from './supabase.js';
+import { obterSupabase, consultarEntrega } from './supabase.js';
 
 const NS = 'mineiro:v2:';
 const CODIGOS = [
@@ -21,7 +21,10 @@ const CODIGOS = [
   'muitos_pedidos',
   'sem_permissao',
   'transicao_invalida',
-  'nao_encontrado'
+  'nao_encontrado',
+  'cotacao_necessaria',
+  'cotacao_expirada',
+  'cotacao_endereco_divergente'
 ];
 const JANELA_MS = 48 * 3600e3; // o painel lê os pedidos das últimas 48 h
 const TEMPO_LIMITE = 15000; // RPC sem resposta em 15 s conta como falta de rede
@@ -157,8 +160,9 @@ function entradaDoPedido(ML, dados) {
     modo: dados.modo || 'entrega',
     endereco: t(dados.endereco),
     referencia: t(dados.referencia),
-    // km da rota até o endereço (o servidor refaz a conta da taxa); sem ele, a taxa fica a combinar
+    // Compatibilidade de transição. Com cotação ativa o servidor obtém os km da cotação privada.
     distanciaKm: dados.modo !== 'local' && dados.modo !== 'retirada' && Number(dados.distanciaKm) > 0 ? Number(dados.distanciaKm) : null,
+    cotacaoId: dados.cotacaoId || null,
     pagamento: dados.pagamento || null,
     troco: t(dados.troco),
     obs: t(dados.obs),
@@ -362,7 +366,7 @@ export function criarStoreSupabase(opc) {
   function aplicarLoja(l) {
     if (!l) return;
     const antes = loja.modo;
-    loja = { modo: l.modo || 'auto', aceitaFechada: !!l.aceitaFechada };
+    loja = { modo: l.modo || 'auto', aceitaFechada: !!l.aceitaFechada, cotacaoAtiva: !!l.cotacaoAtiva };
     if (pendLoja) loja.modo = pendLoja.v;
     // vale também na primeira carga: até ela o cardápio supõe 'auto' (pelo horário)
     if (loja.modo !== antes) emitir('loja:modo', { modo: loja.modo });
@@ -399,7 +403,7 @@ export function criarStoreSupabase(opc) {
       precos,
       inativos: [...inativos].sort(),
       adicionais: adic,
-      loja: { aceitaFechada: !!l.aceitaFechada, comboPreco: Number(l.comboPreco), taxaKm: Number(l.taxaKm), taxaFixa: Number(l.taxaFixa), horarios: l.horarios || C.horarios }
+      loja: { aceitaFechada: !!l.aceitaFechada, cotacaoAtiva: !!l.cotacaoAtiva, comboPreco: Number(l.comboPreco), taxaKm: Number(l.taxaKm), taxaFixa: Number(l.taxaFixa), horarios: l.horarios || C.horarios }
     });
     const mudouCardapio = nova !== assinaturaCardapio;
     assinaturaCardapio = nova;
@@ -570,6 +574,10 @@ export function criarStoreSupabase(opc) {
     },
     recarregar,
     online: () => online,
+    buscarCepEntrega(cep, dispositivo, signal) { return consultarEntrega({acao:'cep',cep,dispositivo},signal); },
+    cotarEntrega(dados, signal) { return consultarEntrega(dados,signal); },
+    resumoEntregas() { return rpc('resumo_entregas',{}); },
+    async definirOrigemEntrega(ponto) { await rpc('definir_origem_entrega',{p_lat:ponto.lat,p_lon:ponto.lon});await recarregar(); },
 
     pedidos: () => pedidos.slice(),
     pedido: (id) => pedidos.find((p) => p.id === id) || null,
