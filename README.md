@@ -21,6 +21,7 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
 - [`docs/PLANO-FASE-3.md`](docs/PLANO-FASE-3.md): plano atual (17/10): horário automático, motoboy, comanda com logo e QR e domínio.
 - [`docs/CONTRATO-API.md`](docs/CONTRATO-API.md): contrato banco ⇄ front.
 - [`docs/CONTRATO-PAINEL.md`](docs/CONTRATO-PAINEL.md): contrato do painel.
+- [`docs/ENTREGA-CONFIAVEL.md`](docs/ENTREGA-CONFIAVEL.md): diagnóstico das taxas ausentes e proposta de cotação validada no servidor, fontes alternativas e confirmação da localização.
 - [`docs/PREVIA-DECISOES.md`](docs/PREVIA-DECISOES.md): respostas do cliente e decisões da prévia.
 
 ## Colocar no ar
@@ -48,7 +49,7 @@ O histórico fica na chave local `mineiro:v2:cadastros`. Ele não consulta a tab
 
 O cálculo da entrega tenta a rua e a cidade sem o bairro quando o ViaCEP e o mapa usam nomes diferentes (caso do CEP 08555-120). O formulário conserva o número preenchido antes da resposta do CEP, invalida a taxa ao trocar de endereço e aguarda CEP/rota antes de enviar. Em falhas temporárias da rota, o cliente pode tocar em **Recalcular entrega**.
 
-A busca também retira o número e o complemento quando o endereço foi escrito sem vírgula antes do número (por exemplo, `Rua Exemplo 53, Casa`), preservando o endereço completo no pedido. A conferência de 18/10 no Supabase confirmou que os pedidos 0045, 0047, 0050 e 0051 chegaram sem distância e sem taxa. No teste dos endereços, o mapa não encontrou as ruas dos pedidos 0045, 0047 e 0051, mesmo sem número/bairro; no 0050, o complemento impedia a tentativa só pela rua. Ausência no mapa é uma limitação diferente de erro temporário de rede: repetir a consulta não garante resolver. Não foram alterados os valores dos pedidos históricos.
+A busca também retira o número e o complemento quando o endereço foi escrito sem vírgula antes do número (por exemplo, `Rua Exemplo 53, Casa`), preservando o endereço completo no pedido. A conferência de 18/10 no Supabase confirmou que os pedidos 0045, 0047, 0050 e 0051 chegaram sem distância e sem taxa. As buscas dos endereços dos pedidos 0045, 0047 e 0051 ficaram vazias; a análise posterior encontrou vias com grafia divergente por meio de uma segunda base de coordenadas de CEP. No 0050, o complemento impedia a tentativa só pela rua (corrigido em `405ed13`). A [análise de confiabilidade](docs/ENTREGA-CONFIAVEL.md) distingue falha temporária, divergência de nome e precisão insuficiente e propõe a arquitetura de recuperação. Não foram alterados os valores dos pedidos históricos.
 
 Desde 18/10, falhas temporárias de rede, prazo, HTTP 429 e 5xx têm uma nova tentativa automática. Consultas antigas são canceladas ao trocar o endereço, o mapa recebe uma consulta por vez com intervalo mínimo de 1,1 s e a rota pode responder em até 15 s por tentativa. **Recalcular entrega** também refaz uma consulta de CEP que falhou. Se ainda faltar taxa, a regra atual permite o pedido, mas o painel e a comanda destacam **Taxa de entrega pendente — não incluída no total**. O sistema não inventa uma taxa para esses pedidos.
 
