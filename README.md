@@ -29,9 +29,9 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
 
 1. **Banco.** No Supabase, abra o SQL Editor, cole `supabase/setup.sql` e clique em Run.
    - O script pode ser rodado de novo a cada versão.
-   - Crie o usuário do dono em Authentication → Users e rode, com o e-mail dele, o `insert into equipe …` comentado no fim do arquivo.
+   - Na primeira instalação, crie e confirme o usuário do dono em Authentication → Users e execute os comandos de primeiro administrador comentados no fim do arquivo (equipe + usuarios_painel). Na atualização existente, o único acesso da equipe já recebe administração.
    - Desligue o cadastro aberto (Authentication → Sign In / Providers).
-   - Entregador: crie o usuário em Authentication → Users → Add user (com Auto Confirm) e rode, com o e-mail dele, o `insert into public.motoboys …` comentado no fim do arquivo. Nunca ponha o entregador na `equipe` (daria o painel inteiro).
+   - Equipe e entregadores: entre no painel como administrador e abra **Usuários → Novo usuário**. Para contas já existentes, use **Liberar conta existente**. Consulte [o guia de usuários](docs/USUARIOS-PAINEL.md).
    - Mudou o horário no `CONFIG`? O banco manda: o `setup.sql` regrava `loja.horarios`; confira também se `loja.modo` está em `auto`.
 2. **Vercel.** Importe o repositório. O `vercel.json` já define o build (`npm run build`, saída em `dist`), a CSP, o cache e os redirecionamentos. A URL e a chave **publishable** do Supabase estão em `.env.production`; ela é pública, e quem protege os dados é o RLS.
 3. **Domínio e QR.** Com o domínio final:

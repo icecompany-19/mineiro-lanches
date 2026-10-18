@@ -278,3 +278,10 @@ bash scripts/supabase-local/iniciar.sh   # Postgres 16/17 :54322 + PostgREST :54
   psql $B/upgrade -v ON_ERROR_STOP=1 -f supabase/setup.sql
   PG_URL=$B/upgrade bash scripts/testar-sql.sh
   ```
+
+
+## Gestão de usuários (18/10)
+
+A Edge Function `gerenciar-usuarios` exige JWT de usuário e valida a sessão em Auth. `acao: sessao` retorna apenas `{ administrador, id }` do próprio usuário. As ações `listar`, `criar`, `vincular`, `editar` e `senha` exigem administrador ativo no cadastro privado e na equipe. Campos de cadastro/edição: `{ nome, email?, perfil: 'admin'|'equipe'|'motoboy', ativo, id? }`; criação exige `senha` de 10 a 128 caracteres. `vincular` libera Auth preexistente sem alterar sua senha; `editar` preserva o e-mail do registro. A ação `senha` recebe apenas `id` e `senha`. Respostas de usuário incluem somente `user_id,nome,email,perfil,ativo`.
+
+`usuarios_painel` e `usuarios_painel_eventos` têm RLS e são privadas ao backend. `gerir_acesso_usuario(uuid,uuid,text,text,text,boolean)` é invoker e só `service_role` executa. Sincroniza equipe/motoboy, registra auditoria sem senha e protege o próprio administrador. Equipe comum e motoboys não promovem permissões nem enumeram usuários diretamente. Consulte [operação e primeiro administrador](USUARIOS-PAINEL.md).

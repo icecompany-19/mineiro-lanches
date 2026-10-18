@@ -20,7 +20,8 @@
     historico: { t: 'Histórico', i: 'lista' },
     cardapio: { t: 'Cardápio', i: 'burger' },
     relatorio: { t: 'Relatório', i: 'grafico' },
-    config: { t: 'Configurações', i: 'config' }
+    config: { t: 'Configurações', i: 'config' },
+    usuarios: { t: 'Usuários', i: 'lista' }
   };
   const MODO_IC = { entrega: 'moto', retirada: 'sacola', local: 'sacola' };
   const COLS = [
@@ -43,6 +44,7 @@
     opc: {}, offline: false
   };
   let modalAtual = null;
+  let gestaoUsuarios = null;
 
   /* ---------- utilidades ---------- */
   const ic = (n, cls) => `<svg class="pn-ic${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
@@ -322,6 +324,7 @@
           </section>
           <section class="pn-sec" data-view="cardapio" aria-label="Cardápio" hidden><div data-slot="cardapio"></div></section>
           <section class="pn-sec" data-view="relatorio" aria-label="Relatório" hidden><div data-slot="relatorio"></div></section>
+          <section class="pn-sec" data-view="usuarios" aria-label="Usuários" hidden><div data-usuarios></div></section>
           <section class="pn-sec" data-view="config" aria-label="Configurações" hidden>
             <div class="pn-cfg">
               <div class="pn-card-cfg"><h3>Entrega</h3>
@@ -358,7 +361,8 @@
     <div class="pn-mobile">
       <header class="pn-m-topo"><img class="pn-selo-logo" src="/assets/logo/selo-128.webp" srcset="/assets/logo/selo-128.webp 1x, /assets/logo/selo-256.webp 2x" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-loja-txt" data-lojatxt-m role="status"></span></header>
       <p class="pn-aviso-m" role="note"><strong>O painel foi pensado para computador</strong></p>
-      <div data-mobile></div>
+      <nav class="pn-usuarios-nav-mobile" aria-label="Seções do painel no celular"><button class="pn-btn" type="button" data-usuarios-ir="pedidos">Pedidos</button><button class="pn-btn" type="button" data-usuarios-ir="usuarios">Usuários</button></nav>
+      <div data-mobile></div><div data-usuarios-mobile hidden><div data-usuarios></div></div>
       ${sairHTML()}
     </div>
     </div>`;
@@ -664,6 +668,10 @@
   function irPara(v) {
     if (!VIEWS[v]) return;
     S.view = v;
+    if(gestaoUsuarios){if(v==='usuarios')gestaoUsuarios.abrir();else gestaoUsuarios.esconder();}
+    q('[data-mobile]').hidden=v==='usuarios';
+    q('.pn-aviso-m').hidden=v==='usuarios';
+    q('[data-usuarios-mobile]').hidden=v!=='usuarios';
     qa('.pn-sec').forEach(s => { s.hidden = s.dataset.view !== v; });
     qa('[data-nav]').forEach(b => { if (b.dataset.nav === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     q('[data-titulo]').textContent = VIEWS[v].t;
@@ -924,6 +932,7 @@
   function onClick(e) {
     marcarInteracao();
     const t = e.target;
+    const atalhoUsuarios=t.closest('[data-usuarios-ir]');if(atalhoUsuarios){irPara(atalhoUsuarios.dataset.usuariosIr);return;}
     const nav = t.closest('[data-nav]'); if (nav) { irPara(nav.dataset.nav); return; }
     const lj = t.closest('[data-loja]'); if (lj) { ML.store.definirLoja(lj.dataset.loja); agendar(); return; }
     const b = t.closest('[data-act]');
@@ -1093,6 +1102,7 @@
     S.root = el;
     el.classList.add('painel');
     el.innerHTML = esqueleto();
+    if(window.MLUsuarios)gestaoUsuarios=window.MLUsuarios.montar(el);
     S.toasts = document.createElement('div');
     S.toasts.className = 'pn-toasts'; S.toasts.setAttribute('aria-live', 'polite'); S.toasts.setAttribute('role', 'status');
     document.body.appendChild(S.toasts);
@@ -1133,6 +1143,7 @@
   // no body, fora do quadro escondido; o detalhe lateral e os avisos também saem
   function esconder() {
     S.visivel = false;
+    if(gestaoUsuarios)gestaoUsuarios.esconder();
     if (S.tickId) { clearInterval(S.tickId); S.tickId = null; }
     qa('[data-kpi]').forEach(k => { if (k._raf) { cancelAnimationFrame(k._raf); k._raf = null; } });
     fecharModal();

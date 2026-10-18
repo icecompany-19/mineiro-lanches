@@ -5,6 +5,7 @@ import './styles/base.css';
 import './painel/painel.css';
 import './core.js';
 import './painel/painel.js';
+import './painel/usuarios.js';
 import { iniciarAcesso } from './painel/acesso.js';
 import { qrSvg } from './lib/qr-comanda.js';
 

@@ -46,6 +46,10 @@ commit;
 -- trocando EMAIL_AQUI pelo e-mail dele:
 --
 -- insert into equipe (user_id, nome) select id, 'Dono' from auth.users where email = 'EMAIL_AQUI' on conflict do nothing;
+-- insert into usuarios_painel(user_id,nome,email,perfil,ativo)
+-- select id,'Dono',lower(email),'admin',true from auth.users where email='EMAIL_AQUI'
+-- on conflict(user_id) do update set perfil='admin',ativo=true;
+-- Depois, use Painel > Usuários para cadastrar/liberar equipe e motoboys sem abrir o Supabase.
 --
 -- Acesso do motoboy (tela /motoboy/): crie o usuário em Authentication → Users (e-mail e senha, Auto Confirm) e rode,
 -- trocando EMAIL_AQUI pelo e-mail dele. O motoboy NÃO entra na equipe: ele só enxerga as entregas em rota.
