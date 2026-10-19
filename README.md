@@ -21,6 +21,7 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
 - [`docs/PLANO-FASE-3.md`](docs/PLANO-FASE-3.md): plano atual (17/10): horário automático, motoboy, comanda com logo e QR e domínio.
 - [`docs/CONTRATO-API.md`](docs/CONTRATO-API.md): contrato banco ⇄ front.
 - [`docs/ENTREGADORES.md`](docs/ENTREGADORES.md): atribuição, saída, painel operacional, confirmações offline e baixa manual auditada.
+- [`docs/PLANO-ROTAS-ENTREGADORES.md`](docs/PLANO-ROTAS-ENTREGADORES.md): proposta de viagens com paradas ordenadas, agrupamento por percurso e distribuição automática aos motoboys.
 - [`docs/CONTRATO-PAINEL.md`](docs/CONTRATO-PAINEL.md): contrato do painel.
 - [`docs/ENTREGA-CONFIAVEL.md`](docs/ENTREGA-CONFIAVEL.md): diagnóstico das taxas ausentes e proposta de cotação validada no servidor, fontes alternativas e confirmação da localização.
 - [`docs/ENTREGA-OPERACAO.md`](docs/ENTREGA-OPERACAO.md): configuração da chave, verificação das rotas, ativação da cotação e uso pela equipe.
