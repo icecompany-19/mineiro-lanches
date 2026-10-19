@@ -176,3 +176,11 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
 ## Entregadores — 18/10/2026
 
 A aba **Entregadores** tem navegação no desktop e no celular, com atribuição, saída, acompanhamento, alertas, períodos e histórico. **Saiu para entrega** no quadro abre esta aba para atribuir e registrar a saída. **Concluir** em uma entrega abre a baixa manual com motivo; retirada/local preservam seu fluxo. Ver `docs/ENTREGADORES.md` para regras e critérios operacionais.
+
+## Viagens e rotas (19/10)
+
+Mensagens ao cliente: cartões de computador, lista do celular e detalhes usam `ML.whatsapp.confirmacao(pedido,base)`. A mensagem inclui o número, a situação real e `ML.links.pedido(pedido,base)`, com o token de acompanhamento e a raiz pública configurada em `VITE_SITE_URL` (na prévia local, usa a origem da página). Não usar UUID interno, URL do painel ou QR do motoboy. Um pedido `novo` é descrito como recebido; `preparo` já permite confirmar o preparo. O botão abre o WhatsApp com o texto preparado para a equipe enviar.
+
+A seção em **Entregadores** usa o controlador `src/painel/rotas.js` e as RPCs descritas no [contrato da API](CONTRATO-API.md). Consulta independente, foco/rascunhos preservados e cronômetros sem reescrever formulários. A central exibe turno, comunicação recente, prontos, espera, impedimentos do cálculo, sugestões com validade e viagens atuais. O mapa é carregado sob demanda, usa o percurso calculado por ruas e declara ausência de rastreamento ao vivo. Controles individuais de saída/atribuição de um pedido reservado dão lugar aos comandos da viagem.
+
+Configuração instala desligada e sem limites presumidos; a confirmação da origem deve ser feita fisicamente na loja. A automação reserva viagens pelo servidor, com saída real explícita após a carga reconhecida no celular. Desfazer antes da saída exige motivo e pausa a seleção dos pedidos; retorno conferido pela equipe também exige motivo. Guia completo em [ROTAS-OPERACAO.md](ROTAS-OPERACAO.md).

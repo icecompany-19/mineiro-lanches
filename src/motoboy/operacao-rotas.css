@@ -1,0 +1,125 @@
+.mb-operacao {
+  padding: 18px;
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  background: var(--chapa);
+  font-size: 13px;
+}
+.mb-operacao :where(h2, p) {
+  margin: 0;
+}
+.mb-operacao h2 {
+  font: 500 24px/1.2 var(--f-placa);
+  margin-top: 5px;
+}
+.mb-operacao p {
+  color: var(--osso-2);
+  line-height: 1.6;
+  margin: 12px 0;
+}
+.mb-operacao-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.mb-operacao .pn-btn {
+  min-height: 56px;
+}
+.mb-operacao > .pn-btn {
+  width: 100%;
+  margin: 8px 0;
+  justify-content: center;
+}
+.mb-operacao .mb-operacao-consulta {
+  font-size: 10px;
+  margin: 10px 0;
+}
+.mb-operacao .mb-operacao-erro {
+  padding: 12px;
+  border: 1px solid var(--fio);
+  border-radius: 10px;
+  color: var(--fio);
+}
+.mb-viagem-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 14px;
+  color: var(--fio);
+}
+.mb-viagem-resumo span {
+  color: var(--osso-2);
+}
+.mb-operacao .mb-proxima {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 20px;
+}
+.mb-proxima b {
+  font-size: 18px;
+  color: var(--fio);
+}
+.mb-viagem-paradas {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 18px 0;
+}
+.mb-viagem-paradas li {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+.mb-viagem-paradas li > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  background: var(--fio);
+  color: var(--grafite);
+  border-radius: 50%;
+  font-weight: 600;
+}
+.mb-viagem-paradas li > div {
+  min-width: 0;
+  flex: 1;
+}
+.mb-viagem-paradas p {
+  font-size: 12px;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.mb-viagem-paradas small {
+  font-size: 10px;
+  color: var(--osso-2);
+}
+.mb-viagem-paradas button {
+  min-width: 56px;
+  flex: none;
+}
+.mb-viagem-detalhes summary {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  color: var(--fio);
+  cursor: pointer;
+}
+.mb-parada-feita {
+  opacity: 0.65;
+}
+.mb-turno-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+.mb-turno-acoes .pn-btn {
+  width: 100%;
+  justify-content: center;
+}

@@ -16,6 +16,8 @@ import {
 } from './entrega.js';
 import { abrirArmazenamento, criarFila } from './fila.js';
 import { criarLeitor, uuidDoTexto } from './leitor.js';
+import { consultarOperacaoRotas } from './entrega.js';
+import { montarOperacaoRotas } from './operacao-rotas.js';
 
 let pendente = null; // uuid do link que chegou antes de a tela abrir
 let aberta = null; // estado da tela enquanto ela está montada
@@ -79,6 +81,7 @@ export function montarMotoboy(el, usuario, { sb, sair }) {
       <p data-preparo>Preparando acesso sem internet…</p><div data-pendencias></div>
     </section>
     <section class="mb-res" data-res role="status" aria-live="polite" hidden></section>
+    <div data-operacao-rotas></div>
     <button type="button" class="pn-btn pn-btn--prim mb-ler" data-act="ler-qr">${ic('completo')}<span>Ler QR da comanda</span>${ic('avancar')}</button>
     <section class="mb-leitor" data-leitor aria-label="Leitor de QR" hidden>
       <div class="mb-video-caixa"><video class="mb-video" data-video playsinline muted autoplay></video></div>
@@ -197,6 +200,14 @@ export function montarMotoboy(el, usuario, { sb, sair }) {
   };
   el.addEventListener('change', t.aoAlterar);
   aberta = t;
+  t.operacao = montarOperacaoRotas(q('[data-operacao-rotas]'), {
+    consultar: (nome, args) => consultarOperacaoRotas(sb, nome, args),
+    armazenamento: t.armazenamento,
+    pedidosCarregados: () => t.lista,
+    pendencias: () => t.pendencias,
+    cachePronto: () => !!t.cacheEm && !t.erroPreparo && !!navigator.serviceWorker?.controller,
+    atualizarPedidos: () => carregarLista(t)
+  });
 
   t.fila = criarFila({
     armazenamento: t.armazenamento,
@@ -264,6 +275,7 @@ export function esconderMotoboy() {
   aberta = null;
   t.leitor.parar();
   t.fila?.parar();
+  t.operacao?.parar();
   clearInterval(t.intervalo);
   clearInterval(t.relogio);
   window.removeEventListener('online', t.retomar);
@@ -364,6 +376,7 @@ function desenharSincronizacao(t) {
 
 function atualizarResumo(t) {
   if (aberta !== t) return;
+  t.operacao?.render();
   const n = t.pendencias.length;
   t.el.querySelector('[data-mb-rota]').textContent = t.lista.filter(
     (p) => p.status === 'rota' && !t.pendencias.some((e) => e.id === p.id)
@@ -399,7 +412,10 @@ async function sincronizar(t, forcar = false) {
       await t.fila.listar();
       carregarTaxas(t);
     }
-    if (aberta === t) desenharSincronizacao(t);
+    if (aberta === t) {
+      desenharSincronizacao(t);
+      t.operacao?.atualizar();
+    }
   } catch {
     if (aberta === t)
       mostrarRes(t, { tipo: 'erro', mensagem: 'Não foi possível acessar as confirmações salvas. Confira com a equipe antes de sair.' });
@@ -494,8 +510,20 @@ function fecharLeitor(t) {
 }
 
 // ---------- lista Em rota ----------
-async function carregarLista(t) {
-  if (t.carregando) return;
+function carregarLista(t) {
+  if (t.promessaCarga) {
+    t.recarregarDepois = true;
+    return t.promessaCarga;
+  }
+  t.promessaCarga = (async () => {
+    do {
+      t.recarregarDepois = false;
+      await carregarListaUmaVez(t);
+    } while (t.recarregarDepois && aberta === t);
+  })().finally(() => { t.promessaCarga = null; });
+  return t.promessaCarga;
+}
+async function carregarListaUmaVez(t) {
   t.carregando = true;
   t.estado = 'carregando';
   desenharLista(t);
@@ -520,6 +548,7 @@ async function carregarLista(t) {
   if (aberta === t) {
     desenharLista(t);
     desenharSincronizacao(t);
+    t.operacao?.conferirCarga();
   }
 }
 
@@ -565,7 +594,7 @@ function desenharLista(t) {
       .map((p) => {
         const fone = p.telefone.replace(/\D/g, '');
         const pendencia = t.pendencias.find((e) => e.id === p.id);
-        return `<li class="mb-item ${pendencia ? 'mb-item--pendente' : ''}" data-id="${esc(p.id)}">
+        return `<li class="mb-item ${pendencia ? 'mb-item--pendente' : ''}" data-id="${esc(p.id)}" tabindex="-1">
           <div class="mb-item-cab"><span class="mb-item-num">${p.numero == null ? '' : esc(numero(p.numero))}</span><span class="mb-item-status">${pendencia ? 'No aparelho' : p.status === 'rota' ? 'Em entrega' : 'Aguardando saída'}</span>${p.status === 'rota' && p.saiuEm && !pendencia ? `<span class="mb-item-tempo">${ic('relogio')}<b data-mb-tempo="${esc(p.saiuEm)}"></b></span>` : ''}</div>
           <h3 class="mb-item-nome">${esc(p.nome)}</h3>
           ${p.endereco ? `<p class="mb-item-end">${ic('pino')}<span>${esc(p.endereco)}</span></p>` : ''}

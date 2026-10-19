@@ -300,3 +300,29 @@ Taxas (19/10): `painel_entregadores.entregadores[]` inclui `taxas: {concluidas, 
 Confirmação: `{ok,jaEntregue,pedido}`. Mesmo evento ou pedido já entregue recebe reconhecimento sem repetir o encerramento. Confirmação posterior à baixa manual gera somente auditoria. Cancelamento conferido: `{ok:true,ocorrencia:true,evento}`; não altera status. Tabelas operacionais têm RLS e nenhum privilégio direto de anon/authenticated. `mudar_status` também exige motivo para conclusão manual de entrega.
 
 Atualização de 19/10: `painel_entregadores` inclui conclusões sem controle individual no período do último evento `entregue` do histórico original. Retorna `legado:true`, `encerramento:'anterior'` e `recebidoEm` desse evento; não inventa `motoboyId`, `atribuicao` ou `confirmadoEm`. A consulta não modifica pedidos. Baixas manuais atuais com evento operacional mantêm `legado:false`. O acesso continua exclusivo da equipe.
+
+## Viagens e planejamento — 19/10/2026
+
+Guia vigente: [ROTAS-OPERACAO.md](ROTAS-OPERACAO.md). A entrega avança `preparo → pronto → rota → entregue`; o caminho legado de preparo direto para rota permanece para recuperação manual. Uma viagem reservada mantém todos os pedidos prontos. A saída da viagem é atômica e exige reconhecimento da sua versão pelo motoboy. O DTO de `minhas_entregas()` acrescenta `viagemId`, `ordemViagem` e `versaoViagem` (nulos para atribuição individual), conservando a versão `atribuicao` de cada pedido.
+
+RPCs autenticadas, com autorização verificada no servidor:
+
+| RPC | Escopo e efeito |
+|---|---|
+| `painel_rotas_entregas()` | Equipe: `{config,entregadores,prontos,planos,viagens,ultimaExecucao,servidorEm}` e consumo interno estimado; nunca retorna token do job |
+| `configurar_rotas(p_modo,p_regras,p_limite=1000,p_versao=null)` | Equipe, versão e origem confirmada; regras obrigatórias em modo assistido/automático |
+| `definir_disponibilidade_entregador(p_situacao,p_motoboy=null,p_motivo=null)` | Próprio motoboy ativo ou equipe; alterar outra pessoa exige motivo; não libera viagem aberta |
+| `minha_operacao_rotas()` | Próprio motoboy ativo: `{entregador,viagem,modo,servidorEm}`, sem dados das outras viagens |
+| `reservar_viagem_entrega(p_plano,p_motoboy=null)` | Equipe; revalida e reserva o conjunto, idempotente por sugestão |
+| `reconhecer_carregamento_viagem(p_id,p_versao)` | Somente o próprio motoboy ativo, versão atual reservada |
+| `iniciar_viagem_entrega(p_id,p_versao)` | Equipe ou próprio motoboy; exige carga reconhecida, sem revisão pendente; não permite saída individual de pedidos da viagem |
+| `desfazer_viagem_entrega(p_id,p_versao,p_motivo)` | Equipe, antes da saída; conserva pedidos prontos, remove reserva aberta e pausa seleção automática |
+| `liberar_planejamento_pedidos(p_ids)` | Equipe, 1–12 IDs distintos prontos e sem viagem; retira a pausa explícita |
+| `conferir_destino_pedido(p_id,p_lat,p_lon,p_motivo)` | Equipe antes da reserva/saída, ponto confirmado por 30 dias, sem alterar taxa aceita |
+| `retornar_viagem_entrega(p_id,p_versao,p_motivo=null)` | Próprio motoboy ou equipe com motivo; exige todas as baixas no servidor; retorno idempotente |
+
+`config.regras` contém `maxPedidos` (inteiro 1–6), `esperaMin` (1–120), `trajetoMin` (1–180), `desvioMin` (0–120) e `paradaMin` (0–15). Não há valores comerciais predefinidos. DTOs de sugestão/viagem contêm entregador, sequência de paradas, estimativas e geometria vigente. Viagem inclui `versao`, `carregadaVersao`, `revisaoPendente`, `saiuEm` e `estado`; paradas preservam `atribuicao`. `geometriaAte` e `pontoAte` permitem expirar dados no cache local.
+
+A Edge Function `planejar-entregas` recebe `{acao:'calcular'|'verificar',pedidos?:uuid[],ordemFixa?:boolean}` com JWT de equipe, validado em Auth. Seleção explícita: até seis IDs distintos. A ação automática só aceita token privado do agendamento, sem autor do navegador. A resposta resume `{estado,planos,reservadas,verificacao}`, sem coordenadas, matriz ou credenciais. A equipe consulta as sugestões pela RPC. `iniciar_planejamento_entregas`/`concluir_planejamento_entregas` são exclusivos de `service_role`. Helpers invoker, tabelas, cache e auditoria são privados; nenhuma nova leitura direta de anon/authenticated.
+
+Confirmações offline usam o mesmo protocolo e idempotência anteriores. Reserva, disponibilidade, reconhecimento de carga e retorno exigem conexão; esses comandos não entram na fila de confirmações. Cancelamento parcial antes da saída invalida a carga e exige replanejamento. Após todas as baixas a viagem fica `retornando`, até o retorno explícito.

@@ -1,7 +1,10 @@
 import { obterSupabase } from '../lib/supabase.js';
 import './entregadores.css';
+import { montarPlanejamento } from './rotas.js';
+import { ERROS_ROTAS } from '../lib/rotas-api.js';
 
 const ERROS = {
+  ...ERROS_ROTAS,
   sem_permissao: 'Seu acesso não permite operar entregadores.',
   motivo_obrigatorio: 'Informe o motivo da baixa manual (até 200 caracteres).',
   entrega_em_andamento: 'Este pedido já saiu. Confira a entrega com o motoboy antes de encerrar.',
@@ -76,6 +79,16 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     alertasAnteriores = '';
   const rascunhos = new Map(),
     atribuicoes = new Map();
+  const planejamento = montarPlanejamento(
+    slots.map(() => document.createElement('div')),
+    {
+      consultar,
+      aoAlterar: () => {
+        carregar();
+        render();
+      }
+    }
+  );
   let alerta = 45;
   try {
     const v = Number(localStorage.getItem('mineiro:v2:entregadores:alerta'));
@@ -108,6 +121,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     const foco = document.activeElement,
       slotFoco = slots.findIndex((s) => s.contains(foco));
     const chaveFoco = foco?.dataset.eKey;
+    const chaveRota = foco?.dataset.rKey;
     const detalhes = slots.map((s) => [...s.querySelectorAll('details[open]')].map((d) => d.dataset.eDetalhe));
     const c = contagem(),
       abertas = pedidos().filter(emAberto).length,
@@ -124,7 +138,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
           .map(([v, t]) => `<option value="${v}" ${dias === v ? 'selected' : ''}>${t}</option>`)
           .join(
             ''
-          )}</select></label><button class="pn-btn pn-ent-atualizar" type="button" data-e="atualizar" data-e-key="atualizar" ${ocupado ? 'disabled' : ''}>${ic('relogio')} Atualizar</button></div>
+          )}</select></label><button class="pn-btn pn-ent-prim" type="button" data-e="organizar" data-e-key="organizar" ${!dados ? 'disabled' : ''}>${ic('moto')} Organizar saída</button><button class="pn-btn pn-ent-atualizar" type="button" data-e="atualizar" data-e-key="atualizar" ${ocupado ? 'disabled' : ''}>${ic('relogio')} Atualizar</button></div>
       </header>
       <div class="pn-ent-vivo"><span class="pn-ent-conexao" data-e-conexao>Consultando servidor…</span><span>Atualização automática a cada 15 s</span><span data-e-atualizado></span></div>
       <p class="pn-ent-erro" role="alert" ${erro ? '' : 'hidden'}>${ic('info')}${esc(erro)}</p><p class="pn-ent-aviso" role="status" aria-live="polite" ${aviso ? '' : 'hidden'}>${esc(aviso)}</p>
@@ -140,6 +154,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
           .map((e) => entregadorHTML(e))
           .join('') || '<p class="pn-ent-vazio">Nenhum entregador cadastrado. Administradores podem cadastrar em Usuários.</p>'
       }</div></section>
+      <div data-planejamento-slot></div>
       <section class="pn-ent-central" aria-label="Central de entregas">
         <div class="pn-ent-secao-cab"><div><p class="pn-ent-kicker">Acompanhamento</p><h3>Central de entregas</h3></div><button type="button" class="pn-btn" data-e="retorno" data-e-key="retorno">${ic('completo')} Conferir retorno</button></div>
         <div class="pn-entregadores-retorno" ${retorno ? '' : 'hidden'}><div>${ic('check')}<b>Conferência no retorno</b></div><p>Peça ao motoboy para abrir a tela conectado e conferir “Tudo sincronizado”. Há <b>${abertas} ${abertas === 1 ? 'entrega aberta' : 'entregas abertas'}</b> no sistema. Confira as pendências abaixo.</p><button class="pn-btn" type="button" data-e="fechar-retorno">Entendi</button></div>
@@ -172,12 +187,15 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     </div>`;
     slots.forEach((el, i) => {
       el.innerHTML = corpo;
+      el.querySelector('[data-planejamento-slot]')?.replaceWith(planejamento.hosts[i]);
       for (const d of el.querySelectorAll('details[data-e-detalhe]')) if (detalhes[i].includes(d.dataset.eDetalhe)) d.open = true;
     });
     atualizarLista();
     pulsar();
     if (chaveFoco && slotFoco >= 0)
       slots[slotFoco].querySelector(`[data-e-key="${CSS.escape(chaveFoco)}"]`)?.focus({ preventScroll: true });
+    else if (chaveRota && slotFoco >= 0)
+      slots[slotFoco].querySelector(`[data-r-key="${CSS.escape(chaveRota)}"]`)?.focus({ preventScroll: true });
   }
   function entregadorHTML(e) {
     const seus = pedidos().filter((p) => p.motoboyId === e.id),
@@ -248,6 +266,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     pulsar();
   }
   function pedidoHTML(p) {
+    const viagem = planejamento.viagemDoPedido(p.id);
     const num = window.ML.fmt.numero(p.numero),
       espera = ['preparo', 'pronto'].includes(p.status);
     const status =
@@ -270,12 +289,13 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       <p class="pn-ent-alerta" data-e-alerta-pedido ${longo(p) ? '' : 'hidden'}>${ic('sino')} Entrega aberta há muito tempo — confira com o entregador.</p>
       ${emAberto(p) && !p.atribuicao ? '<p class="pn-ent-sem">Atribua um entregador para liberar a confirmação no celular.</p>' : ''}
       ${p.legado ? '<p class="pn-ent-origem">Confirmada antes do novo controle. Sem vínculo individual de entregador.</p>' : ''}
+      ${viagem ? `<p class="pn-ent-origem">Pedido em viagem planejada. Confira a sequência e a saída em “Viagens e rotas”.</p>` : ''}
       ${p.recebidoEm ? `<p class="pn-ent-origem">Recebida pelo servidor: ${esc(hora(p.recebidoEm))}${p.encerramento === 'manual' ? ' · Baixa manual' : ''}</p>` : ''}
       ${p.confirmadoEm ? `<p class="pn-ent-origem">Confirmada no aparelho: ${esc(hora(p.confirmadoEm))}${p.horarioInconsistente ? ' · horário inconsistente, fora da média' : ''}</p>` : ''}
       ${p.motivo ? `<p class="pn-ent-motivo">${ic('info')} ${esc(p.motivo)}</p>` : ''}
       <div class="pn-entrega-acoes">
         ${
-          emAberto(p) && (!p.atribuicao || !p.saiuEm)
+          emAberto(p) && !viagem && (!p.atribuicao || !p.saiuEm)
             ? `<form data-e-form="atribuir"><label><span class="pn-sr">Entregador do ${esc(num)}</span><select name="motoboy" required data-e-key="atribuir-${chave}"><option value="">Selecionar entregador</option>${entregadores()
                 .filter((e) => e.ativo)
                 .map(
@@ -287,7 +307,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
                 )}</select></label><button class="pn-btn" ${ocupado ? 'disabled' : ''}>${p.atribuicao ? 'Atualizar atribuição' : 'Atribuir'}</button></form>`
             : ''
         }
-        ${espera && p.atribuicao && !p.saiuEm ? `<button class="pn-btn pn-ent-prim" type="button" data-e="sair" data-e-key="sair-${chave}" ${ocupado ? 'disabled' : ''}>${ic('moto')} Registrar saída ${esc(num)}</button>` : ''}
+        ${espera && !viagem && p.atribuicao && !p.saiuEm ? `<button class="pn-btn pn-ent-prim" type="button" data-e="sair" data-e-key="sair-${chave}" ${ocupado ? 'disabled' : ''}>${ic('moto')} Registrar saída ${esc(num)}</button>` : ''}
         <div class="pn-entrega-secundarias">${p.status === 'rota' ? `<button class="pn-btn pn-ent-discreto" type="button" data-e="manual" data-e-key="manual-${chave}" ${ocupado ? 'disabled' : ''}>${ic('check')} Baixa manual ${esc(num)}</button>` : ''}<button class="pn-btn pn-ent-discreto" type="button" data-e="historico" data-e-key="historico-${chave}" ${ocupado ? 'disabled' : ''}>${ic('lista')} Histórico ${esc(num)}</button></div>
       </div>
       ${formulario === p.id ? `<form class="pn-entrega-baixa" data-e-form="manual"><div><h4>Confirmar baixa manual</h4><p>A baixa fica registrada com seu usuário e será preservada na sincronização posterior.</p></div><label>Motivo da baixa manual ${esc(num)}<input name="motivo" required maxlength="200" minlength="3" autocomplete="off" value="${esc(rascunhos.get(p.id) || '')}" data-e-key="motivo-${chave}"></label><div><button class="pn-btn pn-ent-prim" ${ocupado ? 'disabled' : ''}>Confirmar baixa manual</button><button class="pn-btn" type="button" data-e="cancelar">Voltar</button></div></form>` : ''}
@@ -304,9 +324,18 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       manual: 'Baixa manual',
       cancelado: 'Pedido cancelado',
       confirmacao_posterior: 'Confirmação posterior preservada',
-      cancelamento_conferido: 'Cancelamento conferido'
+      cancelamento_conferido: 'Cancelamento conferido',
+      viagem_desfeita: 'Viagem desfeita para replanejamento',
+      planejamento_liberado: 'Pedido liberado para planejamento',
+      destino_conferido: 'Ponto de entrega conferido pela equipe'
     };
-    return `<section class="pn-entrega-historico" aria-label="Histórico da entrega" tabindex="-1"><div class="pn-ent-secao-cab"><div><p class="pn-ent-kicker">Rastreabilidade</p><h3>Histórico ${esc(historico.numero)}</h3></div><button class="pn-btn" type="button" data-e="fechar-historico">${ic('x')} Fechar histórico</button></div><ol>${historico.eventos.map((e) => `<li><span class="pn-ent-evento-ponto"></span><div><b>${esc(tipos[e.tipo] || e.tipo)}</b><time>${esc(hora(e.em))}</time><p>Responsável: ${esc(e.dados?.origem === 'ajuste_operacional_assistido' ? 'Suporte técnico · solicitação do responsável' : e.responsavel)}</p>${e.dados?.motivo ? `<p>Motivo: ${esc(e.dados.motivo)}</p>` : ''}${e.dados?.nome ? `<p>Entregador: ${esc(e.dados.nome)}</p>` : ''}${e.dados?.confirmadoEm ? `<p>Confirmado no aparelho: ${esc(hora(e.dados.confirmadoEm))}</p>` : ''}</div></li>`).join('') || '<li>Sem eventos do novo controle para este pedido. Os horários originais estão no cartão da entrega.</li>'}</ol></section>`;
+    const responsavel = (e) =>
+      e.dados?.origem === 'planejamento_automatico'
+        ? 'Distribuição automática do sistema'
+        : e.dados?.origem === 'ajuste_operacional_assistido'
+          ? 'Suporte técnico · solicitação do responsável'
+          : e.responsavel;
+    return `<section class="pn-entrega-historico" aria-label="Histórico da entrega" tabindex="-1"><div class="pn-ent-secao-cab"><div><p class="pn-ent-kicker">Rastreabilidade</p><h3>Histórico ${esc(historico.numero)}</h3></div><button class="pn-btn" type="button" data-e="fechar-historico">${ic('x')} Fechar histórico</button></div><ol>${historico.eventos.map((e) => `<li><span class="pn-ent-evento-ponto"></span><div><b>${esc(tipos[e.tipo] || e.tipo)}</b><time>${esc(hora(e.em))}</time><p>Responsável: ${esc(responsavel(e))}</p>${e.dados?.motivo ? `<p>Motivo: ${esc(e.dados.motivo)}</p>` : ''}${e.dados?.nome ? `<p>Entregador: ${esc(e.dados.nome)}</p>` : ''}${e.dados?.confirmadoEm ? `<p>Confirmado no aparelho: ${esc(hora(e.dados.confirmadoEm))}</p>` : ''}</div></li>`).join('') || '<li>Sem eventos do novo controle para este pedido. Os horários originais estão no cartão da entrega.</li>'}</ol></section>`;
   }
   // Cronômetros mudam sem recriar os cartões nem interromper quem está preenchendo um formulário.
   function pulsar() {
@@ -407,6 +436,9 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     const id = b.closest('[data-entrega]')?.dataset.entrega,
       p = pedidos().find((p) => p.id === id);
     switch (b.dataset.e) {
+      case 'organizar':
+        planejamento.focar();
+        return;
       case 'atualizar':
         return carregar();
       case 'etapa':
@@ -542,6 +574,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
   return {
     abrir() {
       aberto = true;
+      planejamento.abrir();
       carregar();
       if (!pararEventos)
         pararEventos = window.ML.store?.ouvir?.((tipo) => {
@@ -561,6 +594,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     },
     esconder() {
       aberto = false;
+      planejamento.esconder();
       geracao++;
       pararEventos?.();
       pararEventos = null;

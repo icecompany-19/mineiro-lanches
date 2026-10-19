@@ -1,6 +1,6 @@
 # Planejamento de rotas e distribuição aos entregadores
 
-Proposta de 19/10/2026, baseada no código publicado em `66bb7a4`, em consultas agregadas de leitura no banco e na documentação dos provedores. Este documento descreve a próxima implementação; a distribuição automática e as viagens com várias paradas ainda não estão disponíveis.
+Proposta original de 19/10/2026, baseada no código publicado em `66bb7a4`, em consultas agregadas de leitura no banco e na documentação dos provedores. As etapas técnicas de prontidão, disponibilidade, planejamento, viagens e reserva automática foram implementadas posteriormente. O guia vigente está em [ROTAS-OPERACAO.md](ROTAS-OPERACAO.md). O piloto e a ativação dependem da confirmação física da origem e dos limites definidos pela operação; a instalação fica desligada.
 
 ## Decisão recomendada
 
@@ -116,4 +116,4 @@ Medir separadamente espera para sair, tempo em transporte, atraso estimado, reto
 
 ## Registro desta etapa
 
-Concluído: diagnóstico do código, consultas agregadas de leitura no banco e definição deste plano. Nenhuma atribuição, viagem, localização, preço ou pedido foi alterado para elaborar a proposta. Não houve ativação de distribuição automática nem chamada de planejamento com dados de clientes ao provedor.
+Na elaboração da proposta foram concluídos diagnóstico e planejamento, sem alterar pedidos ou atribuições. Na implementação posterior foram acrescentados o estado pronto para entrega, disponibilidade explícita, motor por ruas, reserva transacional, carregamento no celular, saída e retorno, revisão antes da saída, mapas e agendamento independente do painel. O plano acima fica como registro das decisões. Não foram preenchidos limites comerciais presumidos nem ativada a distribuição em produção.

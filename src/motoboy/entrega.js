@@ -8,6 +8,7 @@
    outra falha (sem rede, tempo esgotado, 5xx) é 'rede'; token recusado é 'sessao'. */
 
 const TEMPO_LIMITE = 15000; // sem resposta em 15 s conta como falta de rede
+import { ERROS_ROTAS } from '../lib/rotas-api.js';
 
 export const MENSAGENS = {
   sem_permissao: 'Este usuário não tem permissão para confirmar entregas',
@@ -33,7 +34,8 @@ const CODIGOS = [
   'transicao_invalida',
   'nao_atribuido',
   'atribuicao_alterada',
-  'entrega_nao_iniciada'
+  'entrega_nao_iniciada',
+  ...Object.keys(ERROS_ROTAS)
 ];
 
 export function codigoDoErro(e) {
@@ -86,7 +88,10 @@ function pedidoDe(p) {
     referencia: String(p.referencia || ''),
     obs: String(p.obs || ''),
     total: p.total == null ? null : Number(p.total),
-    taxaEntrega: p.taxaEntrega == null ? null : Number(p.taxaEntrega)
+    taxaEntrega: p.taxaEntrega == null ? null : Number(p.taxaEntrega),
+    viagemId: p.viagemId || null,
+    ordemViagem: p.ordemViagem || null,
+    versaoViagem: p.versaoViagem || null
   };
 }
 
@@ -138,4 +143,18 @@ export function reconhecerCancelamento(sb, e) {
     p_atribuicao: e.atribuicao,
     p_confirmado_em: e.confirmadoEm
   });
+}
+
+export function consultarOperacaoRotas(sb, nome, args = {}) {
+  if (
+    ![
+      'minha_operacao_rotas',
+      'definir_disponibilidade_entregador',
+      'reconhecer_carregamento_viagem',
+      'iniciar_viagem_entrega',
+      'retornar_viagem_entrega'
+    ].includes(nome)
+  )
+    throw erroCom('dados_invalidos');
+  return chamar(sb, nome, args);
 }

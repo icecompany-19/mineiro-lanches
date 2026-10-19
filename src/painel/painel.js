@@ -91,8 +91,9 @@
   }
   function rotuloAvanco(p) {
     if (p.status === 'novo') return 'Aceitar e preparar';
-    if (p.status === 'preparo') return p.modo === 'entrega' ? 'Saiu para entrega' : 'Marcar pronto';
-    if (p.status === 'pronto' || p.status === 'rota') return 'Concluir';
+    if (p.status === 'preparo') return 'Marcar pronto';
+    if (p.status === 'pronto') return p.modo === 'entrega' ? 'Saiu para entrega' : 'Concluir';
+    if (p.status === 'rota') return 'Concluir';
     return '';
   }
   function telWa(p) {
@@ -101,7 +102,7 @@
     return t.length <= 11 ? '55' + t : t;
   }
   function linkWa(p) {
-    const txt = 'Olá, ' + nomeCli(p) + '! Aqui é o ' + ML.CONFIG.nome + ' sobre o seu pedido ' + ML.fmt.numero(p.numero) + '.';
+    const txt = ML.whatsapp.confirmacao(p);
     return ML.whatsapp.link(txt, telWa(p));
   }
   // No celular, a navegação direta permite ao navegador encaminhar para o app do WhatsApp.

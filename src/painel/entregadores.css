@@ -58,6 +58,7 @@
 }
 .pn-ent-cab-acoes {
   align-self: flex-end;
+  flex-wrap: wrap;
 }
 .pn-ent-periodo {
   display: flex;
@@ -938,6 +939,10 @@
   }
   .pn-ent-cab-acoes {
     width: 100%;
+  }
+  .pn-ent-cab-acoes > [data-e='organizar'] {
+    flex-basis: 100%;
+    order: -1;
   }
   .pn-ent-periodo {
     flex: 1;

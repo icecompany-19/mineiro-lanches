@@ -164,6 +164,17 @@ async function simular(page, opc = {}) {
     c.taxas.push(dias);
     return responder(route, estado.taxas(dias));
   });
+  await page.route('**/rest/v1/rpc/minha_operacao_rotas', async (route) => {
+    if (preflight(route)) return;
+    return responder(route, {
+      json: {
+        servidorEm: new Date().toISOString(),
+        modo: 'desligado',
+        entregador: { id: usuario.id, nome: usuario.email, declarado: 'fora', situacao: 'fora', qtdAbertas: 0, elegivel: false },
+        viagem: null
+      }
+    });
+  });
   await page.route('**/rest/v1/rpc/consultar_entrega_motoboy', async (route) => {
     if (preflight(route)) return;
     return responder(route, { json: emRota({ id: route.request().postDataJSON().p_id }) });

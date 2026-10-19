@@ -322,7 +322,12 @@ test.describe('cliente e painel', () => {
     await expect(celular.locator('#ped-msg')).toHaveText('Seu lanche está na chapa');
 
     // o link do pedido pode ser aberto em outro aparelho (sem "Meus pedidos")
-    const link = celular.url();
+    const mensagem = new URL(await painel.locator('.pn-col--preparo .pn-card', { hasText: 'Ana Teste' }).getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).searchParams.get('text');
+    expect(mensagem).toContain('está confirmado');
+    const link = mensagem.match(/https?:\/\/[^\s]+\/#pedido\/[a-f0-9-]+/i)?.[0];
+    expect(link).toBeTruthy();
+    expect(new URL(link).hash).toBe(new URL(celular.url()).hash);
+    expect(new URL(await celular.locator('#ped-wa').getAttribute('href')).searchParams.get('text')).toContain(link);
     const outro = await browser.newContext(CELULAR);
     const outraPagina = await outro.newPage();
     vigiar(outraPagina, 'link', erros);
@@ -744,7 +749,10 @@ test.describe('entregador (/motoboy/)', () => {
     await novo.getByRole('button', { name: 'Aceitar e preparar' }).click();
     const emPreparo = painel.locator('.pn-col--preparo .pn-card', { hasText: 'Elisa Entrega' });
     await expect(emPreparo).toBeVisible();
-    await emPreparo.getByRole('button', { name: 'Saiu para entrega' }).click();
+    await emPreparo.getByRole('button', { name: 'Marcar pronto' }).click();
+    const pronto = painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' });
+    await expect(pronto).toBeVisible();
+    await pronto.getByRole('button', { name: 'Saiu para entrega' }).click();
     const atribuicao = painel.locator(`.pn-entrega[data-entrega="${pedido.id}"]:visible`);
     await atribuicao.getByRole('combobox').selectOption(ID_MOTO);
     await atribuicao.getByRole('button', { name: 'Atribuir', exact: true }).click();
@@ -784,7 +792,7 @@ test.describe('entregador (/motoboy/)', () => {
       psql(
         `select string_agg(e ->> 'status', ',' order by n) from pedidos, jsonb_array_elements(historico) with ordinality as h(e, n) where id = '${pedido.id}'`
       )
-    ).toBe('novo,preparo,rota,entregue');
+    ).toBe('novo,preparo,pronto,rota,entregue');
 
     // o painel da equipe (sem Realtime local: plano B de 5 s) tira o pedido de "Em rota" e o põe em Concluídos
     const concluido = painel.locator('.pn-col--concluidos .pn-card', { hasText: 'Elisa Entrega' });
@@ -802,7 +810,7 @@ test.describe('entregador (/motoboy/)', () => {
     // o mesmo link de novo (na aba já aberta): "Já estava entregue", sem erro e sem mexer no histórico
     const estado = () => psql(`select jsonb_array_length(historico) || '|' || atualizado_em from pedidos where id = '${pedido.id}'`);
     const antes = estado();
-    expect(antes.startsWith('4|')).toBe(true);
+    expect(antes.startsWith('5|')).toBe(true);
     await aba.goto('/motoboy/#' + pedido.id);
     await expect(res).toHaveClass(/mb-res--ja/);
     await expect(res.locator('.mb-res-t')).toHaveText('Já estava entregue');

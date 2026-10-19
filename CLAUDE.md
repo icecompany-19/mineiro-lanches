@@ -16,6 +16,8 @@ Visual atualizado em 19/10: indicadores e cartões de entregadores filtram a cen
 
 Totais de taxas (19/10, migration `20261019034930`): cartões da equipe e resumo próprio do motoboy mostram taxas concluídas no período e em aberto de qualquer data. O cálculo compartilhado vem do servidor; conta baixas manuais atribuídas, exclui cancelados/sem vínculo e sinaliza taxas nulas. `minhas_taxas_entrega` não recebe ID de usuário e exige motoboy ativo. O cache monetário é por usuário/período, separado da lista e da fila; uma consulta de taxas nunca bloqueia a sincronização. Não chamar os valores de pagamentos ou comissões.
 
+Viagens e rotas (19/10, migration `20261019123043`): guia em `docs/ROTAS-OPERACAO.md`. Entrega avança por **preparo → pronto → rota**; o cliente em pronto aguarda saída, sem mensagem de retirada. Disponibilidade é explícita e vale pelo turno; concluir o último pedido inicia retorno, não disponibilidade. Planejador Geoapify no servidor, sem Google ou GPS ao vivo. Reserva em conjunto não registra saída: exige carregamento persistido da versão atual no celular e comando explícito. Desfazer antes da saída exige motivo e pausa pedidos para replanejar; depois da saída preserva atribuições. Token de cron e tabelas de rotas são privados. A instalação fica desligada, com regras vazias; não inventar capacidade/tempos nem confirmar remotamente o GPS da loja. Aplicar só a nova migration e publicar a Edge Function, sem setup/seed em produção.
+
 ## Regras que evitam retrabalho
 
 - **Nada inventado.** Preço, horário, composição, taxa, tempo de entrega: só o que está em `docs/CLIENTE-2026-10.md` ou no `CONFIG` de `src/core.js`. O que falta fica "a confirmar".

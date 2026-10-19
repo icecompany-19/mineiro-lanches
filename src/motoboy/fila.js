@@ -29,6 +29,18 @@ export function abrirArmazenamento(usuario, indexedDB = globalThis.indexedDB) {
     guardarCache(lista) { return executar('cache', 'readwrite', s => s.put({ usuario, lista, em: new Date().toISOString() })); },
     async taxas(dias) { return (await executar('cache', 'readonly', s => s.get(`${usuario}:taxas:${dias}`)))?.resumo || null; },
     guardarTaxas(dias, resumo) { return executar('cache', 'readwrite', s => s.put({ usuario: `${usuario}:taxas:${dias}`, resumo })); },
+    async operacaoRotas() {
+      const registro = await executar('cache', 'readonly', s => s.get(`${usuario}:rotas`));
+      const resumo = registro?.resumo || null, viagem = resumo?.viagem;
+      if (viagem) {
+        let mudou = false;
+        if (viagem.geometria && Date.parse(viagem.geometriaAte) <= Date.now()) { viagem.geometria = null; mudou = true; }
+        for (const p of viagem.paradas || []) if (p.ponto && Date.parse(p.pontoAte) <= Date.now()) { p.ponto = null; mudou = true; }
+        if (mudou) await executar('cache', 'readwrite', s => s.put(registro)).catch(() => {});
+      }
+      return resumo;
+    },
+    guardarOperacaoRotas(resumo) { return executar('cache', 'readwrite', s => s.put({ usuario: `${usuario}:rotas`, resumo })); },
     async fechar() { await pronto; banco.close(); }
   };
 }

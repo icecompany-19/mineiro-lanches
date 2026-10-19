@@ -280,8 +280,9 @@
   function proximoStatus(pedido) {
     var s = pedido.status;
     if (s === 'novo') return 'preparo';
-    if (s === 'preparo') return pedido.modo === 'entrega' ? 'rota' : 'pronto';
-    if (s === 'pronto' || s === 'rota') return 'entregue';
+    if (s === 'preparo') return 'pronto';
+    if (s === 'pronto') return pedido.modo === 'entrega' ? 'rota' : 'entregue';
+    if (s === 'rota') return 'entregue';
     return null;
   }
 
@@ -300,7 +301,28 @@
   };
 
   // ================= mensagem de WhatsApp =================
-  function mensagem(pedido) {
+  function linkAcompanhamento(pedido, base) {
+    var token = pedido && pedido.token;
+    if (typeof token !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(token)) return '';
+    try {
+      var url = new URL(base || (window.ML && window.ML.links.base) || window.location.origin);
+      if (!/^https?:$/.test(url.protocol) || url.username || url.password) return '';
+      return url.origin + '/#pedido/' + token;
+    } catch { return ''; }
+  }
+  function mensagemConfirmacao(pedido, base) {
+    var nome = pedido.cliente && pedido.cliente.nome;
+    var estados = {
+      novo: 'foi recebido', preparo: 'está confirmado e já está em preparo',
+      pronto: pedido.modo === 'entrega' ? 'está pronto, aguardando saída para entrega' : 'está pronto para retirada',
+      rota: 'saiu para entrega', entregue: 'foi concluído', cancelado: 'foi cancelado'
+    };
+    var texto = 'Olá' + (nome ? ', ' + nome : '') + '! Aqui é o ' + CONFIG.nome + '.\n\nSeu pedido ' + numeroTxt(pedido.numero) + ' ' + (estados[pedido.status] || 'foi recebido') + '.';
+    var link = linkAcompanhamento(pedido, base);
+    if (link) texto += '\n\nAcompanhe seu pedido por aqui:\n' + link + '\n\nGuarde este link para consultar o andamento do seu pedido.';
+    return texto;
+  }
+  function mensagem(pedido, base) {
     var modo = CONFIG.modos.filter(function (m) { return m.id === (pedido.modo === 'retirada' ? 'local' : pedido.modo); })[0];
     var modoTxt = (modo ? modo.label : pedido.modo) + (pedido.modo === 'local' && pedido.mesa ? ' · Mesa ' + pedido.mesa : '');
     var out = ['Olá, ' + CONFIG.nome + '! ' + (pedido.origem === 'qrcode' ? 'Vim pelo QR code da loja' : 'Vim pelo link da bio') + ' e quero fazer um pedido.'];
@@ -316,8 +338,10 @@
     if (pedido.cliente.nome) out.push('Nome: ' + pedido.cliente.nome);
     out.push('Pagamento: ' + (pedido.pagamento || 'a combinar') + (pedido.troco ? ' · troco para ' + pedido.troco : ''));
     if (pedido.obs) out.push('Observação: ' + pedido.obs);
-    var s = out.join('\n');
-    return s.length > 1500 ? s.slice(0, 1497) + '...' : s;
+    var link = linkAcompanhamento(pedido, base);
+    var rodape = link ? '\n\nAcompanhe seu pedido por aqui:\n' + link : '';
+    var s = out.join('\n'), limite = 1500 - rodape.length;
+    return (s.length > limite ? s.slice(0, limite - 3) + '...' : s) + rodape;
   }
   function waLink(texto, telefone) { return 'https://wa.me/' + (telefone || CONFIG.whatsapp) + '?text=' + encodeURIComponent(texto); }
   // item com "Preço a confirmar": a alternativa à sacola é perguntar pelo WhatsApp
@@ -333,6 +357,7 @@
     entrega: { kmCobrados: kmCobrados, taxa: taxaEntrega, prazo: prazoTxt, ativa: function () { return !!CONFIG.entrega.taxaAtiva; } },
     horario: { agora: agoraSP, situacao: situacao, situacaoNo: situacaoNo, turnos: TURNOS, definir: definirHorarios },
     store: store,
-    whatsapp: { mensagem: mensagem, consulta: mensagemConsulta, link: waLink }
+    links: { pedido: linkAcompanhamento },
+    whatsapp: { mensagem: mensagem, confirmacao: mensagemConfirmacao, consulta: mensagemConsulta, link: waLink }
   };
 })();

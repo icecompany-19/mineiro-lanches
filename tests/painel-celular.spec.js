@@ -45,10 +45,16 @@ test('lista do celular: botão de WhatsApp chama o cliente (só quando há telef
   const href = await wa.getAttribute('href');
   expect(href).toMatch(/^https:\/\/wa\.me\/5511985720150\?text=/);
   expect(decodeURIComponent(href)).toContain('pedido #0031');
+  const texto = new URL(href).searchParams.get('text');
+  expect(texto).toContain(page.url().split('/painel/')[0] + '/#pedido/' + pedidos[0].token);
+  expect(texto).not.toContain(pedidos[0].id);
   await expect(wa).toHaveAttribute('target', '_self');
   await expect(wa).toHaveAttribute('rel', /noopener/);
   // telefone que já vem com 55 não duplica o código do país
   expect(await item(33).getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).toMatch(/^https:\/\/wa\.me\/5511999990033\?/);
+  const outroTexto = new URL(await item(33).getByRole('link', { name: /WhatsApp/ }).getAttribute('href')).searchParams.get('text');
+  expect(outroTexto).toContain(pedidos[2].token);
+  expect(outroTexto).not.toContain(pedidos[0].token);
   // sem telefone: sem botão; o avanço continua
   await expect(item(32).getByRole('link', { name: /WhatsApp/ })).toHaveCount(0);
   await expect(item(32).getByRole('button', { name: 'Aceitar e preparar' })).toBeVisible();

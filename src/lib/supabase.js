@@ -11,21 +11,44 @@ export const CHAVE_SESSAO = 'mineiro:v2:sessao';
 
 let promessa = null;
 
+// O SDK instalado não encaminha AbortSignal no functions.invoke. Esta chamada usa fetch com prazo real.
+// A sessão aqui só fornece o token; a Edge Function valida o usuário e a autorização no servidor.
+export async function consultarPlanejamento(body, signal) {
+  const sb = await obterSupabase({ sessao: true });
+  const { data, error } = await sb.auth.getSession();
+  if (error || !data?.session?.access_token) throw Object.assign(new Error('sessao'), { codigo: 'sessao' });
+  const r = await fetch(URL_SUPABASE + '/functions/v1/planejar-entregas', {
+    method: 'POST',
+    headers: { apikey: CHAVE, Authorization: 'Bearer ' + data.session.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal
+  });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || typeof j.estado !== 'string') throw Object.assign(new Error(j?.codigo || 'rede'), { codigo: j?.codigo || 'rede' });
+  return j;
+}
+
 // Cotação pública com chave publishable/anon, sem expor credenciais do backend.
 export async function consultarEntrega(body, signal) {
-  const ctl=new AbortController(),abortar=()=>ctl.abort();
-  const timer=setTimeout(abortar,60000);
-  signal?.addEventListener('abort',abortar,{once:true});
-  if(signal?.aborted)abortar();
+  const ctl = new AbortController(),
+    abortar = () => ctl.abort();
+  const timer = setTimeout(abortar, 60000);
+  signal?.addEventListener('abort', abortar, { once: true });
+  if (signal?.aborted) abortar();
   try {
-    const r=await fetch(URL_SUPABASE+'/functions/v1/cotar-entrega',{
-      method:'POST',headers:{apikey:CHAVE,Authorization:'Bearer '+CHAVE,'Content-Type':'application/json'},
-      body:JSON.stringify(body),signal:ctl.signal
+    const r = await fetch(URL_SUPABASE + '/functions/v1/cotar-entrega', {
+      method: 'POST',
+      headers: { apikey: CHAVE, Authorization: 'Bearer ' + CHAVE, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctl.signal
     });
-    const j=await r.json();
-    if(!r.ok) throw Object.assign(new Error(j.codigo || 'rede'),{codigo:j.codigo || 'rede'});
+    const j = await r.json();
+    if (!r.ok) throw Object.assign(new Error(j.codigo || 'rede'), { codigo: j.codigo || 'rede' });
     return j;
-  } finally {clearTimeout(timer);signal?.removeEventListener('abort',abortar);}
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', abortar);
+  }
 }
 
 // opc.sessao: true no painel e na tela do entregador (login guardado no aparelho e renovado sozinho); false no cliente (sem login).

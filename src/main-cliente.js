@@ -7,6 +7,7 @@ import './core.js';
 import { instalarStoreSupabase } from './lib/store-supabase.js';
 import { iniciarApp } from './app.js';
 
+window.ML.links.base = import.meta.env.MODE === 'development' ? location.origin : (import.meta.env.VITE_SITE_URL || location.origin);
 const store = instalarStoreSupabase({ papel: 'cliente' });
 iniciarApp();
 

@@ -1197,13 +1197,17 @@ export function iniciarApp() {
     }
     $('#ped-num').textContent = ML.fmt.numero(p.numero);
     var msg = MSG[p.status] || '';
-    if (p.status === 'pronto') msg = 'Seu pedido está pronto para retirada na loja';
+    var entregaPronta = p.modo === 'entrega' && p.status === 'pronto';
+    if (p.status === 'pronto') msg = entregaPronta ? 'Seu pedido está pronto, aguardando saída para entrega' : 'Seu pedido está pronto para retirada na loja';
     if (p.status === 'cancelado') { var u = p.historico[p.historico.length - 1]; msg += u && u.motivo ? ' · ' + u.motivo : ''; }
     $('#ped-msg').textContent = msg;
     // para leitor de tela: o status muda sozinho (consulta a cada 10 s)
     var rotulo = (ML.STATUS[p.status] || { label: p.status }).label;
+    if (entregaPronta) rotulo = 'Pronto para sair';
     if ($('#ped-status').textContent !== 'Status do pedido: ' + rotulo) $('#ped-status').textContent = 'Status do pedido: ' + rotulo;
-    var passos = PASSOS[p.modo] || PASSOS.entrega, ordem = passos.map(function (x) { return x[0]; }), idx = ordem.indexOf(p.status);
+    var passos = PASSOS[p.modo] || PASSOS.entrega;
+    if (entregaPronta) passos = passos.map(function (x) { return x[0] === 'preparo' ? ['pronto', 'Pronto para sair', 'sacola'] : x; });
+    var ordem = passos.map(function (x) { return x[0]; }), idx = ordem.indexOf(p.status);
     // status "neon" com o rótulo do passo atual ("Na chapa" ganha fumaça e brilho laranja)
     neon.textContent = p.status === 'cancelado' ? 'Cancelado' : (passos[idx] ? passos[idx][1] : rotulo);
     neon.className = 'ped-neon' + (p.status === 'preparo' ? ' chapa' : p.status === 'cancelado' ? ' cancelado' : (p.status === 'pronto' || p.status === 'rota' || p.status === 'entregue') ? ' pronto' : '');
@@ -1227,7 +1231,8 @@ export function iniciarApp() {
     }).join('');
     // total do servidor (nunca o calculado no navegador)
     $('#ped-total').textContent = brl(p.total) + (p.modo !== 'entrega' ? '' : p.taxaEntrega != null ? ' (com entrega de ' + brl(p.taxaEntrega) + ')' : ' + entrega');
-    $('#ped-wa').href = ML.whatsapp.link(ML.whatsapp.mensagem(Object.assign({ cliente: { nome: '' }, endereco: '', referencia: '', pagamento: null, troco: '', obs: '', origem: origemQR ? 'qrcode' : 'cardapio' }, p, { itens: p.itens.map(function (i) { return Object.assign({ resumo: '' }, i); }) })));
+    var pedidoParaMensagem = Object.assign({ cliente: { nome: '' }, endereco: '', referencia: '', pagamento: null, troco: '', obs: '', origem: origemQR ? 'qrcode' : 'cardapio' }, p, { itens: p.itens.map(function (i) { return Object.assign({ resumo: '' }, i); }) });
+    $('#ped-wa').href = ML.whatsapp.link(ML.whatsapp.mensagem(pedidoParaMensagem));
     renderMeus();
   }
   function renderMeus() {

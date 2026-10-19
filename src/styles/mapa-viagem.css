@@ -1,0 +1,76 @@
+.mapa-viagem {
+  width: min(940px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 20px;
+  color: var(--osso);
+  background: var(--chapa);
+  border: 1px solid var(--borda-campo);
+  border-radius: 18px;
+  overflow: auto;
+}
+.mapa-viagem::backdrop {
+  background: var(--noite);
+  opacity: 0.8;
+}
+.mapa-viagem-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mapa-viagem h2 {
+  margin: 0;
+  font: 500 26px/1.2 var(--f-placa);
+}
+.mapa-viagem p {
+  color: var(--osso-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mapa-viagem-cab button {
+  min-height: 56px;
+  padding: 10px 16px;
+  color: var(--osso);
+  background: var(--chapa-2);
+  border: 1px solid var(--borda-campo);
+  border-radius: 10px;
+  font: 400 14px var(--f-corpo);
+}
+.mapa-viagem-area {
+  height: min(52dvh, 440px);
+  min-height: 240px;
+  border-radius: 12px;
+  background: var(--chapa-2);
+}
+.mapa-viagem-pino {
+  display: grid;
+  place-items: center;
+  color: var(--grafite);
+  background: var(--fio);
+  border: 2px solid var(--osso);
+  border-radius: 50%;
+  font: 600 14px var(--f-corpo);
+}
+.mapa-viagem-loja {
+  color: var(--osso);
+  background: var(--chapa);
+}
+.mapa-viagem-paradas {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding-left: 24px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mapa-viagem-paradas b {
+  color: var(--fio);
+}
+.mapa-viagem a {
+  color: inherit;
+}
+.mapa-viagem .leaflet-control-zoom a {
+  color: var(--grafite);
+  background: var(--osso);
+}
