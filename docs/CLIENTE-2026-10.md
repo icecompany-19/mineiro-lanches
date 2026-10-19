@@ -130,3 +130,7 @@ Use as texturas reais no lugar do tijolinho desenhado em código; o desenho fica
 ## Correção de comunicação em 19/10/2026
 
 O responsável confirmou que a retirada acontece **na loja local**, e não em food truck. Usar “Retirada no local” e “Retire seu pedido na loja”. Manter o endereço cadastrado; nenhum novo endereço foi informado.
+
+## Impressora informada em 19/10/2026
+
+O responsável informou **“P180 impressora de cupom”** e **“Liga em um computador via cabo”**. Fabricante, driver, sistema operacional e largura física do papel não foram informados. Preservar os 72 mm de largura útil da comanda atual até a conferência na impressora. O atalho de impressão direta fornecido é para Windows com Chrome/Edge; outros sistemas exigem a preparação correspondente.

@@ -47,6 +47,7 @@
   let modalAtual = null;
   let gestaoUsuarios = null;
   let gestaoEntregadores = null;
+  let gestaoImpressao = null;
 
   /* ---------- utilidades ---------- */
   const ic = (n, cls) => `<svg class="pn-ic${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
@@ -308,6 +309,7 @@
           ${S.opc.demo ? `<button type="button" class="pn-btn" data-act="simular">${ic('play')}Simular pedido</button>` : ''}
           <button type="button" class="pn-btn" data-act="abrir-cardapio">${ic('janela')}Abrir cardápio ao lado</button>
         </header>
+        <div class="pn-auto-resumo" data-impressao-resumo role="status" aria-live="polite"></div>
         <div class="pn-conteudo">
           <section class="pn-sec" data-view="pedidos" aria-label="Pedidos">
             <div class="pn-kpis" aria-live="polite" aria-label="Indicadores do dia">${kpis}</div>
@@ -331,6 +333,7 @@
           <section class="pn-sec" data-view="usuarios" aria-label="Usuários" hidden><div data-usuarios></div></section>
           <section class="pn-sec" data-view="config" aria-label="Configurações" hidden>
             <div class="pn-cfg">
+              <div class="pn-card-cfg" data-impressao-config></div>
               <div class="pn-card-cfg"><h3>Entrega</h3>
                 <p class="pn-cfg-dica">Confirme a posição somente quando estiver no ponto da loja. Ela será a origem das próximas rotas.</p>
                 <button type="button" class="pn-btn" data-act="origem-entrega">Confirmar posição atual da loja</button>
@@ -593,6 +596,7 @@
   function atualizar() {
     S.cfg = ML.store.config();
     S.pedidos = ML.store.pedidos();
+    if (gestaoImpressao) gestaoImpressao.atualizar();
     const ids = new Set(S.pedidos.map(p => p.id));
     if (!S.iniciou) { S.conhecidos = ids; S.iniciou = true; }
     else {
@@ -732,7 +736,10 @@
     let el = document.getElementById('pn-pagina-impressao');
     if (!el) { el = document.createElement('style'); el.id = 'pn-pagina-impressao'; document.head.appendChild(el); }
     el.textContent = '@page { size: ' + COMANDA_MM + 'mm ' + alturaMm + 'mm; margin: 0; }';
-    window.addEventListener('afterprint', () => el.remove(), { once: true });
+    window.addEventListener('afterprint', () => {
+      el.remove();
+      if (gestaoImpressao) gestaoImpressao.registrarManual(c.dataset.pedidoId);
+    }, { once: true });
     window.print();
   }
   // A logo da comanda é uma <img>. Se ela ainda não chegou (primeira vez, rede lenta), a impressão espera por ela, no máximo
@@ -745,6 +752,7 @@
   }
   const aguardando = new WeakSet(); // comandas já esperando a imagem: um segundo clique em Imprimir não imprime duas vezes
   function imprimirComanda() {
+    if (gestaoImpressao && gestaoImpressao.ocupada()) { toast('Aguarde a comanda que está sendo enviada à impressão.'); return; }
     const c = document.querySelector('.pn-comanda');
     if (!c) return;
     const pendentes = Array.from(c.querySelectorAll('img')).filter(i => !i.complete);
@@ -785,7 +793,7 @@
       if (it.sabor) l.push(it.sabor);
       return `<div class="pn-c-item"><div class="pn-c-lin"><span>${it.qtd}x ${esc(it.nome)}</span><span>${brl(it.subtotal)}</span></div>${l.length ? `<div class="pn-c-sel">${esc(l.join('  '))}</div>` : ''}</div>`;
     }).join('');
-    return `<div class="pn-comanda" data-comanda>
+    return `<div class="pn-comanda" data-comanda data-pedido-id="${esc(p.id)}">
       <img class="pn-c-logo" src="/assets/logo/logo-512.webp" width="512" height="416" alt="Mineiro Lanche" decoding="sync">
       ${p.origem === 'exemplo' ? '<p class="pn-c-ex">** PEDIDO DE EXEMPLO **</p>' : ''}
       <p class="pn-c-num">${ML.fmt.numero(p.numero)}</p>
@@ -1112,6 +1120,17 @@
     el.innerHTML = esqueleto();
     if(window.MLUsuarios)gestaoUsuarios=window.MLUsuarios.montar(el);
     if(window.MLEntregadores)gestaoEntregadores=window.MLEntregadores.montar(el);
+    if(window.MLImpressao)gestaoImpressao=window.MLImpressao.montar(el, {
+      pedidos: () => ML.store.pedidos(), online: () => !S.offline && (!ML.store.online || ML.store.online()) && navigator.onLine,
+      comanda: comandaHTML, podeImprimir: () => S.visivel && !modalAtual,
+      configurar: () => {
+        irPara('config');
+        const alvo = q('[data-impressao-config]');
+        alvo.style.scrollMarginTop = (q('.pn-topo').getBoundingClientRect().height + 16) + 'px';
+        alvo.scrollIntoView({ block: 'start', behavior: reduz() ? 'auto' : 'smooth' });
+      },
+      teste: () => `<div class="pn-comanda"><img class="pn-c-logo" src="/assets/logo/logo-512.webp" width="512" height="416" alt="Mineiro Lanche" decoding="sync"><p class="pn-c-num">TESTE</p><hr><p>TESTE DE IMPRESSÃO AUTOMÁTICA</p><p>${esc(dataHora(new Date().toISOString()))}</p><hr><p>Confira se o texto e a logo saíram na impressora correta.</p><p>ESTE CUPOM NÃO É UM PEDIDO.</p></div>`
+    });
     S.toasts = document.createElement('div');
     S.toasts.className = 'pn-toasts'; S.toasts.setAttribute('aria-live', 'polite'); S.toasts.setAttribute('role', 'status');
     document.body.appendChild(S.toasts);
@@ -1140,6 +1159,7 @@
   function mostrar() {
     if (!S.montado) return;
     S.visivel = true;
+    if (gestaoImpressao) gestaoImpressao.mostrar();
     limparNaoVistos();
     if (!S.tickId) S.tickId = setInterval(tick, 1000);
     S.cfg = ML.store.config(); S.pedidos = ML.store.pedidos();
@@ -1152,6 +1172,7 @@
   // no body, fora do quadro escondido; o detalhe lateral e os avisos também saem
   function esconder() {
     S.visivel = false;
+    if (gestaoImpressao) gestaoImpressao.esconder();
     if(gestaoUsuarios)gestaoUsuarios.esconder();
     if(gestaoEntregadores)gestaoEntregadores.esconder();
     if (S.tickId) { clearInterval(S.tickId); S.tickId = null; }

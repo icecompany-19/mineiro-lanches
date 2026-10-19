@@ -5,6 +5,7 @@ import './styles/base.css';
 import './painel/painel.css';
 import './core.js';
 import './painel/painel.js';
+import './painel/impressao-automatica.js';
 import './painel/usuarios.js';
 import './painel/entregadores.js';
 import { iniciarAcesso } from './painel/acesso.js';

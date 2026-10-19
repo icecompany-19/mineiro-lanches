@@ -26,7 +26,9 @@ test('sacola: o valor do combo não quebra entre o símbolo e o número e "Adici
   await expect(oferta).toHaveText(/^Vira combo por \+R\$ \d+,\d\d\?$/); // o textContent não muda
   const nb = oferta.locator('.nb');
   await expect(nb).toBeVisible(); // o texto já existe enquanto a troca de tela ainda está em andamento
-  expect(await nb.evaluate((e) => e.getClientRects().length), 'o valor ocupa uma linha só').toBe(1);
+  // A carga da store e das fontes pode substituir a linha entre duas leituras da sacola.
+  await page.evaluate(() => document.fonts.ready);
+  await expect.poll(() => nb.evaluate((e) => e.getClientRects().length), { message: 'o valor ocupa uma linha só' }).toBe(1);
   // "Adicionar mais itens" vem logo depois das linhas, antes do resumo em papel, e não encosta no rodapé fixo
   const mais = page.locator('[data-mais-itens]');
   expect(await mais.evaluate((e) => !!(e.compareDocumentPosition(document.querySelector('#sacola-resumo')) & 4)), 'antes do resumo').toBe(true);

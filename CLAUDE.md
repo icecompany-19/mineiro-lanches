@@ -20,6 +20,8 @@ Viagens e rotas (19/10, migration `20261019123043`): guia em `docs/ROTAS-OPERACA
 
 ## Regras que evitam retrabalho
 
+Impressão automática (19/10): `docs/IMPRESSAO-AUTOMATICA.md`. P180 conectada por cabo, fabricante/driver/SO a confirmar. Fila IndexedDB só com metadados, Web Lock entre abas do mesmo perfil, ativação local após teste físico e base sem imprimir pedidos existentes. Estado enviando interrompido exige conferência; não prometer confirmação física por `afterprint`. A saída de sessão remove o cupom transitório e suspende a fila. Impressão direta depende do atalho Chrome/Edge com `--kiosk-printing` e da impressora padrão no computador. Não ativar em vários perfis/aparelhos nem inventar suporte USB/driver. Manter comanda de 72 mm e impressão manual.
+
 - **Nada inventado.** Preço, horário, composição, taxa, tempo de entrega: só o que está em `docs/CLIENTE-2026-10.md` ou no `CONFIG` de `src/core.js`. O que falta fica "a confirmar".
 - **Logo:** só a arte do PDF (`public/assets/logo/*.webp|png`), sem IA, sem redesenho, sem `filter`, blend ou máscara. **Fotos e texturas:** nunca gerar, ampliar "com criatividade" ou retocar com IA.
 - **CSP `script-src 'self'`:** nenhum script nem handler inline (por isso existe `public/rota.js`).

@@ -24,6 +24,7 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
 - [`docs/ROTAS-OPERACAO.md`](docs/ROTAS-OPERACAO.md): viagens com paradas, turno, mapas, saída/retorno e configuração da distribuição automática.
 - [`docs/PLANO-ROTAS-ENTREGADORES.md`](docs/PLANO-ROTAS-ENTREGADORES.md): proposta de viagens com paradas ordenadas, agrupamento por percurso e distribuição automática aos motoboys.
 - [`docs/CONTRATO-PAINEL.md`](docs/CONTRATO-PAINEL.md): contrato do painel.
+- [`docs/IMPRESSAO-AUTOMATICA.md`](docs/IMPRESSAO-AUTOMATICA.md): preparação da impressora P180, estação de impressão direta, fila local e conferência de falhas.
 - [`docs/ENTREGA-CONFIAVEL.md`](docs/ENTREGA-CONFIAVEL.md): diagnóstico das taxas ausentes e proposta de cotação validada no servidor, fontes alternativas e confirmação da localização.
 - [`docs/ENTREGA-OPERACAO.md`](docs/ENTREGA-OPERACAO.md): configuração da chave, verificação das rotas, ativação da cotação e uso pela equipe.
 - [`docs/PREVIA-DECISOES.md`](docs/PREVIA-DECISOES.md): respostas do cliente e decisões da prévia.

@@ -20,6 +20,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
   ```
 - A página cuida da barra de abas e do `hidden`. O painel não mexe em nada fora do `#view-painel`. Toasts e o diálogo de impressão podem usar `document.body`, com classes prefixadas `pn-`.
 - Todo CSS fica sob `.painel` ou com prefixo `pn-`, para não colidir com o resto da página. Sem `!important`, salvo dentro de `@media print`.
+- Impressão automática: `main-painel.js` instala `MLImpressao`; o painel monta o indicador e o bloco em Configurações. Usa a mesma `comandaHTML` em folha transitória, sem substituir modais. Ativação e fila são locais à estação, com IndexedDB e Web Locks entre abas. Não imprimir carga anterior na ativação, exemplos ou cancelados. Pausa preserva fila; envio interrompido exige conferência. “Enviado à impressão” não confirma papel. Logout suspende e limpa a folha. Guia e limites em [IMPRESSAO-AUTOMATICA.md](IMPRESSAO-AUTOMATICA.md).
 
 ## 2. API disponível (`window.ML`, de `core.js`; leia o arquivo)
 - `ML.CONFIG`: cardápio (`categorias[].itens[]` com `id`, `nome`, `preco`, `tipo`, `foto?`), `adicionais`, `regras.combo` (`preco` 14.90, `inclui`), `modos`, `horarios`, `whatsapp`.
