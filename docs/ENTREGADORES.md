@@ -13,6 +13,24 @@ Implementado em 18–19/10/2026. Painel da equipe em `/painel/` → **Entregador
 
 Não depender de execução com o navegador fechado. O service worker guarda apenas a página e arquivos estáticos do motoboy; respostas de Auth e da API nunca são guardadas no Cache Storage. Pedidos e fila ficam no IndexedDB separados por usuário. Sair não apaga confirmações pendentes; é preciso entrar novamente na mesma conta para enviá-las. O login do painel permanece separado.
 
+## Central dinâmica (19/10)
+
+O painel abre com quatro indicadores interativos: **Em entrega**, **Aguardando saída**, **Concluídas** e **Precisam de atenção**. Tocar em um indicador filtra a central. Atenção reúne entregas sem atribuição e entregas abertas acima do limite configurado; não afirma que houve atraso físico na entrega.
+
+Os cartões da equipe mostram pedidos em andamento, abertos, concluídos, média e último contato com data/hora. Tocar em um cartão filtra aquele entregador; tocar novamente remove o filtro. **Cadastro ativo** é a autorização do perfil, não presença online nem disponibilidade.
+
+A central combina busca por pedido/cliente, situação, entregador e período. A busca ignora acentos. Os pedidos abertos mais antigos e os alertas vêm primeiro; as conclusões aparecem depois. A lista carrega 12 cartões por vez e oferece **Mostrar mais**. O progresso compara conclusões e entregas abertas desse recorte; cancelamentos não entram no denominador.
+
+Cada pedido tem uma linha de etapas e cronômetro atualizado a cada segundo. O painel consulta o servidor a cada 15 segundos enquanto a aba estiver aberta e visível, e antecipa a consulta ao receber eventos de pedidos pela store. O cronômetro usa a diferença em relação ao horário do servidor. Atualizações não apagam o motivo digitado da baixa manual.
+
+No celular do motoboy, o resumo distingue **em entrega**, **aguardando saída** e **aguardando envio**. Os filtros **Todos**, **Em entrega** e **No aparelho** facilitam conferir o que falta. As confirmações locais continuam visíveis até o reconhecimento do servidor. Consultas sem mudanças mantêm os controles e o foco do teclado; animações respeitam a preferência de movimento reduzido.
+
+### Entregas anteriores
+
+A consulta da equipe inclui também pedidos concluídos antes do controle individual. Eles aparecem no total e no filtro **Anteriores**, com **Histórico anterior** e **Sem vínculo individual de entregador**. O recorte usa o horário de conclusão já gravado no pedido, inclusive quando ele foi criado em outra data. A consulta não altera pedidos nem cria atribuições retroativas.
+
+O sistema anterior não registrava o identificador do usuário em cada conclusão. Esses pedidos não entram nos indicadores individuais nem na média dos entregadores. O histórico original continua preservado. Baixas manuais atuais, que possuem auditoria própria, não são classificadas como histórico anterior.
+
 ## Equipe, exceções e indicadores
 
 - Pedidos atribuídos, saída, tempo em andamento, concluídos por período, média e última comunicação ficam na aba Entregadores, inclusive no celular.
@@ -34,6 +52,8 @@ Publicado em produção em 19/10/2026. A versão da migration no repositório co
 
 Aplicar **somente** a migration `supabase/migrations/20261019024838_controle_entregadores.sql` no banco existente antes do front. Não reaplicar o setup completo em produção: ele inclui o seed e poderia regravar configurações do cardápio. O `supabase/setup.sql` regenerado serve para instalações novas e testes de idempotência.
 
+A atualização visual e do histórico usa também `supabase/migrations/20261019032841_historico_entregas_painel.sql`. Em instalações que já receberam o controle operacional, aplicar somente essa atualização da consulta. Ela conserva a autorização exclusiva da equipe e o recorte mínimo de dados.
+
 A migration cria tabelas privadas com RLS e RPCs autorizadas; não modifica pedidos históricos nem atribui pedidos automaticamente. Pedidos antigos em andamento aparecem como sem atribuição para a equipe resolver. As RPCs antigas ficam restritas às próprias atribuições do motoboy, fechando a listagem geral anterior. No primeiro uso após a atualização, a equipe precisa atribuir os pedidos antes da confirmação pelo celular.
 
 Publicar o front pela branch de produção da Vercel. O build emite `/motoboy/sw.js` com uma versão dos arquivos. A preparação só é anunciada após persistir os pedidos e existir um service worker controlando a página.
@@ -46,4 +66,8 @@ Apagar dados do navegador, desinstalar com limpeza dos dados ou perder o aparelh
 
 Testes SQL cobrem permissões, isolamento, versões de atribuição, saída, reenvio idempotente, baixa manual, auditoria, cancelamento e relógio inconsistente. `tests/fila-entregas.test.mjs` cobre preservação e retomada da fila, falhas e reconhecimento. `tests/entregadores.spec.js` exercita o fluxo real do banco e do navegador em celular e desktop, incluindo fechar/reabrir offline e envio posterior à baixa manual. `tests/motoboy.spec.js` preserva os testes de login, QR, câmera, CSP e acessibilidade de toque.
 
-Verificação final: 497 asserções SQL, 330 verificações de paridade e 125 testes unitários passaram. A matriz direcionada de navegador passou em 107 cenários (3 não aplicáveis), incluindo entregadores, motoboy, usuários, sons e configuração de publicação em celular/desktop. Os três fluxos completos de entrega também passaram. Build de produção e lint aprovados. WebKit/iPhone não foi executado neste ambiente.
+Implantação inicial: 497 asserções SQL, 330 verificações de paridade e 125 testes unitários passaram. A matriz direcionada de navegador passou em 107 cenários (3 não aplicáveis), incluindo entregadores, motoboy, usuários, sons e configuração de publicação em celular/desktop. Os três fluxos completos de entrega também passaram. Build de produção e lint aprovados. WebKit/iPhone não foi executado neste ambiente.
+
+A atualização visual acrescenta testes de busca/filtros, cronômetro durante o preenchimento, foco preservado em consultas automáticas, exibição do histórico anterior sem modificar pedidos e consulta por data de conclusão. A bateria SQL passa com 507 verificações, incluindo dez casos de histórico anterior; paridade (330) e testes unitários (125) também passam.
+
+Revisão final: 56 cenários do motoboy e 28 cenários da central/acabamento passam em celular e desktop. A bateria ampla teve 583 aprovações e 76 casos não aplicáveis; três falhas de sincronização dos próprios testes (medição antes da tela ficar visível e navegação concorrente ao reload de logout) foram corrigidas e revalidadas nessa rodada direcionada. Os arquivos JS/CSS do cliente mantêm os mesmos hashes de produção. Build e lint aprovados.

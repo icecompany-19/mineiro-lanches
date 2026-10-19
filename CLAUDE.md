@@ -12,6 +12,8 @@ Tela **Usuários** no painel, inclusive no celular. Perfis Administrador/Equipe/
 
 Aba **Entregadores**, inclusive no celular; guia em `docs/ENTREGADORES.md`. Migration `20261019024838_controle_entregadores.sql`. Pedidos só são confirmados pelo motoboy atribuído; `entregas_em_rota()` agora devolve as próprias atribuições abertas de qualquer data, inclusive antes da saída. `confirmar_entrega_offline` valida a versão da atribuição e o evento único. Não reabrir listagem geral nem permitir troca de entregador após a saída. A baixa manual exige motivo e autor do servidor, inclusive no quadro anterior. A fila IndexedDB é por usuário e só libera eventos após reconhecimento; sair não a apaga. O service worker só guarda arquivos estáticos e a página do motoboy, nunca API/Auth. Confirmação posterior preserva baixa manual. Não reaplicar o setup/seed em produção para atualizar só esse módulo.
 
+Visual atualizado em 19/10: indicadores e cartões de entregadores filtram a central; busca, cronômetros, situações e consulta automática. Conclusões anteriores aparecem como `legado:true` no filtro **Anteriores**, pela data de conclusão original, sem inventar vínculo com motoboy nem alterar pedidos. A média individual continua excluindo esse histórico. Motoboy distingue tarefas em entrega, aguardando saída e confirmações no aparelho. Preservar foco, rascunhos e alvos de toque de 56 px; cronômetros não devem reescrever formulários.
+
 ## Regras que evitam retrabalho
 
 - **Nada inventado.** Preço, horário, composição, taxa, tempo de entrega: só o que está em `docs/CLIENTE-2026-10.md` ou no `CONFIG` de `src/core.js`. O que falta fica "a confirmar".

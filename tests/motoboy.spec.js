@@ -433,6 +433,9 @@ test('sem rede: avisa e deixa tentar de novo (a confirmação é idempotente no 
   await abrirLogado(page, '#' + ID_A);
   const r = resultado(page);
   await expect(page.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
+  // O aviso aparece ao gravar no aparelho, antes da primeira tentativa de rede.
+  await expect.poll(() => s.c.confirmar).toEqual([ID_A]);
+  await expect(page.getByRole('button', { name: 'Sincronizar agora' })).toBeEnabled();
   s.estado.confirmar = confirmou();
   await page.getByRole('button', { name: 'Sincronizar agora' }).click();
   await expect(r.getByText('Entregue', { exact: true })).toBeVisible();
@@ -751,4 +754,19 @@ test('painel da equipe continua igual: mesmo login e mesma tela Sem acesso', asy
   expect(chaves.some((k) => k.startsWith('mineiro:v2:sessao'))).toBe(true);
   expect(chaves.some((k) => k.startsWith('mineiro:v2:moto'))).toBe(false);
   expect(s.c.naoSimuladas).toEqual([]);
+});
+
+test('atualização automática sem mudanças mantém o foco no pedido do entregador', async ({ page, baseURL }) => {
+  await page.clock.install();
+  await preparar(page, baseURL);
+  await simular(page, { rota: [emRota()] });
+  await abrirLogado(page);
+  const sincronizar = page.getByRole('button', { name: 'Sincronizar agora' });
+  await expect(sincronizar).toHaveAttribute('aria-busy', 'false');
+  const entregar = page.locator('.mb-item').getByRole('button', { name: 'Entregue', exact: true });
+  await entregar.focus();
+  await expect(entregar).toBeFocused();
+  await page.clock.fastForward(11_000);
+  await expect(sincronizar).toHaveAttribute('aria-busy', 'false');
+  await expect(entregar).toBeFocused();
 });

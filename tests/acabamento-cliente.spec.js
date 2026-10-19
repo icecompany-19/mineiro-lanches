@@ -25,6 +25,7 @@ test('sacola: o valor do combo não quebra entre o símbolo e o número e "Adici
   const oferta = page.locator('.upsell strong');
   await expect(oferta).toHaveText(/^Vira combo por \+R\$ \d+,\d\d\?$/); // o textContent não muda
   const nb = oferta.locator('.nb');
+  await expect(nb).toBeVisible(); // o texto já existe enquanto a troca de tela ainda está em andamento
   expect(await nb.evaluate((e) => e.getClientRects().length), 'o valor ocupa uma linha só').toBe(1);
   // "Adicionar mais itens" vem logo depois das linhas, antes do resumo em papel, e não encosta no rodapé fixo
   const mais = page.locator('[data-mais-itens]');
