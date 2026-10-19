@@ -2,6 +2,20 @@
 
 Branch `feat/mercado-pago`, separada da branch produtiva `claude/modest-galileo-t43m7f`. A implementação usa **Checkout Pro via Orders API**, conforme a documentação oficial consultada em 18/10/2026. Nenhuma cobrança, migração ou mudança de flag desta branch foi aplicada à produção.
 
+## Ambiente de homologação preparado (19/10)
+
+Branch Supabase `mercado-pago-homologacao`, projeto `hkfoetwnphbauezftfgq`, criado sem dados de produção. Foram aplicadas as migrations faltantes e o seed do cardápio; `mercado-pago` e `mercado-pago-webhook` estão publicados. Há zero pedidos, 56 produtos e `pagamentos_ativos=false`. Verificados RLS e ausência de permissões públicas nas tabelas/helpers financeiros. O webhook sem configuração retorna 503 `pagamento_nao_configurado`, sem executar cobrança.
+
+- [Cadastrar secrets de TESTE](https://supabase.com/dashboard/project/hkfoetwnphbauezftfgq/functions/secrets).
+- Webhook de TESTE: `https://hkfoetwnphbauezftfgq.supabase.co/functions/v1/mercado-pago-webhook`.
+- Cadastre Access Token, assinatura do webhook, ID do vendedor e ID da aplicação de teste com os nomes da tabela abaixo; `MERCADO_PAGO_MODE=test`. `MERCADO_PAGO_SITE_URL` será a origem HTTPS estável do preview, ainda a configurar.
+- Falta configurar Vercel Preview com as variáveis públicas desse Supabase, limitadas à branch `feat/mercado-pago`, e redeployar. A CSP desta branch permite exclusivamente os hosts Supabase da loja e desta homologação, incluindo Realtime; as demais diretivas são preservadas.
+- Depois dos secrets e preview, validar identidade da conta, configurar reconciliação e executar a matriz de homologação antes de ativar a produção.
+
+Não mesclar esta branch **do Supabase** na loja: a publicação produtiva será controlada pela PR do GitHub e pelas migrations necessárias, sem copiar seed/configuração de teste. A branch é temporária e tem consumo de infraestrutura; removê-la após a homologação, preservando os registros necessários dos testes.
+
+O advisor registra as [tabelas privadas com RLS sem policies públicas](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) e os [RPCs públicos existentes com SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable). O bloqueio das tabelas financeiras é intencional; helpers financeiros novos usam SECURITY INVOKER e execução exclusiva de service_role.
+
 ## Comportamento
 
 1. `loja.pagamentos_ativos=false` mantém o fluxo anterior. Pedidos históricos continuam sem obrigação de pagamento online.
