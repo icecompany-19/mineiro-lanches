@@ -30,7 +30,9 @@ Não depender de execução com o navegador fechado. O service worker guarda ape
 
 ## Implantação
 
-Aplicar **somente** a migration `supabase/migrations/20261018185634_controle_entregadores.sql` no banco existente antes do front. Não reaplicar o setup completo em produção: ele inclui o seed e poderia regravar configurações do cardápio. O `supabase/setup.sql` regenerado serve para instalações novas e testes de idempotência.
+Publicado em produção em 19/10/2026. A versão da migration no repositório corresponde à registrada no Supabase.
+
+Aplicar **somente** a migration `supabase/migrations/20261019024838_controle_entregadores.sql` no banco existente antes do front. Não reaplicar o setup completo em produção: ele inclui o seed e poderia regravar configurações do cardápio. O `supabase/setup.sql` regenerado serve para instalações novas e testes de idempotência.
 
 A migration cria tabelas privadas com RLS e RPCs autorizadas; não modifica pedidos históricos nem atribui pedidos automaticamente. Pedidos antigos em andamento aparecem como sem atribuição para a equipe resolver. As RPCs antigas ficam restritas às próprias atribuições do motoboy, fechando a listagem geral anterior. No primeiro uso após a atualização, a equipe precisa atribuir os pedidos antes da confirmação pelo celular.
 

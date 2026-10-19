@@ -10,7 +10,7 @@ Tela **Usuários** no painel, inclusive no celular. Perfis Administrador/Equipe/
 
 ## Controle de entregadores (18/10)
 
-Aba **Entregadores**, inclusive no celular; guia em `docs/ENTREGADORES.md`. Migration `20261018185634_controle_entregadores.sql`. Pedidos só são confirmados pelo motoboy atribuído; `entregas_em_rota()` agora devolve as próprias atribuições abertas de qualquer data, inclusive antes da saída. `confirmar_entrega_offline` valida a versão da atribuição e o evento único. Não reabrir listagem geral nem permitir troca de entregador após a saída. A baixa manual exige motivo e autor do servidor, inclusive no quadro anterior. A fila IndexedDB é por usuário e só libera eventos após reconhecimento; sair não a apaga. O service worker só guarda arquivos estáticos e a página do motoboy, nunca API/Auth. Confirmação posterior preserva baixa manual. Não reaplicar o setup/seed em produção para atualizar só esse módulo.
+Aba **Entregadores**, inclusive no celular; guia em `docs/ENTREGADORES.md`. Migration `20261019024838_controle_entregadores.sql`. Pedidos só são confirmados pelo motoboy atribuído; `entregas_em_rota()` agora devolve as próprias atribuições abertas de qualquer data, inclusive antes da saída. `confirmar_entrega_offline` valida a versão da atribuição e o evento único. Não reabrir listagem geral nem permitir troca de entregador após a saída. A baixa manual exige motivo e autor do servidor, inclusive no quadro anterior. A fila IndexedDB é por usuário e só libera eventos após reconhecimento; sair não a apaga. O service worker só guarda arquivos estáticos e a página do motoboy, nunca API/Auth. Confirmação posterior preserva baixa manual. Não reaplicar o setup/seed em produção para atualizar só esse módulo.
 
 ## Regras que evitam retrabalho
 

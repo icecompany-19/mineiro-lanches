@@ -1,6 +1,6 @@
 -- =====================================================================================
 -- Mineiro Lanche · setup completo do banco (Supabase)
--- Gerado por scripts/montar-setup.mjs a partir de supabase/migrations/20261008000001_schema.sql, supabase/migrations/20261008000002_rls.sql, supabase/migrations/20261008000003_rpc.sql, supabase/migrations/20261016000001_taxa_entrega.sql, supabase/migrations/20261017000001_motoboy.sql, supabase/migrations/20261017000002_confirmar_entrega_ja_entregue.sql, supabase/migrations/20261018023009_cotacao_entrega.sql, supabase/migrations/20261018031024_destino_entrega_e_limpeza.sql, supabase/migrations/20261018181746_gestao_usuarios_painel.sql, supabase/migrations/20261018185634_controle_entregadores.sql, supabase/seed.sql.
+-- Gerado por scripts/montar-setup.mjs a partir de supabase/migrations/20261008000001_schema.sql, supabase/migrations/20261008000002_rls.sql, supabase/migrations/20261008000003_rpc.sql, supabase/migrations/20261016000001_taxa_entrega.sql, supabase/migrations/20261017000001_motoboy.sql, supabase/migrations/20261017000002_confirmar_entrega_ja_entregue.sql, supabase/migrations/20261018023009_cotacao_entrega.sql, supabase/migrations/20261018031024_destino_entrega_e_limpeza.sql, supabase/migrations/20261018181746_gestao_usuarios_painel.sql, supabase/migrations/20261019024838_controle_entregadores.sql, supabase/seed.sql.
 -- Não edite à mão: mude as migrations ou o CONFIG e rode
 --   node scripts/gerar-seed.mjs && node scripts/montar-setup.mjs
 --
@@ -2546,7 +2546,7 @@ revoke all on function public.gerir_acesso_usuario(uuid,uuid,text,text,text,bool
 grant execute on function public.gerir_acesso_usuario(uuid,uuid,text,text,text,boolean) to service_role;
 notify pgrst,'reload schema';
 
--- ============ supabase/migrations/20261018185634_controle_entregadores.sql ============
+-- ============ supabase/migrations/20261019024838_controle_entregadores.sql ============
 
 -- Controle operacional. Pedidos antigos permanecem intactos; atribuições e auditoria são aditivas.
 create table if not exists public.entregas_operacao (
