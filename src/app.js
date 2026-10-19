@@ -7,6 +7,7 @@
    CSS dele); o contrato com ele é o ML.app (montado no início, mais abaixo). */
 import FOTOS_JSON from 'virtual:fotos'; // public/assets/fotos.json (plugin em vite.config.js)
 import { criarHistoricoClientes, normalizarTelefone as digitosTel, chaveEndereco } from './lib/historico-clientes.js';
+import { checkoutSeguro, textoPagamento, permitePagar } from './lib/pagamentos.js';
 
 export function iniciarApp() {
   'use strict';
@@ -986,14 +987,18 @@ export function iniciarApp() {
       return '<button type="button" class="modo" data-modo="' + m.id + '" aria-pressed="' + (st.modo === m.id) + '">' + ic(ICONE_MODO[m.id]) + '<span><strong>' + esc(modoLabel(m)) + '</strong><small>' + esc(m.desc) + '</small></span>' + ic('check', 'modo-check') + '</button>';
     }).join('');
     $('#bloco-endereco').hidden = st.modo !== 'entrega';
-    var temPagamentos = Array.isArray(C.pagamentos) && C.pagamentos.length > 0;
-    $('#pagamentos').closest('.bloco').hidden = !temPagamentos;
+    var onlinePagamento=!!ML.store.loja().pagamentosAtivos;
+    var temPagamentos = !onlinePagamento&&Array.isArray(C.pagamentos) && C.pagamentos.length > 0;
+    $('#pagamentos').closest('.bloco').hidden = !temPagamentos&&!onlinePagamento;
+    $('#pagamento-online-info').hidden=!onlinePagamento;
+    $('#f-email-pagamento').required=onlinePagamento;
     $('#pagamentos').innerHTML = temPagamentos
       ? segHTML('pagamento', C.pagamentos.map(function (p) { return { attr: 'data-pag="' + esc(p) + '"', on: st.pagamento === p, txt: esc(p) }; }))
       : '';
     var t = totaisSacola();
     $('#chk-itens').textContent = plural(t.n);
     renderTaxa();
+    if(!envio.enviando) $('#btn-enviar span').textContent=onlinePagamento?'Pagar pedido':'Enviar pedido';
     // a comanda (que recolhe) lista os itens com o que foi escolhido
     $('#chk-lista').innerHTML = sacola.map(function (l) {
       var it = ML.precos.item(l.sel);
@@ -1078,7 +1083,7 @@ export function iniciarApp() {
     btn.classList.toggle('enviando', sim);
     btn.setAttribute('aria-disabled', String(sim));
     $('#form-pedido').setAttribute('aria-busy', String(sim));
-    $('span', btn).textContent = sim ? 'Enviando para o truck…' : 'Enviar pedido';
+    $('span', btn).textContent = sim ? (ML.store.loja().pagamentosAtivos?'Registrando pedido…':'Enviando para o truck…') : ML.store.loja().pagamentosAtivos?'Pagar pedido':'Enviar pedido';
   }
   function validar() {
     var nome = $('#f-nome').value.trim(), tel = digitosTel($('#f-tel').value), end = $('#f-end').value.trim(), ok = true;
@@ -1092,6 +1097,10 @@ export function iniciarApp() {
       campo.setAttribute('aria-invalid', String(c[1]));
       if (c[1]) campo.setAttribute('aria-describedby', c[3]); else if (campo.id === 'f-tel') campo.setAttribute('aria-describedby', 'cliente-dica'); else campo.removeAttribute('aria-describedby');
     });
+    var email=$('#f-email-pagamento'),emailInvalido=!!ML.store.loja().pagamentosAtivos&&(!email.value.trim()||!email.validity.valid);
+    $('#erro-email-pagamento').hidden=!emailInvalido;
+    email.setAttribute('aria-invalid',String(emailInvalido));
+    if(emailInvalido){email.focus();ok=false;}
     if (!ok) { var prim = $('.campo.erro input'); if (prim) prim.focus(); }
     return ok;
   }
@@ -1125,6 +1134,7 @@ export function iniciarApp() {
       return;
     }
     var cadastroEnviado = { telefone: dados.cliente.telefone, nome: dados.cliente.nome, endereco: dados.modo === 'entrega' ? lerEnderecoCliente() : null };
+    var emailPagamento=$('#f-email-pagamento').value.trim();
     // item que já se sabe esgotado nem vai ao servidor
     if (nomesIndisponiveis().length) { renderSacola(); mostrarErroEnvio(codigoIndisponivel(), dados); return; }
     if (!envio.uuid || envio.assinatura !== assinatura) { envio.uuid = novoUuid(); envio.assinatura = assinatura; }
@@ -1144,6 +1154,7 @@ export function iniciarApp() {
       st.pedidoToken = pedido.token;
       // o checkout sai do histórico: voltar do acompanhamento leva à sacola, não ao formulário enviado
       navegar('pedido', true);
+      if(pedido.pagamentoOnline==='pendente') pagarPedido(pedido.token,emailPagamento);
       // a comanda "imprime" no acompanhamento
       if (!reduz) { var c = $('#pedido-topo .comanda'); if (c) { c.classList.remove('imprime'); void c.offsetWidth; c.classList.add('imprime'); } }
     }, function (err) {
@@ -1166,6 +1177,34 @@ export function iniciarApp() {
   var MSG = { novo: 'Pedido recebido pelo Mineiro Lanche', preparo: 'Seu lanche está na chapa', pronto: 'Pronto!', rota: 'Saiu para entrega', entregue: 'Bom apetite!', cancelado: 'Pedido cancelado' };
   var FINAIS = ['entregue', 'cancelado'];
   $('#ped-msg').insertAdjacentHTML('afterend', '<p class="sr" id="ped-status" role="status" aria-live="polite"></p>');
+  $('#pedido-topo').insertAdjacentHTML('afterend','<section id="pedido-pagamento" aria-label="Pagamento do pedido" hidden><p id="pedido-pagamento-status" role="status" aria-live="polite"></p><form id="pedido-pagar"><label for="pedido-pagamento-email">E-mail para o pagamento</label><input id="pedido-pagamento-email" type="email" autocomplete="email" maxlength="254" required><button class="btn btn-vermelho" type="submit">Pagar no Mercado Pago</button></form><p id="pedido-pagamento-erro" role="alert" hidden></p></section>');
+  var pagamentoEnviando=false;
+  function renderPagamentoPedido(p) {
+    $('#pedido-pagamento').hidden=!p?.pagamentoOnline;
+    if(!p?.pagamentoOnline)return;
+    $('#pedido-pagamento-status').textContent=textoPagamento(p.pagamentoOnline)+(p.status==='cancelado'&&p.pagamentoOnline==='aprovado'?'. Pedido cancelado: fale com a loja sobre o reembolso.':'');
+    $('#pedido-pagar').hidden=!permitePagar(p);
+  }
+  async function pagarPedido(token,email) {
+    if(pagamentoEnviando)return;
+    pagamentoEnviando=true;
+    var btn=$('#pedido-pagar button'),erro=$('#pedido-pagamento-erro');
+    $('#pedido-pagamento-email').value=email;
+    btn.disabled=true;btn.textContent='Abrindo pagamento…';erro.hidden=true;
+    try {
+      var resposta=await ML.store.iniciarPagamento(token,email);
+      if(token!==st.pedidoToken)return;
+      if(resposta.checkoutUrl) {location.assign(checkoutSeguro(resposta.checkoutUrl));return;}
+      await ML.store.acompanhar(token);renderPedido();
+      if(resposta.processando){erro.textContent='Estamos preparando seu pagamento. Aguarde alguns segundos e tente novamente.';erro.hidden=false;}
+    }catch(e) {
+      if(token!==st.pedidoToken)return;
+      erro.textContent=e.codigo==='pagamento_nao_configurado'?'O pagamento online está temporariamente indisponível. Seu pedido está salvo; fale com a loja para conferir o pagamento.':
+        'Não conseguimos abrir o pagamento. Seu pedido está salvo; tente novamente por aqui.';
+      erro.hidden=false;
+    }finally{pagamentoEnviando=false;btn.disabled=false;btn.textContent='Pagar no Mercado Pago';}
+  }
+  $('#pedido-pagar').addEventListener('submit',function(e){e.preventDefault();pagarPedido(st.pedidoToken,$('#pedido-pagamento-email').value.trim());});
   var RE_TOKEN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   function tokenDaRota(hash) { var t = String(hash || '').replace(/^#/, '').split('/'); return t[0] === 'pedido' && RE_TOKEN.test(t[1] || '') ? t[1].toLowerCase() : null; }
   function horaDe(iso) { var d = new Date(iso); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -1183,6 +1222,7 @@ export function iniciarApp() {
     if (!st.pedidoToken) { var meus = ML.store.meus(); if (meus.length) st.pedidoToken = meus[0].token; }
     if (!st.pedidoToken) { navegar('cardapio', true); return; }
     var p = ML.store.acompanhamento(st.pedidoToken), topo = $('#pedido-topo'), neon = $('#ped-neon');
+    renderPagamentoPedido(p);
     $('#ped-wa').hidden = !p;
     if (!p) {
       // ainda consultando (undefined) ou link de pedido que não existe (null)
@@ -1197,6 +1237,7 @@ export function iniciarApp() {
     }
     $('#ped-num').textContent = ML.fmt.numero(p.numero);
     var msg = MSG[p.status] || '';
+    if(p.status==='novo'&&p.pagamentoOnline&&p.pagamentoOnline!=='aprovado')msg=textoPagamento(p.pagamentoOnline)+'. O preparo começa após a aprovação.';
     if (p.status === 'pronto') msg = 'Pronto para servir';
     if (p.status === 'cancelado') { var u = p.historico[p.historico.length - 1]; msg += u && u.motivo ? ' · ' + u.motivo : ''; }
     $('#ped-msg').textContent = msg;
@@ -1227,7 +1268,7 @@ export function iniciarApp() {
     }).join('');
     // total do servidor (nunca o calculado no navegador)
     $('#ped-total').textContent = brl(p.total) + (p.modo !== 'entrega' ? '' : p.taxaEntrega != null ? ' (com entrega de ' + brl(p.taxaEntrega) + ')' : ' + entrega');
-    $('#ped-wa').href = ML.whatsapp.link(ML.whatsapp.mensagem(Object.assign({ cliente: { nome: '' }, endereco: '', referencia: '', pagamento: null, troco: '', obs: '', origem: origemQR ? 'qrcode' : 'cardapio' }, p, { itens: p.itens.map(function (i) { return Object.assign({ resumo: '' }, i); }) })));
+    $('#ped-wa').href = ML.whatsapp.link(ML.whatsapp.mensagem(Object.assign({ cliente: { nome: '' }, endereco: '', referencia: '', pagamento: null, troco: '', obs: '', origem: origemQR ? 'qrcode' : 'cardapio' }, p, { pagamento: p.pagamentoOnline ? textoPagamento(p.pagamentoOnline)+' (Mercado Pago)' : p.pagamento||null, itens: p.itens.map(function (i) { return Object.assign({ resumo: '' }, i); }) })));
     renderMeus();
   }
   function renderMeus() {
@@ -1246,7 +1287,9 @@ export function iniciarApp() {
     // pedido já encerrado e conferido no servidor nesta visita: não precisa consultar de novo
     var atual = ML.store.acompanhamento(tok);
     if (atual && FINAIS.indexOf(atual.status) >= 0 && acomp.conferido === tok) return;
-    ML.store.acompanhar(tok).then(function () { acomp.conferido = tok; }, function () { /* sem rede: tenta de novo no próximo ciclo */ }).then(function () {
+    var verificacao=atual?.pagamentoOnline&&ML.store.consultarPagamento
+      ? ML.store.consultarPagamento(tok).catch(function(){}) : Promise.resolve();
+    verificacao.then(function(){return ML.store.acompanhar(tok);}).then(function () { acomp.conferido = tok; }, function () { /* sem rede: tenta de novo no próximo ciclo */ }).then(function () {
       if (vez !== acomp.vez || tok !== st.pedidoToken || st.tela !== 'pedido') return;
       renderPedido();
       var p = ML.store.acompanhamento(tok);

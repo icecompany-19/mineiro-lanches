@@ -20,15 +20,15 @@ case "$(uname -s)" in
     export PGCLIENTENCODING=UTF8
     ;;
   *)
-    PGBIN=/usr/lib/postgresql/16/bin
-    PGHOME=/home/user/.pg
-    POSTGREST=/home/user/.tools/postgrest
+    PGBIN="${MINEIRO_PGBIN:-/usr/lib/postgresql/16/bin}"
+    PGHOME="${MINEIRO_PGHOME:-/home/user/.pg}"
+    POSTGREST="${MINEIRO_POSTGREST:-/home/user/.tools/postgrest}"
     ;;
 esac
 PGDATA="$PGHOME/data"
 
 # No Windows o Postgres roda como o próprio usuário; no Linux, como o usuário postgres.
-como_postgres() { if [[ $WIN ]]; then "$@"; else su postgres -c "$(printf '%q ' "$@")"; fi; }
+como_postgres() { if [[ $WIN ]] || [[ $(id -u) != 0 ]]; then "$@"; else su postgres -c "$(printf '%q ' "$@")"; fi; }
 # Caminho para os executáveis nativos do Windows (C:/...); no Linux, o próprio caminho.
 nativo() { if [[ $WIN ]]; then cygpath -m "$1"; else printf '%s' "$1"; fi; }
 # Derruba quem escuta na porta (nunca pkill -f: derruba o shell).
@@ -51,7 +51,7 @@ if [[ ${1:-} == "--reset" ]]; then
 fi
 if [[ ! -d $PGDATA ]]; then
   mkdir -p "$PGHOME"
-  [[ $WIN ]] || chown postgres:postgres "$PGHOME"
+  if [[ ! $WIN ]] && [[ $(id -u) == 0 ]]; then chown postgres:postgres "$PGHOME"; fi
   if [[ $WIN ]]; then LOCALE=(--locale=C -E UTF8); else LOCALE=(--locale=C.UTF-8 -E UTF8); fi
   como_postgres "$PGBIN/initdb" -D "$(nativo "$PGDATA")" -A trust -U postgres "${LOCALE[@]}" > /dev/null
   {

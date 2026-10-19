@@ -11,6 +11,19 @@ export const CHAVE_SESSAO = 'mineiro:v2:sessao';
 
 let promessa = null;
 
+export async function consultarPagamento(body, jwt) {
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),25000);
+  try {
+  const r=await fetch(URL_SUPABASE+'/functions/v1/mercado-pago',{
+    method:'POST',headers:{apikey:CHAVE,Authorization:'Bearer '+(jwt||CHAVE),'Content-Type':'application/json'},
+    body:JSON.stringify(body),signal:ctl.signal
+  });
+  const j=await r.json();
+  if(!r.ok)throw Object.assign(new Error(j.codigo||'pagamento_indisponivel'),{codigo:j.codigo||'pagamento_indisponivel'});
+  return j;
+  }finally{clearTimeout(timer);}
+}
+
 // Cotação pública com chave publishable/anon, sem expor credenciais do backend.
 export async function consultarEntrega(body, signal) {
   const ctl=new AbortController(),abortar=()=>ctl.abort();

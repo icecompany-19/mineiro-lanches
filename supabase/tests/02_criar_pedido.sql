@@ -20,7 +20,7 @@ select pg_temp.ok(jsonb_typeof(:'contrato'::jsonb -> 'total') = 'number' and jso
                   and jsonb_typeof(:'contrato'::jsonb #> '{itens,0,precoUnit}') = 'number' and jsonb_typeof(:'contrato'::jsonb #> '{itens,0,subtotal}') = 'number',
   'números saem como números JSON');
 select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'contrato'::jsonb) k)
-                  = array['cliente','criadoEm','distanciaKm','endereco','historico','id','itens','mesa','modo','numero','obs','origem','pagamento','referencia','status','taxaEntrega','token','total','troco'],
+                  = array['cliente','criadoEm','distanciaKm','endereco','historico','id','itens','mesa','modo','numero','obs','origem','pagamento','pagamentoEm','pagamentoOnline','referencia','status','taxaEntrega','token','total','troco'],
   'saída com as chaves do contrato do painel + token e mesa');
 select pg_temp.ok(:'contrato'::jsonb @> '{"status":"novo","origem":"cardapio","mesa":null,"pagamento":null,"troco":"","obs":"","modo":"entrega","endereco":"Rua X, 10","cliente":{"nome":"Cliente Teste","telefone":"11900000001"}}',
   'status novo, origem cardapio, pagamento null, textos vazios como ""');

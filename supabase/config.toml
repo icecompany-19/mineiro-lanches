@@ -1,0 +1,10 @@
+project_id = "mineiro-lanches"
+
+[functions.mercado-pago]
+verify_jwt = true
+entrypoint = "./functions/mercado-pago/index.js"
+
+# Mercado Pago não envia JWT Supabase; o handler exige assinatura HMAC e consulta a Orders API.
+[functions.mercado-pago-webhook]
+verify_jwt = false
+entrypoint = "./functions/mercado-pago-webhook/index.js"

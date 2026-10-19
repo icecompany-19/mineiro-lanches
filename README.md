@@ -73,3 +73,7 @@ O projeto de testes `iphone` usa WebKit e verifica a abertura da ficha pelo nome
 
 - **Mudou preço ou item no `CONFIG` (`src/core.js`)?** Rode `npm run seed && npm run setup-sql` e aplique o `setup.sql` de novo no Supabase.
 - **Origem do código:** a prévia aprovada foi a `icecompany-19/gasplab-previews`, pasta `mineiro-lanche/`, commit `a7aee46`. Ela foi importada no commit `f7ff674` e removida depois da migração; continua no histórico do git.
+
+## Branch de pagamentos
+
+`feat/mercado-pago` prepara Checkout Pro via Orders API, confirmação por webhook, reconciliação e estorno administrativo. A flag inicia desligada; não está ativado na loja produtiva. O [guia Mercado Pago](docs/MERCADO-PAGO.md) contém conexão da conta, configuração do MCP oficial, homologação e reversão.
