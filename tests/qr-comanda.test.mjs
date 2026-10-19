@@ -204,7 +204,7 @@ test('a comanda usa a logo oficial em webp 512 e nunca o svg, o selo ou o 1024',
   const img = /<img class="pn-c-logo"[^>]*>/.exec(painelJs)[0];
   assert.match(img, /src="\/assets\/logo\/logo-512\.webp"/);
   assert.match(img, /width="512" height="416"/);
-  assert.match(img, /alt="Mineiro Lanche food truck"/);
+  assert.match(img, /alt="Mineiro Lanche"/);
   assert.match(img, /decoding="sync"/);
   assert.doesNotMatch(img, /style=|filter|mask|blend/);
   const comanda = painelJs.slice(painelJs.indexOf('function comandaHTML'), painelJs.indexOf('function abrirComanda'));

@@ -1,6 +1,6 @@
 # Mineiro Lanche: regras do projeto (para pessoas e agentes)
 
-Site, cardápio com pedidos e painel da equipe do food truck Mineiro Lanche (Centro de Suzano). Vite 6 + JS puro, Supabase (Postgres, RLS, RPC, Realtime, Auth), Vercel. Repositório `icecompany-19/mineiro-lanches`, branch única `claude/modest-galileo-t43m7f`.
+Site, cardápio com pedidos e painel da equipe da loja Mineiro Lanche (Centro de Suzano). Vite 6 + JS puro, Supabase (Postgres, RLS, RPC, Realtime, Auth), Vercel. Repositório `icecompany-19/mineiro-lanches`, branch única `claude/modest-galileo-t43m7f`.
 
 **Leia antes de mexer:** `README.md`, `docs/PLANO-FASE-3.md` (plano atual, 17/10: horário automático, motoboy, comanda com QR, domínio; contratos C1–C5 e linha de base), `docs/PLANO-FASE-2.md` (plano de 12/10: formato das tarefas, modelo por tarefa, níveis de "verde"), `docs/PLANO.md` (plano de 08/10, Bloco A concluído), `docs/CONTRATO-API.md` (banco ⇄ front), `docs/CONTRATO-PAINEL.md`, `docs/CLIENTE-2026-10.md` (fatos do cliente) e `docs/DIRECAO-VISUAL.md` (direção "Parede Acesa"; a seção 5.0 lista seletores e textos que os testes usam e que não podem ser renomeados).
 

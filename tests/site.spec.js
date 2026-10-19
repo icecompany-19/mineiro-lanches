@@ -1,8 +1,8 @@
 // Aceite do site imersivo (docs/DIRECAO-VISUAL.md §6 e §8; docs/PLANO-FASE-2.md, B18). Consolida o que o site inteiro (#site, cenas S0 a S9)
-// precisa cumprir e que as cenas, uma a uma, não conferem: carregamento do chunk, as seções e os títulos, a luz do truck,
+// precisa cumprir e que as cenas, uma a uma, não conferem: carregamento do chunk, as seções e os títulos, a luz da loja,
 // movimento reduzido, só transform/opacity/clip-path, rolagem horizontal, alvos de toque, a gaveta #ficha aberta pelo site e a
 // placa do cardápio. O detalhe de cada cena fica em tests/site-ii.spec.js (S1, S1b, S3, S4, S5, S8).
-// O estado do banco (estado_cardapio) vem do Supabase local, alterado no caminho (page.route), sem mexer no banco; a hora do truck, de
+// O estado do banco (estado_cardapio) vem do Supabase local, alterado no caminho (page.route), sem mexer no banco; a hora da loja, de
 // page.clock.setFixedTime (America/Sao_Paulo).
 // Uso: npx playwright test tests/site.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
 /* global document, window, location, getComputedStyle, scrollTo, scrollY, scrollX, innerHeight, innerWidth, NodeFilter */
@@ -114,7 +114,7 @@ test.describe('chunk do site', () => {
 });
 
 // ---------- 2. as seções S0 a S9 ----------
-// o título do herói quando o truck está aberto (as outras duas versões ficam em HERO)
+// o título do herói quando a loja está aberta (as outras duas versões ficam em HERO)
 const HERO_ABERTO = 'Acendeu: a chapa tá quente.';
 const SECOES = [
   { id: 'S0', seletor: 'section.s-hero', titulo: '#s-tit [data-estado="aberto"]', texto: HERO_ABERTO },
@@ -149,7 +149,7 @@ test.describe('seções S0 a S9', () => {
   });
 
   test('cada seção existe, na ordem, com o título esperado, visível e aceso', async ({ page }) => {
-    // 20h de segunda (beforeEach): o truck está aberto, então o herói diz o título de aberto
+    // 20h de segunda (beforeEach): a loja está aberta, então o herói diz o título de aberto
     await abrirSite(page);
     const filhos = await page.evaluate(() => [...document.querySelectorAll('#view-site > section, #view-site > .fitas')].map((e) => (e.className.match(/s-[a-z]+|fitas/) || [''])[0]));
     expect(filhos, 'seções do #view-site, na ordem').toEqual(['s-hero', 'fitas', 's-placa', 's-monte', 's-prensa', 's-dog', 's-combos', 's-noite', 's-galeria', 's-onde', 's-final']);
@@ -179,12 +179,12 @@ test.describe('seções S0 a S9', () => {
   });
 });
 
-// ---------- 3. a luz segue o truck ----------
-test.describe('luz do truck e título do herói', () => {
+// ---------- 3. a luz segue a loja ----------
+test.describe('luz da loja e título do herói', () => {
   const CASOS = [
     // modo no banco, hora (Brasília), luz, motivo, título do herói, status, neon do final
-    ['fechada', '20:00', 'apagada', 'pausa', 'pausa', /^Fechado agora · o truck pausou os pedidos$/, 'Pausa na chapa.'],
-    ['fechada', '14:00', 'apagada', 'pausa', 'pausa', /^Fechado agora · o truck pausou os pedidos$/, 'Pausa na chapa.'],
+    ['fechada', '20:00', 'apagada', 'pausa', 'pausa', /^Fechado agora · a loja pausou os pedidos$/, 'Pausa na chapa.'],
+    ['fechada', '14:00', 'apagada', 'pausa', 'pausa', /^Fechado agora · a loja pausou os pedidos$/, 'Pausa na chapa.'],
     ['aberta', '14:00', 'acesa', 'turno', 'aberto', /^Aberto agora \(horário estendido\)$/, 'O Mineiro tá aceso'],
     ['auto', '20:00', 'acesa', 'turno', 'aberto', /^Aberto agora · até meia-noite$/, 'O Mineiro tá aceso'],
     ['auto', '14:00', 'apagada', 'antes', 'fechado', new RegExp(`^Fechado agora · abre hoje às ${ABRE}$`), `Volta às ${ABRE}. A chapa espera.`]

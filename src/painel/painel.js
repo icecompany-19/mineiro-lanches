@@ -31,7 +31,7 @@
     { id: 'concluidos', titulo: 'Concluídos hoje' }
   ];
   const COL_DO_STATUS = { novo: 'novos', preparo: 'preparo', pronto: 'saida', rota: 'saida', entregue: 'concluidos' };
-  const DIA_OP_OFFSET = 4 * 3600e3; // o "dia" do truck vira às 4h (atende após a meia-noite)
+  const DIA_OP_OFFSET = 4 * 3600e3; // o "dia" da loja vira às 4h (atende após a meia-noite)
 
   const S = {
     root: null, montado: false, visivel: false, view: 'pedidos',
@@ -232,10 +232,10 @@
     : 'Taxa de entrega pendente — não incluída no total';
   const pagTxt = p => 'Pagamento: ' + (p.pagamento || 'a combinar') + (p.troco ? ' · troco para ' + p.troco : '');
   const tagExemplo = p => p.origem === 'exemplo' ? '<span class="pn-tag pn-tag--exemplo">Pedido de exemplo</span>' : '';
-  // quem pediu pelo QR do truck (e de qual mesa)
+  // quem pediu pelo QR da loja (e de qual mesa)
   const tagsOrigem = p => (p.origem === 'qrcode' ? '<span class="pn-tag pn-tag--qr">QR</span>' : '') +
     (p.mesa ? `<span class="pn-tag pn-tag--mesa">Mesa ${esc(p.mesa)}</span>` : '');
-  const ORIGEM_TXT = { cardapio: 'Link da bio / site', qrcode: 'QR code do truck', exemplo: 'Exemplo' };
+  const ORIGEM_TXT = { cardapio: 'Link da bio / site', qrcode: 'QR code da loja', exemplo: 'Exemplo' };
   const textoVazio = () => S.opc.demo ? "Nenhum pedido agora. Use 'Simular pedido' ou faça um pedido pelo cardápio ao lado." : 'Nenhum pedido agora. Os pedidos feitos pelo cardápio aparecem aqui na hora, com som.';
 
   function cardHTML(p) {
@@ -328,8 +328,8 @@
           <section class="pn-sec" data-view="config" aria-label="Configurações" hidden>
             <div class="pn-cfg">
               <div class="pn-card-cfg"><h3>Entrega</h3>
-                <p class="pn-cfg-dica">Confirme a posição somente quando estiver no ponto do truck. Ela será a origem das próximas rotas.</p>
-                <button type="button" class="pn-btn" data-act="origem-entrega">Confirmar posição atual do truck</button>
+                <p class="pn-cfg-dica">Confirme a posição somente quando estiver no ponto da loja. Ela será a origem das próximas rotas.</p>
+                <button type="button" class="pn-btn" data-act="origem-entrega">Confirmar posição atual da loja</button>
                 <button type="button" class="pn-btn" data-act="resumo-entrega">Verificar cálculos das últimas 24 horas</button>
                 <p class="pn-cfg-dica" data-entrega-diagnostico role="status" aria-live="polite"></p>
               </div>
@@ -525,7 +525,7 @@
       const max = Math.max.apply(null, lista.map(x => x[1]));
       return '<ol class="pn-barras">' + lista.map(x => `<li class="pn-barra"><span class="pn-barra-rot">${esc(x[0])}</span><span class="pn-barra-trilho"><span class="pn-barra-v" style="width:${(x[1] / max * 100).toFixed(1)}%"></span></span><b class="pn-barra-num">${x[1]}</b></li>`).join('') + '</ol>';
     };
-    // horas na ordem do dia do truck (4h..3h)
+    // horas na ordem do dia da loja (4h..3h)
     const hs = Object.keys(horas).map(Number), idx = h => (h + 20) % 24;
     const iMin = Math.max(0, Math.min.apply(null, hs.map(idx)) - 1), iMax = Math.min(23, Math.max.apply(null, hs.map(idx)) + 1);
     const maxH = Math.max.apply(null, hs.map(h => horas[h]));
@@ -780,7 +780,7 @@
       return `<div class="pn-c-item"><div class="pn-c-lin"><span>${it.qtd}x ${esc(it.nome)}</span><span>${brl(it.subtotal)}</span></div>${l.length ? `<div class="pn-c-sel">${esc(l.join('  '))}</div>` : ''}</div>`;
     }).join('');
     return `<div class="pn-comanda" data-comanda>
-      <img class="pn-c-logo" src="/assets/logo/logo-512.webp" width="512" height="416" alt="Mineiro Lanche food truck" decoding="sync">
+      <img class="pn-c-logo" src="/assets/logo/logo-512.webp" width="512" height="416" alt="Mineiro Lanche" decoding="sync">
       ${p.origem === 'exemplo' ? '<p class="pn-c-ex">** PEDIDO DE EXEMPLO **</p>' : ''}
       <p class="pn-c-num">${ML.fmt.numero(p.numero)}</p>
       <p class="pn-c-modo">${esc(modoLabel(p.modo))}${p.mesa ? ' · MESA ' + esc(p.mesa) : ''}${p.origem === 'qrcode' ? ' · QR' : ''}</p>
@@ -974,12 +974,12 @@
       case 'origem-entrega': {
         const aviso=q('[data-entrega-diagnostico]');
         if(!navigator.geolocation){aviso.textContent='A localização não está disponível neste navegador.';break;}
-        aviso.textContent='Buscando a posição atual. Use esta função somente estando no truck.';
+        aviso.textContent='Buscando a posição atual. Use esta função somente estando na loja.';
         navigator.geolocation.getCurrentPosition(p=>{
-          if(p.coords.accuracy>50){aviso.textContent='A localização está imprecisa. Tente novamente no celular, estando no truck.';return;}
-          ML.store.definirOrigemEntrega({lat:p.coords.latitude,lon:p.coords.longitude}).then(()=>{aviso.textContent='Posição do truck atualizada. Novas entregas serão calculadas a partir deste ponto.';})
-            .catch(()=>{aviso.textContent='Não foi possível atualizar o ponto do truck. Tente novamente.';});
-        },()=>{aviso.textContent='Permita a localização ou tente em outro aparelho, estando no truck.';},{enableHighAccuracy:true,timeout:10000,maximumAge:0});
+          if(p.coords.accuracy>50){aviso.textContent='A localização está imprecisa. Tente novamente no celular, estando na loja.';return;}
+          ML.store.definirOrigemEntrega({lat:p.coords.latitude,lon:p.coords.longitude}).then(()=>{aviso.textContent='Posição da loja atualizada. Novas entregas serão calculadas a partir deste ponto.';})
+            .catch(()=>{aviso.textContent='Não foi possível atualizar o ponto da loja. Tente novamente.';});
+        },()=>{aviso.textContent='Permita a localização ou tente em outro aparelho, estando na loja.';},{enableHighAccuracy:true,timeout:10000,maximumAge:0});
         break;
       }
       case 'simular': simular(); break;

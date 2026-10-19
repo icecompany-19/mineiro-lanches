@@ -1,3 +1,4 @@
+/* global document, innerWidth */
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { createHmac, randomUUID } from 'node:crypto';

@@ -310,7 +310,7 @@ test.describe('cliente e painel', () => {
 
     // relatório: pedidos por origem
     await painel.locator('[data-nav="relatorio"]').click();
-    await expect(painel.locator('[aria-label="Pedidos por origem"]')).toContainText('QR code do truck');
+    await expect(painel.locator('[aria-label="Pedidos por origem"]')).toContainText('QR code da loja');
     await painel.locator('[data-nav="pedidos"]').click();
 
     // avança no painel → o celular vê "Na chapa" / "Em preparo" (acompanhamento a cada 10 s)
@@ -395,7 +395,7 @@ test.describe('cliente e painel', () => {
     await celular.locator('#btn-enviar').click();
     const erro = celular.locator('#envio-erro');
     await expect(erro).toBeVisible();
-    await expect(erro).toContainText('Não conseguimos falar com o truck');
+    await expect(erro).toContainText('Não conseguimos falar com a loja');
     const wa = celular.getByRole('link', { name: 'Enviar pelo WhatsApp' });
     await expect(wa).toBeVisible();
     const href = await wa.getAttribute('href');
@@ -458,8 +458,8 @@ test.describe('cliente e painel', () => {
     await expect(celular.locator('#f-nome')).toHaveValue('Diego Teste'); // rascunho do checkout guardado
     await expect(celular.locator('#aviso-fechado')).toContainText('Fechado agora');
     await celular.locator('#btn-enviar').click();
-    await expect(erro).toContainText('O truck não está recebendo pedidos agora');
-    await expect(erro).toContainText('o truck pausou os pedidos');
+    await expect(erro).toContainText('A loja não está recebendo pedidos agora');
+    await expect(erro).toContainText('a loja pausou os pedidos');
     await expect(celular.getByRole('link', { name: 'Enviar pelo WhatsApp' })).toBeVisible();
     psql("update loja set modo = 'aberta' where id = 1");
     expect(psql("select count(*) from pedidos where cliente_nome = 'Diego Teste'")).toBe('0');

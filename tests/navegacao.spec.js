@@ -72,7 +72,7 @@ test('as três telas são alcançáveis pelos links, sem as abas da prévia', as
   await so(page, 'bio');
 
   // bio → site pelo link discreto
-  await page.getByRole('link', { name: /Conheça o truck/ }).click();
+  await page.getByRole('link', { name: /Conheça a loja/ }).click();
   await so(page, 'site');
   expect(await hash(page)).toBe('#site');
 
@@ -87,7 +87,7 @@ test('as três telas são alcançáveis pelos links, sem as abas da prévia', as
   expect(await hash(page)).toBe('#bio');
 
   // de novo para o site e dele ao cardápio
-  await page.getByRole('link', { name: /Conheça o truck/ }).click();
+  await page.getByRole('link', { name: /Conheça a loja/ }).click();
   await so(page, 'site');
   await page.locator('.s-hero').getByRole('button', { name: 'Fazer pedido' }).click();
   await so(page, 'cardapio');
@@ -102,7 +102,7 @@ test('voltar e avançar do navegador seguem o caminho feito', async ({ page }) =
   await so(page, 'cardapio');
   await page.goBack();
   await so(page, 'bio');
-  await page.getByRole('link', { name: /Conheça o truck/ }).click();
+  await page.getByRole('link', { name: /Conheça a loja/ }).click();
   await so(page, 'site');
   await page.locator('.s-hero').getByRole('button', { name: 'Fazer pedido' }).click();
   await so(page, 'cardapio');

@@ -10,11 +10,11 @@ Fonte: conversa de WhatsApp com Cauan Oliveira, de 06 a 12/10/2026, exportada em
 
 | Item | Valor |
 |---|---|
-| Endereço | Rua Eliziel Alves Costa, 300, Centro, Suzano/SP (ponto do truck) |
+| Endereço | Rua Eliziel Alves Costa, 300, Centro, Suzano/SP (ponto da loja) |
 | Horário | **Segunda, terça e quinta: 19:00–00:00. Sexta, sábado e domingo: 19:00–01:00 do dia seguinte. Quarta fechada.** Horário real corrigido pelo dono em 17/10/2026, substitui a configuração anterior de 18h–0h. `CONFIG.horarios` e `CONFIG.horarioTexto` |
 | Prensado | "Avisar antes; não cobramos para prensar" |
 | Prazo de espera | **Até 50 minutos, podendo chegar antes** (16/10/2026). Aparece no checkout, no acompanhamento e na seção "onde" do site |
-| Taxa de entrega | **km de distância + R$ 4, sempre arredondando para cima** (16/10/2026: "10 km + 4 reais" = R$ 14). Lido como R$ 1 por km rodado + R$ 4 fixos; **confirmar com o dono**. O cliente **não vê a regra**: só o valor calculado para o endereço dele (decisão de 16/10/2026). Distância pela rota de carro, do truck até o endereço do cliente. `CONFIG.entrega.taxa` |
+| Taxa de entrega | **km de distância + R$ 4, sempre arredondando para cima** (16/10/2026: "10 km + 4 reais" = R$ 14). Lido como R$ 1 por km rodado + R$ 4 fixos; **confirmar com o dono**. O cliente **não vê a regra**: só o valor calculado para o endereço dele (decisão de 16/10/2026). Distância pela rota de carro, da loja até o endereço do cliente. `CONFIG.entrega.taxa` |
 | Impressora da comanda | Térmica, papel **72 mm × 210 mm** (203 dpi), foto do dono em 16/10/2026. A comanda sai em negrito |
 | Endereço do cliente | Por CEP: o cliente digita o CEP, vêm rua, bairro e cidade; ele completa o número |
 | QR code | **Não é necessário agora.** Só vai ser usado quando alugarem o salão ao lado. A estrutura fica pronta, mas não é prioridade e não precisa aparecer na apresentação |
@@ -126,3 +126,7 @@ Use as texturas reais no lugar do tijolinho desenhado em código; o desenho fica
 - Gran Bacon, Porção de batata turbinada, Combo Casal e Gran Egg.
 - 10 produtos usam fotos antigas (origem 'antiga', cenário diferente): gran-burger, gran-burger-bacon, gran-egg-bacon, gran-chicken, dog-doritos, dog-pizza, combo-diluvio, combo-casal, gran-bacon-coca-maionese e combo-2-dog-doritos.
 - 25 produtos fora das bebidas não têm foto e aparecem com a arte da categoria (lista completa: `npm run fotos -- --simular`, seção "Produtos sem foto"). As 8 bebidas não levam foto.
+
+## Correção de comunicação em 19/10/2026
+
+O responsável confirmou que a retirada acontece **na loja local**, e não em food truck. Usar “Retirada no local” e “Retire seu pedido na loja”. Manter o endereço cadastrado; nenhum novo endereço foi informado.

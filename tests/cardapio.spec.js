@@ -128,8 +128,8 @@ test('checkout: o erro de cada campo chega ao leitor de tela (aria-invalid e des
   const nome = page.locator('#f-nome');
   await expect(page.locator('#f-tel')).toBeFocused(); // telefone é o primeiro campo do cadastro
   await expect(nome).toHaveAttribute('aria-invalid', 'true');
-  await expect(nome).toHaveAccessibleDescription('Escreva seu nome para o truck chamar você.');
-  await expect(page.locator('#f-tel')).toHaveAccessibleDescription('Informe o telefone com DDD para o truck falar com você.');
+  await expect(nome).toHaveAccessibleDescription('Escreva seu nome para a loja chamar você.');
+  await expect(page.locator('#f-tel')).toHaveAccessibleDescription('Informe o telefone com DDD para a loja falar com você.');
   await expect(page.locator('#f-end')).toHaveAccessibleDescription('Informe o endereço para a entrega.');
   // corrigido o nome: ele deixa de estar inválido; os outros continuam
   await nome.fill('Ana');

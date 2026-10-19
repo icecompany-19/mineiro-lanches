@@ -25,7 +25,7 @@
 
 **Vencedora: "Parede Acesa".** Os motivos:
 
-1. Tem a ideia organizadora mais forte e ligada a dado real: a luz do site segue o estado do truck (`ML.horario.situacao()` + `loja.modo`). É identidade própria, não cópia do Gorilas.
+1. Tem a ideia organizadora mais forte e ligada a dado real: a luz do site segue o estado da loja (`ML.horario.situacao()` + `loja.modo`). É identidade própria, não cópia do Gorilas.
 2. Tem as regras de tijolinho mais rigorosas, porque foram medidas: cerca de 2,5 tijolos em 1200 px, o defeito de escala aparece em 1280 px e o fundo desfocado ótico resolve.
 3. Trata a logo como placa luminosa: a luz fica atrás e em volta, e a proposta inclui teste de integridade.
 4. As seções S0, S2, S6 e S7 foram validadas em protótipo com a CSP do `vercel.json`.
@@ -358,7 +358,7 @@ As demais camadas:
 ### 2.3 Fotos dentro da cena
 
 - **Luz da foto:** `--sombra-foto` com `--cor` do `fotos.json`. Somam-se uma vinheta interna fixa (`::after` com `radial-gradient(transparent 62%, rgba(18,11,9,.35))`) e o grão. Assim a foto de celular e a interface viram uma cena só.
-- **Sem filtro de cor:** nada de `filter`, `saturate`, `brightness` ou `hue-rotate` na foto. **A foto nunca escurece com o estado do truck**; só o ambiente muda.
+- **Sem filtro de cor:** nada de `filter`, `saturate`, `brightness` ou `hue-rotate` na foto. **A foto nunca escurece com o estado da loja**; só o ambiente muda.
 - **Enquadramento:** `object-position` vem do `foco` do `fotos.json`. Toda `<img>` leva `width`/`height` e um quadro com `aspect-ratio`.
 - **Fotos 'antiga'** (fundo escuro, sem parede): ficam numa moldura escura (`--chapa-2` com anel interno `--borda`), sem brilho colorido. Nunca entram na S2 nem na S7.
 
@@ -405,7 +405,7 @@ As demais camadas:
   <span class="placa-anel" aria-hidden="true"></span>
   <img class="placa-arte" src="/assets/logo/logo-256.webp"
        srcset="/assets/logo/logo-256.webp 1x, /assets/logo/logo-512.webp 2x"
-       width="256" height="209" alt="Mineiro Lanche food truck" fetchpriority="high" decoding="async">
+       width="256" height="209" alt="Mineiro Lanche" fetchpriority="high" decoding="async">
   <span class="placa-brilho" aria-hidden="true"></span>
 </div>
 ```
@@ -568,7 +568,7 @@ As classes atuais continuam (os testes dependem delas; ver 5.0). Aqui está só 
 - **Ids:** `#cardapio`, `#site`, `#view-site`, `#pedido`, `#ficha`, `#ficha-add`, `#ficha-total`, `#ficha-add-txt`, `#btn-continuar`, `#btn-enviar`, `#f-nome`, `#f-tel`, `#ped-num`, `#ped-msg`, `#ped-status`, `#ped-total`, `#envio-erro`.
 - **Atributos `data-*`:** `[data-screen="menu"]`, `[data-screen="checkout"]`, `[data-nav]`, `[data-act]`, `[data-modo]`, `[data-combo]`, `[data-combo-preco]`, `[data-adic]`, `[data-total]`, `[data-status]`, `[data-semana]`, `[data-fq]`, `[data-fechar-ficha]`, `[data-completo]`, `[data-prensado]`, `[data-ing]`, `[data-id]`, `[data-vazio]`, `[data-fechar-story]`, `[data-editar]`, `[data-d]`, `[data-contador]`, `[data-confirma-t]`.
 - **Classes:** `.bio-ctas`, `.faixa`, `.faixa-combo`, `.selo-combo`, `.selo-esgotado`, `.story-btn`, `.s-hero`, `.passo.atual`, e todo `.pn-*` (`.pn-app`, `.pn-card`, `.pn-desktop`, `.pn-mobile`, `.pn-col--novos`, `.pn-acesso`, `.pn-modal`, `.pn-num`, `.pn-selo--*`, `.pn-tag--mesa`, `.pn-tag--qr`, `.pn-toast`, `.pn-total`).
-- **Textos:** "Fazer pedido", "Conheça o truck" e "Na chapa" (no passo atual).
+- **Textos:** "Fazer pedido", "Conheça a loja" e "Na chapa" (no passo atual).
 
 **Adição rápida:** o "+" passa a adicionar direto. Ele ganha `data-rapido`, e o toque no resto do card continua abrindo a ficha. Antes de mudar, confira se `cardapio.spec.js` ou `e2e.spec.js` clicam no "+" para abrir a ficha e acerte com o dono dos testes.
 
@@ -577,7 +577,7 @@ As classes atuais continuam (os testes dependem delas; ver 5.0). Aqui está só 
 **390:**
 
 1. **Topo de 330 px, a parede:** desfocada, poça de luz, arandela e 8 brasas, com a placa (logo de 208 px) pendurada por 2 correntes em CSS.
-2. "Food truck · Centro, Suzano" em Oswald 600, `--fio`, .2em. Abaixo, o status neon.
+2. "Loja · Centro, Suzano" em Oswald 600, `--fio`, .2em. Abaixo, o status neon.
 3. `.bio-ctas`:
    - "Fazer pedido" (primário, 54 px);
    - "WhatsApp (11) 98572-0150" (secundário, texto do `CONFIG.whatsappTexto`);
@@ -586,7 +586,7 @@ As classes atuais continuam (os testes dependem delas; ver 5.0). Aqui está só 
 5. **Stories:** anéis com `conic-gradient(var(--anel-claro), var(--anel), var(--anel-escuro), var(--anel-claro))`, com fotos 'nova' primeiro.
 6. **"Saindo da chapa":** trilho com `scroll-snap` de destaques 3:4 (62% de largura), só com fotos 'nova'. O toque abre a ficha direto.
 7. **Horário:** 7 lâmpadas (D S T Q Q S S; hoje com anel `--letreiro`) e a régua 19h–1h (rótulos 19h, 22h e 1h; a quarta sem faixa, "fechado"), de `CONFIG.horarios`, com o `[data-semana]`.
-8. **Links em linhas escuras** (`--chapa`, 56 px): WhatsApp, Instagram, "Conheça o truck" e "Acompanhar meu pedido" (só se houver token).
+8. **Links em linhas escuras** (`--chapa`, 56 px): WhatsApp, Instagram, "Conheça a loja" e "Acompanhar meu pedido" (só se houver token).
 9. **"Onde":** "Rua Eliziel Alves Costa, 300 · Centro · Suzano/SP" (do `CONFIG.enderecoPartes`) e "Abrir no mapa" (link externo).
 
 Sem a logo montada por partes e sem os recortes de lanche voando.
@@ -656,7 +656,7 @@ Itens com escolha obrigatória (bebida com sabor, combo com refri quando houver 
 **390:** uma página só.
 
 1. **Quem:** `#f-nome` (`autocomplete="name"`) e `#f-tel` (`type="tel"`, `inputmode="tel"`, `autocomplete="tel"`). Vêm do rascunho `mineiro:v2:`, então o cliente que volta só confere.
-2. **Como receber:** cartões grandes `[data-modo]` gerados de `CONFIG.modos`. Hoje são 2: "Entrega · Suzano e região · taxa calculada pelo endereço" e "Comer no local · Consumo no truck". O selecionado tem borda `--fio` e ✓. A mesa vem do QR, quando existir.
+2. **Como receber:** cartões grandes `[data-modo]` gerados de `CONFIG.modos`. Hoje são 2: "Entrega · Suzano e região · taxa calculada pelo endereço" e "Comer no local · Consumo na loja". O selecionado tem borda `--fio` e ✓. A mesa vem do QR, quando existir.
 3. **Endereço:** só na entrega, com `autocomplete="street-address"`.
 4. **Pagamento:** como hoje (`CONFIG.pagamentos` está null, "a confirmar").
 5. **Observação** e aviso de LGPD.
@@ -867,7 +867,7 @@ export const ROTEIRO = {
 **S8 · Onde**
 
 - **Conteúdo:**
-  - rota em SVG de "você" até o truck: `stroke-dashoffset` por `--p` e o ícone do truck andando por `getPointAtLength`;
+  - rota em SVG de "você" até a loja: `stroke-dashoffset` por `--p` e o ícone da loja andando por `getPointAtLength`;
   - em volta do ícone, texto circular (SVG `textPath`, girando a cada 20 s) com "RUA ELIZIEL ALVES COSTA, 300 · CENTRO · SUZANO ·" (aria-hidden; o endereço também está em texto normal ao lado);
   - cartão do endereço (até 420 px) sobre a parede **nítida** com véu .75;
   - chips dos modos do `CONFIG.modos`;
@@ -964,7 +964,7 @@ Capturas obrigatórias em **390×844 (DPR 3)** e **1280×800**, nos estados **ab
 
 - [ ] Parede só desfocada em áreas grandes; nítida só em painéis de até 420 px; sem mosaico repetido e sem `filter: blur`.
 - [ ] Em 1280, nenhuma parede com tijolos "gigantes"; a mesma mancha nunca em duas seções vizinhas.
-- [ ] Nenhuma foto escurece com o estado do truck, nem ganha filtro de cor; `tests/imagens.spec.js` verde (zero distorção).
+- [ ] Nenhuma foto escurece com o estado da loja, nem ganha filtro de cor; `tests/imagens.spec.js` verde (zero distorção).
 - [ ] Fotos 'antiga' só com moldura escura e nunca na S2 nem na S7.
 
 **Dados**

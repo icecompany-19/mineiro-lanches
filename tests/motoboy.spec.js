@@ -759,7 +759,7 @@ test('painel da equipe continua igual: mesmo login e mesma tela Sem acesso', asy
   await entrar(page, 'fora@teste.local');
   const sem = page.getByRole('alert').filter({ has: page.getByRole('heading', { name: 'Sem acesso' }) });
   await expect(sem).toContainText(
-    'O usuário fora@teste.local não está na equipe do painel. Peça ao responsável do truck para liberar este e-mail.'
+    'O usuário fora@teste.local não está na equipe do painel. Peça ao responsável da loja para liberar este e-mail.'
   );
   expect(s.c.equipe).toBe(1);
   expect(s.c.motoboys).toBe(0);

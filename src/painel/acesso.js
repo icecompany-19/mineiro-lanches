@@ -135,7 +135,7 @@ export function iniciarAcesso(opc) {
   function semAcesso(usuario) {
     const motivo = opc.textoSemAcesso
       ? `<p>${esc(opc.textoSemAcesso)}</p><p>Entrou como <strong>${esc(usuario.email || '')}</strong>.</p>`
-      : `<p>O usuário <strong>${esc(usuario.email || '')}</strong> não está na equipe do painel. Peça ao responsável do truck para liberar este e-mail.</p>`;
+      : `<p>O usuário <strong>${esc(usuario.email || '')}</strong> não está na equipe do painel. Peça ao responsável da loja para liberar este e-mail.</p>`;
     etapa(
       `<div class="pn-acesso-sem" role="alert"><h2>Sem acesso</h2>
         ${motivo}</div>
