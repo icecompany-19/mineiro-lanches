@@ -97,6 +97,20 @@ Os testes automatizados usam banco local real e provedor simulado; não substitu
 
 Desligar `loja.pagamentos_ativos` interrompe a exigência para **novos** pedidos. Pedidos online existentes continuam exigindo aprovação; manter funções, webhook e conciliação para terminar pagamentos/estornos pendentes. Não remover as tabelas financeiras, não apagar orders para repetir uma cobrança e não remover o gatilho enquanto houver pendências. Registros financeiros não participam da limpeza periódica de localização.
 
+## Validação da branch (19/10/2026)
+
+PR de rascunho: https://github.com/icecompany-19/mineiro-lanches/pull/1. A correção de comunicação da retirada na loja (`43c81b0`), publicada separadamente em produção, também está incorporada nesta branch.
+
+- Lint e build aprovados.
+- Banco local limpo: `setup.sql` aplicado duas vezes; 593 verificações SQL aprovadas, incluindo 30 financeiras.
+- Paridade entre JavaScript e banco: 330 verificações aprovadas.
+- Node: 130 testes aprovados, sem pulos.
+- Pagamentos no navegador: 12 casos aprovados, quatro em cada projeto Android/desktop/WebKit iPhone, cobrindo criação/retorno, erro/repetição, bloqueio do preparo e estorno administrativo. Banco real local e provedor Mercado Pago simulado.
+- Fluxo completo existente: 14 casos aprovados, incluindo cliente, painel e motoboy.
+- Verificação de acabamento: 14 casos aprovados entre celular e desktop, após corrigir a espera de geometria da sacola. O bloco financeiro foi colocado fora da comanda para preservar sua composição.
+
+A bateria ampliada também revelou a falha intermitente já documentada da animação S5 e uma espera de imagem em modo de movimento reduzido, que passou ao conferir a base. A bateria completa não é declarada integralmente verde. A homologação com a conta Mercado Pago continua pendente; nenhum pagamento/estorno real foi executado e nenhuma migração ou função financeira foi publicada em produção.
+
 ## Testes locais em Linux sem root
 
 O iniciador local aceita `MINEIRO_PGBIN`, `MINEIRO_POSTGREST` e `MINEIRO_PGHOME`, preservando os caminhos anteriores como padrão. Escolher uma pasta **exclusiva dos dados de teste** para `MINEIRO_PGHOME`: `--reset` apaga essa pasta. Não colocar os binários nem o repositório nela. Os testes usam Auth local simulado; ele não serve como comprovação da autenticação produtiva do Mercado Pago.
