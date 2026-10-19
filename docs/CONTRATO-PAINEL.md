@@ -171,3 +171,8 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
 - Sem erros no console.
 - Teste o JS com `node -e "new Function(require('fs').readFileSync('painel.js','utf8'))"`. Se quiser, crie `painel-teste.html` (que carrega `core.js` + `painel.css` + `painel.js` e define os tokens) só para conferência; ele não vai para a página final.
 - Ao terminar, responda com: lista de funcionalidades entregues, decisões tomadas e qualquer ponto do contrato que não foi possível cumprir.
+
+
+## Entregadores — 18/10/2026
+
+A aba **Entregadores** tem navegação no desktop e no celular, com atribuição, saída, acompanhamento, alertas, períodos e histórico. **Saiu para entrega** no quadro abre esta aba para atribuir e registrar a saída. **Concluir** em uma entrega abre a baixa manual com motivo; retirada/local preservam seu fluxo. Ver `docs/ENTREGADORES.md` para regras e critérios operacionais.

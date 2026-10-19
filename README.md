@@ -6,8 +6,8 @@ Bio, cardápio, site e painel de pedidos da loja Mineiro Lanche (Centro de Suzan
 |---|---|
 | `/` | Bio (link do Instagram) → cardápio (`#cardapio`) → site (`#site`) → acompanhar pedido (`#pedido/<token>`) |
 | `/q` e `/q/<mesa>` | Destino do QR code: redireciona para o cardápio e marca a origem (e a mesa) |
-| `/painel/` | Painel de pedidos da equipe (login do Supabase) |
-| `/motoboy/` e `/motoboy/#<pedido>` | Tela do entregador (login próprio): lê o QR da comanda e marca o pedido como entregue; lista "Em rota" como plano B |
+| `/painel/` | Pedidos, entregadores e acessos da equipe (login do Supabase) |
+| `/motoboy/` e `/motoboy/#<pedido>` | Tela do entregador (login próprio): pedidos atribuídos, QR da comanda e confirmação com fila sem internet |
 | `/qr/cartaz.html` | Cartaz para imprimir (A6; `?tamanho=a5`), com os PDFs ao lado |
 
 Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.app` continua respondendo).
@@ -20,6 +20,7 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
 - [`docs/PLANO-FASE-2.md`](docs/PLANO-FASE-2.md): plano de 12/10: fechar as telas do cliente, site imersivo, painel, bateria no Windows e go-live, com modelo de IA por tarefa.
 - [`docs/PLANO-FASE-3.md`](docs/PLANO-FASE-3.md): plano atual (17/10): horário automático, motoboy, comanda com logo e QR e domínio.
 - [`docs/CONTRATO-API.md`](docs/CONTRATO-API.md): contrato banco ⇄ front.
+- [`docs/ENTREGADORES.md`](docs/ENTREGADORES.md): atribuição, saída, painel operacional, confirmações offline e baixa manual auditada.
 - [`docs/CONTRATO-PAINEL.md`](docs/CONTRATO-PAINEL.md): contrato do painel.
 - [`docs/ENTREGA-CONFIAVEL.md`](docs/ENTREGA-CONFIAVEL.md): diagnóstico das taxas ausentes e proposta de cotação validada no servidor, fontes alternativas e confirmação da localização.
 - [`docs/ENTREGA-OPERACAO.md`](docs/ENTREGA-OPERACAO.md): configuração da chave, verificação das rotas, ativação da cotação e uso pela equipe.

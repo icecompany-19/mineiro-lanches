@@ -209,7 +209,9 @@ Quando o dono mandar o preço: troque o `null` pelo valor no `CONFIG`, rode `npm
 | `definir_loja(p_modo text)` | `jsonb` | O mesmo bloco `loja` do `estado_cardapio`. |
 | `remover_testes()` | `int` | Apaga os pedidos com `origem = 'exemplo'`. |
 
-### Funções do motoboy (`authenticated`; dentro, `is_motoboy()` ou `is_equipe()` decide)
+### Contrato histórico do motoboy (17/10, substituído)
+
+As regras desta seção documentam a versão anterior. O contrato vigente está em **Controle de entregadores — 18/10/2026**, ao final deste documento: exige atribuição própria e saída registrada, sem listagem geral nem conclusão direta pela equipe.
 
 Migrations `20261017000001_motoboy.sql` e `20261017000002_confirmar_entrega_ja_entregue.sql` (17/10: o caminho "já entregue" deixa de mandar os dados do cliente). O QR da comanda leva a `https://<domínio>/motoboy/#<id do pedido>` (só pedidos de entrega); a tela do motoboy, depois do login, chama `confirmar_entrega` com esse `id`. A segurança vem do login e destas funções, não do QR. Quem não está em `motoboys` (ativo) nem em `equipe` recebe `sem_permissao` antes de qualquer outra validação; `anon` leva 42501 (sem `execute`).
 
@@ -285,3 +287,12 @@ bash scripts/supabase-local/iniciar.sh   # Postgres 16/17 :54322 + PostgREST :54
 A Edge Function `gerenciar-usuarios` exige JWT de usuário e valida a sessão em Auth. `acao: sessao` retorna apenas `{ administrador, id }` do próprio usuário. As ações `listar`, `criar`, `vincular`, `editar` e `senha` exigem administrador ativo no cadastro privado e na equipe. Campos de cadastro/edição: `{ nome, email?, perfil: 'admin'|'equipe'|'motoboy', ativo, id? }`; criação exige `senha` de 10 a 128 caracteres. `vincular` libera Auth preexistente sem alterar sua senha; `editar` preserva o e-mail do registro. A ação `senha` recebe apenas `id` e `senha`. Respostas de usuário incluem somente `user_id,nome,email,perfil,ativo`.
 
 `usuarios_painel` e `usuarios_painel_eventos` têm RLS e são privadas ao backend. `gerir_acesso_usuario(uuid,uuid,text,text,text,boolean)` é invoker e só `service_role` executa. Sincroniza equipe/motoboy, registra auditoria sem senha e protege o próprio administrador. Equipe comum e motoboys não promovem permissões nem enumeram usuários diretamente. Consulte [operação e primeiro administrador](USUARIOS-PAINEL.md).
+
+
+## Controle de entregadores — 18/10/2026
+
+O contrato operacional de `docs/ENTREGADORES.md` substitui a listagem geral anterior do motoboy. `entregas_em_rota()` e `minhas_entregas()` devolvem somente as próprias atribuições abertas, sem corte de data, com `atribuicao`, `atribuidoEm` e os campos mínimos de `entrega_json`. `consultar_entrega_motoboy(p_id)` valida a própria atribuição no QR; encerrados devolvem somente identificação e versão.
+
+RPCs da equipe: `painel_entregadores(p_dias=1)` (1/7/30), `atribuir_entrega(p_id,p_motoboy,p_sair=false)`, `baixar_entrega_manual(p_id,p_motivo)` e `historico_entrega(p_id)`. RPCs do motoboy: `confirmar_entrega_offline(p_id,p_evento,p_atribuicao,p_confirmado_em)`, `comunicar_entregador()` e `reconhecer_cancelamento_entrega` com os mesmos quatro argumentos da confirmação. Nenhum autor enviado pelo navegador é aceito.
+
+Confirmação: `{ok,jaEntregue,pedido}`. Mesmo evento ou pedido já entregue recebe reconhecimento sem repetir o encerramento. Confirmação posterior à baixa manual gera somente auditoria. Cancelamento conferido: `{ok:true,ocorrencia:true,evento}`; não altera status. Tabelas operacionais têm RLS e nenhum privilégio direto de anon/authenticated. `mudar_status` também exige motivo para conclusão manual de entrega.

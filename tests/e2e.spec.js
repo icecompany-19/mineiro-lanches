@@ -745,6 +745,11 @@ test.describe('entregador (/motoboy/)', () => {
     const emPreparo = painel.locator('.pn-col--preparo .pn-card', { hasText: 'Elisa Entrega' });
     await expect(emPreparo).toBeVisible();
     await emPreparo.getByRole('button', { name: 'Saiu para entrega' }).click();
+    const atribuicao = painel.locator(`.pn-entrega[data-entrega="${pedido.id}"]:visible`);
+    await atribuicao.getByRole('combobox').selectOption(ID_MOTO);
+    await atribuicao.getByRole('button', { name: 'Atribuir', exact: true }).click();
+    await atribuicao.getByRole('button', { name: /Registrar saída/ }).click();
+    await painel.locator('[data-nav="pedidos"]').click();
     await expect(painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' })).toBeVisible();
     await expect.poll(() => psql(`select status from pedidos where id = '${pedido.id}'`)).toBe('rota');
 
@@ -847,7 +852,7 @@ test.describe('entregador (/motoboy/)', () => {
     await entrarComoMotoboy(moto, '#' + retirada.id);
     const res = moto.locator('[data-res]');
     await expect(res).toHaveClass(/mb-res--erro/);
-    await expect(res.locator('.mb-res-t')).toHaveText('Esse pedido é de retirada');
+    await expect(res.locator('.mb-res-t')).toHaveText('Pedido não atribuído a você. Confira com a equipe');
     await expect(res.locator('.mb-res-num')).toHaveCount(0);
     await expect(moto.locator('.mb-item', { hasText: 'Rui Retirada' })).toHaveCount(0);
     expect(estado(), 'a retirada continua pronta, sem evento novo').toBe(antes);

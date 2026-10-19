@@ -2,7 +2,7 @@
 // Reaproveita o login de src/painel/acesso.js, mas confere a tabela motoboys (não a equipe) e guarda a sessão em
 // outra chave: quem é só entregador não entra no painel, e o Sair de um não apaga o login do outro.
 // Não carrega painel.js nem a store do Supabase (48 h de pedidos e Realtime): a tela fala com o banco só por
-// confirmar_entrega e entregas_em_rota (src/motoboy/entrega.js).
+// RPCs de atribuição e confirmação (src/motoboy/entrega.js); a fila persistente fica no próprio aparelho.
 import './fontes.js';
 import './styles/base.css';
 import './painel/painel.css'; // login e botões
@@ -21,7 +21,14 @@ iniciarAcesso({
   sub: ML.CONFIG.nome + ' · acesso do entregador',
   tabela: 'motoboys',
   chave: 'mineiro:v2:moto',
+  permitirOffline: true,
   textoSemAcesso: 'Este usuário não está na lista de entregadores.',
   aoAbrir: (usuario, ctx) => montarMotoboy(document.getElementById('view-motoboy'), usuario, ctx),
   aoEsconder: esconderMotoboy
 });
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  navigator.serviceWorker.register('/motoboy/sw.js', { scope: '/motoboy/' }).catch(() => {
+    // A tela mantém a fila persistente; o aviso de preparação não promete reabertura offline sem o worker.
+  });
+}

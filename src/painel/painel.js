@@ -21,7 +21,8 @@
     cardapio: { t: 'Cardápio', i: 'burger' },
     relatorio: { t: 'Relatório', i: 'grafico' },
     config: { t: 'Configurações', i: 'config' },
-    usuarios: { t: 'Usuários', i: 'lista' }
+    usuarios: { t: 'Usuários', i: 'lista' },
+    entregadores: { t: 'Entregadores', i: 'moto' }
   };
   const MODO_IC = { entrega: 'moto', retirada: 'sacola', local: 'sacola' };
   const COLS = [
@@ -45,6 +46,7 @@
   };
   let modalAtual = null;
   let gestaoUsuarios = null;
+  let gestaoEntregadores = null;
 
   /* ---------- utilidades ---------- */
   const ic = (n, cls) => `<svg class="pn-ic${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
@@ -324,6 +326,7 @@
           </section>
           <section class="pn-sec" data-view="cardapio" aria-label="Cardápio" hidden><div data-slot="cardapio"></div></section>
           <section class="pn-sec" data-view="relatorio" aria-label="Relatório" hidden><div data-slot="relatorio"></div></section>
+          <section class="pn-sec" data-view="entregadores" aria-label="Entregadores" hidden><div data-entregadores></div></section>
           <section class="pn-sec" data-view="usuarios" aria-label="Usuários" hidden><div data-usuarios></div></section>
           <section class="pn-sec" data-view="config" aria-label="Configurações" hidden>
             <div class="pn-cfg">
@@ -361,8 +364,8 @@
     <div class="pn-mobile">
       <header class="pn-m-topo"><img class="pn-selo-logo" src="/assets/logo/selo-128.webp" srcset="/assets/logo/selo-128.webp 1x, /assets/logo/selo-256.webp 2x" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-loja-txt" data-lojatxt-m role="status"></span></header>
       <p class="pn-aviso-m" role="note"><strong>O painel foi pensado para computador</strong></p>
-      <nav class="pn-usuarios-nav-mobile" aria-label="Seções do painel no celular"><button class="pn-btn" type="button" data-usuarios-ir="pedidos">Pedidos</button><button class="pn-btn" type="button" data-usuarios-ir="usuarios">Usuários</button></nav>
-      <div data-mobile></div><div data-usuarios-mobile hidden><div data-usuarios></div></div>
+      <nav class="pn-usuarios-nav-mobile" aria-label="Seções do painel no celular"><button class="pn-btn" type="button" data-usuarios-ir="pedidos">Pedidos</button><button class="pn-btn" type="button" data-usuarios-ir="usuarios">Usuários</button><button class="pn-btn" type="button" data-usuarios-ir="entregadores">Entregadores</button></nav>
+      <div data-mobile></div><div data-entregadores-mobile hidden><div data-entregadores></div></div><div data-usuarios-mobile hidden><div data-usuarios></div></div>
       ${sairHTML()}
     </div>
     </div>`;
@@ -669,8 +672,10 @@
     if (!VIEWS[v]) return;
     S.view = v;
     if(gestaoUsuarios){if(v==='usuarios')gestaoUsuarios.abrir();else gestaoUsuarios.esconder();}
-    q('[data-mobile]').hidden=v==='usuarios';
-    q('.pn-aviso-m').hidden=v==='usuarios';
+    if(gestaoEntregadores){if(v==='entregadores')gestaoEntregadores.abrir();else gestaoEntregadores.esconder();}
+    q('[data-entregadores-mobile]').hidden=v!=='entregadores';
+    q('[data-mobile]').hidden=['usuarios','entregadores'].includes(v);
+    q('.pn-aviso-m').hidden=['usuarios','entregadores'].includes(v);
     q('[data-usuarios-mobile]').hidden=v!=='usuarios';
     qa('.pn-sec').forEach(s => { s.hidden = s.dataset.view !== v; });
     qa('[data-nav]').forEach(b => { if (b.dataset.nav === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
@@ -881,6 +886,8 @@
   function avancar(id) {
     const p = pedidoPorId(id), prox = p && ML.regras.proximoStatus(p);
     if (!prox) return;
+    if (prox === 'rota' && p.modo === 'entrega' && p.origem !== 'exemplo') { irPara('entregadores'); toast('Atribua o pedido a um entregador e registre a saída nesta aba.'); return; }
+    if (prox === 'entregue' && p.modo === 'entrega' && p.origem !== 'exemplo') { irPara('entregadores'); toast('Use Baixa manual e informe o motivo, ou peça a confirmação ao motoboy.'); return; }
     S.focoId = id;
     if (prox === 'entregue') S.concluidosAqui.add(id);
     ML.store.avancar(id);
@@ -1103,6 +1110,7 @@
     el.classList.add('painel');
     el.innerHTML = esqueleto();
     if(window.MLUsuarios)gestaoUsuarios=window.MLUsuarios.montar(el);
+    if(window.MLEntregadores)gestaoEntregadores=window.MLEntregadores.montar(el);
     S.toasts = document.createElement('div');
     S.toasts.className = 'pn-toasts'; S.toasts.setAttribute('aria-live', 'polite'); S.toasts.setAttribute('role', 'status');
     document.body.appendChild(S.toasts);
@@ -1144,6 +1152,7 @@
   function esconder() {
     S.visivel = false;
     if(gestaoUsuarios)gestaoUsuarios.esconder();
+    if(gestaoEntregadores)gestaoEntregadores.esconder();
     if (S.tickId) { clearInterval(S.tickId); S.tickId = null; }
     qa('[data-kpi]').forEach(k => { if (k._raf) { cancelAnimationFrame(k._raf); k._raf = null; } });
     fecharModal();

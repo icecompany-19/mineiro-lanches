@@ -62,3 +62,8 @@
 @media (prefers-reduced-motion: reduce) {
   .mb-res { animation: none; }
 }
+/* A fila é visível antes da lista e nunca depende apenas de cor. */
+.mb-sync { margin: 16px 0; padding: 16px; border: 1px solid var(--borda-escura); border-radius: 12px; }
+.mb-sync p { margin: 8px 0; overflow-wrap: anywhere; }
+.mb-sync [data-sync] { font-weight: 700; }
+.mb-sync button { min-height: 56px; width: 100%; }

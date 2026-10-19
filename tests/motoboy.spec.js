@@ -49,6 +49,7 @@ const pedido = (extra) => ({
   total: 38.5,
   taxaEntrega: 8,
   distanciaKm: 4.1,
+  atribuicao: '30000000-0000-4000-8000-000000000001',
   saiuEm: '2026-10-17T21:30:00-03:00',
   entregueEm: null,
   ...extra
@@ -145,7 +146,11 @@ async function simular(page, opc = {}) {
     const r = estado.rota;
     return responder(route, typeof r === 'function' ? r() : { json: r });
   });
-  await page.route('**/rest/v1/rpc/confirmar_entrega', async (route) => {
+  await page.route('**/rest/v1/rpc/consultar_entrega_motoboy', async (route) => {
+    if (preflight(route)) return;
+    return responder(route, { json: emRota({ id: route.request().postDataJSON().p_id }) });
+  });
+  await page.route('**/rest/v1/rpc/confirmar_entrega_offline', async (route) => {
     if (preflight(route)) return;
     const corpo = route.request().postDataJSON() || {};
     c.confirmar.push(corpo.p_id);
@@ -407,38 +412,18 @@ test('ler de novo: "Já estava entregue" sem erro', async ({ page, baseURL }) =>
   expect(s.c.confirmar).toEqual([ID_A]);
 });
 
-test('erros do banco viram mensagens claras (retirada, cancelado, ainda não aceito, outros)', async ({ page, baseURL }) => {
+for (const [codigo, texto] of [
+  ['nao_e_entrega', 'Esse pedido é de retirada'], ['pedido_cancelado', 'Pedido cancelado'],
+  ['transicao_invalida', 'Ainda não foi aceito pela cozinha'], ['nao_encontrado', 'Pedido não encontrado'],
+  ['sem_permissao', 'Este usuário não tem permissão para confirmar entregas'], ['dados_invalidos', 'Esse código não é de um pedido']
+]) test('recusa fica preservada na fila para conferência: ' + codigo, async ({ page, baseURL }) => {
   await preparar(page, baseURL);
-  const s = await simular(page);
-  await abrirLogado(page);
-  const casos = [
-    ['nao_e_entrega', 'Esse pedido é de retirada'],
-    ['pedido_cancelado', 'Pedido cancelado'],
-    ['transicao_invalida', 'Ainda não foi aceito pela cozinha'],
-    ['nao_encontrado', 'Pedido não encontrado'],
-    ['sem_permissao', 'Este usuário não tem permissão para confirmar entregas'],
-    ['dados_invalidos', 'Esse código não é de um pedido']
-  ];
-  const ids = [
-    ID_A,
-    ID_B,
-    ID_C,
-    'd4e5f6a7-b8c9-4d0e-9f2a-3b4c5d6e7f80',
-    'e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091',
-    'f6a7b8c9-d0e1-4f2a-9b4c-5d6e7f809102'
-  ];
-  for (const [i, [codigo, texto]] of casos.entries()) {
-    await test.step(codigo, async () => {
-      s.estado.confirmar = recusa(codigo);
-      await page.evaluate((id) => (location.hash = '#' + id), ids[i]);
-      const r = resultado(page);
-      await expect(r).toHaveClass(/mb-res--erro/);
-      await expect(r).toHaveText(texto);
-      await expect(r.getByRole('button', { name: 'Tentar de novo' }), 'só falta de rede oferece tentar de novo').toHaveCount(0);
-      await expect(r.getByText('Entregue', { exact: true })).toHaveCount(0);
-    });
-  }
-  expect(s.c.confirmar).toEqual(ids);
+  const s = await simular(page, { confirmar: recusa(codigo) });
+  await abrirLogado(page, '#' + ID_A);
+  await expect(page.locator('[data-pendencias]')).toContainText(texto);
+  await expect(page.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
+  await expect(resultado(page).getByText('Entregue', { exact: true })).toHaveCount(0);
+  expect(s.c.confirmar).toEqual([ID_A]);
   expect(s.c.naoSimuladas).toEqual([]);
 });
 
@@ -447,10 +432,9 @@ test('sem rede: avisa e deixa tentar de novo (a confirmação é idempotente no 
   const s = await simular(page, { confirmar: () => ({ abort: true }) });
   await abrirLogado(page, '#' + ID_A);
   const r = resultado(page);
-  await expect(r).toHaveClass(/mb-res--erro/);
-  await expect(r).toContainText('Sem conexão com o servidor');
+  await expect(page.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
   s.estado.confirmar = confirmou();
-  await r.getByRole('button', { name: 'Tentar de novo' }).click();
+  await page.getByRole('button', { name: 'Sincronizar agora' }).click();
   await expect(r.getByText('Entregue', { exact: true })).toBeVisible();
   await expect(r).toContainText('#0011');
   expect(s.c.confirmar).toEqual([ID_A, ID_A]);
@@ -462,12 +446,11 @@ test('servidor que não responde: desiste em 15 s e conta como falta de rede', a
   const s = await simular(page, { confirmar: () => ({ pendente: true }) });
   await abrirLogado(page, '#' + ID_A);
   const r = resultado(page);
-  await expect(r).toContainText('Confirmando a entrega');
+  await expect(r).toContainText('Confirmada neste aparelho');
   await page.clock.fastForward(14_000);
-  await expect(r).toContainText('Confirmando a entrega');
+  await expect(r).toContainText('Confirmada neste aparelho');
   await page.clock.fastForward(2_000);
-  await expect(r).toHaveClass(/mb-res--erro/);
-  await expect(r).toContainText('Sem conexão com o servidor');
+  await expect(page.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
   expect(s.c.confirmar).toEqual([ID_A]);
 });
 
@@ -517,7 +500,7 @@ test('lista Em rota: dados do pedido e um botão Entregue em cada um (plano B se
   s.estado.rota = [];
   await page.getByRole('button', { name: 'Atualizar' }).click();
   await expect(page.getByText('Nenhuma entrega em rota agora.')).toBeVisible();
-  expect(s.c.rota).toBe(2);
+  expect(s.c.rota).toBe(3);
   await v.fechar();
   expect(s.c.naoSimuladas).toEqual([]);
   expect(v.csp).toEqual([]);
@@ -534,12 +517,12 @@ test('lista Em rota: erro na confirmação fica no pedido; falha ao carregar ped
   const item = page.locator('.mb-item');
   await expect(item).toHaveCount(1);
   await item.getByRole('button', { name: 'Entregue' }).click();
-  await expect(item.getByRole('alert')).toHaveText('Ainda não foi aceito pela cozinha');
-  await expect(item.getByRole('button', { name: 'Entregue' })).toBeEnabled();
+  await expect(page.locator('[data-pendencias]')).toContainText('Ainda não foi aceito pela cozinha');
+  await expect(item.getByRole('button', { name: 'Entregue' })).toBeDisabled();
   await expect(item, 'o pedido continua na lista').toHaveCount(1);
-  // corrigiu no servidor: o mesmo botão confirma
+  // corrigiu no servidor: o mesmo evento persistido é reenviado
   s.estado.confirmar = confirmou();
-  await item.getByRole('button', { name: 'Entregue' }).click();
+  await page.getByRole('button', { name: 'Sincronizar agora' }).click();
   await expect(resultado(page).getByText('Entregue', { exact: true })).toBeVisible();
   await expect(page.locator('.mb-item')).toHaveCount(0);
   expect(s.c.confirmar).toEqual([ID_A, ID_A]);

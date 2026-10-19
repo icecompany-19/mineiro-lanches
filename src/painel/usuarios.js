@@ -128,7 +128,7 @@ export function montarUsuarios(root, { consultar = consultarUsuarios } = {}) {
     ocupado = true;
     erro = '';
     aviso = '';
-    el.querySelectorAll('button').forEach((b) => (b.disabled = true));
+    for (const slot of slots) slot.querySelectorAll('button').forEach((b) => (b.disabled = true));
     el.setAttribute('aria-busy', 'true');
     try {
       const r = await consultar(p);
@@ -146,7 +146,7 @@ export function montarUsuarios(root, { consultar = consultarUsuarios } = {}) {
       }
       formulario = null;
       confirmacao = null;
-      render();
+      // O finally libera a operação antes de mostrar os botões da lista novamente.
     } catch (e) {
       const msg = MENSAGENS[e.codigo] || MENSAGENS.servidor_indisponivel;
       const avisoEl = el.querySelector('[data-u-erro]');
@@ -160,7 +160,7 @@ export function montarUsuarios(root, { consultar = consultarUsuarios } = {}) {
     } finally {
       ocupado = false;
       el.removeAttribute('aria-busy');
-      el.querySelectorAll('button').forEach((b) => (b.disabled = false));
+      for (const slot of slots) slot.querySelectorAll('button').forEach((b) => (b.disabled = false));
       if (!formulario) render();
     }
   }

@@ -29,7 +29,7 @@ select pg_temp.ok((:'r'::jsonb - 'status' - 'historico') = (:'ent'::jsonb - 'sta
 select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'pronto')$$, :'ent_id')), 'transicao_invalida', 'entrega: preparo → pronto: transicao_invalida');
 select pg_temp.igual(mudar_status(:'ent_id', 'rota') ->> 'status', 'rota', 'entrega: preparo → rota');
 select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'preparo')$$, :'ent_id')), 'transicao_invalida', 'rota → preparo: transicao_invalida');
-select mudar_status(:'ent_id', 'entregue') as r \gset
+select mudar_status(:'ent_id', 'entregue', 'Conferida pela equipe') as r \gset
 select pg_temp.ok(:'r'::jsonb ->> 'status' = 'entregue'
                   and (select array_agg(h ->> 'status' order by n) from jsonb_array_elements(:'r'::jsonb -> 'historico') with ordinality x(h, n)) = array['novo', 'preparo', 'rota', 'entregue'],
   'rota → entregue; histórico novo, preparo, rota, entregue');

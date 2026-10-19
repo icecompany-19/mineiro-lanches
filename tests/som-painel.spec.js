@@ -105,7 +105,8 @@ test('pedido entregue em outro aparelho (o motoboy): aviso discreto e sem som; o
     const l = linha(n, hora);
     return Object.assign(l, { modo: 'entrega', endereco: 'Rua Teste, 1', status: 'rota', historico: ['novo', 'preparo', 'rota'].map((status) => ({ status, em: hora })) });
   };
-  const dados = { pedidos: [emRota(31), emRota(32)] };
+  const retirada = Object.assign(linha(32, hora), { status: 'pronto', historico: ['novo', 'preparo', 'pronto'].map((status) => ({ status, em: hora })) });
+  const dados = { pedidos: [emRota(31), retirada] };
   // a RPC do avanço responde o pedido como o servidor (pedido_json) e a lista seguinte já vem com ele concluído
   await page.route('**/rest/v1/rpc/mudar_status', async (r) => {
     const { p_id: id, p_status: status } = r.request().postDataJSON();
@@ -128,7 +129,7 @@ test('pedido entregue em outro aparelho (o motoboy): aviso discreto e sem som; o
   await expect(aviso).not.toHaveClass(/pn-toast--(novo|erro)/);
   expect((await resumo(page)).n, 'sem som').toBe(0);
 
-  // a equipe conclui o #0032 aqui mesmo: só o aviso do avanço ("#0032: Entregue"), nenhum "entregue pelo"
+  // a equipe conclui a retirada #0032 aqui mesmo: só o aviso do avanço ("#0032: Entregue"), nenhum "entregue pelo"
   await page.locator('.pn-col--saida .pn-card[data-id$="32"]').getByRole('button', { name: 'Concluir' }).click();
   await expect(page.locator('.pn-col--concluidos .pn-card[data-id$="32"]')).toBeVisible();
   await page.evaluate(() => window.ML.store.recarregar());
