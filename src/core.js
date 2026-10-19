@@ -15,10 +15,10 @@
   var DICA_DOG = 'Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.';
   var CONFIG = {
     nome: 'Mineiro Lanche',
-    tipo: 'food truck',
+    tipo: 'loja',
     cidade: 'Suzano',
     regiao: 'Centro, Suzano',
-    // ponto do truck (docs/CLIENTE-2026-10.md); sem coordenadas confirmadas
+    // ponto da loja (docs/CLIENTE-2026-10.md); sem coordenadas confirmadas
     endereco: 'Rua Eliziel Alves Costa, 300, Centro, Suzano/SP',
     enderecoPartes: { rua: 'Rua Eliziel Alves Costa, 300', bairro: 'Centro', cidade: 'Suzano', uf: 'SP' },
     whatsapp: '5511985720150',
@@ -35,12 +35,12 @@
     horarios: { 0: ['19:00', '01:00'], 1: ['19:00', '00:00'], 2: ['19:00', '00:00'], 3: null, 4: ['19:00', '00:00'], 5: ['19:00', '01:00'], 6: ['19:00', '01:00'] },
     horarioTexto: ['Segunda, terça e quinta, das 19h à meia-noite', 'Sexta, sábado e domingo, das 19h à 1h', 'Fechado às quartas'],
     // entrega (cliente, 16/10/2026): prazo de até 50 min, podendo chegar antes; taxa = km rodado (arredondado para cima) x porKm + fixa.
-    // origem: Rua Eliziel Alves Costa, trecho do nº 300 (CEP 08674-185), coordenadas do OpenStreetMap no nível da rua; confirmar o ponto exato do truck.
+    // origem: Rua Eliziel Alves Costa, trecho do nº 300 (CEP 08674-185), coordenadas do OpenStreetMap no nível da rua; confirmar o ponto exato da loja.
     // taxaAtiva: o estado_cardapio liga quando o banco já calcula a taxa (taxaKm); sem isso o checkout deixa "a combinar" e o total não diverge do servidor
     entrega: { prazoMin: 50, taxa: { porKm: 1, fixa: 4 }, origem: { lat: -23.5409777, lon: -46.312935 }, taxaAtiva: false },
     modos: [
       { id: 'entrega', label: 'Entrega', desc: 'Suzano e região · taxa calculada pelo endereço' },
-      { id: 'local', label: 'Retirada no local', desc: 'Retire seu pedido no truck' }
+      { id: 'local', label: 'Retirada no local', desc: 'Retire seu pedido na loja' }
     ],
     pagamentos: null, // a confirmar; ex.: ['Pix', 'Cartão', 'Dinheiro']
     regras: {
@@ -255,7 +255,7 @@
   function situacao(data) {
     var a = agoraSP(data), s = situacaoNo(a.dia, a.min), loja = window.ML.store.loja();
     var base = { agora: a, manual: loja.modo !== 'auto' };
-    if (loja.modo === 'fechada') return Object.assign(base, { aberto: false, txt: 'Fechado agora · o truck pausou os pedidos' });
+    if (loja.modo === 'fechada') return Object.assign(base, { aberto: false, txt: 'Fechado agora · a loja pausou os pedidos' });
     if (s.aberto) return Object.assign(base, { aberto: true, txt: 'Aberto agora · até ' + horaTxt(s.ate) });
     if (loja.modo === 'aberta') return Object.assign(base, { aberto: true, txt: 'Aberto agora (horário estendido)' });
     var hoje = TURNOS[a.dia];
@@ -303,7 +303,7 @@
   function mensagem(pedido) {
     var modo = CONFIG.modos.filter(function (m) { return m.id === (pedido.modo === 'retirada' ? 'local' : pedido.modo); })[0];
     var modoTxt = (modo ? modo.label : pedido.modo) + (pedido.modo === 'local' && pedido.mesa ? ' · Mesa ' + pedido.mesa : '');
-    var out = ['Olá, ' + CONFIG.nome + '! ' + (pedido.origem === 'qrcode' ? 'Vim pelo QR code do truck' : 'Vim pelo link da bio') + ' e quero fazer um pedido.'];
+    var out = ['Olá, ' + CONFIG.nome + '! ' + (pedido.origem === 'qrcode' ? 'Vim pelo QR code da loja' : 'Vim pelo link da bio') + ' e quero fazer um pedido.'];
     // sem número quando o pedido não chegou ao servidor (plano B do checkout)
     if (pedido.numero) out.push('Pedido ' + numeroTxt(pedido.numero));
     out.push('');

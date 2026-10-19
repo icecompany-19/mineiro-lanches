@@ -23,12 +23,12 @@ test('equipe consulta os resultados dos cálculos sem acessar dados pessoais', a
   await expect(page.locator('[data-entrega-diagnostico]')).toContainText('cotações calculadas');
   await expect(page.locator('[data-entrega-diagnostico]')).toContainText('tentativas com falha');
 });
-test('equipe confirma o ponto do truck pelo GPS e as próximas rotas usam a nova origem', async ({ page, context }) => {
+test('equipe confirma o ponto da loja pelo GPS e as próximas rotas usam a nova origem', async ({ page, context }) => {
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({ latitude: -23.5409, longitude: -46.3129, accuracy: 10 });
   await entrar(page);
-  await page.getByRole('button', { name: 'Confirmar posição atual do truck' }).click();
-  await expect(page.locator('[data-entrega-diagnostico]')).toContainText('Posição do truck atualizada');
+  await page.getByRole('button', { name: 'Confirmar posição atual da loja' }).click();
+  await expect(page.locator('[data-entrega-diagnostico]')).toContainText('Posição da loja atualizada');
   expect(JSON.parse(psql('select entrega_origem from loja where id=1')).lat).toBe(-23.5409);
 });
 test('Abrir no Maps usa o ponto confirmado, preservando a busca por texto nos pedidos antigos', async ({ page }) => {

@@ -5,7 +5,7 @@
 //   2. movimento reduzido: nada em andamento em document.getAnimations(), nem depois de tocar nos botões (WAAPI);
 //   3. só transform, opacity e clip-path nos keyframes: os @keyframes do CSS e tudo o que se vê rodar numa jornada;
 //   4. aba oculta pausa as animações infinitas (html.aba-oculta);
-//   5. a luz segue o truck: loja 'fechada' dentro do horário apaga a parede e o neon diz fechado; 'aberta' fora do
+//   5. a luz segue a loja: loja 'fechada' dentro do horário apaga a parede e o neon diz fechado; 'aberta' fora do
 //      horário acende (o relógio é fixado por page.clock e o modo vem da RESPOSTA de estado_cardapio, nunca do banco);
 //   6. botões, links, inputs e [role=button] visíveis com ≥ 44×44 px;
 //   7. por Tab, outline de 3 px na cor do fio em cada controle;
@@ -343,16 +343,16 @@ test.describe('aba oculta pausa as animações infinitas', () => {
   }
 });
 
-// ---------- 5. a luz segue o truck ----------
+// ---------- 5. a luz segue a loja ----------
 const CASOS_DE_LUZ = [
   { modo: 'auto', hora: AS_20H, rotulo: 'automático às 20h', luz: 'acesa', motivo: 'turno', classe: 'aberto', cor: NEON_ABERTO, texto: /^Aberto agora · até meia-noite$/ },
   { modo: 'auto', hora: AS_14H, rotulo: 'automático às 14h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre hoje às 19h$/ },
   { modo: 'auto', hora: QUARTA_20H, rotulo: 'automático numa quarta às 20h', luz: 'apagada', motivo: 'antes', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · abre amanhã às 19h$/ },
-  { modo: 'fechada', hora: AS_20H, rotulo: 'fechada dentro do horário (20h)', luz: 'apagada', motivo: 'pausa', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · o truck pausou os pedidos$/ },
+  { modo: 'fechada', hora: AS_20H, rotulo: 'fechada dentro do horário (20h)', luz: 'apagada', motivo: 'pausa', classe: 'fechado', cor: VERMELHO_LUZ, texto: /^Fechado agora · a loja pausou os pedidos$/ },
   { modo: 'aberta', hora: AS_14H, rotulo: 'aberta fora do horário (14h)', luz: 'acesa', motivo: 'turno', classe: 'aberto', cor: NEON_ABERTO, texto: /^Aberto agora \(horário estendido\)$/ }
 ];
 
-test.describe('a luz segue o truck (modo da loja × hora)', () => {
+test.describe('a luz segue a loja (modo da loja × hora)', () => {
   test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' }); // a parede acende em 900 ms: sem a transição o valor já é o final
   });

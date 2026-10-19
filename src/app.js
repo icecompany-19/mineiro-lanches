@@ -1,7 +1,7 @@
 /* Mineiro Lanche · app do cliente (bio, cardápio, ficha, sacola, checkout, acompanhamento) e site.
    Usa window.ML (core.js) com a store do Supabase já instalada: main-cliente.js chama iniciarApp() depois.
    O painel é outra página (/painel/).
-   Pele: docs/DIRECAO-VISUAL.md ("Parede Acesa"). A luz do site segue o truck: html[data-luz="acesa|apagada"] e
+   Pele: docs/DIRECAO-VISUAL.md ("Parede Acesa"). A luz do site segue a loja: html[data-luz="acesa|apagada"] e
    html[data-luz-motivo="turno|antes|pausa"], refeitos no carregamento, a cada minuto e no evento loja:modo.
    Site imersivo (#site): src/site/site.js e as cenas entram por import() em carregarSite() (chunk próprio, com o
    CSS dele); o contrato com ele é o ML.app (montado no início, mais abaixo). */
@@ -171,14 +171,14 @@ export function iniciarApp() {
   // versão curta do status (cabeçalho do cardápio): "Aberto · até 0h", "Fechado · abre às 19h"
   function textoCurto(s) {
     return s.txt.replace(' (horário estendido)', '').replace(/^Aberto agora/, 'Aberto').replace(/^Fechado agora/, 'Fechado')
-      .replace(' · o truck pausou os pedidos', ' · pausa').replace('abre hoje às', 'abre às').replace('meia-noite', '0h');
+      .replace(' · a loja pausou os pedidos', ' · pausa').replace('abre hoje às', 'abre às').replace('meia-noite', '0h');
   }
   function atualizarStatus() {
     var s = ML.horario.situacao(), loja = ML.store.loja(), raiz = document.documentElement;
     // o HTML chega neutro (sem verde nem vermelho): só aqui o selo diz se está aberto
     $$('[data-status]').forEach(function (el) { el.textContent = s.txt; el.classList.toggle('fechado', !s.aberto); el.classList.toggle('aberto', s.aberto); });
     $$('[data-status-curto]').forEach(function (el) { el.textContent = textoCurto(s); el.classList.toggle('fechado', !s.aberto); el.classList.toggle('aberto', s.aberto); });
-    // a luz da parede segue o truck (o site imersivo só lê estes atributos)
+    // a luz da parede segue a loja (o site imersivo só lê estes atributos)
     raiz.setAttribute('data-luz', s.aberto ? 'acesa' : 'apagada');
     raiz.setAttribute('data-luz-motivo', s.aberto ? 'turno' : (loja && loja.modo === 'fechada' ? 'pausa' : 'antes'));
     $$('[data-semana]').forEach(renderSemana);
@@ -444,10 +444,10 @@ export function iniciarApp() {
       if (p.ing && p.ing.length) h += '<ul class="ficha-ings" aria-label="Composição">' + p.ing.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
     }
     if (p.nota) h += '<p class="ficha-nota">' + esc(p.nota) + '</p>';
-    if (esg) h += '<p class="ficha-nota alerta">' + (p.inativo ? 'Fora do cardápio no momento.' : 'Esgotado hoje no truck.') + '</p>';
+    if (esg) h += '<p class="ficha-nota alerta">' + (p.inativo ? 'Fora do cardápio no momento.' : 'Esgotado hoje na loja.') + '</p>';
     // "Preço a confirmar": não vai para a sacola; a alternativa é perguntar pelo WhatsApp (sem as opções de montar)
     if (!ML.regras.temPreco(p)) {
-      h += '<div class="ficha-consulta"><p class="ficha-nota">O truck ainda vai confirmar o preço deste item. Por enquanto, peça pelo WhatsApp.</p>' +
+      h += '<div class="ficha-consulta"><p class="ficha-nota">A loja ainda vai confirmar o preço deste item. Por enquanto, peça pelo WhatsApp.</p>' +
         '<a class="btn btn-borda" id="ficha-consulta" href="' + esc(ML.whatsapp.link(ML.whatsapp.consulta(p))) + '" target="_blank" rel="noopener">' + ic('chat') + 'Consultar no WhatsApp</a></div></div><div style="height:18px"></div>';
       corpo.innerHTML = h;
       if (manterRolagem) corpo.scrollTop = rol;
@@ -624,7 +624,7 @@ export function iniciarApp() {
     var tel = $('#f-tel'), campo = tel.closest('.campo');
     campo.id = 'c-tel';
     tel.setAttribute('autocomplete', 'tel-national');
-    campo.insertAdjacentHTML('beforeend', '<span class="msg-erro" id="erro-tel" hidden>Informe o telefone com DDD para o truck falar com você.</span>');
+    campo.insertAdjacentHTML('beforeend', '<span class="msg-erro" id="erro-tel" hidden>Informe o telefone com DDD para a loja falar com você.</span>');
     $('#c-nome').insertAdjacentHTML('afterend', '<p class="nota-dados">' + ic('check') + 'Usamos seus dados para preparar e entregar o pedido. Seus dados e endereços ficam salvos neste aparelho para os próximos pedidos.</p>');
     $('.enviar-wrap').insertAdjacentHTML('beforebegin',
       '<div class="envio-erro" id="envio-erro" role="alert" tabindex="-1" hidden><strong id="envio-erro-tit"></strong><p id="envio-erro-txt"></p>' +
@@ -717,7 +717,7 @@ export function iniciarApp() {
     if (entr.estado === 'calculando') return { chk: 'calculando…', msg: 'Calculando a taxa de entrega…', cls: '' };
     if (entr.estado === 'sem-numero') return { chk: taxaEntregaTxt(), msg: 'Informe o número da casa para calcular a taxa de entrega.', cls: '' };
     if (entr.estado === 'falha') return { chk: 'a combinar', msg: 'Não conseguimos calcular a taxa agora. Confira o endereço e tente novamente.', cls: 'falha' };
-    // modo entrega, ainda sem CEP resolvido: o CEP é o caminho para ver a taxa; escrevendo o endereço à mão, o truck combina o valor
+    // modo entrega, ainda sem CEP resolvido: o CEP é o caminho para ver a taxa; escrevendo o endereço à mão, a loja combina o valor
     return { chk: taxaEntregaTxt(), msg: $('#f-cep').value ? '' : 'Digite o CEP para ver a taxa de entrega.', cls: '' };
   }
   function renderTaxa() {
@@ -1006,7 +1006,7 @@ export function iniciarApp() {
     }).join('');
     var s = ML.horario.situacao(), av = $('#aviso-fechado');
     av.hidden = s.aberto;
-    if (!s.aberto) av.textContent = s.txt + (ML.store.loja().aceitaFechada ? '. Os pedidos são preparados no horário de funcionamento do truck.' : '. Fora do horário o truck não recebe pedidos pelo site; se precisar, chame no WhatsApp.');
+    if (!s.aberto) av.textContent = s.txt + (ML.store.loja().aceitaFechada ? '. Os pedidos são preparados no horário de funcionamento da loja.' : '. Fora do horário a loja não recebe pedidos pelo site; se precisar, chame no WhatsApp.');
   }
 
   // envio: um uuid de idempotência por pedido montado; "Tentar de novo" reaproveita o mesmo (o servidor
@@ -1040,12 +1040,12 @@ export function iniciarApp() {
     cotacao_necessaria:['Atualize a taxa de entrega',function(){return 'Recalcule a entrega, confira o total e envie novamente. Se a página estava aberta há algum tempo, atualize o site.';}],
     cotacao_expirada:['Atualize a taxa de entrega',function(){return 'A cotação venceu ou mudou. Recalcule a entrega e confira o novo total antes de enviar.';}],
     cotacao_endereco_divergente:['Confira o endereço de entrega',function(){return 'O endereço mudou após o cálculo. Recalcule a entrega antes de enviar.';}],
-    loja_fechada: ['O truck não está recebendo pedidos agora', function () { return ML.horario.situacao().txt + '. Você pode chamar o ' + C.nome + ' pelo WhatsApp.'; }],
+    loja_fechada: ['A loja não está recebendo pedidos agora', function () { return ML.horario.situacao().txt + '. Você pode chamar o ' + C.nome + ' pelo WhatsApp.'; }],
     produto_esgotado: ['Um item da sacola esgotou', function (d) { return (d.esgotados.length ? d.esgotados.join(', ') : 'Um dos itens') + ' acabou de esgotar hoje. Tire da sacola e envie de novo, ou peça pelo WhatsApp.'; }],
     produto_invalido: ['Um item da sacola saiu do cardápio', function (d) { return (d.esgotados.length ? d.esgotados.join(', ') + ' não está' : 'Um dos itens não está') + ' disponível agora. Ajuste a sacola e envie de novo.'; }],
-    muitos_pedidos: ['Muitos pedidos deste telefone', function () { return 'Recebemos vários pedidos deste número em poucos minutos. Espere um pouco ou fale com o truck pelo WhatsApp.'; }],
-    dados_invalidos: ['Confira os seus dados', function () { return 'O truck não aceitou algum campo do pedido. Confira nome, telefone e endereço e tente de novo.'; }],
-    rede: ['Não conseguimos falar com o truck', function () { return 'Sem conexão ou o servidor não respondeu. Tente de novo, ou envie o pedido completo pelo WhatsApp.'; }]
+    muitos_pedidos: ['Muitos pedidos deste telefone', function () { return 'Recebemos vários pedidos deste número em poucos minutos. Espere um pouco ou fale com a loja pelo WhatsApp.'; }],
+    dados_invalidos: ['Confira os seus dados', function () { return 'A loja não aceitou algum campo do pedido. Confira nome, telefone e endereço e tente de novo.'; }],
+    rede: ['Não conseguimos falar com a loja', function () { return 'Sem conexão ou o servidor não respondeu. Tente de novo, ou envie o pedido completo pelo WhatsApp.'; }]
   };
   // o que não dá para pedir na sacola: o lanche (esgotado ou fora do cardápio) ou um adicional que saiu do cardápio
   function nomesIndisponiveis() {
@@ -1083,7 +1083,7 @@ export function iniciarApp() {
     btn.classList.toggle('enviando', sim);
     btn.setAttribute('aria-disabled', String(sim));
     $('#form-pedido').setAttribute('aria-busy', String(sim));
-    $('span', btn).textContent = sim ? (ML.store.loja().pagamentosAtivos?'Registrando pedido…':'Enviando para o truck…') : ML.store.loja().pagamentosAtivos?'Pagar pedido':'Enviar pedido';
+    $('span', btn).textContent = sim ? (ML.store.loja().pagamentosAtivos?'Registrando pedido…':'Enviando para a loja…') : ML.store.loja().pagamentosAtivos?'Pagar pedido':'Enviar pedido';
   }
   function validar() {
     var nome = $('#f-nome').value.trim(), tel = digitosTel($('#f-tel').value), end = $('#f-end').value.trim(), ok = true;
@@ -1172,7 +1172,7 @@ export function iniciarApp() {
   // ================= acompanhar pedido =================
   var PASSOS = {
     entrega: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['rota', 'Saiu para entrega', 'moto'], ['entregue', 'Entregue', 'check']],
-    local: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['pronto', 'Pronto para servir', 'mesa'], ['entregue', 'Servido', 'check']]
+    local: [['novo', 'Recebido', 'sino'], ['preparo', 'Na chapa', 'chama'], ['pronto', 'Pronto para retirada', 'sacola'], ['entregue', 'Retirado', 'check']]
   };
   var MSG = { novo: 'Pedido recebido pelo Mineiro Lanche', preparo: 'Seu lanche está na chapa', pronto: 'Pronto!', rota: 'Saiu para entrega', entregue: 'Bom apetite!', cancelado: 'Pedido cancelado' };
   var FINAIS = ['entregue', 'cancelado'];
@@ -1238,7 +1238,7 @@ export function iniciarApp() {
     $('#ped-num').textContent = ML.fmt.numero(p.numero);
     var msg = MSG[p.status] || '';
     if(p.status==='novo'&&p.pagamentoOnline&&p.pagamentoOnline!=='aprovado')msg=textoPagamento(p.pagamentoOnline)+'. O preparo começa após a aprovação.';
-    if (p.status === 'pronto') msg = 'Pronto para servir';
+    if (p.status === 'pronto') msg = 'Seu pedido está pronto para retirada na loja';
     if (p.status === 'cancelado') { var u = p.historico[p.historico.length - 1]; msg += u && u.motivo ? ' · ' + u.motivo : ''; }
     $('#ped-msg').textContent = msg;
     // para leitor de tela: o status muda sozinho (consulta a cada 10 s)

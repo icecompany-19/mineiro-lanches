@@ -36,7 +36,7 @@ const IDS = ['view-site', 'ficha', 'ficha-add', 'ficha-total', 'ficha-add-txt', 
 const DATA = ['screen', 'nav', 'act', 'modo', 'combo', 'combo-preco', 'adic', 'total', 'status', 'semana', 'fq', 'fechar-ficha', 'completo', 'prensado', 'ing', 'id', 'vazio', 'fechar-story', 'editar', 'd', 'contador', 'confirma-t'];
 const TELAS = ['menu', 'checkout'];
 const CLASSES = ['bio-ctas', 'faixa', 'faixa-combo', 'selo-combo', 'selo-esgotado', 'story-btn', 's-hero', 'passo', 'atual', 'pn-app', 'pn-card', 'pn-desktop', 'pn-mobile', 'pn-acesso', 'pn-modal', 'pn-num', 'pn-tag--mesa', 'pn-tag--qr', 'pn-toast', 'pn-total'];
-const TEXTOS = ['Fazer pedido', 'Conheça o truck', 'Na chapa'];
+const TEXTOS = ['Fazer pedido', 'Conheça a loja', 'Na chapa'];
 
 test('rotas protegidas continuam existindo', () => {
   const faltam = ROTAS.filter((r) => !new RegExp(`['"\`]#?${escapa(r)}\\b`).test(tudo));

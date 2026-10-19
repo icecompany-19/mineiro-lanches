@@ -243,7 +243,7 @@ test.describe('logo e QR do entregador na comanda', () => {
       });
     const tela = await medir();
     expect(tela.src).toBe('/assets/logo/logo-512.webp');
-    expect(tela.alt).toBe('Mineiro Lanche food truck');
+    expect(tela.alt).toBe('Mineiro Lanche');
     expect([tela.largura, tela.altura, tela.decoding]).toEqual(['512', '416', 'sync']);
     expect(tela.natural).toEqual([512, 416]);
     expect([tela.filter, tela.blend, tela.mascara, tela.mascaraWebkit, tela.opacidade]).toEqual(['none', 'normal', 'none', 'none', '1']);

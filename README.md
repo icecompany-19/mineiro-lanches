@@ -1,6 +1,6 @@
 # Mineiro Lanche
 
-Bio, cardápio, site e painel de pedidos do food truck Mineiro Lanche (Centro de Suzano).
+Bio, cardápio, site e painel de pedidos da loja Mineiro Lanche (Centro de Suzano).
 
 | Onde | O quê |
 |---|---|
