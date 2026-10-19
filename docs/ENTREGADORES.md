@@ -19,6 +19,10 @@ O painel abre com quatro indicadores interativos: **Em entrega**, **Aguardando s
 
 Os cartões da equipe mostram pedidos em andamento, abertos, concluídos, média e último contato com data/hora. Tocar em um cartão filtra aquele entregador; tocar novamente remove o filtro. **Cadastro ativo** é a autorização do perfil, não presença online nem disponibilidade.
 
+Cada cartão também mostra **Taxas concluídas** no período selecionado e **Taxas em aberto** dos pedidos atribuídos ainda abertos, de qualquer data. A soma vem do servidor e não muda com busca, situação ou paginação. Considera as taxas registradas nos pedidos, inclusive conclusões por baixa manual, sem atribuir valor a pedidos sem taxa. Cancelados e entregas sem vínculo individual não entram no total do motoboy. Esses valores representam taxas dos pedidos; não constituem registro de pagamento ou acerto financeiro.
+
+Na tela do motoboy, **Suas taxas de entrega** oferece os períodos Hoje/7/30 dias, somente para o próprio usuário. O dia operacional vira às 4h de São Paulo. A conclusão entra no período em que o servidor recebeu a baixa, uma única vez; confirmações ainda na fila permanecem em aberto. Sem internet, a tela identifica os valores e o período da última consulta salva. Falha de rede não transforma o valor em zero. O cache é separado por usuário/período e não substitui nem apaga a fila de confirmações.
+
 A central combina busca por pedido/cliente, situação, entregador e período. A busca ignora acentos. Os pedidos abertos mais antigos e os alertas vêm primeiro; as conclusões aparecem depois. A lista carrega 12 cartões por vez e oferece **Mostrar mais**. O progresso compara conclusões e entregas abertas desse recorte; cancelamentos não entram no denominador.
 
 Cada pedido tem uma linha de etapas e cronômetro atualizado a cada segundo. O painel consulta o servidor a cada 15 segundos enquanto a aba estiver aberta e visível, e antecipa a consulta ao receber eventos de pedidos pela store. O cronômetro usa a diferença em relação ao horário do servidor. Atualizações não apagam o motivo digitado da baixa manual.
@@ -54,6 +58,8 @@ Aplicar **somente** a migration `supabase/migrations/20261019024838_controle_ent
 
 A atualização visual e do histórico usa também `supabase/migrations/20261019032841_historico_entregas_painel.sql`. Em instalações que já receberam o controle operacional, aplicar somente essa atualização da consulta. Ela conserva a autorização exclusiva da equipe e o recorte mínimo de dados.
 
+Os totais de taxas usam `supabase/migrations/20261019034930_totais_taxas_entregadores.sql`, a aplicar antes do front correspondente. Acrescenta `taxas` a cada entregador de `painel_entregadores` e a RPC própria `minhas_taxas_entrega(p_dias=1)`. O helper compartilhado permanece privado; a consulta própria não recebe identificador de motoboy. A migração não altera pedidos, valores ou atribuições.
+
 A migration cria tabelas privadas com RLS e RPCs autorizadas; não modifica pedidos históricos nem atribui pedidos automaticamente. Pedidos antigos em andamento aparecem como sem atribuição para a equipe resolver. As RPCs antigas ficam restritas às próprias atribuições do motoboy, fechando a listagem geral anterior. No primeiro uso após a atualização, a equipe precisa atribuir os pedidos antes da confirmação pelo celular.
 
 Publicar o front pela branch de produção da Vercel. O build emite `/motoboy/sw.js` com uma versão dos arquivos. A preparação só é anunciada após persistir os pedidos e existir um service worker controlando a página.
@@ -71,3 +77,5 @@ Implantação inicial: 497 asserções SQL, 330 verificações de paridade e 125
 A atualização visual acrescenta testes de busca/filtros, cronômetro durante o preenchimento, foco preservado em consultas automáticas, exibição do histórico anterior sem modificar pedidos e consulta por data de conclusão. A bateria SQL passa com 507 verificações, incluindo dez casos de histórico anterior; paridade (330) e testes unitários (125) também passam.
 
 Revisão final: 56 cenários do motoboy e 28 cenários da central/acabamento passam em celular e desktop. A bateria ampla teve 583 aprovações e 76 casos não aplicáveis; três falhas de sincronização dos próprios testes (medição antes da tela ficar visível e navegação concorrente ao reload de logout) foram corrigidas e revalidadas nessa rodada direcionada. Os arquivos JS/CSS do cliente mantêm os mesmos hashes de produção. Build e lint aprovados.
+
+Totais de taxas: setup aplicado duas vezes, 524 asserções SQL (17 financeiras), 330 verificações de paridade, 125 testes unitários e 74 cenários de navegador em celular/desktop passaram. Os cenários incluem total por período, isolamento entre entregadores, baixa manual, taxa ausente, falha de consulta e confirmação offline com reabertura e envio posterior sem duplicar a soma. As duas telas foram conferidas visualmente sem rolagem horizontal.

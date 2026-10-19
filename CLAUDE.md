@@ -14,6 +14,8 @@ Aba **Entregadores**, inclusive no celular; guia em `docs/ENTREGADORES.md`. Migr
 
 Visual atualizado em 19/10: indicadores e cartões de entregadores filtram a central; busca, cronômetros, situações e consulta automática. Conclusões anteriores aparecem como `legado:true` no filtro **Anteriores**, pela data de conclusão original, sem inventar vínculo com motoboy nem alterar pedidos. A média individual continua excluindo esse histórico. Motoboy distingue tarefas em entrega, aguardando saída e confirmações no aparelho. Preservar foco, rascunhos e alvos de toque de 56 px; cronômetros não devem reescrever formulários.
 
+Totais de taxas (19/10, migration `20261019034930`): cartões da equipe e resumo próprio do motoboy mostram taxas concluídas no período e em aberto de qualquer data. O cálculo compartilhado vem do servidor; conta baixas manuais atribuídas, exclui cancelados/sem vínculo e sinaliza taxas nulas. `minhas_taxas_entrega` não recebe ID de usuário e exige motoboy ativo. O cache monetário é por usuário/período, separado da lista e da fila; uma consulta de taxas nunca bloqueia a sincronização. Não chamar os valores de pagamentos ou comissões.
+
 ## Regras que evitam retrabalho
 
 - **Nada inventado.** Preço, horário, composição, taxa, tempo de entrega: só o que está em `docs/CLIENTE-2026-10.md` ou no `CONFIG` de `src/core.js`. O que falta fica "a confirmar".

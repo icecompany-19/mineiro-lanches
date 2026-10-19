@@ -24,7 +24,17 @@ export const MENSAGENS = {
 };
 
 // códigos que o banco manda como texto da exceção (docs/CONTRATO-API.md)
-const CODIGOS = ['sem_permissao', 'dados_invalidos', 'nao_encontrado', 'nao_e_entrega', 'pedido_cancelado', 'transicao_invalida', 'nao_atribuido', 'atribuicao_alterada', 'entrega_nao_iniciada'];
+const CODIGOS = [
+  'sem_permissao',
+  'dados_invalidos',
+  'nao_encontrado',
+  'nao_e_entrega',
+  'pedido_cancelado',
+  'transicao_invalida',
+  'nao_atribuido',
+  'atribuicao_alterada',
+  'entrega_nao_iniciada'
+];
 
 export function codigoDoErro(e) {
   if (!e) return 'rede';
@@ -75,7 +85,8 @@ function pedidoDe(p) {
     endereco: String(p.endereco || ''),
     referencia: String(p.referencia || ''),
     obs: String(p.obs || ''),
-    total: p.total == null ? null : Number(p.total)
+    total: p.total == null ? null : Number(p.total),
+    taxaEntrega: p.taxaEntrega == null ? null : Number(p.taxaEntrega)
   };
 }
 
@@ -92,9 +103,25 @@ export async function entregasEmRota(sb) {
   return (Array.isArray(lista) ? lista : []).map(pedidoDe);
 }
 
+export async function consultarTaxasEntrega(sb, dias) {
+  const r = await chamar(sb, 'minhas_taxas_entrega', { p_dias: dias });
+  const campos = ['concluidas', 'emAberto', 'qtdConcluidas', 'qtdEmAberto', 'semTaxaConcluidas', 'semTaxaEmAberto'];
+  if (
+    r?.dias !== dias ||
+    !Number.isFinite(Date.parse(r?.servidorEm)) ||
+    !Number.isFinite(Date.parse(r?.inicio)) ||
+    !campos.every((k) => typeof r?.taxas?.[k] === 'number' && Number.isFinite(r.taxas[k]) && r.taxas[k] >= 0)
+  )
+    throw erroCom('rede');
+  return r;
+}
+
 export async function enviarConfirmacao(sb, e) {
   const r = await chamar(sb, 'confirmar_entrega_offline', {
-    p_id: e.id, p_evento: e.evento, p_atribuicao: e.atribuicao, p_confirmado_em: e.confirmadoEm
+    p_id: e.id,
+    p_evento: e.evento,
+    p_atribuicao: e.atribuicao,
+    p_confirmado_em: e.confirmadoEm
   });
   if (!r || typeof r !== 'object') throw erroCom('rede');
   return { ok: r.ok === true, jaEntregue: !!r.jaEntregue, pedido: pedidoDe(r.pedido) };
@@ -106,6 +133,9 @@ export async function consultarEntregaMotoboy(sb, id) {
 
 export function reconhecerCancelamento(sb, e) {
   return chamar(sb, 'reconhecer_cancelamento_entrega', {
-    p_id: e.id, p_evento: e.evento, p_atribuicao: e.atribuicao, p_confirmado_em: e.confirmadoEm
+    p_id: e.id,
+    p_evento: e.evento,
+    p_atribuicao: e.atribuicao,
+    p_confirmado_em: e.confirmadoEm
   });
 }

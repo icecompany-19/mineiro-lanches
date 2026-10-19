@@ -6,7 +6,14 @@
    2. Botão "Ler QR da comanda": a câmera da própria tela (leitor.js) acha o uuid e confirma do mesmo jeito.
    3. Lista "Em rota", sem câmera: um botão "Entregue" em cada pedido (o toque é a confirmação).
    Usa as RPCs limitadas de entrega.js e a fila persistente de fila.js: sem store, sem Realtime. */
-import { entregasEmRota, enviarConfirmacao, consultarEntregaMotoboy, reconhecerCancelamento, MENSAGENS } from './entrega.js';
+import {
+  entregasEmRota,
+  enviarConfirmacao,
+  consultarEntregaMotoboy,
+  reconhecerCancelamento,
+  consultarTaxasEntrega,
+  MENSAGENS
+} from './entrega.js';
 import { abrirArmazenamento, criarFila } from './fila.js';
 import { criarLeitor, uuidDoTexto } from './leitor.js';
 
@@ -60,6 +67,12 @@ export function montarMotoboy(el, usuario, { sb, sair }) {
       <div class="mb-giro-cab"><p>Sua rota, na mão.</p><span class="mb-rede" data-rede>Conferindo conexão</span></div>
       <div class="mb-numeros"><div><b data-mb-rota>—</b><span>em entrega</span></div><div><b data-mb-espera>—</b><span>aguardando saída</span></div><div><b data-mb-fila>—</b><span>aguardando envio</span></div></div>
     </section>
+    <section class="mb-taxas" aria-label="Suas taxas de entrega" data-taxas>
+      <div class="mb-taxas-cab"><h2>Suas taxas de entrega</h2><label><span class="pn-sr">Período das taxas</span><select data-taxas-periodo><option value="1">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select></label></div>
+      <div class="mb-taxas-valores"><p><span>Concluídas no período</span><b data-taxas-concluidas>—</b></p><p><span>Em aberto</span><b data-taxas-aberto>—</b></p></div>
+      <p class="mb-taxas-estado" data-taxas-estado role="status" aria-live="polite">Consultando taxas…</p>
+      <p class="mb-taxas-dica">Concluídas após recebimento pelo servidor; o dia vira às 4h. Em aberto inclui pedidos de qualquer data. Confirmações offline entram após o envio.</p>
+    </section>
     <section class="mb-sync" aria-label="Sincronização">
       <div class="mb-sync-cab"><span class="mb-sync-icone">${ic('check')}</span><p data-sync role="status" aria-live="polite">Conferindo confirmações salvas…</p></div>
       <button type="button" class="pn-btn mb-sincronizar" data-act="sincronizar">${ic('relogio')}<span>Sincronizar agora</span></button>
@@ -98,6 +111,11 @@ export function montarMotoboy(el, usuario, { sb, sair }) {
     estado: 'carregando', // carregando | ok | erro
     carregando: false, // a consulta da lista está no ar
     erroLista: '',
+    diasTaxas: 1,
+    taxas: new Map(),
+    consultasTaxas: new Set(),
+    refazerTaxas: new Set(),
+    errosTaxas: new Set(),
     emVoo: new Set(),
     entregues: new Set(), // confirmados nesta tela: uma lista que chega atrasada não os traz de volta
     res: q('[data-res]'),
@@ -142,8 +160,10 @@ export function montarMotoboy(el, usuario, { sb, sair }) {
       sair();
     } else if (acao === 'ler-qr') abrirLeitor(t);
     else if (acao === 'fechar-leitor') fecharLeitor(t);
-    else if (acao === 'atualizar') carregarLista(t);
-    else if (acao === 'sincronizar') sincronizar(t, true);
+    else if (acao === 'atualizar') {
+      carregarLista(t);
+      carregarTaxas(t, true);
+    } else if (acao === 'sincronizar') sincronizar(t, true);
     else if (acao === 'filtrar') {
       t.filtro = b.dataset.filtro;
       el.querySelectorAll('[data-act="filtrar"]').forEach((btn) =>
@@ -170,6 +190,12 @@ export function montarMotoboy(el, usuario, { sb, sair }) {
     else if (acao === 'tentar') confirmar(t, b.dataset.id, 'link');
   };
   el.addEventListener('click', t.aoClicar);
+  t.aoAlterar = (e) => {
+    if (!e.target.matches('[data-taxas-periodo]')) return;
+    t.diasTaxas = Number(e.target.value);
+    carregarTaxas(t);
+  };
+  el.addEventListener('change', t.aoAlterar);
   aberta = t;
 
   t.fila = criarFila({
@@ -205,6 +231,7 @@ export function montarMotoboy(el, usuario, { sb, sair }) {
 }
 
 async function iniciar(t) {
+  carregarTaxas(t);
   try {
     await t.fila.listar();
     const cache = await t.armazenamento.cache();
@@ -244,6 +271,7 @@ export function esconderMotoboy() {
   window.removeEventListener('focus', t.retomar);
   document.removeEventListener('visibilitychange', t.retomar);
   t.el.removeEventListener('click', t.aoClicar);
+  t.el.removeEventListener('change', t.aoAlterar);
   t.el.innerHTML = '';
 }
 
@@ -363,8 +391,14 @@ async function sincronizar(t, forcar = false) {
   try {
     if (navigator.onLine) {
       await t.fila.sincronizar(forcar);
-      if (!t.ultimaCarga || Date.now() - t.ultimaCarga > 30000 || forcar) await carregarLista(t);
-    } else await t.fila.listar();
+      if (!t.ultimaCarga || Date.now() - t.ultimaCarga > 30000 || forcar) {
+        await carregarLista(t);
+        carregarTaxas(t, forcar);
+      }
+    } else {
+      await t.fila.listar();
+      carregarTaxas(t);
+    }
     if (aberta === t) desenharSincronizacao(t);
   } catch {
     if (aberta === t)
@@ -374,6 +408,66 @@ async function sincronizar(t, forcar = false) {
     b.disabled = false;
     b.setAttribute('aria-busy', 'false');
   }
+}
+
+async function carregarTaxas(t, forcar = false) {
+  if (aberta !== t) return;
+  const dias = t.diasTaxas;
+  if (t.consultasTaxas.has(dias)) {
+    if (forcar) t.refazerTaxas.add(dias);
+    return;
+  }
+  t.consultasTaxas.add(dias);
+  t.errosTaxas.delete(dias);
+  desenharTaxas(t);
+  try {
+    if (!t.taxas.has(dias)) {
+      const cache = await t.armazenamento.taxas(dias).catch(() => null);
+      if (aberta !== t) return;
+      if (cache) t.taxas.set(dias, cache);
+      desenharTaxas(t);
+    }
+    if (!navigator.onLine || aberta !== t) return;
+    const r = await consultarTaxasEntrega(t.sb, dias);
+    if (aberta !== t) return;
+    t.taxas.set(dias, r);
+    // O valor recebido continua válido na tela se faltar espaço para guardar esta consulta.
+    await t.armazenamento.guardarTaxas(dias, r).catch(() => {});
+  } catch {
+    t.errosTaxas.add(dias);
+  } finally {
+    t.consultasTaxas.delete(dias);
+    desenharTaxas(t);
+    if (t.refazerTaxas.delete(dias) && t.diasTaxas === dias) carregarTaxas(t);
+  }
+}
+
+function desenharTaxas(t) {
+  if (aberta !== t) return;
+  const r = t.taxas.get(t.diasTaxas),
+    taxas = r?.taxas,
+    carregando = t.consultasTaxas.has(t.diasTaxas),
+    erro = t.errosTaxas.has(t.diasTaxas);
+  t.el.querySelector('[data-taxas]').setAttribute('aria-busy', String(carregando));
+  t.el.querySelector('[data-taxas-concluidas]').textContent = taxas ? window.ML.fmt.brl(taxas.concluidas) : '—';
+  t.el.querySelector('[data-taxas-aberto]').textContent = taxas ? window.ML.fmt.brl(taxas.emAberto) : '—';
+  const dataHora = (v) =>
+    new Date(v).toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  const hora = r ? dataHora(r.servidorEm) : '';
+  const semTaxa = (taxas?.semTaxaConcluidas || 0) + (taxas?.semTaxaEmAberto || 0);
+  const estado = taxas
+    ? `${taxas.qtdConcluidas} ${taxas.qtdConcluidas === 1 ? 'entrega concluída' : 'entregas concluídas'} desde ${dataHora(r.inicio)} · Consulta ${hora}.${!navigator.onLine ? ' Sem internet; valores da última consulta.' : erro ? ' Não foi possível atualizar; valores da última consulta.' : carregando ? ' Atualizando…' : ''}${semTaxa ? ` ${semTaxa} ${semTaxa === 1 ? 'pedido sem taxa registrada' : 'pedidos sem taxa registrada'}.` : ''}`
+    : carregando
+      ? 'Consultando taxas…'
+      : 'Conecte-se e toque em Atualizar para consultar suas taxas.';
+  const texto = t.el.querySelector('[data-taxas-estado]');
+  if (texto.textContent !== estado) texto.textContent = estado;
 }
 
 // ---------- leitor de QR ----------

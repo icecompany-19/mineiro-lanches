@@ -380,6 +380,35 @@
   color: var(--osso-2);
   font-size: 10px;
 }
+.pn-entregador-taxas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--chapa-2);
+}
+.pn-entregador-taxas > span {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 11px;
+  color: var(--osso-2);
+}
+.pn-entregador-taxas b {
+  color: var(--osso);
+  font: 500 19px/1.2 var(--f-placa);
+  font-variant-numeric: tabular-nums;
+}
+.pn-entregador-taxas > span:first-child b {
+  color: var(--fio);
+}
+.pn-entregador-taxas .pn-ent-taxas-pendentes {
+  color: var(--fio);
+  font-size: 10px;
+}
 .pn-entregador-base > span {
   display: flex;
   gap: 6px;

@@ -51,6 +51,15 @@ test('fila persiste ao fechar e reabrir sem internet; sincronização entrega s�
   atribuir(p);
   atribuir(alheio, outro);
   await prepararCelular(page);
+  const valorTaxas = () => {
+    const inicio = "((dia_operacional(now()))::timestamp+interval '4 hours') at time zone 'America/Sao_Paulo'";
+    return Number(sql(`select taxas_entregador('${moto}',${inicio})->>'concluidas'`)).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+  };
+  const taxasAntes = valorTaxas();
+  await expect(page.locator('[data-taxas-concluidas]')).toHaveText(taxasAntes);
   const item = page.locator(`.mb-item[data-id="${p.id}"]`);
   await expect(item).toBeVisible();
   await expect(page.locator(`.mb-item[data-id="${alheio.id}"]`)).toHaveCount(0);
@@ -58,6 +67,7 @@ test('fila persiste ao fechar e reabrir sem internet; sincronização entrega s�
   await item.getByRole('button', { name: 'Entregue', exact: true }).click();
   await expect(page.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
   expect(sql(`select status from pedidos where id='${p.id}'`)).toBe('rota');
+  await expect(page.locator('[data-taxas-concluidas]')).toHaveText(taxasAntes);
   await page.getByRole('button', { name: 'Em entrega', exact: true }).click();
   await expect(item).toHaveCount(0);
   await page.getByRole('button', { name: 'No aparelho', exact: true }).click();
@@ -68,11 +78,14 @@ test('fila persiste ao fechar e reabrir sem internet; sincronização entrega s�
   await reaberta.goto('/motoboy/');
   await expect(reaberta.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
   await expect(reaberta.locator(`.mb-item[data-id="${p.id}"]`)).toContainText('Confirmada neste aparelho');
+  await expect(reaberta.locator('[data-taxas-concluidas]')).toHaveText(taxasAntes);
+  await expect(reaberta.locator('[data-taxas-estado]')).toContainText('valores da última consulta');
   await context.setOffline(false);
   await reaberta.getByRole('button', { name: 'Sincronizar agora' }).click();
   await expect(reaberta.locator('[data-sync]')).toHaveText('Tudo sincronizado');
   expect(sql(`select status from pedidos where id='${p.id}'`)).toBe('entregue');
   expect(sql(`select count(*) from entregas_eventos where pedido_id='${p.id}' and tipo='confirmacao'`)).toBe('1');
+  await expect(reaberta.locator('[data-taxas-concluidas]')).toHaveText(valorTaxas());
   await reaberta.getByRole('button', { name: 'Sincronizar agora' }).click();
   expect(sql(`select count(*) from entregas_eventos where pedido_id='${p.id}' and tipo='confirmacao'`)).toBe('1');
 });
@@ -126,6 +139,29 @@ test('alerta acompanha entregas antigas e filtro mantém períodos e média', as
   await page.locator('[data-e-filtro]:visible').selectOption(moto);
   await expect(card).toBeVisible();
   await expect(page.locator('.pn-entregadores:visible')).toContainText('Tempo médio');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
+test('painel mostra taxas individuais por período sem mudar o total ao filtrar pedidos', async ({ page }) => {
+  const p = pedido('Taxas no painel');
+  atribuir(p);
+  sql(`update pedidos set taxa_entrega=12.34 where id='${p.id}';
+  begin;select set_config('request.jwt.claims','{"sub":"${equipe}","role":"authenticated"}',true);
+  select baixar_entrega_manual('${p.id}','Conferência financeira');commit;`);
+  const total = (dias) =>
+    Number(
+      sql(`select taxas_entregador('${moto}',
+    ((dia_operacional(now())-(${dias}-1))::timestamp+interval '4 hours') at time zone 'America/Sao_Paulo')->>'concluidas'`)
+    ).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  await entrar(page, '/painel/', 'equipe@teste.local');
+  await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
+  const central = page.locator('.pn-entregadores:visible');
+  const resumo = central.locator(`[data-e="entregador"][data-motoboy="${moto}"]`);
+  await expect(resumo.locator('[data-e-taxas="concluidas"]')).toHaveText(total(1));
+  await central.getByRole('searchbox').fill('Busca sem resultado');
+  await expect(resumo.locator('[data-e-taxas="concluidas"]')).toHaveText(total(1));
+  await central.locator('[data-e-periodo]').selectOption('7');
+  await expect(resumo.locator('[data-e-taxas="concluidas"]')).toHaveText(total(7));
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 

@@ -27,6 +27,8 @@ export function abrirArmazenamento(usuario, indexedDB = globalThis.indexedDB) {
     remover(evento) { return executar('fila', 'readwrite', s => s.delete(evento)); },
     async cache() { return (await executar('cache', 'readonly', s => s.get(usuario))) || { lista: [] }; },
     guardarCache(lista) { return executar('cache', 'readwrite', s => s.put({ usuario, lista, em: new Date().toISOString() })); },
+    async taxas(dias) { return (await executar('cache', 'readonly', s => s.get(`${usuario}:taxas:${dias}`)))?.resumo || null; },
+    guardarTaxas(dias, resumo) { return executar('cache', 'readwrite', s => s.put({ usuario: `${usuario}:taxas:${dias}`, resumo })); },
     async fechar() { await pronto; banco.close(); }
   };
 }
