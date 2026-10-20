@@ -1132,3 +1132,69 @@
   flex-shrink: 0;
   white-space: nowrap;
 }
+
+/* A primeira tarefa da tela é vincular cada pedido a um motoboy. */
+.pn-ent-central--primeiro {
+  margin-bottom: 32px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--ent-linha);
+}
+.pn-ent-atribuir-dica {
+  margin-top: 8px;
+  color: var(--osso-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pn-ent-atribuir-pedido {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(250px, 1.5fr);
+  align-items: center;
+  gap: 20px;
+  border-color: var(--fio);
+}
+.pn-ent-atribuir-cliente h4 {
+  margin: 8px 0;
+  font-size: 18px;
+}
+.pn-ent-atribuir-cliente p {
+  color: var(--osso-2);
+  font-size: 12px;
+}
+.pn-ent-atribuir-pedido .pn-entrega-acoes {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.pn-ent-atribuir-pedido form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+.pn-ent-atribuir-pedido label {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+}
+.pn-ent-atribuir-pedido select {
+  width: 100%;
+}
+.pn-entregadores--atribuir :is(.pn-ent-filtro, .pn-ent-ajustes, .pn-ent-periodo, [data-e='retorno']) {
+  display: none;
+}
+@media (max-width: 640px) {
+  .pn-ent-atribuir-pedido {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .pn-ent-atribuir-pedido form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pn-entregadores--atribuir .pn-ent-cab-acoes > [data-e='organizar'] {
+    flex-basis: auto;
+    order: 0;
+  }
+}

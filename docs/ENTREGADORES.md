@@ -17,7 +17,9 @@ Não depender de execução com o navegador fechado. O service worker guarda ape
 
 ## Central dinâmica (19/10)
 
-O painel abre com quatro indicadores interativos: **Em entrega**, **Aguardando saída**, **Concluídas** e **Precisam de atenção**. Tocar em um indicador filtra a central. Atenção reúne entregas sem atribuição e entregas abertas acima do limite configurado; não afirma que houve atraso físico na entrega.
+A tela abre diretamente em **Atribuir motoboy**, antes dos indicadores, da equipe e das rotas. Ela mostra somente pedidos abertos sem atribuição individual e fora de uma viagem planejada. Cada cartão traz pedido, cliente, seletor de motoboy ativo e **Atribuir**. A seleção é preservada ao atualizar. Após confirmar, o pedido sai dessa fila; **Ver atribuídos** abre **Aguardando**, onde fica **Registrar saída**. Sem motoboy ativo, a tela orienta o cadastro em Usuários e desabilita o envio.
+
+A central de acompanhamento e seus filtros continuam disponíveis nas abas **Todas**, **Em entrega**, **Aguardando**, **Concluídas**, **Atenção** e **Anteriores**. Abaixo da central ficam os quatro indicadores interativos: **Em entrega**, **Aguardando saída**, **Concluídas** e **Precisam de atenção**. Tocar em um indicador filtra a central. Atenção reúne entregas sem atribuição e entregas abertas acima do limite configurado; não afirma que houve atraso físico na entrega.
 
 Os cartões da equipe mostram pedidos em andamento, abertos, concluídos, média e último contato com data/hora. Tocar em um cartão filtra aquele entregador; tocar novamente remove o filtro. **Cadastro ativo** é a autorização do perfil, não presença online nem disponibilidade.
 
@@ -81,3 +83,10 @@ A atualização visual acrescenta testes de busca/filtros, cronômetro durante o
 Revisão final: 56 cenários do motoboy e 28 cenários da central/acabamento passam em celular e desktop. A bateria ampla teve 583 aprovações e 76 casos não aplicáveis; três falhas de sincronização dos próprios testes (medição antes da tela ficar visível e navegação concorrente ao reload de logout) foram corrigidas e revalidadas nessa rodada direcionada. Os arquivos JS/CSS do cliente mantêm os mesmos hashes de produção. Build e lint aprovados.
 
 Totais de taxas: setup aplicado duas vezes, 524 asserções SQL (17 financeiras), 330 verificações de paridade, 125 testes unitários e 74 cenários de navegador em celular/desktop passaram. Os cenários incluem total por período, isolamento entre entregadores, baixa manual, taxa ausente, falha de consulta e confirmação offline com reabertura e envio posterior sem duplicar a soma. As duas telas foram conferidas visualmente sem rolagem horizontal.
+
+
+## Atribuição no início — 20/10
+
+A atribuição individual passou para o início da tela. O fluxo abre em **Atribuir motoboy**, com cartões compactos e somente pedidos sem vínculo ou viagem; o seletor e a confirmação ficam juntos. Depois de atribuir, **Ver atribuídos** leva à fila de saída. Ao voltar para a atribuição, o filtro de entregador é limpo para não esconder pedidos sem motoboy. A mudança é apenas de interface e mantém as RPCs, autorizações, histórico e sincronização existentes.
+
+Validação: lint e build aprovados; 32 cenários de entregadores/rotas passaram em Android e desktop. A execução adicional em WebKit/iPhone passou em nove cenários, incluindo as duas verificações da nova atribuição. A reabertura de uma nova página totalmente offline falhou com erro interno do navegador WebKit do Playwright em `page.goto`; esse cenário do motoboy não foi alterado nesta atualização e não é declarado aprovado em WebKit. Os testes de atribuição verificam a posição antes dos indicadores, preservação da seleção, gravação real no banco local, acesso à saída, ausência de rolagem horizontal e bloqueio sem motoboy ativo.

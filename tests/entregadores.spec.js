@@ -25,6 +25,10 @@ async function entrar(page, rota, email) {
   await page.getByLabel('Senha').fill('teste');
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
 }
+async function abrirCentral(page, atribuicao = false) {
+  await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
+  if (!atribuicao) await page.locator('[data-e="etapa"][data-etapa="todos"]:visible').click();
+}
 function pedido(nome = 'Entrega operacional') {
   const tel = '119666' + String(Math.floor(Math.random() * 100000)).padStart(5, '0');
   return JSON.parse(
@@ -96,7 +100,7 @@ test('equipe atribui, registra saída e dá baixa manual; envio posterior preser
     `begin;select set_config('request.jwt.claims','{"sub":"${equipe}","role":"authenticated"}',true);select mudar_status('${p.id}','preparo');commit;`
   );
   await entrar(page, '/painel/', 'equipe@teste.local');
-  await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
+  await abrirCentral(page);
   const card = page.locator(`.pn-entrega[data-entrega="${p.id}"]:visible`);
   await expect(card).toBeVisible();
   await card.getByRole('combobox').selectOption(moto);
@@ -131,7 +135,7 @@ test('alerta acompanha entregas antigas e filtro mantém períodos e média', as
     `update entregas_operacao set saiu_em=now()-interval '2 hours' where pedido_id='${p.id}';update pedidos set criado_em=now()-interval '5 days' where id='${p.id}';`
   );
   await entrar(page, '/painel/', 'equipe@teste.local');
-  await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
+  await abrirCentral(page);
   const card = page.locator(`.pn-entrega[data-entrega="${p.id}"]:visible`);
   await expect(card).toContainText('Entrega aberta há muito tempo');
   await page.locator('[data-e-periodo]:visible').selectOption('7');
@@ -154,7 +158,7 @@ test('painel mostra taxas individuais por período sem mudar o total ao filtrar 
     ((dia_operacional(now())-(${dias}-1))::timestamp+interval '4 hours') at time zone 'America/Sao_Paulo')->>'concluidas'`)
     ).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   await entrar(page, '/painel/', 'equipe@teste.local');
-  await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
+  await abrirCentral(page);
   const central = page.locator('.pn-entregadores:visible');
   const resumo = central.locator(`[data-e="entregador"][data-motoboy="${moto}"]`);
   await expect(resumo.locator('[data-e-taxas="concluidas"]')).toHaveText(total(1));
@@ -218,7 +222,7 @@ test('central dinâmica filtra por situação, busca e entregador; cronômetro n
     `begin;select set_config('request.jwt.claims','{"sub":"${equipe}","role":"authenticated"}',true);select mudar_status('${aguarda.id}','preparo');commit;`
   );
   await entrar(page, '/painel/', 'equipe@teste.local');
-  await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
+  await abrirCentral(page);
   const central = page.locator('.pn-entregadores:visible');
   const card = central.locator(`[data-entrega="${rota.id}"]`),
     outroCard = central.locator(`[data-entrega="${aguarda.id}"]`);
@@ -259,7 +263,7 @@ test('histórico anterior aparece no total e pode ser consultado sem inventar en
   delete from entregas_eventos where pedido_id='${p.id}';commit;`);
   const antes = sql(`select to_jsonb(p)::text from pedidos p where id='${p.id}'`);
   await entrar(page, '/painel/', 'equipe@teste.local');
-  await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
+  await abrirCentral(page);
   const central = page.locator('.pn-entregadores:visible');
   await expect(central.locator('.pn-ent-legado')).toContainText('histórico foi preservado');
   await central.getByRole('button', { name: /Ver histórico anterior/ }).click();
@@ -267,5 +271,58 @@ test('histórico anterior aparece no total e pode ser consultado sem inventar en
   await expect(card).toContainText('Histórico anterior');
   await expect(card).toContainText('Sem vínculo individual de entregador');
   expect(sql(`select to_jsonb(p)::text from pedidos p where id='${p.id}'`)).toBe(antes);
+  expect(sql(`select count(*) from entregas_operacao where pedido_id='${p.id}'`)).toBe('0');
+});
+
+test('atribuição abre no topo, preserva seleção na atualização e move o pedido para aguardando', async ({ page }) => {
+  const p = pedido('Pedido para atribuir no início');
+  const emRota = pedido('Já tem um motoboy');
+  atribuir(emRota);
+  sql(
+    `begin;select set_config('request.jwt.claims','{"sub":"${equipe}","role":"authenticated"}',true);select mudar_status('${p.id}','preparo');commit;`
+  );
+  await entrar(page, '/painel/', 'equipe@teste.local');
+  await abrirCentral(page, true);
+  const area = page.locator('.pn-entregadores:visible');
+  await expect(area.getByRole('heading', { name: 'Atribuir motoboy', exact: true })).toBeVisible();
+  const card = area.locator(`[data-entrega="${p.id}"]`);
+  await expect(card).toBeVisible();
+  await page.screenshot({ path: test.info().outputPath('atribuicao-no-inicio.png'), fullPage: false });
+  await expect(area.locator(`[data-entrega="${emRota.id}"]`)).toHaveCount(0);
+  const central = await area.locator('.pn-ent-central').boundingBox();
+  const indicadores = await area.locator('.pn-ent-kpis').boundingBox();
+  expect(central.y + central.height).toBeLessThan(indicadores.y + 1);
+  await card.getByRole('combobox').selectOption(moto);
+  await area.getByRole('button', { name: 'Atualizar', exact: true }).click();
+  await expect(card.getByRole('combobox')).toHaveValue(moto);
+  await card.getByRole('button', { name: 'Atribuir', exact: true }).click();
+  await expect(area.locator('.pn-ent-aviso')).toContainText('atribuído');
+  await expect(card).toHaveCount(0);
+  expect(sql(`select motoboy_id from entregas_operacao where pedido_id='${p.id}'`)).toBe(moto);
+  await area.getByRole('button', { name: 'Ver atribuídos', exact: true }).click();
+  await expect(card).toContainText('Moto operação');
+  await expect(card.getByRole('button', { name: /Registrar saída/ })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 760 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
+test('atribuição sem entregadores ativos orienta cadastro e impede envio', async ({ page }) => {
+  const p = pedido('Atribuição sem cadastro ativo');
+  sql(
+    `begin;select set_config('request.jwt.claims','{"sub":"${equipe}","role":"authenticated"}',true);select mudar_status('${p.id}','preparo');commit;`
+  );
+  await page.route('**/rest/v1/rpc/painel_entregadores', async (route) => {
+    const r = await route.fetch();
+    const j = await r.json();
+    j.entregadores = [];
+    j.pedidos = j.pedidos.filter((pedido) => pedido.id === p.id);
+    await route.fulfill({ response: r, json: j });
+  });
+  await entrar(page, '/painel/', 'equipe@teste.local');
+  await abrirCentral(page, true);
+  const card = page.locator(`.pn-entrega[data-entrega="${p.id}"]:visible`);
+  await expect(card).toContainText('Cadastre ou ative um motoboy');
+  await expect(card.getByRole('combobox')).toBeDisabled();
+  await expect(card.getByRole('button', { name: 'Atribuir', exact: true })).toBeDisabled();
   expect(sql(`select count(*) from entregas_operacao where pedido_id='${p.id}'`)).toBe('0');
 });

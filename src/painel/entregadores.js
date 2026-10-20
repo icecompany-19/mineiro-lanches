@@ -59,7 +59,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
   let dados = null,
     dias = 1,
     filtro = 'todos',
-    etapa = 'todos',
+    etapa = 'atribuir',
     busca = '',
     limite = 12;
   let erro = '',
@@ -67,7 +67,8 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     aberto = false,
     ocupado = false,
     formulario = null,
-    historico = null;
+    historico = null,
+    atribuicaoConfirmada = false;
   let intervalo = null,
     tic = null,
     carregando = false,
@@ -106,7 +107,9 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       if (p.motoboyId && !lista.some((e) => e.id === p.motoboyId)) lista.push({ id: p.motoboyId, nome: p.motoboyNome, ativo: false });
     return lista;
   }
+  const precisaAtribuir = (p) => emAberto(p) && !p.atribuicao && !p.motoboyId && !planejamento.viagemDoPedido(p.id);
   const contagem = (lista = filtrados()) => ({
+    atribuir: lista.filter(precisaAtribuir).length,
     todos: lista.length,
     rota: lista.filter((p) => p.status === 'rota').length,
     espera: lista.filter((p) => ['preparo', 'pronto'].includes(p.status)).length,
@@ -127,7 +130,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       abertas = pedidos().filter(emAberto).length,
       legado = pedidos().filter((p) => p.legado).length;
     const total = c.entregue + c.rota + c.espera;
-    const corpo = `<div class="pn-entregadores">
+    const cabecalho = `
       <header class="pn-ent-cab">
         <div><p class="pn-ent-kicker">${ic('moto')} Operação de entregas</p><h2>Entregadores<span>.</span></h2><p class="pn-ent-sub">Cada saída, cada confirmação. Tudo à vista.</p></div>
         <div class="pn-ent-cab-acoes"><label class="pn-ent-periodo"><span>Período</span><select data-e-periodo data-e-key="periodo">${[
@@ -138,10 +141,48 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
           .map(([v, t]) => `<option value="${v}" ${dias === v ? 'selected' : ''}>${t}</option>`)
           .join(
             ''
-          )}</select></label><button class="pn-btn pn-ent-prim" type="button" data-e="organizar" data-e-key="organizar" ${!dados ? 'disabled' : ''}>${ic('moto')} Organizar saída</button><button class="pn-btn pn-ent-atualizar" type="button" data-e="atualizar" data-e-key="atualizar" ${ocupado ? 'disabled' : ''}>${ic('relogio')} Atualizar</button></div>
+          )}</select></label><button class="pn-btn" type="button" data-e="organizar" data-e-key="organizar" ${!dados ? 'disabled' : ''}>${ic('moto')} Organizar saída</button><button class="pn-btn pn-ent-atualizar" type="button" data-e="atualizar" data-e-key="atualizar" ${ocupado ? 'disabled' : ''}>${ic('relogio')} Atualizar</button></div>
       </header>
       <div class="pn-ent-vivo"><span class="pn-ent-conexao" data-e-conexao>Consultando servidor…</span><span>Atualização automática a cada 15 s</span><span data-e-atualizado></span></div>
-      <p class="pn-ent-erro" role="alert" ${erro ? '' : 'hidden'}>${ic('info')}${esc(erro)}</p><p class="pn-ent-aviso" role="status" aria-live="polite" ${aviso ? '' : 'hidden'}>${esc(aviso)}</p>
+    `;
+    const corpo = `<div class="pn-entregadores${etapa === 'atribuir' ? ' pn-entregadores--atribuir' : ''}">
+      ${etapa !== 'atribuir' ? cabecalho : ''}
+      <p class="pn-ent-erro" role="alert" ${erro ? '' : 'hidden'}>${ic('info')}${esc(erro)}</p><p class="pn-ent-aviso" role="status" aria-live="polite" ${aviso ? '' : 'hidden'}><span>${esc(aviso)}</span>${atribuicaoConfirmada ? '<button class="pn-btn" type="button" data-e="ver-atribuidos">Ver atribuídos</button>' : ''}</p>
+      ${
+        dados
+          ? `
+      <section class="pn-ent-central pn-ent-central--primeiro" aria-label="Central de entregas">
+        <div class="pn-ent-secao-cab"><div><p class="pn-ent-kicker">${etapa === 'atribuir' ? 'Próxima ação' : 'Acompanhamento'}</p><h3>${etapa === 'atribuir' ? 'Atribuir motoboy' : 'Central de entregas'}</h3></div><button type="button" class="pn-btn" data-e="retorno" data-e-key="retorno">${ic('completo')} Conferir retorno</button></div>
+        <div class="pn-entregadores-retorno" ${retorno ? '' : 'hidden'}><div>${ic('check')}<b>Conferência no retorno</b></div><p>Peça ao motoboy para abrir a tela conectado e conferir “Tudo sincronizado”. Há <b>${abertas} ${abertas === 1 ? 'entrega aberta' : 'entregas abertas'}</b> no sistema. Confira as pendências abaixo.</p><button class="pn-btn" type="button" data-e="fechar-retorno">Entendi</button></div>
+        ${etapa === 'atribuir' ? '<p class="pn-ent-atribuir-dica">Escolha o entregador do pedido e toque em Atribuir.</p>' : ''}
+        <div class="pn-ent-toolbar"><label class="pn-ent-busca">${ic('busca')}<span class="pn-sr">Buscar pedido ou cliente</span><input type="search" placeholder="Buscar pedido ou cliente" value="${esc(busca)}" data-e-busca data-e-key="busca"></label><label class="pn-ent-filtro"><span class="pn-sr">Entregador</span><select data-e-filtro data-e-key="filtro"><option value="todos">Todos os entregadores</option><option value="sem" ${filtro === 'sem' ? 'selected' : ''}>Sem atribuição</option>${entregadores()
+          .map(
+            (e) => `<option value="${esc(e.id)}" ${filtro === e.id ? 'selected' : ''}>${esc(e.nome)}${e.ativo ? '' : ' (inativo)'}</option>`
+          )
+          .join(
+            ''
+          )}</select></label><details class="pn-ent-ajustes" data-e-detalhe="ajustes"><summary aria-label="Ajustar alerta">${ic('config')} Alerta</summary><label>Alertar após (min)<input type="number" min="1" max="1440" value="${alerta}" required data-e-alerta data-e-key="alerta"></label><p>Limite interno de acompanhamento. Não é prazo de entrega.</p></details></div>
+        <div class="pn-ent-etapas" role="group" aria-label="Filtrar situação">${[
+          ['atribuir', 'Atribuir motoboy'],
+          ['todos', 'Todas'],
+          ['rota', 'Em entrega'],
+          ['espera', 'Aguardando'],
+          ['entregue', 'Concluídas'],
+          ['atencao', 'Atenção'],
+          ['anteriores', 'Anteriores']
+        ]
+          .map(
+            ([v, t]) =>
+              `<button type="button" data-e="etapa" data-etapa="${v}" data-e-key="etapa-${v}" aria-pressed="${etapa === v}">${t}<span data-e-contagem="${v}">${c[v]}</span></button>`
+          )
+          .join('')}</div>
+        <div class="pn-ent-resultados"><p data-e-resultados></p><button type="button" data-e="limpar" data-e-key="limpar" ${filtro === 'todos' && ['todos', 'atribuir'].includes(etapa) && !busca ? 'hidden' : ''}>Limpar filtros</button></div>
+        <div class="pn-entregadores-lista" data-e-lista></div>
+      </section>
+      `
+          : ''
+      }
+      ${etapa === 'atribuir' ? cabecalho : ''}
       <section class="pn-ent-kpis" aria-label="Resumo das entregas">${kpi('rota', 'Em entrega', 'moto', 'Acompanhar em andamento')}${kpi('espera', 'Aguardando saída', 'sacola', 'Preparar próxima saída')}${kpi('entregue', 'Concluídas', 'check', 'Recebidas no período')}${kpi('atencao', 'Precisam de atenção', 'sino', 'Sem atribuição ou tempo alto')}</section>
       ${
         !dados
@@ -155,32 +196,6 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
           .join('') || '<p class="pn-ent-vazio">Nenhum entregador cadastrado. Administradores podem cadastrar em Usuários.</p>'
       }</div></section>
       <div data-planejamento-slot></div>
-      <section class="pn-ent-central" aria-label="Central de entregas">
-        <div class="pn-ent-secao-cab"><div><p class="pn-ent-kicker">Acompanhamento</p><h3>Central de entregas</h3></div><button type="button" class="pn-btn" data-e="retorno" data-e-key="retorno">${ic('completo')} Conferir retorno</button></div>
-        <div class="pn-entregadores-retorno" ${retorno ? '' : 'hidden'}><div>${ic('check')}<b>Conferência no retorno</b></div><p>Peça ao motoboy para abrir a tela conectado e conferir “Tudo sincronizado”. Há <b>${abertas} ${abertas === 1 ? 'entrega aberta' : 'entregas abertas'}</b> no sistema. Confira as pendências abaixo.</p><button class="pn-btn" type="button" data-e="fechar-retorno">Entendi</button></div>
-        <div class="pn-ent-toolbar"><label class="pn-ent-busca">${ic('busca')}<span class="pn-sr">Buscar pedido ou cliente</span><input type="search" placeholder="Buscar pedido ou cliente" value="${esc(busca)}" data-e-busca data-e-key="busca"></label><label class="pn-ent-filtro"><span class="pn-sr">Entregador</span><select data-e-filtro data-e-key="filtro"><option value="todos">Todos os entregadores</option><option value="sem" ${filtro === 'sem' ? 'selected' : ''}>Sem atribuição</option>${entregadores()
-          .map(
-            (e) => `<option value="${esc(e.id)}" ${filtro === e.id ? 'selected' : ''}>${esc(e.nome)}${e.ativo ? '' : ' (inativo)'}</option>`
-          )
-          .join(
-            ''
-          )}</select></label><details class="pn-ent-ajustes" data-e-detalhe="ajustes"><summary aria-label="Ajustar alerta">${ic('config')} Alerta</summary><label>Alertar após (min)<input type="number" min="1" max="1440" value="${alerta}" required data-e-alerta data-e-key="alerta"></label><p>Limite interno de acompanhamento. Não é prazo de entrega.</p></details></div>
-        <div class="pn-ent-etapas" role="group" aria-label="Filtrar situação">${[
-          ['todos', 'Todas'],
-          ['rota', 'Em entrega'],
-          ['espera', 'Aguardando'],
-          ['entregue', 'Concluídas'],
-          ['atencao', 'Atenção'],
-          ['anteriores', 'Anteriores']
-        ]
-          .map(
-            ([v, t]) =>
-              `<button type="button" data-e="etapa" data-etapa="${v}" data-e-key="etapa-${v}" aria-pressed="${etapa === v}">${t}<span data-e-contagem="${v}">${c[v]}</span></button>`
-          )
-          .join('')}</div>
-        <div class="pn-ent-resultados"><p data-e-resultados></p><button type="button" data-e="limpar" data-e-key="limpar" ${filtro === 'todos' && etapa === 'todos' && !busca ? 'hidden' : ''}>Limpar filtros</button></div>
-        <div class="pn-entregadores-lista" data-e-lista></div>
-      </section>
       <footer class="pn-ent-rodape"><p>${ic('info')} Confirmações offline aparecem após o envio. Última comunicação não indica localização ou disponibilidade.</p><details data-e-detalhe="indicadores"><summary>Como os indicadores são calculados</summary><p>Período a partir de ${esc(hora(dados.inicio))}; o dia operacional vira às 4h. Entregas abertas de qualquer data continuam visíveis. A média usa a saída e o horário consistente do celular; exclui baixas manuais e histórico anterior. O relógio do aparelho pode afetar a medida. Concluídas são contadas uma vez no recebimento pelo servidor; o histórico anterior usa o horário de conclusão já gravado.</p><p>Taxas concluídas somam as taxas de entrega dos pedidos atribuídos ao motoboy e concluídos no período, inclusive baixas manuais. Em aberto inclui pedidos atribuídos de qualquer data. Cancelamentos e entregas sem vínculo individual ficam fora. Taxas não registradas são sinalizadas; o total não presume um valor para elas.</p></details></footer>`
       }
       ${historico ? historicoHTML() : ''}
@@ -222,13 +237,15 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       .filter((p) => {
         const situacao =
           etapa === 'todos' ||
-          (etapa === 'anteriores'
-            ? p.legado
-            : etapa === 'espera'
-              ? ['preparo', 'pronto'].includes(p.status)
-              : etapa === 'atencao'
-                ? longo(p) || (emAberto(p) && !p.atribuicao)
-                : p.status === etapa);
+          (etapa === 'atribuir'
+            ? precisaAtribuir(p)
+            : etapa === 'anteriores'
+              ? p.legado
+              : etapa === 'espera'
+                ? ['preparo', 'pronto'].includes(p.status)
+                : etapa === 'atencao'
+                  ? longo(p) || (emAberto(p) && !p.atribuicao)
+                  : p.status === etapa);
         return (
           situacao && normalizar(`${p.numero} ${window.ML.fmt.numero(p.numero)} ${p.nome} ${p.motoboyNome}`).includes(normalizar(busca))
         );
@@ -246,24 +263,33 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     const lista = visiveis(),
       html = lista
         .slice(0, limite)
-        .map((p) => pedidoHTML(p))
+        .map((p) => (etapa === 'atribuir' ? atribuicaoHTML(p) : pedidoHTML(p)))
         .join('');
     for (const el of slots) {
       const area = el.querySelector('[data-e-lista]');
       if (!area) continue;
       area.innerHTML =
         html ||
-        `<div class="pn-ent-vazio">${ic('check')}<h4>Nenhuma entrega neste filtro</h4><p>Altere os filtros ou aguarde novas atribuições.</p></div>`;
+        `<div class="pn-ent-vazio">${ic('check')}<h4>${etapa === 'atribuir' ? 'Nenhum pedido aguardando motoboy' : 'Nenhuma entrega neste filtro'}</h4><p>${etapa === 'atribuir' ? 'Pedidos em preparo ou prontos aparecem aqui quando precisam de um entregador. Use Aguardando para conferir os já atribuídos.' : 'Altere os filtros ou aguarde novas atribuições.'}</p></div>`;
       if (lista.length > limite)
         area.insertAdjacentHTML(
           'beforeend',
           `<button type="button" class="pn-btn pn-ent-mais" data-e="mais">Mostrar mais ${Math.min(12, lista.length - limite)} entregas (${lista.length - limite} restantes)</button>`
         );
       el.querySelector('[data-e-resultados]').textContent =
-        `${lista.length} ${lista.length === 1 ? 'entrega encontrada' : 'entregas encontradas'}${filtro !== 'todos' ? ' neste entregador' : ''}`;
-      el.querySelector('[data-e="limpar"]').hidden = filtro === 'todos' && etapa === 'todos' && !busca;
+        `${lista.length} ${etapa === 'atribuir' ? (lista.length === 1 ? 'pedido para atribuir' : 'pedidos para atribuir') : lista.length === 1 ? 'entrega encontrada' : 'entregas encontradas'}${filtro !== 'todos' ? ' neste entregador' : ''}`;
+      el.querySelector('[data-e="limpar"]').hidden = filtro === 'todos' && ['todos', 'atribuir'].includes(etapa) && !busca;
     }
     pulsar();
+  }
+  function formularioAtribuicao(p) {
+    const num = window.ML.fmt.numero(p.numero),
+      chave = esc(p.id);
+    const ativos = entregadores().filter((e) => e.ativo);
+    return `<form data-e-form="atribuir"><label><span>Entregador do ${esc(num)}</span><select name="motoboy" required data-e-key="atribuir-${chave}" ${ocupado || !ativos.length ? 'disabled' : ''}><option value="">Selecionar entregador</option>${ativos.map((e) => `<option value="${esc(e.id)}" ${(atribuicoes.get(p.id) || p.motoboyId) === e.id ? 'selected' : ''}>${esc(e.nome)}</option>`).join('')}</select></label><button class="pn-btn pn-ent-prim" ${ocupado || !ativos.length ? 'disabled' : ''}>${p.atribuicao ? 'Atualizar atribuição' : 'Atribuir'}</button></form>${!ativos.length ? '<p class="pn-ent-origem">Cadastre ou ative um motoboy em Usuários para atribuir este pedido.</p>' : ''}`;
+  }
+  function atribuicaoHTML(p) {
+    return `<article class="pn-entrega pn-ent-atribuir-pedido" data-entrega="${esc(p.id)}"><div class="pn-ent-atribuir-cliente"><span class="pn-entrega-numero">${esc(window.ML.fmt.numero(p.numero))}</span><h4>${esc(p.nome)}</h4><p>${p.status === 'preparo' ? 'Em preparo' : p.status === 'pronto' ? 'Pronto para entrega' : 'Em entrega, sem motoboy'}</p></div><div class="pn-entrega-acoes">${formularioAtribuicao(p)}</div></article>`;
   }
   function pedidoHTML(p) {
     const viagem = planejamento.viagemDoPedido(p.id);
@@ -294,19 +320,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       ${p.confirmadoEm ? `<p class="pn-ent-origem">Confirmada no aparelho: ${esc(hora(p.confirmadoEm))}${p.horarioInconsistente ? ' · horário inconsistente, fora da média' : ''}</p>` : ''}
       ${p.motivo ? `<p class="pn-ent-motivo">${ic('info')} ${esc(p.motivo)}</p>` : ''}
       <div class="pn-entrega-acoes">
-        ${
-          emAberto(p) && !viagem && (!p.atribuicao || !p.saiuEm)
-            ? `<form data-e-form="atribuir"><label><span class="pn-sr">Entregador do ${esc(num)}</span><select name="motoboy" required data-e-key="atribuir-${chave}"><option value="">Selecionar entregador</option>${entregadores()
-                .filter((e) => e.ativo)
-                .map(
-                  (e) =>
-                    `<option value="${esc(e.id)}" ${(atribuicoes.get(p.id) || p.motoboyId) === e.id ? 'selected' : ''}>${esc(e.nome)}</option>`
-                )
-                .join(
-                  ''
-                )}</select></label><button class="pn-btn" ${ocupado ? 'disabled' : ''}>${p.atribuicao ? 'Atualizar atribuição' : 'Atribuir'}</button></form>`
-            : ''
-        }
+        ${emAberto(p) && !viagem && (!p.atribuicao || !p.saiuEm) ? formularioAtribuicao(p) : ''}
         ${espera && !viagem && p.atribuicao && !p.saiuEm ? `<button class="pn-btn pn-ent-prim" type="button" data-e="sair" data-e-key="sair-${chave}" ${ocupado ? 'disabled' : ''}>${ic('moto')} Registrar saída ${esc(num)}</button>` : ''}
         <div class="pn-entrega-secundarias">${p.status === 'rota' ? `<button class="pn-btn pn-ent-discreto" type="button" data-e="manual" data-e-key="manual-${chave}" ${ocupado ? 'disabled' : ''}>${ic('check')} Baixa manual ${esc(num)}</button>` : ''}<button class="pn-btn pn-ent-discreto" type="button" data-e="historico" data-e-key="historico-${chave}" ${ocupado ? 'disabled' : ''}>${ic('lista')} Histórico ${esc(num)}</button></div>
       </div>
@@ -407,13 +421,17 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     ocupado = true;
     erro = '';
     aviso = '';
+    atribuicaoConfirmada = false;
     render();
     try {
       await consultar(nome, args);
       formulario = null;
       rascunhos.delete(args.p_id);
       atribuicoes.delete(args.p_id);
-      aviso = 'Alteração registrada no servidor.';
+      atribuicaoConfirmada = nome === 'atribuir_entrega' && !args.p_sair;
+      aviso = atribuicaoConfirmada
+        ? `${window.ML.fmt.numero(pedidos().find((p) => p.id === args.p_id)?.numero)} atribuído. Abra Aguardando para registrar a saída.`
+        : 'Alteração registrada no servidor.';
     } catch (e) {
       erro = ERROS[e.message] || 'Não foi possível registrar. Confira a conexão e tente novamente.';
     } finally {
@@ -441,13 +459,23 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
         return;
       case 'atualizar':
         return carregar();
+      case 'ver-atribuidos':
+        etapa = 'espera';
+        filtro = 'todos';
+        busca = '';
+        limite = 12;
+        render();
+        mostrarCentral();
+        return;
       case 'etapa':
         etapa = b.dataset.etapa;
+        if (etapa === 'atribuir') filtro = 'todos';
         limite = 12;
         render();
         if (b.classList.contains('pn-ent-kpi')) mostrarCentral();
         return;
       case 'entregador':
+        if (etapa === 'atribuir') etapa = 'todos';
         filtro = filtro === b.dataset.motoboy ? 'todos' : b.dataset.motoboy;
         limite = 12;
         render();
