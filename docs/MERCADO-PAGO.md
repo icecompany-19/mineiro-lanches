@@ -6,7 +6,7 @@ Integração desenvolvida em `feat/mercado-pago` e publicada pela PR #1 na branc
 
 **Publicado e ativo:** PR #1 mesclada no commit `151e536`, deploy Vercel confirmado, `loja.pagamentos_ativos=true`. Verificação no domínio público em viewport de 390 px confirmou o formulário com e-mail e botão “Pagar pedido”; o bundle usa o JWT público e o backend do projeto produtivo. Nenhum pedido ou pagamento real foi enviado pelo teste. A loja permanece pausada por sua configuração operacional anterior, sem alteração de modo ou horário nesta publicação.
 
-O Access Token produtivo cadastrado pelo responsável foi aceito em `GET /users/me`: conta brasileira, ID `256378111`, sem marca de conta de teste. O token não foi exportado, registrado em commit ou devolvido ao cliente. O backend espera a aplicação `5499483276102597`, a mesma da integração validada em homologação, e confere esse ID em cada resposta de order antes de persistir o pagamento ou expor o checkout.
+O Access Token produtivo cadastrado pelo responsável foi aceito em `GET /users/me`: conta brasileira, ID `256378111`, sem marca de conta de teste. O token não foi exportado, registrado em commit ou devolvido ao cliente. O backend produtivo espera a aplicação `6773583977997130`, conferida na resposta real de criação/consulta de order, e valida esse ID antes de persistir o pagamento ou expor o checkout. A aplicação de homologação é distinta (`5499483276102597`); validar `/users/me` confirma a conta, mas não comprova a aplicação vinculada ao token.
 
 - Aplicadas somente as migrations de pagamentos e de privilégios mínimos ao projeto produtivo; não houve seed, alteração de preços/horários ou reclassificação do histórico.
 - Publicadas `mercado-pago` (JWT obrigatório) e `mercado-pago-webhook` (assinatura obrigatória; permanece fechado enquanto não houver segredo).
@@ -17,6 +17,18 @@ O Access Token produtivo cadastrado pelo responsável foi aceito em `GET /users/
 Validação: conta produtiva e chamada do frontend ao backend conferidas, sem criar cobranças reais. Lint, build e 19 testes de configuração/pagamentos aprovados; a integração anterior passou em 610 verificações SQL, 160 testes Node e 21 cenários desktop/iPhone, incluindo impressão após aprovação.
 
 A aprovação de uma compra no checkout hospedado ainda não foi executada nesta sessão. Conferir o primeiro pagamento real no Mercado Pago e no acompanhamento/painel; nunca marcar manualmente como aprovado para concluir essa conferência. Sem webhook, a recuperação com navegador fechado é periódica e pode levar cerca de um minuto. Monitorar `net._http_response` e não apenas o sucesso SQL do cron. A ativação vale somente para novos pedidos; históricos continuam com a forma anterior.
+
+## Correção da aplicação produtiva e teste de R$ 1 — 20/10
+
+O pedido 0095 expôs uma falha de configuração: o padrão produtivo havia copiado o ID da aplicação de homologação. O Mercado Pago retornava HTTP 201 com a aplicação produtiva correta, mas a verificação rejeitava a resposta antes de salvar a order e o checkout. O comprador acabava recebendo erro e, se repetisse durante a reserva de 30 segundos, via “preparando pagamento”. Isso não foi detectado pela consulta de identidade da conta nem pelos testes com provedor simulado. A validação completa do checkout real não havia sido concluída; a integração não devia ter sido apresentada como homologada.
+
+- Corrigido o ID público da aplicação produtiva nas duas Edge Functions, preservando as conferências de conta, aplicação, ambiente, moeda, referência e valor.
+- Pedido 0095 recuperado usando **a mesma chave idempotente e a mesma order**. Resposta HTTP 200 com checkout disponível, vínculo persistido no banco e reserva encerrada; nenhuma cobrança duplicada. O pedido 0094 também passou a ter vínculo persistido. Nenhum deles foi marcado manualmente como pago. Durante a conferência, ambos foram cancelados pela operação; o cancelamento foi preservado e a consulta deixou de oferecer checkout.
+- O navegador aguarda automaticamente uma reserva concorrente e repete a mesma operação, com limite de três envios. Falhas reais do provedor não são repetidas automaticamente. Divergência de configuração orienta a conferir com a loja.
+- Adicionado registro técnico de falha com código, etapa e serviço, sem corpo, dados do comprador, credenciais ou URL privada.
+- Criado `teste-pagamento`, **R$ 1,00**, em categoria própria, com descrição de item temporário e sem combo/adicionais. Para pagar exatamente R$ 1, escolher **Retirada no local**. Foi inserido somente esse produto no banco produtivo; não foi aplicado seed/setup à produção. Depois do teste, desativar esse ID no banco e removê-lo do CONFIG, regenerando seed/setup. Preservar os pedidos de teste para conciliação.
+
+Verificação: lint e build de produção aprovados; 166 testes Node e 12 cenários de pagamentos aprovados (desktop e WebKit/iPhone), incluindo o preço de R$ 1, reserva concorrente, falha/reenvio, aprovação, bloqueio de preparo e estorno em ambiente local com provedor simulado. A API produtiva foi validada com a order existente. O checkout oficial responde HTTP 403 ao navegador automatizado deste ambiente; isso limita a validação do formulário externo e da aprovação. A compra de R$ 1 deve ser concluída pelo responsável em seu navegador e conferida no provedor, no acompanhamento e no painel. Nunca aprovar via SQL nem simular uma confirmação em produção para encerrar o teste.
 
 ## Ambiente de homologação preparado (19/10)
 

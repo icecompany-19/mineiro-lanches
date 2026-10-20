@@ -1,6 +1,6 @@
 // Identificadores públicos esperados desta integração; credenciais continuam só nos secrets.
 const PRODUCAO = {
-  accountId: '256378111', applicationId: '5499483276102597',
+  accountId: '256378111', applicationId: '6773583977997130',
   mode: 'production', siteUrl: 'https://mineirolanches.store'
 };
 export function configuracaoMP(ler = (nome) => Deno.env.get(nome)) {

@@ -57,6 +57,9 @@
     // tipo: lanche (vira combo, prensado, tirar item, adicionais) | combo (prensado, tirar item, adicionais) | porcao | bebida
     // foto: nome do arquivo em /assets/fotos (sem tamanho)
     categorias: [
+      { id: 'testes', label: 'Teste de pagamento', icone: 'sacola', desc: 'Item temporário para validar o pagamento online', itens: [
+        { id: 'teste-pagamento', nome: 'Teste de pagamento (temporário)', preco: 1.00, tipo: 'porcao', ing: [], base: 'Somente validação do pagamento. Não é um alimento. Selecione retirada no local.' }
+      ] },
       { id: 'artesanais', label: 'Artesanais', icone: 'burger', desc: 'Hambúrguer artesanal de 200 g', itens: [
         { id: 'gran-burger', nome: 'Gran Burger', preco: 25.90, tipo: 'lanche', foto: 'gran-burger', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue'], base: 'Pão e hambúrguer artesanal 200 g' },
         { id: 'gran-burger-bacon', nome: 'Gran Burger Bacon', preco: 33.40, tipo: 'lanche', foto: 'gran-burger-bacon', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon'], base: 'Gran Burger com bacon' },

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { criarPagamentos } from '../supabase/functions/mercado-pago/handler.js';
 import { criarOrder, conferirOrder, assinaturaValida, centavos, urlCheckout } from '../supabase/functions/_shared/mercado-pago.js';
-import { checkoutSeguro, permitePagar, financeiroRecente } from '../src/lib/pagamentos.js';
+import { checkoutSeguro, permitePagar, financeiroRecente, aguardarCheckout } from '../src/lib/pagamentos.js';
 import { configuracaoMP } from '../supabase/functions/_shared/mercado-pago-env.js';
 const id = '00000000-0000-4000-8000-000000000010',
   token = '00000000-0000-4000-8000-000000000020';
@@ -49,7 +49,7 @@ const json = (o, status = 200) => new Response(JSON.stringify(o), { status, head
 test('identificadores produtivos só são usados no projeto correto e não fornecem token ou segredo', () => {
   const prod = configuracaoMP(n => ({ SUPABASE_URL: 'https://puwylyfmwcvpfsftsrta.supabase.co' })[n]);
   assert.equal(prod.accountId, '256378111');
-  assert.equal(prod.applicationId, '5499483276102597');
+  assert.equal(prod.applicationId, '6773583977997130');
   assert.equal(prod.mode, 'production');
   assert.equal(prod.siteUrl, 'https://mineirolanches.store');
   assert.equal(prod.accessToken, undefined);
@@ -61,10 +61,11 @@ test('identificadores produtivos só são usados no projeto correto e não forne
   assert.equal(explicito.accountId, '123');
   assert.equal(explicito.mode, 'test');
 });
-function preparar({ p = { ...pagamento, criar: true }, o = order, webhook = false, conf = config, erroMP = false, negado = false } = {}) {
+function preparar({ p = { ...pagamento, criar: true }, o = order, webhook = false, conf = config, erroMP = false, negado = false, registrarErro = () => {} } = {}) {
   const calls = [];
   const handler = criarPagamentos(conf, {
     webhook,
+    registrarErro,
     fetcher: async (u, op) => {
       calls.push({ url: String(u), ...op, body: op.body ? JSON.parse(op.body) : null });
       if (String(u).includes('/auth/v1/user')) return json({ id: '00000000-0000-4000-8000-000000000001' });
@@ -189,6 +190,62 @@ test('notificação de outra aplicação ou valor divergente não libera a cozin
     assert.equal((await handler(notificacao())).status, 422);
     assert(!calls.some((c) => c.url.endsWith('/registrar_pagamento_mp')));
   }
+});
+test('resposta produtiva de criação sem status_detail é aceita somente na aplicação real configurada', async () => {
+  const prod = { ...config, ...configuracaoMP(n => ({ SUPABASE_URL: 'https://puwylyfmwcvpfsftsrta.supabase.co' })[n]),
+    serviceKey: config.serviceKey, accessToken: config.accessToken };
+  const criada = { ...order, id: 'ORD01J49MMW3SSBK5PSV3DFR32959', user_id: prod.accountId,
+    integration_data: { application_id: '6773583977997130' }, status: 'created' };
+  delete criada.status_detail;
+  delete criada.total_paid_amount;
+  const a = preparar({ conf: prod, o: criada });
+  const r = await a.enviar({ acao: 'iniciar', token, email: pagamento.email });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).processando, false);
+  assert.equal(a.calls.filter(c => c.url.endsWith('/registrar_pagamento_mp')).length, 1);
+  const b = preparar({ conf: { ...prod, applicationId: '5499483276102597' }, o: criada });
+  assert.equal((await b.enviar({ acao: 'iniciar', token })).status, 422);
+  assert(!b.calls.some(c => c.url.endsWith('/registrar_pagamento_mp')));
+});
+test('reserva em andamento informa espera limitada e não cria cobrança concorrente', async () => {
+  const a = preparar({ p: { ...pagamento, criar: false, criando_ate: new Date(Date.now() + 29000).toISOString() } });
+  const r = await a.enviar({ acao: 'iniciar', token });
+  const j = await r.json();
+  assert.equal(r.status, 202);
+  assert(j.tentarEmMs >= 1000 && j.tentarEmMs <= 30000);
+  assert.equal(j.processando, true);
+  assert(!a.calls.some(c => c.url.includes('api.mercadopago.com')));
+});
+test('registro de falha de aplicação identifica a etapa sem expor dados de cobrança', async () => {
+  const logs = [], a = preparar({ o: { ...order, integration_data: { application_id: '999' } }, registrarErro: e => logs.push(e) });
+  const r = await a.enviar({ acao: 'iniciar', token, email: pagamento.email });
+  assert.equal(r.status, 422);
+  assert.equal(logs[0].etapa, 'validacao_aplicacao');
+  for (const sensivel of [pagamento.email, token, id, config.accessToken, config.serviceKey, order.checkout_url])
+    assert(!JSON.stringify(logs).includes(sensivel));
+});
+test('espera automática recupera checkout após reserva usando a mesma operação, sem repetir falhas', async () => {
+  const esperas = []; let n = 0;
+  const resultado = await aguardarCheckout(async () => ++n === 1
+    ? { processando: true, tentarEmMs: 2500 } : { checkoutUrl: order.checkout_url }, { esperar: ms => esperas.push(ms) });
+  assert.equal(resultado.checkoutUrl, order.checkout_url);
+  assert.equal(n, 2);
+  assert.deepEqual(esperas, [2500]);
+  let falhas = 0;
+  await assert.rejects(aguardarCheckout(async () => { falhas++; throw Error('provedor'); }), /provedor/);
+  assert.equal(falhas, 1);
+});
+test('espera automática termina após três envios e não continua após sair do pedido', async () => {
+  let n = 0; const esperas = [];
+  const r = await aguardarCheckout(async () => { n++; return { processando: true, tentarEmMs: 90000 }; }, { esperar: ms => esperas.push(ms) });
+  assert.equal(r.processando, true);
+  assert.equal(n, 3);
+  assert.deepEqual(esperas, [30000, 30000]);
+  let ativo = true; n = 0;
+  assert.equal(await aguardarCheckout(async () => { n++; return { processando: true }; }, {
+    ativo: () => ativo, esperar: () => { ativo = false; }
+  }), null);
+  assert.equal(n, 1);
 });
 test('falha no provedor devolve erro para nova tentativa de webhook, sem detalhes sensíveis', async () => {
   const { handler } = preparar({ webhook: true, erroMP: true });

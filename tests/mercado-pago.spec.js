@@ -99,10 +99,10 @@ async function preparar(page, { falhar = false } = {}) {
   );
   return estado;
 }
-async function checkout(page) {
+async function checkout(page, { produto = 'x-burguer' } = {}) {
   await page.goto('/#cardapio');
   await expect.poll(() => page.evaluate(() => window.ML.store.loja().pagamentosAtivos)).toBe(true);
-  await page.locator('#prod-x-burguer').click();
+  await page.locator('#prod-' + produto).click();
   await page.locator('#ficha-add').click();
   await page.locator('#barra .btn').click();
   await page.locator('#btn-continuar').click();
@@ -150,6 +150,17 @@ test('checkout móvel vai ao Mercado Pago; webhook aprova e retorno mostra pagam
   await expect(page.locator('#pedido-pagar')).toBeHidden();
   expect(sql(`select count(*) from pagamentos_mp m join pedidos p on p.id=m.pedido_id where p.cliente_nome='${nome}'`)).toBe('1');
 });
+test('produto temporário de teste envia exatamente R$ 1,00 ao Mercado Pago', async ({ page }) => {
+  const estado = await preparar(page);
+  await checkout(page, { produto: 'teste-pagamento' });
+  await expect(page.locator('#btn-enviar')).toContainText('R$ 1,00');
+  await page.locator('#btn-enviar').click();
+  await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
+  expect(estado.criadas).toHaveLength(1);
+  expect(estado.criadas[0].body.total_amount).toBe('1.00');
+  expect(estado.criadas[0].body.items).toHaveLength(1);
+  expect(estado.criadas[0].body.items[0].external_code).toBe('teste-pagamento');
+});
 test('falha preserva pedido; retorno adulterado não aprova e repetição usa o mesmo pagamento', async ({ page }) => {
   const estado = await preparar(page, { falhar: true }),
     nome = await checkout(page);
@@ -167,6 +178,25 @@ test('falha preserva pedido; retorno adulterado não aprova e repetição usa o 
   await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
   expect(estado.criadas).toHaveLength(1);
   expect(estado.criadas[0].idem).toBe(id);
+  expect(sql(`select count(*) from pedidos where cliente_nome='${nome}'`)).toBe('1');
+});
+test('reserva concorrente aguarda e abre o checkout sozinha sem duplicar o pedido', async ({ page }) => {
+  const estado = await preparar(page);
+  let chamadas = 0;
+  await page.route('**/functions/v1/mercado-pago', async (route) => {
+    const req = route.request(), body = JSON.parse(req.postData());
+    if (body.acao === 'iniciar' && ++chamadas === 1) {
+      await route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ estado: 'pendente', processando: true, tentarEmMs: 1000 }) });
+      return;
+    }
+    const res = await estado.handler(new Request(req.url(), { method: req.method(), headers: req.headers(), body: req.postData() }));
+    await route.fulfill({ status: res.status, contentType: 'application/json', body: await res.text() });
+  });
+  const nome = await checkout(page);
+  await page.locator('#btn-enviar').click();
+  await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
+  expect(chamadas).toBe(2);
+  expect(estado.criadas).toHaveLength(1);
   expect(sql(`select count(*) from pedidos where cliente_nome='${nome}'`)).toBe('1');
 });
 test('painel bloqueia aceitar antes de pagar e habilita depois do webhook', async ({ page, browser }) => {

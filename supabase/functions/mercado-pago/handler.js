@@ -9,7 +9,7 @@ const permitidos = new Set([
   'pagamento_divergente'
 ]);
 const falhar = (codigo, status = 503) => Object.assign(new Error(codigo), { codigo, status });
-export function criarPagamentos(config, { webhook = false, fetcher = fetch } = {}) {
+export function criarPagamentos(config, { webhook = false, fetcher = fetch, registrarErro = evento => console.error(JSON.stringify(evento)) } = {}) {
   const { supabaseUrl, serviceKey, accessToken, webhookSecret, accountId, applicationId, mode, siteUrl } = config;
   const base = String(supabaseUrl || '').replace(/\/$/, '');
   const origens = new Set([
@@ -36,10 +36,13 @@ export function criarPagamentos(config, { webhook = false, fetcher = fetch } = {
           /* sem corpo */
         }
         const codigo = permitidos.has(j.message) ? j.message : 'pagamento_indisponivel';
-        throw falhar(
+        const erro = falhar(
           codigo,
           codigo === 'sem_permissao' ? 403 : codigo === 'nao_encontrado' ? 404 : codigo === 'pagamento_indisponivel' ? 503 : 422
         );
+        erro.servico = url.startsWith('https://api.mercadopago.com/') ? 'mercado_pago' : 'supabase';
+        erro.httpStatus = r.status;
+        throw erro;
       }
       return r.status === 204 ? null : await r.json();
     } catch (e) {
@@ -67,7 +70,8 @@ export function criarPagamentos(config, { webhook = false, fetcher = fetch } = {
     });
   async function registrar(order, p) {
     const campos = conferirOrder(order, p, accountId, mode);
-    if (String(order.integration_data?.application_id) !== String(applicationId)) throw falhar('pagamento_divergente', 422);
+    if (String(order.integration_data?.application_id) !== String(applicationId))
+      throw Object.assign(falhar('pagamento_divergente', 422), { etapa: 'validacao_aplicacao' });
     const r = await rpc('registrar_pagamento_mp', campos);
     return { ...p, estado: r.estado, order_id: order.id, checkout_url: campos.p_checkout || p.checkout_url };
   }
@@ -78,7 +82,8 @@ export function criarPagamentos(config, { webhook = false, fetcher = fetch } = {
     return {
       estado: p.estado,
       checkoutUrl: p.pedido_status !== 'cancelado' && ['pendente', 'recusado'].includes(p.estado) ? p.checkout_url || null : null,
-      processando: !p.order_id && !!p.id
+      processando: !p.order_id && !!p.id,
+      ...(!p.order_id && p.id ? { tentarEmMs: Math.max(1000, Math.min(30000, Date.parse(p.criando_ate) - Date.now() + 200 || 2000)) } : {})
     };
   }
   return async (req) => {
@@ -165,6 +170,9 @@ export function criarPagamentos(config, { webhook = false, fetcher = fetch } = {
         (['pagamento_divergente', 'checkout_invalido', 'valor_invalido'].includes(e.message)
           ? 'pagamento_divergente'
           : 'pagamento_indisponivel');
+      // Somente metadados internos: nunca registrar payload, e-mail, token, URL ou credenciais.
+      try { registrarErro({ evento: 'pagamento_falhou', codigo, etapa: e.etapa || 'operacao', servico: e.servico, httpStatus: e.httpStatus }); }
+      catch { /* uma falha na observabilidade não muda a resposta financeira */ }
       return resposta(e.status || (codigo === 'pagamento_divergente' ? 422 : 503), { codigo });
     }
   };

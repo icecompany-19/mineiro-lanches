@@ -7,7 +7,7 @@
    CSS dele); o contrato com ele é o ML.app (montado no início, mais abaixo). */
 import FOTOS_JSON from 'virtual:fotos'; // public/assets/fotos.json (plugin em vite.config.js)
 import { criarHistoricoClientes, normalizarTelefone as digitosTel, chaveEndereco } from './lib/historico-clientes.js';
-import { checkoutSeguro, textoPagamento, permitePagar } from './lib/pagamentos.js';
+import { checkoutSeguro, textoPagamento, permitePagar, aguardarCheckout } from './lib/pagamentos.js';
 
 export function iniciarApp() {
   'use strict';
@@ -1192,14 +1192,14 @@ export function iniciarApp() {
     $('#pedido-pagamento-email').value=email;
     btn.disabled=true;btn.textContent='Abrindo pagamento…';erro.hidden=true;
     try {
-      var resposta=await ML.store.iniciarPagamento(token,email);
-      if(token!==st.pedidoToken)return;
+      var resposta=await aguardarCheckout(()=>ML.store.iniciarPagamento(token,email),{ativo:()=>token===st.pedidoToken});
+      if(!resposta||token!==st.pedidoToken)return;
       if(resposta.checkoutUrl) {location.assign(checkoutSeguro(resposta.checkoutUrl));return;}
       await ML.store.acompanhar(token);renderPedido();
-      if(resposta.processando){erro.textContent='Estamos preparando seu pagamento. Aguarde alguns segundos e tente novamente.';erro.hidden=false;}
+      if(resposta.processando){erro.textContent='O pagamento ainda está sendo preparado. Seu pedido está salvo; tente novamente em alguns instantes.';erro.hidden=false;}
     }catch(e) {
       if(token!==st.pedidoToken)return;
-      erro.textContent=e.codigo==='pagamento_nao_configurado'?'O pagamento online está temporariamente indisponível. Seu pedido está salvo; fale com a loja para conferir o pagamento.':
+      erro.textContent=['pagamento_nao_configurado','pagamento_divergente'].includes(e.codigo)?'O pagamento online precisa de uma verificação da loja. Seu pedido está salvo; fale com a equipe antes de tentar novamente.':
         'Não conseguimos abrir o pagamento. Seu pedido está salvo; tente novamente por aqui.';
       erro.hidden=false;
     }finally{pagamentoEnviando=false;btn.disabled=false;btn.textContent='Pagar no Mercado Pago';}
