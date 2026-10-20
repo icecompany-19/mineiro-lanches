@@ -8,6 +8,7 @@
 import FOTOS_JSON from 'virtual:fotos'; // public/assets/fotos.json (plugin em vite.config.js)
 import { criarHistoricoClientes, normalizarTelefone as digitosTel, chaveEndereco } from './lib/historico-clientes.js';
 import { checkoutSeguro, textoPagamento, permitePagar, aguardarCheckout } from './lib/pagamentos.js';
+import { urlFotoProduto } from './lib/catalogo.js';
 
 export function iniciarApp() {
   'use strict';
@@ -88,6 +89,9 @@ export function iniciarApp() {
   // opc: { uso: chave de SIZES (fotos -540/-1080), carga: 'lcp' | 'cedo' | 'lazy' }
   function visual(p, tam, extra, opc) {
     opc = opc || {};
+    if (p.foto && p.foto.startsWith('uploads/')) {
+      return '<span class="foto nova' + (extra ? ' ' + extra : '') + '"><img src="' + esc(urlFotoProduto(p.foto)) + '" width="1600" height="1600"' + atrCarga(opc.carga) + (opc.carga === 'lcp' || opc.carga === 'cedo' ? ' class="ok"' : '') + ' alt="Foto do ' + esc(p.nome) + '"></span>';
+    }
     if (p.foto && FOTOS[p.foto]) {
       var f = FOTOS[p.foto], estilo = estiloFoto(f, tam);
       return '<span class="foto ' + (f.origem === 'nova' ? 'nova' : 'antiga') + (extra ? ' ' + extra : '') + '"' + (estilo ? ' style="' + estilo + '"' : '') + '><img ' + atrFoto(p.foto, tam, opc.uso, opc.carga) + (opc.carga === 'lcp' || opc.carga === 'cedo' ? ' class="ok"' : '') + ' alt="Foto do ' + esc(p.nome) + '"></span>';
@@ -116,8 +120,12 @@ export function iniciarApp() {
   function gravarLocal(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sem storage */ } }
   var historicoClientes = criarHistoricoClientes(lerLocal, gravarLocal);
   // item com "Preço a confirmar" (preco null) nunca fica na sacola
-  var sacola = lerLocal(CHAVE_SACOLA, []).filter(function (l) { return l && l.sel && ML.regras.temPreco(ML.produtos[l.sel.produtoId]); });
-  function salvarSacola() { gravarLocal(CHAVE_SACOLA, sacola); atualizarContadores(); }
+  var sacolaGuardada = lerLocal(CHAVE_SACOLA, []).filter(function (l) { return l && l.sel; });
+  // Itens cadastrados pelo painel ainda não existem no CONFIG durante a primeira pintura.
+  // Só decide sobre eles quando o catálogo do servidor chegar; recarregar não pode perder a sacola.
+  var sacolaPendente = sacolaGuardada.filter(function (l) { return !ML.produtos[l.sel.produtoId]; });
+  var sacola = sacolaGuardada.filter(function (l) { return ML.regras.temPreco(ML.produtos[l.sel.produtoId]); });
+  function salvarSacola() { gravarLocal(CHAVE_SACOLA, sacola.concat(sacolaPendente)); atualizarContadores(); }
   // quem chega pelo QR (?origem=qrcode&mesa=3): vale para a visita toda (sessionStorage), mesmo depois de navegar
   var CHAVE_ORIGEM = 'mineiro:v2:origem';
   var origemQR = (function () {
@@ -322,10 +330,14 @@ export function iniciarApp() {
       '<span class="prod-txt"><span class="prod-nome">' + esc(p.nome) + '</span><span class="prod-ing">' + esc(ingTexto(p)) + '</span>' + selo +
       '<span class="prod-pe"><span class="preco' + (semPreco ? ' sem' : '') + '">' + brl(p.preco) + '</span></span></span></button>' + acao + '</div>';
   }
+  var menuHTML = '', toqueMenuEmCurso = false, menuPendente = false;
   function renderMenu() {
+    // A resposta do catálogo pode chegar entre pointerdown e click. Substituir o
+    // botão nesse intervalo perde o toque no iPhone/Android; aplica depois dele.
+    if (toqueMenuEmCurso) { menuPendente = true; return; }
     var esg = ML.store.esgotados(), q = semAcento(st.busca.trim()), filtro = FILTROS.filter(function (f) { return f.id === st.filtro; })[0];
     var achou = 0, naTela = st.aba === 'app' && st.tela === 'menu', fotos = 0;
-    $('#menu-lista').innerHTML = C.categorias.map(function (c) {
+    var html = C.categorias.map(function (c) {
       var itens = c.itens.filter(function (p) { return (!q || semAcento(p.nome + ' ' + ingTexto(p)).indexOf(q) >= 0) && (!filtro || filtro.fn(p)); });
       achou += itens.length;
       if (!itens.length) return '';
@@ -336,6 +348,7 @@ export function iniciarApp() {
           return cardHTML(p, !!esg[p.id], carga);
         }).join('') + '</section>';
     }).join('');
+    if (html !== menuHTML) { $('#menu-lista').innerHTML = html; menuHTML = html; }
     $('#vazio-busca').hidden = achou > 0;
     marcarCarregadas($('#menu-lista'));
   }
@@ -432,10 +445,10 @@ export function iniciarApp() {
   };
   // troca: depois de redesenhar, o controle que mudou parte do estado anterior (as transições do CSS rodam)
   function renderFicha(manterRolagem, troca) {
-    var p = ML.produtos[ficha.sel.produtoId], s = ficha.sel, esg = indisponivel(p.id), temFoto = !!(p.foto && FOTOS[p.foto]);
+    var p = ML.produtos[ficha.sel.produtoId], s = ficha.sel, esg = indisponivel(p.id), fotoEnviada = p.foto && p.foto.startsWith('uploads/'), temFoto = !!(p.foto && (FOTOS[p.foto] || fotoEnviada));
     var corpo = $('#ficha-corpo'), rol = corpo.scrollTop;
     var h = temFoto
-      ? '<div class="ficha-foto ' + (ehNova(p.foto) ? 'nova' : 'antiga') + '" style="' + estiloFoto(FOTOS[p.foto], '1080') + '"><img ' + atrFoto(p.foto, '1080', 'ficha', 'lcp') + ' alt="Foto do ' + esc(p.nome) + '">' + FUMACA + '</div>'
+      ? '<div class="ficha-foto ' + (ehNova(p.foto) || fotoEnviada ? 'nova' : 'antiga') + '" style="' + (fotoEnviada ? '' : estiloFoto(FOTOS[p.foto], '1080')) + '"><img ' + (fotoEnviada ? 'src="' + esc(urlFotoProduto(p.foto)) + '" width="1600" height="1600"' : atrFoto(p.foto, '1080', 'ficha', 'lcp')) + ' alt="Foto do ' + esc(p.nome) + '">' + FUMACA + '</div>'
       : '<div class="ficha-foto sem-foto" aria-hidden="true">' + ic(iconeDe(p)) + '</div>';
     h += '<div class="ficha-cab"><h2 id="ficha-nome">' + esc(p.nome) + '</h2><span class="preco' + (ML.regras.temPreco(p) ? '' : ' sem') + '">' + brl(p.preco) + '</span>';
     if (p.inclui) h += '<ul class="ficha-inclui">' + p.inclui.map(function (x) { return '<li>' + ic('check') + esc(x) + '</li>'; }).join('') + '</ul>';
@@ -574,9 +587,20 @@ export function iniciarApp() {
     var lista = arquivos(p.foto), base = lista.filter(function (a) { return a.tam === '1080'; })[0] || lista[lista.length - 1], img = new Image();
     img.sizes = SIZES.ficha; img.srcset = srcsetDe(p.foto); img.src = src(p.foto, base.tam);
   }
-  function aoEncostar(e) { var t = e.target && e.target.closest && e.target.closest('[data-abrir]'); if (t) precarregarFicha(t.getAttribute('data-abrir')); }
+  function aoEncostar(e) { var t = e.target && e.target.closest && e.target.closest('[data-abrir]'); if (t) { if (e.type === 'pointerdown' && t.closest('#menu-lista')) toqueMenuEmCurso = true; precarregarFicha(t.getAttribute('data-abrir')); } }
   document.addEventListener('pointerdown', aoEncostar, { passive: true });
   document.addEventListener('focusin', aoEncostar);
+  var fimToqueMenu = null;
+  function terminarToqueMenu(atraso) {
+    clearTimeout(fimToqueMenu);
+    fimToqueMenu = setTimeout(function () {
+      toqueMenuEmCurso = false;
+      if (menuPendente) { menuPendente = false; renderMenu(); }
+    }, atraso);
+  }
+  document.addEventListener('pointerup', function () { terminarToqueMenu(500); }, { passive: true });
+  document.addEventListener('pointercancel', function () { terminarToqueMenu(0); }, { passive: true });
+  document.addEventListener('click', function () { terminarToqueMenu(0); });
 
   // ================= sacola =================
   // naSacola: marca o adicional que saiu do cardápio (num pedido já feito ele não importa mais)
@@ -1619,7 +1643,7 @@ export function iniciarApp() {
     else if (t.hasAttribute('data-abrir')) abrirFicha(A('data-abrir'), { origem: t.closest('[data-abrir]') });
     else if (t.hasAttribute('data-chip')) { var cat = $('#cat-' + A('data-chip')); if (cat) cat.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'start' }); }
     else if (t.hasAttribute('data-filtro')) { st.filtro = st.filtro === A('data-filtro') ? null : A('data-filtro'); $$('[data-filtro]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-filtro') === st.filtro)); }); renderMenu(); }
-    else if (t.hasAttribute('data-completo')) { var c0 = ficha.sel.completo === false ? 1 : 0; ficha.sel.completo = A('data-completo') === '1'; if (ficha.sel.completo) ficha.sel.removidos = []; renderFicha(true, trocaSeg('completo', c0, ficha.sel.completo ? 0 : 1)); }
+    else if (t.hasAttribute('data-completo')) { var c0 = ficha.sel.completo === false ? 1 : 0; ficha.sel.completo = A('data-completo') === '1'; if (ficha.sel.completo) ficha.sel.removidos = []; renderFicha(true, trocaSeg('completo', c0, ficha.sel.completo ? 0 : 1)); if (!ficha.sel.completo) $('[data-ing]', dlg)?.scrollIntoView({ block: 'nearest', behavior: 'instant' }); }
     else if (t.hasAttribute('data-ing')) { var ing = A('data-ing'), r = ficha.sel.removidos || (ficha.sel.removidos = []), ix = r.indexOf(ing); if (ix >= 0) r.splice(ix, 1); else r.push(ing); renderFicha(true); var f = $('[data-ing="' + CSS.escape(ing) + '"]', dlg); if (f) f.focus(); }
     else if (t.hasAttribute('data-prensado')) { var p0 = ficha.sel.prensado ? 1 : 0; ficha.sel.prensado = A('data-prensado') === '1'; renderFicha(true, trocaSeg('prensado', p0, ficha.sel.prensado ? 1 : 0)); }
     else if (t.hasAttribute('data-combo')) {
@@ -1665,6 +1689,11 @@ export function iniciarApp() {
     var tipo = ev.tipo || '';
     if (tipo.indexOf('pedido') === 0) { if (st.aba === 'app' && st.tela === 'pedido') renderPedido(); atualizarContadores(); }
     if (tipo === 'cardapio:esgotados' || tipo === 'cardapio:estado') {
+      if (tipo === 'cardapio:estado' && sacolaPendente.length) {
+        sacola = sacola.concat(sacolaPendente.filter(function (l) { return ML.regras.temPreco(ML.produtos[l.sel.produtoId]); }));
+        sacolaPendente = [];
+        salvarSacola();
+      }
       if (tipo === 'cardapio:estado') { montarBio(); marcarCarregadas($('#destaques')); atualizarStatus(); atualizarPrecosFixos(); atualizarContadores(); if (entr.ok && entr.estado !== 'ok' && entr.estado !== 'calculando') agendarTaxa(true); }
       if (st.tela === 'menu') renderMenu();
       if (st.tela === 'sacola') renderSacola();

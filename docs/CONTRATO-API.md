@@ -178,6 +178,8 @@ Devolve `{ numero, criadoEm, status, historico, modo, total, itens: [{ nome, qtd
 
 ### `estado_cardapio() → jsonb` (anon, authenticated)
 
+O retorno também contém `catalogo: { categorias, produtos }`, fonte persistente para nomes, categorias, composição, fotos e novos itens. O painel usa `salvar_produto(p_dados jsonb, p_versao timestamptz)` com autorização da equipe e verificação de versão; mantém o contrato de preços/inativos/esgotados abaixo. Operação e armazenamento em [Produtos](PRODUTOS.md).
+
 ```json
 { "diaOperacional": "2026-10-08", "esgotados": ["gran-crispy"], "inativos": [], "precos": { "gran-burger": 25.9 },
   "adicionais": { "bacon": 7.5 }, "loja": { "modo": "auto", "aceitaFechada": false, "comboPreco": 14.9, "taxaKm": 1, "taxaFixa": 4, "horarios": { } } }

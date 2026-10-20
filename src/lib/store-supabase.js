@@ -12,6 +12,7 @@
    RPC) enquanto ela estava no ar. */
 import { obterSupabase, consultarEntrega, consultarPagamento } from './supabase.js';
 import { financeiroRecente } from './pagamentos.js';
+import { aplicarCatalogo } from './catalogo.js';
 
 const NS = 'mineiro:v2:';
 const CODIGOS = [
@@ -389,6 +390,7 @@ export function criarStoreSupabase(opc) {
   // aplica estado_cardapio() sobre o CONFIG: preços, inativos, adicionais, combo, horários, esgotados e loja
   function aplicarEstado(e) {
     if (!e) return;
+    const catalogoCompleto = aplicarCatalogo(ML, e.catalogo);
     const inativos = new Set(e.inativos || []);
     const precos = e.precos || {};
     Object.keys(ML.produtos).forEach((id) => {
@@ -397,7 +399,7 @@ export function criarStoreSupabase(opc) {
       p.inativo = inativos.has(id);
     });
     C.categorias.forEach((c) => {
-      const itens = (ITENS[c.id] || []).filter((p) => !inativos.has(p.id));
+      const itens = (catalogoCompleto ? c.itens : ITENS[c.id] || []).filter((p) => !inativos.has(p.id));
       c.itens.splice(0, c.itens.length, ...itens);
     });
     const adic = e.adicionais || {};
@@ -415,6 +417,7 @@ export function criarStoreSupabase(opc) {
     if (l.horarios) ML.horario.definir(l.horarios);
 
     const nova = assinatura({
+      catalogo: e.catalogo || null,
       precos,
       inativos: [...inativos].sort(),
       adicionais: adic,

@@ -18,7 +18,7 @@
   const VIEWS = {
     pedidos: { t: 'Pedidos', i: 'quadro' },
     historico: { t: 'Histórico', i: 'lista' },
-    cardapio: { t: 'Cardápio', i: 'burger' },
+    cardapio: { t: 'Produtos', i: 'burger' },
     relatorio: { t: 'Relatório', i: 'grafico' },
     config: { t: 'Configurações', i: 'config' },
     usuarios: { t: 'Usuários', i: 'lista' },
@@ -48,6 +48,7 @@
   let gestaoUsuarios = null;
   let gestaoEntregadores = null;
   let gestaoImpressao = null;
+  let gestaoProdutos = null;
 
   /* ---------- utilidades ---------- */
   const ic = (n, cls) => `<svg class="pn-ic${cls ? ' ' + cls : ''}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
@@ -337,7 +338,7 @@
             <p class="pn-hist-n" data-histn role="status"></p>
             <div class="pn-tabela-w"><table class="pn-tabela"><thead><tr><th scope="col">Nº</th><th scope="col">Hora</th><th scope="col">Cliente</th><th scope="col">Modo</th><th scope="col">Itens</th><th scope="col" class="pn-r">Total</th><th scope="col">Status</th></tr></thead><tbody data-histbody></tbody></table></div>
           </section>
-          <section class="pn-sec" data-view="cardapio" aria-label="Cardápio" hidden><div data-slot="cardapio"></div></section>
+          <section class="pn-sec" data-view="cardapio" aria-label="Produtos" hidden><div data-produtos></div></section>
           <section class="pn-sec" data-view="relatorio" aria-label="Relatório" hidden><div data-slot="relatorio"></div></section>
           <section class="pn-sec" data-view="entregadores" aria-label="Entregadores" hidden><div data-entregadores></div></section>
           <section class="pn-sec" data-view="usuarios" aria-label="Usuários" hidden><div data-usuarios></div></section>
@@ -378,8 +379,8 @@
     <div class="pn-mobile">
       <header class="pn-m-topo"><img class="pn-selo-logo" src="/assets/logo/selo-128.webp" srcset="/assets/logo/selo-128.webp 1x, /assets/logo/selo-256.webp 2x" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-loja-txt" data-lojatxt-m role="status"></span></header>
       <p class="pn-aviso-m" role="note"><strong>O painel foi pensado para computador</strong></p>
-      <nav class="pn-usuarios-nav-mobile" aria-label="Seções do painel no celular"><button class="pn-btn" type="button" data-usuarios-ir="pedidos">Pedidos</button><button class="pn-btn" type="button" data-usuarios-ir="usuarios">Usuários</button><button class="pn-btn" type="button" data-usuarios-ir="entregadores">Entregadores</button></nav>
-      <div data-mobile></div><div data-entregadores-mobile hidden><div data-entregadores></div></div><div data-usuarios-mobile hidden><div data-usuarios></div></div>
+      <nav class="pn-usuarios-nav-mobile" aria-label="Seções do painel no celular"><button class="pn-btn" type="button" data-usuarios-ir="pedidos">Pedidos</button><button class="pn-btn" type="button" data-usuarios-ir="cardapio">Produtos</button><button class="pn-btn" type="button" data-usuarios-ir="usuarios">Usuários</button><button class="pn-btn" type="button" data-usuarios-ir="entregadores">Entregadores</button></nav>
+      <div data-mobile></div><div data-produtos-mobile hidden><div data-produtos></div></div><div data-entregadores-mobile hidden><div data-entregadores></div></div><div data-usuarios-mobile hidden><div data-usuarios></div></div>
       ${sairHTML()}
     </div>
     </div>`;
@@ -500,20 +501,6 @@
     }).join('');
   }
 
-  function renderCardapio() {
-    const esg = ML.store.esgotados();
-    q('[data-slot="cardapio"]').innerHTML = ML.CONFIG.categorias.map(cat => {
-      const n = cat.itens.filter(i => esg[i.id]).length, todos = n === cat.itens.length;
-      return `<section class="pn-cat" aria-label="${esc(cat.label)}"><header class="pn-cat-topo">${ic(cat.icone || 'burger')}<h3>${esc(cat.label)}</h3><span class="pn-cat-n">${n} de ${cat.itens.length} esgotados</span>
-        <button type="button" class="pn-btn" data-act="esgotar-cat" data-cat="${esc(cat.id)}" data-todos="${todos ? 1 : 0}">${todos ? 'Liberar categoria' : 'Esgotar categoria inteira'}</button></header>
-        <ul class="pn-prods">${cat.itens.map(i => {
-          const e = !!esg[i.id];
-          return `<li class="pn-prod${e ? ' pn-prod--esg' : ''}"><div class="pn-prod-t"><b>${esc(i.nome)}</b><span>${brl(i.preco)}</span></div>
-            <button type="button" class="pn-sw" role="switch" aria-checked="${e}" data-act="esgotar" data-id="${esc(i.id)}" aria-label="Esgotado hoje: ${esc(i.nome)}"><span class="pn-sw-rot">Esgotado hoje</span><span class="pn-sw-trilho" aria-hidden="true"><span class="pn-sw-bola"></span></span></button></li>`;
-        }).join('')}</ul></section>`;
-    }).join('');
-  }
-
   function renderRel() {
     const slot = q('[data-slot="relatorio"]');
     const ps = S.pedidos.filter(p => p.status !== 'cancelado');
@@ -596,7 +583,6 @@
     renderMobile();
     if (S.view === 'pedidos') { renderKpis(); renderBoard(); }
     else if (S.view === 'historico') renderHist();
-    else if (S.view === 'cardapio') renderCardapio();
     else if (S.view === 'relatorio') renderRel();
     if (S.detalhe) renderDetalhe();
     atualizarTitulo();
@@ -686,11 +672,13 @@
   function irPara(v) {
     if (!VIEWS[v]) return;
     S.view = v;
+    if(gestaoProdutos){if(v==='cardapio')gestaoProdutos.abrir();else gestaoProdutos.esconder();}
+    q('[data-produtos-mobile]').hidden=v!=='cardapio';
     if(gestaoUsuarios){if(v==='usuarios')gestaoUsuarios.abrir();else gestaoUsuarios.esconder();}
     if(gestaoEntregadores){if(v==='entregadores')gestaoEntregadores.abrir();else gestaoEntregadores.esconder();}
     q('[data-entregadores-mobile]').hidden=v!=='entregadores';
-    q('[data-mobile]').hidden=['usuarios','entregadores'].includes(v);
-    q('.pn-aviso-m').hidden=['usuarios','entregadores'].includes(v);
+    q('[data-mobile]').hidden=['usuarios','entregadores','cardapio'].includes(v);
+    q('.pn-aviso-m').hidden=['usuarios','entregadores','cardapio'].includes(v);
     q('[data-usuarios-mobile]').hidden=v!=='usuarios';
     qa('.pn-sec').forEach(s => { s.hidden = s.dataset.view !== v; });
     qa('[data-nav]').forEach(b => { if (b.dataset.nav === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
@@ -1014,12 +1002,6 @@
       case 'fechar-lateral': fecharDetalhe(); break;
       case 'csv': exportarCSV(); break;
       case 'csv-ver': mostrarCSV(gerarCSV(filtrarHist())); break;
-      case 'esgotar': ML.store.marcarEsgotado(id, b.getAttribute('aria-checked') !== 'true'); agendar(); break;
-      case 'esgotar-cat': {
-        const cat = ML.CONFIG.categorias.find(c => c.id === b.dataset.cat), alvo = b.dataset.todos !== '1';
-        if (cat) cat.itens.forEach(i => ML.store.marcarEsgotado(i.id, alvo));
-        agendar(); break;
-      }
       case 'gerar15': {
         b.disabled = true;
         ML.store.gerarExemplos(15).then(() => toast('15 pedidos de exemplo criados'), () => {}).then(() => { b.disabled = false; agendar(); });
@@ -1135,6 +1117,7 @@
     S.root = el;
     el.classList.add('painel');
     el.innerHTML = esqueleto();
+    if(window.MLProdutos)gestaoProdutos=window.MLProdutos.montar(el);
     if(window.MLUsuarios)gestaoUsuarios=window.MLUsuarios.montar(el);
     if(window.MLEntregadores)gestaoEntregadores=window.MLEntregadores.montar(el);
     if(window.MLImpressao)gestaoImpressao=window.MLImpressao.montar(el, {
@@ -1190,6 +1173,7 @@
   function esconder() {
     S.visivel = false;
     if (gestaoImpressao) gestaoImpressao.esconder();
+    if(gestaoProdutos)gestaoProdutos.esconder();
     if(gestaoUsuarios)gestaoUsuarios.esconder();
     if(gestaoEntregadores)gestaoEntregadores.esconder();
     if (S.tickId) { clearInterval(S.tickId); S.tickId = null; }

@@ -1,6 +1,6 @@
 -- =====================================================================================
 -- Mineiro Lanche · setup completo do banco (Supabase)
--- Gerado por scripts/montar-setup.mjs a partir de supabase/migrations/20261008000001_schema.sql, supabase/migrations/20261008000002_rls.sql, supabase/migrations/20261008000003_rpc.sql, supabase/migrations/20261016000001_taxa_entrega.sql, supabase/migrations/20261017000001_motoboy.sql, supabase/migrations/20261017000002_confirmar_entrega_ja_entregue.sql, supabase/migrations/20261018023009_cotacao_entrega.sql, supabase/migrations/20261018031024_destino_entrega_e_limpeza.sql, supabase/migrations/20261018181746_gestao_usuarios_painel.sql, supabase/migrations/20261018185421_pagamentos_mercado_pago.sql, supabase/migrations/20261019024838_controle_entregadores.sql, supabase/migrations/20261019032841_historico_entregas_painel.sql, supabase/migrations/20261019034930_totais_taxas_entregadores.sql, supabase/migrations/20261019123043_viagens_rotas_entregadores.sql, supabase/migrations/20261020145407_pagamentos_permissoes_backend.sql, supabase/seed.sql.
+-- Gerado por scripts/montar-setup.mjs a partir de supabase/migrations/20261008000001_schema.sql, supabase/migrations/20261008000002_rls.sql, supabase/migrations/20261008000003_rpc.sql, supabase/migrations/20261016000001_taxa_entrega.sql, supabase/migrations/20261017000001_motoboy.sql, supabase/migrations/20261017000002_confirmar_entrega_ja_entregue.sql, supabase/migrations/20261018023009_cotacao_entrega.sql, supabase/migrations/20261018031024_destino_entrega_e_limpeza.sql, supabase/migrations/20261018181746_gestao_usuarios_painel.sql, supabase/migrations/20261018185421_pagamentos_mercado_pago.sql, supabase/migrations/20261019024838_controle_entregadores.sql, supabase/migrations/20261019032841_historico_entregas_painel.sql, supabase/migrations/20261019034930_totais_taxas_entregadores.sql, supabase/migrations/20261019123043_viagens_rotas_entregadores.sql, supabase/migrations/20261020145407_pagamentos_permissoes_backend.sql, supabase/migrations/20261020203000_gestao_produtos.sql, supabase/migrations/20261020213000_estoque_categoria.sql, supabase/seed.sql.
 -- Não edite à mão: mude as migrations ou o CONFIG e rode
 --   node scripts/gerar-seed.mjs && node scripts/montar-setup.mjs
 --
@@ -3911,72 +3911,258 @@ grant select on public.pedidos,public.loja,public.equipe to service_role;
 grant update(pagamento_online,pagamento_em) on public.pedidos to service_role;
 notify pgrst,'reload schema';
 
+-- ============ supabase/migrations/20261020203000_gestao_produtos.sql ============
+
+-- Catálogo persistente; alterações do painel sobrevivem ao seed e a novos deploys.
+create table if not exists public.categorias_produtos (
+  id text primary key check(id ~ '^[a-z0-9][a-z0-9-]{0,39}$'),
+  label text not null check(char_length(label) between 1 and 80),
+  icone text not null default 'burger',
+  descricao text not null default '',
+  ordem int not null default 0
+);
+alter table public.categorias_produtos enable row level security;
+revoke all on public.categorias_produtos from public,anon,authenticated;
+grant select on public.categorias_produtos to anon,authenticated;
+grant all on public.categorias_produtos to service_role;
+drop policy if exists categorias_produtos_leitura on public.categorias_produtos;
+create policy categorias_produtos_leitura on public.categorias_produtos for select to anon,authenticated using(true);
+alter table public.produtos add column if not exists detalhes jsonb not null default '{}';
+alter table public.produtos add column if not exists editado_painel boolean not null default false;
+alter table public.produtos add column if not exists atualizado_em timestamptz not null default now();
+insert into public.categorias_produtos(id,label,icone,descricao,ordem)
+select id,label,icone,"desc",ordem from jsonb_to_recordset('[{"id":"testes","label":"Teste de pagamento","icone":"sacola","desc":"Item temporário para validar o pagamento online","ordem":0},{"id":"artesanais","label":"Artesanais","icone":"burger","desc":"Hambúrguer artesanal de 200 g","ordem":1},{"id":"tradicionais","label":"Tradicionais","icone":"burger","desc":"Os clássicos da chapa","ordem":2},{"id":"hotdog","label":"Hot dog","icone":"hotdog","desc":"Salsicha Perdigão · Dog Bacon ou Dog Pizza: qualquer dog com o adicional Bacon ou Pizza","ordem":3},{"id":"baguetes","label":"Baguetes","icone":"baguete","desc":"Na baguete, do jeito mineiro","ordem":4},{"id":"combos","label":"Combos","icone":"combo","desc":"Lanche, batata e bebida","ordem":5},{"id":"porcoes","label":"Porções","icone":"batata","desc":"Pra dividir","ordem":6},{"id":"bebidas","label":"Bebidas","icone":"lata","desc":"Geladas","ordem":7}]'::jsonb) as c(id text,label text,icone text,"desc" text,ordem int)
+on conflict(id) do nothing;
+update public.produtos p set detalhes=d.detalhes from jsonb_to_recordset('[{"id":"teste-pagamento","detalhes":{"base":"Somente validação do pagamento. Não é um alimento. Selecione retirada no local.","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-burger","detalhes":{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-burger-bacon","detalhes":{"base":"Gran Burger com bacon","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-salada","detalhes":{"base":"Pão seladinho na chapa e hambúrguer angus 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-egg","detalhes":{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-bacon","detalhes":{"base":"Pão seladinho na chapa e hambúrguer angus 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-egg-bacon","detalhes":{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-big-tudo","detalhes":{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-black","detalhes":{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-big-mineiro","detalhes":{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-chicken","detalhes":{"base":"Pão de brioche e hambúrguer de frango empanado","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-bacon-onion","detalhes":{"base":"Pão seladinho na chapa e hambúrguer angus 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"gran-crispy","detalhes":{"base":"Pão de brioche e hambúrguer 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"x-burguer","detalhes":{"base":"Pão e hambúrguer","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"x-salada","detalhes":{"base":"Pão de hambúrguer e hambúrguer 90 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"mega-x-salada-egg","detalhes":{"base":"Pão e hambúrguer","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"ultra-x-salada-bacon","detalhes":{"base":"Pão de hambúrguer e hambúrguer 90 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"exagerado-x-salada-egg-bacon","detalhes":{"base":"Pão de hambúrguer e hambúrguer 90 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"big-tudo","detalhes":{"base":"Pão e hambúrguer","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"black-master","detalhes":{"base":"Pão australiano e hambúrguer","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"big-mineiro","detalhes":{"base":"Pão de hambúrguer e hambúrguer 90 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-medio","detalhes":{"base":"Pão médio e 1 salsicha Perdigão","nota":"Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-medio-frango","detalhes":{"base":"Pão e 1 salsicha","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-max","detalhes":{"base":"Pão médio e 2 salsichas Perdigão","nota":"Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-max-frango","detalhes":{"base":"Pão e 2 salsichas","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-super","detalhes":{"base":"Pão médio e 3 salsichas Perdigão","nota":"Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-super-frango","detalhes":{"base":"Pão e 3 salsichas","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-doritos","detalhes":{"base":"O hot dog com Doritos da casa","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-pizza","detalhes":{"base":"Hot Dog Super (3 salsichas Perdigão) com o adicional Pizza","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"dog-cbo-turbo","detalhes":{"base":"Pão de dog e 3 salsichas Perdigão","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"carne-maluca","detalhes":{"base":"Baguete e carne desfiada","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"x-frango","detalhes":{"base":"Baguete e filé de frango","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"x-frango-egg-bacon","detalhes":{"base":"Baguete e filé de frango","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"x-calabresa","detalhes":{"base":"Baguete e calabresa","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"x-churrasco","detalhes":{"base":"Pão de baguete e contra-filé","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"americano","detalhes":{"base":"Baguete","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"combo-diluvio","detalhes":{"base":"","nota":"Pergunte pelo WhatsApp quantos lanches vêm.","inclui":["Gran Burgers na piscininha de cheddar","Farofinha de bacon","140 g de batata frita","Refrigerante lata 350 ml (qualquer um)"],"sabor":false,"escolheRefri":true}},{"id":"combo-casal","detalhes":{"base":"","nota":"Na foto: 2 lanches e batata com calabresa, cheddar, maionese e cebola crispy. Pergunte pelo WhatsApp quais lanches vêm.","inclui":["2 lanches","Porção de batata"],"sabor":false,"escolheRefri":false}},{"id":"gran-bacon-coca-maionese","detalhes":{"base":"","nota":"","inclui":["Gran Bacon","Coca-Cola 350 ml","Maionese artesanal da casa"],"sabor":false,"escolheRefri":false}},{"id":"combo-2-dog-doritos","detalhes":{"base":"","nota":"","inclui":["2 Hot Dog com Doritos","Coca-Cola 600 ml"],"sabor":false,"escolheRefri":false}},{"id":"combo-gran-burger","detalhes":{"base":"","nota":"","inclui":["Gran Burger (brioche, 200 g de carne angus, mussarela, cheddar, maionese e barbecue)","Coca-Cola 350 ml","250 g de batata"],"sabor":false,"escolheRefri":false}},{"id":"combo-gran-bacon","detalhes":{"base":"","nota":"","inclui":["Gran Bacon (brioche, 200 g de carne angus, mussarela, cheddar, bacon, maionese, barbecue, alface americano e tomate)","Coca-Cola 350 ml","250 g de batata"],"sabor":false,"escolheRefri":false}},{"id":"combo-gran-salada","detalhes":{"base":"","nota":"","inclui":["Gran Salada (brioche, 200 g de carne angus, mussarela, cheddar, alface americano, tomate, cebola roxa, maionese e barbecue)","Coca-Cola 350 ml","250 g de batata"],"sabor":false,"escolheRefri":false}},{"id":"combo-gran-bacon-onion","detalhes":{"base":"","nota":"","inclui":["Gran Bacon Onion (angus 200 g, maionese grill, barbecue, cheddar cremoso, bacon em fatias, 2 onion rings, alface americana, tomate em rodelas e cebola roxa)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}},{"id":"combo-hot-dog-max","detalhes":{"base":"","nota":"","inclui":["Hot dog médio com 2 salsichas, alface, purê, batata palha, ketchup, cheddar e catupiry","250 g de batata frita","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}},{"id":"combo-x-frango","detalhes":{"base":"","nota":"","inclui":["X-Frango na baguete (filé de frango, mussarela, maionese, barbecue, vinagrete, purê, batata palha, cheddar e catupiry)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}},{"id":"combo-gran-chicken","detalhes":{"base":"","nota":"","inclui":["Gran Chicken (brioche, frango empanado, maionese, barbecue, alface americano, tomate e cebola roxa)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}},{"id":"porcao-batata","detalhes":{"base":"","nota":"","inclui":["500 g de batata frita","Cheddar cremoso","Bacon","Requeijão","Calabresa","Alho-poró"],"sabor":false,"escolheRefri":false}},{"id":"porcao-onion","detalhes":{"base":"","nota":"","inclui":["6 onion rings"],"sabor":false,"escolheRefri":false}},{"id":"refri-lata","detalhes":{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}},{"id":"refri-600","detalhes":{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}},{"id":"refri-1l","detalhes":{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}},{"id":"refri-dolly","detalhes":{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}},{"id":"suco-lata","detalhes":{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}},{"id":"suco-1l","detalhes":{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}},{"id":"agua","detalhes":{"base":"","nota":"","inclui":[],"sabor":false,"escolheRefri":false}},{"id":"h2o","detalhes":{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}}]'::jsonb) as d(id text,detalhes jsonb) where p.id=d.id and not p.editado_painel and p.detalhes='{}'::jsonb;
+-- Categorias legadas desconhecidas também permanecem visíveis.
+insert into public.categorias_produtos(id,label,ordem)
+select distinct categoria,categoria,100 from public.produtos on conflict(id) do nothing;
+
+create table if not exists public.produtos_eventos (
+  id bigint generated always as identity primary key,
+  produto_id text not null references public.produtos(id),
+  autor uuid not null,
+  antes jsonb,
+  depois jsonb not null,
+  criado_em timestamptz not null default now()
+);
+alter table public.produtos_eventos enable row level security;
+revoke all on public.produtos_eventos from public,anon,authenticated;
+grant select on public.produtos_eventos to authenticated;
+grant all on public.produtos_eventos to service_role;
+grant usage,select on sequence public.produtos_eventos_id_seq to service_role;
+drop policy if exists produtos_eventos_equipe on public.produtos_eventos;
+create policy produtos_eventos_equipe on public.produtos_eventos for select to authenticated using((select public.is_equipe()));
+
+create or replace function public.catalogo_json()
+returns jsonb language sql stable security definer set search_path=public,pg_temp as $$
+select jsonb_build_object(
+  'categorias',coalesce((select jsonb_agg(jsonb_build_object('id',c.id,'label',c.label,'icone',c.icone,'desc',c.descricao) order by c.ordem,c.id) from public.categorias_produtos c),'[]'::jsonb),
+  'produtos',coalesce((select jsonb_agg(to_jsonb(p) order by p.ordem,p.id) from public.produtos p),'[]'::jsonb)
+)
+$$;
+revoke all on function public.catalogo_json() from public,anon,authenticated;
+grant execute on function public.catalogo_json() to anon,authenticated,service_role;
+
+-- Mantém o contrato anterior (preços, esgotados, loja), acrescentando o catálogo completo.
+create or replace function public.estado_cardapio()
+returns jsonb language sql stable security definer set search_path=public,pg_temp as $$
+with d as(select public.dia_operacional(now()) as dia)
+select jsonb_build_object(
+ 'diaOperacional',to_char(d.dia,'YYYY-MM-DD'),
+ 'esgotados',coalesce((select jsonb_agg(p.id order by p.ordem,p.id) from public.produtos p where p.esgotado_dia=d.dia),'[]'::jsonb),
+ 'inativos',coalesce((select jsonb_agg(p.id order by p.ordem,p.id) from public.produtos p where not p.ativo),'[]'::jsonb),
+ 'precos',coalesce((select jsonb_object_agg(p.id,p.preco) from public.produtos p),'{}'::jsonb),
+ 'adicionais',coalesce((select jsonb_object_agg(a.id,a.preco) from public.adicionais a where a.ativo),'{}'::jsonb),
+ 'catalogo',public.catalogo_json(),'loja',public.loja_json()) from d
+$$;
+
+create or replace function public.salvar_produto(p_dados jsonb,p_versao timestamptz default null)
+returns jsonb language plpgsql security definer set search_path=public,pg_temp as $$
+declare anterior public.produtos; novo public.produtos; ident text; valor numeric; det jsonb; foto_val text;
+begin
+ if not public.is_equipe() then raise exception 'sem_permissao' using errcode='P0001'; end if;
+ if p_dados is null or jsonb_typeof(p_dados)<>'object' or octet_length(p_dados::text)>30000 then raise exception 'dados_invalidos' using errcode='P0001'; end if;
+ ident:=p_dados->>'id';
+ if ident is null or ident !~ '^[a-z0-9][a-z0-9-]{0,59}$' then raise exception 'dados_invalidos' using errcode='P0001'; end if;
+ perform pg_advisory_xact_lock(hashtextextended('produto:'||ident,0));
+ select * into anterior from public.produtos where id=ident for update;
+ if (anterior.id is not null and (p_versao is null or p_versao<>anterior.atualizado_em)) or (anterior.id is null and p_versao is not null) then
+   raise exception 'produto_alterado' using errcode='P0001';
+ end if;
+ if jsonb_typeof(p_dados->'nome') is distinct from 'string' or char_length(btrim(p_dados->>'nome')) not between 1 and 120
+   or not exists(select 1 from public.categorias_produtos where id=p_dados->>'categoria')
+   or coalesce(p_dados->>'tipo','') not in ('lanche','combo','porcao','bebida')
+   or jsonb_typeof(p_dados->'ativo') is distinct from 'boolean'
+   or jsonb_typeof(p_dados->'ingredientes') is distinct from 'array'
+   or jsonb_typeof(p_dados->'detalhes') is distinct from 'object'
+   or jsonb_typeof(p_dados->'ordem') is distinct from 'number' then
+   raise exception 'dados_invalidos' using errcode='P0001';
+ end if;
+ if not (p_dados ? 'preco') or jsonb_typeof(p_dados->'preco') not in ('null','number') then raise exception 'dados_invalidos' using errcode='P0001'; end if;
+ valor:=(p_dados->>'preco')::numeric;
+ if valor<0 or valor>99999.99 or valor<>round(valor,2) or (p_dados->>'ordem')::numeric not between 0 and 100000
+   or (p_dados->>'ordem')::numeric<>trunc((p_dados->>'ordem')::numeric) then raise exception 'dados_invalidos' using errcode='P0001'; end if;
+ foto_val:=nullif(p_dados->>'foto','');
+ if foto_val is not null then
+   if foto_val ~ '^uploads/[a-f0-9-]{36}\.webp$' then
+     -- Upload precisa existir; arquivos imutáveis preservam fotos de outros produtos.
+     if to_regclass('storage.objects') is not null then
+       if not exists(select 1 from storage.objects where bucket_id='produtos-fotos' and name=foto_val) then raise exception 'foto_invalida' using errcode='P0001'; end if;
+     end if;
+   elsif foto_val !~ '^[a-z0-9][a-z0-9-]{0,59}$' or (foto_val is distinct from anterior.foto and not exists(select 1 from public.produtos where foto=foto_val)) then
+     raise exception 'foto_invalida' using errcode='P0001';
+   end if;
+ end if;
+ det:=p_dados->'detalhes';
+ if jsonb_typeof(det->'base') is distinct from 'string' or char_length(det->>'base')>500
+   or jsonb_typeof(det->'nota') is distinct from 'string' or char_length(det->>'nota')>500
+   or jsonb_typeof(det->'inclui') is distinct from 'array'
+   or jsonb_typeof(det->'sabor') is distinct from 'boolean'
+   or jsonb_typeof(det->'escolheRefri') is distinct from 'boolean' then raise exception 'dados_invalidos' using errcode='P0001'; end if;
+ if jsonb_array_length(p_dados->'ingredientes')>40 or jsonb_array_length(det->'inclui')>40 or exists(
+   select 1 from jsonb_array_elements((p_dados->'ingredientes')||(det->'inclui')) a(v)
+   where jsonb_typeof(v)<>'string' or char_length(btrim(v#>>'{}')) not between 1 and 200
+ ) then raise exception 'dados_invalidos' using errcode='P0001'; end if;
+ -- Ignora qualquer chave extra: o cliente não consegue alterar campos operacionais.
+ det:=jsonb_build_object('base',btrim(det->>'base'),'nota',btrim(det->>'nota'),'inclui',det->'inclui','sabor',det->'sabor','escolheRefri',det->'escolheRefri');
+ insert into public.produtos(id,categoria,nome,preco,tipo,foto,ingredientes,ordem,ativo,detalhes,editado_painel,atualizado_em)
+ values(ident,p_dados->>'categoria',btrim(p_dados->>'nome'),valor,p_dados->>'tipo',foto_val,
+   array(select jsonb_array_elements_text(p_dados->'ingredientes')),(p_dados->>'ordem')::int,(p_dados->>'ativo')::boolean,det,true,clock_timestamp())
+ on conflict(id) do update set categoria=excluded.categoria,nome=excluded.nome,preco=excluded.preco,tipo=excluded.tipo,foto=excluded.foto,
+   ingredientes=excluded.ingredientes,ordem=excluded.ordem,ativo=excluded.ativo,detalhes=excluded.detalhes,editado_painel=true,atualizado_em=excluded.atualizado_em
+ returning * into novo;
+ insert into public.produtos_eventos(produto_id,autor,antes,depois) values(ident,auth.uid(),case when anterior.id is null then null else to_jsonb(anterior) end,to_jsonb(novo));
+ return to_jsonb(novo);
+exception when invalid_text_representation or numeric_value_out_of_range then raise exception 'dados_invalidos' using errcode='P0001';
+end $$;
+revoke all on function public.salvar_produto(jsonb,timestamptz) from public,anon,authenticated;
+grant execute on function public.salvar_produto(jsonb,timestamptz) to authenticated;
+
+-- Storage existe no Supabase hospedado. O Postgres local de testes não instala esse serviço.
+do $storage$
+begin
+ if to_regclass('storage.buckets') is not null then
+   insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+   values('produtos-fotos','produtos-fotos',true,2097152,array['image/webp']) on conflict(id) do nothing;
+   execute 'drop policy if exists produtos_fotos_inserir on storage.objects';
+   execute $policy$create policy produtos_fotos_inserir on storage.objects for insert to authenticated
+    with check(bucket_id='produtos-fotos' and (select public.is_equipe()) and name ~ '^uploads/[a-f0-9-]{36}\.webp$')$policy$;
+   execute 'drop policy if exists produtos_fotos_equipe_leitura on storage.objects';
+   execute $policy$create policy produtos_fotos_equipe_leitura on storage.objects for select to authenticated
+    using(bucket_id='produtos-fotos' and (select public.is_equipe()))$policy$;
+   execute 'drop policy if exists produtos_fotos_limpar on storage.objects';
+   execute $policy$create policy produtos_fotos_limpar on storage.objects for delete to authenticated
+    using(bucket_id='produtos-fotos' and (select public.is_equipe()) and not exists(select 1 from public.produtos p where p.foto=name))$policy$;
+ end if;
+end $storage$;
+notify pgrst,'reload schema';
+
+create or replace function public.atualizar_versao_produto()
+returns trigger language plpgsql security invoker set search_path=public,pg_temp as $$
+begin new.atualizado_em:=clock_timestamp(); return new; end $$;
+revoke all on function public.atualizar_versao_produto() from public,anon,authenticated;
+drop trigger if exists produtos_versao on public.produtos;
+create trigger produtos_versao before update on public.produtos for each row execute function public.atualizar_versao_produto();
+
+-- ============ supabase/migrations/20261020213000_estoque_categoria.sql ============
+
+-- Mantém o controle em lote por categoria na nova tela de produtos, em uma só transação.
+create or replace function public.marcar_categoria_esgotada(p_categoria text,p_esgotado boolean)
+returns integer language plpgsql security definer set search_path=public,pg_temp as $$
+declare quantidade integer;
+begin
+ if not public.is_equipe() then raise exception 'sem_permissao' using errcode='P0001'; end if;
+ if p_categoria is null or p_esgotado is null or not exists(select 1 from public.categorias_produtos where id=p_categoria) then
+   raise exception 'dados_invalidos' using errcode='P0001';
+ end if;
+ update public.produtos set esgotado_dia=case when p_esgotado then public.dia_operacional(now()) end
+ where categoria=p_categoria and ativo;
+ get diagnostics quantidade=row_count;
+ return quantidade;
+end $$;
+revoke all on function public.marcar_categoria_esgotada(text,boolean) from public,anon,authenticated;
+grant execute on function public.marcar_categoria_esgotada(text,boolean) to authenticated;
+notify pgrst,'reload schema';
+
 -- ============ supabase/seed.sql ============
 
 -- Cardápio do Mineiro Lanche: gerado por scripts/gerar-seed.mjs a partir do CONFIG de src/core.js. Não edite à mão.
 -- 57 produtos e 5 adicionais. Idempotente: atualiza nome, preço, categoria, ordem,
 -- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia. O CONFIG manda no ativo: quem está nele fica
--- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo.
+-- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo. Itens editados/criados
+-- no painel são preservados integralmente, inclusive disponibilidade, preço e categoria.
 -- Preço null = "Preço a confirmar" (o criar_pedido recusa): nenhum.
 
-insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingredientes, ordem) values
-  ('teste-pagamento', 'testes', 'Teste de pagamento (temporário)', 1.00, 'porcao', null, '{}'::text[], 1),
-  ('gran-burger', 'artesanais', 'Gran Burger', 25.90, 'lanche', 'gran-burger', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue']::text[], 2),
-  ('gran-burger-bacon', 'artesanais', 'Gran Burger Bacon', 33.40, 'lanche', 'gran-burger-bacon', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon']::text[], 3),
-  ('gran-salada', 'artesanais', 'Gran Salada', 26.90, 'lanche', 'gran-salada', array['Maionese grill', 'Cheddar cremoso', 'Mussarela', 'Barbecue', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']::text[], 4),
-  ('gran-egg', 'artesanais', 'Gran Egg', 30.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Ovo', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 5),
-  ('gran-bacon', 'artesanais', 'Gran Bacon', 31.90, 'lanche', null, array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Mussarela', 'Bacon em tiras', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']::text[], 6),
-  ('gran-egg-bacon', 'artesanais', 'Gran Egg Bacon', 33.90, 'lanche', 'gran-egg-bacon', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon', 'Ovo', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 7),
-  ('gran-big-tudo', 'artesanais', 'Gran Big Tudo', 34.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Requeijão', 'Batata palha', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 8),
-  ('gran-black', 'artesanais', 'Gran Black', 35.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 9),
-  ('gran-big-mineiro', 'artesanais', 'Gran Big Mineiro', 36.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Requeijão', 'Batata palha', 'Tomate', 'Cebola roxa', 'Presunto', 'Azeite e sal']::text[], 10),
-  ('gran-chicken', 'artesanais', 'Gran Chicken', 24.90, 'lanche', 'gran-chicken', array['Cheddar', 'Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa']::text[], 11),
-  ('gran-bacon-onion', 'artesanais', 'Gran Bacon Onion', 34.90, 'lanche', 'gran-bacon-onion', array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '2 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']::text[], 12),
-  ('gran-crispy', 'artesanais', 'Gran Crispy', 27.90, 'lanche', 'gran-crispy', array['Maionese', 'Barbecue', 'Cheddar cremoso', 'Cebola caramelizada', 'Cebola crispy']::text[], 13),
-  ('x-burguer', 'tradicionais', 'X-Burguer', 16.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue']::text[], 14),
-  ('x-salada', 'tradicionais', 'X-Salada', 19.90, 'lanche', 'x-salada', array['Mussarela', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete', 'Azeite e sal']::text[], 15),
-  ('mega-x-salada-egg', 'tradicionais', 'Mega X-Salada Egg', 21.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Ovo']::text[], 16),
-  ('ultra-x-salada-bacon', 'tradicionais', 'Ultra X-Salada Bacon', 23.90, 'lanche', 'ultra-x-salada-bacon', array['Cheddar cremoso', 'Mussarela', 'Bacon', 'Alface', 'Vinagrete', 'Azeite e sal']::text[], 17),
-  ('exagerado-x-salada-egg-bacon', 'tradicionais', 'Exagerado X-Salada Egg Bacon', 27.90, 'lanche', 'exagerado-x-salada-egg-bacon', array['Maionese', 'Barbecue', 'Cheddar cremoso', 'Mussarela', 'Bacon', 'Ovo', 'Alface', 'Vinagrete', 'Azeite e sal']::text[], 18),
-  ('big-tudo', 'tradicionais', 'Big Tudo', 28.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Bacon', 'Batata palha']::text[], 19),
-  ('black-master', 'tradicionais', 'Black Master', 29.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Bacon']::text[], 20),
-  ('big-mineiro', 'tradicionais', 'Big Mineiro', 30.90, 'lanche', 'big-mineiro', array['Mussarela', 'Presunto', 'Ovo', 'Bacon', 'Maionese', 'Barbecue', 'Batata palha', 'Alface', 'Vinagrete', 'Azeite e sal']::text[], 21),
-  ('dog-medio', 'hotdog', 'Hot Dog Médio', 13.90, 'lanche', 'dog-max', array['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 22),
-  ('dog-medio-frango', 'hotdog', 'Hot Dog Médio Frango', 19.90, 'lanche', null, array['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal']::text[], 23),
-  ('dog-max', 'hotdog', 'Hot Dog Max', 15.90, 'lanche', 'dog-max', array['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 24),
-  ('dog-max-frango', 'hotdog', 'Hot Dog Max Frango', 21.90, 'lanche', null, array['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal']::text[], 25),
-  ('dog-super', 'hotdog', 'Hot Dog Super', 18.90, 'lanche', 'dog-max', array['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 26),
-  ('dog-super-frango', 'hotdog', 'Hot Dog Super Frango', 24.90, 'lanche', null, array['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal']::text[], 27),
-  ('dog-doritos', 'hotdog', 'Dog com Doritos', 23.90, 'lanche', 'dog-doritos', array['Doritos', 'Cheddar']::text[], 28),
-  ('dog-pizza', 'hotdog', 'Hot Dog Pizza', 26.40, 'lanche', 'dog-pizza', array['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry', 'Queijo gratinado', 'Orégano']::text[], 29),
-  ('dog-cbo-turbo', 'hotdog', 'Hot Dog CBO Turbo', 34.90, 'lanche', 'dog-cbo-turbo', array['Maionese', 'Ketchup', 'Alface', 'Azeite e sal', 'Purê de batata', 'Batata palha', 'Cheddar', 'Catupiry', 'Mussarela gratinada', 'Bacon']::text[], 30),
-  ('carne-maluca', 'baguetes', 'Carne Maluca', 26.90, 'lanche', null, array['Maionese', 'Barbecue', 'Milho', 'Batata palha', 'Vinagrete com cebola', 'Purê', 'Requeijão', 'Cheddar']::text[], 31),
-  ('x-frango', 'baguetes', 'X-Frango', 25.90, 'lanche', null, array['Queijo', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal']::text[], 32),
-  ('x-frango-egg-bacon', 'baguetes', 'X-Frango Egg Bacon', 29.90, 'lanche', null, array['Queijo', 'Purê', 'Ovo', 'Bacon', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal']::text[], 33),
-  ('x-calabresa', 'baguetes', 'X-Calabresa', 25.90, 'lanche', null, array['Queijo', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal']::text[], 34),
-  ('x-churrasco', 'baguetes', 'X-Churrasco', 28.90, 'lanche', 'x-churrasco', array['Maionese', 'Barbecue', 'Vinagrete', 'Mussarela', 'Purê de batata', 'Batata palha', 'Cheddar', 'Requeijão']::text[], 35),
-  ('americano', 'baguetes', 'Americano', 21.90, 'lanche', null, array['Maionese', 'Mussarela', 'Presunto', 'Ovo', 'Tomate', 'Alface', 'Azeite e sal']::text[], 36),
-  ('combo-diluvio', 'combos', 'Combo Dilúvio', 49.90, 'combo', 'combo-diluvio', array['Piscininha de cheddar', 'Farofinha de bacon']::text[], 37),
-  ('combo-casal', 'combos', 'Combo Casal', 99.90, 'combo', 'combo-casal', '{}'::text[], 38),
-  ('gran-bacon-coca-maionese', 'combos', 'Gran Bacon + Coca 350 ml + Maionese da casa', 42.90, 'combo', 'gran-bacon-maionese', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 39),
-  ('combo-2-dog-doritos', 'combos', 'Combo 2 Hot Dog com Doritos', 57.80, 'combo', 'combo-2-dog-doritos', array['Doritos', 'Cheddar']::text[], 40),
-  ('combo-gran-burger', 'combos', 'Combo Gran Burger', 39.90, 'combo', null, array['Mussarela', 'Cheddar', 'Maionese', 'Barbecue']::text[], 41),
-  ('combo-gran-bacon', 'combos', 'Combo Gran Bacon', 45.90, 'combo', null, array['Mussarela', 'Cheddar', 'Bacon', 'Maionese', 'Barbecue', 'Alface americano', 'Tomate']::text[], 42),
-  ('combo-gran-salada', 'combos', 'Combo Gran Salada', 42.90, 'combo', null, array['Mussarela', 'Cheddar', 'Alface americano', 'Tomate', 'Cebola roxa', 'Maionese', 'Barbecue']::text[], 43),
-  ('combo-gran-bacon-onion', 'combos', 'Combo Gran Bacon Onion', 48.90, 'combo', 'combo-gran-bacon-onion', array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '2 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']::text[], 44),
-  ('combo-hot-dog-max', 'combos', 'Combo Hot Dog Max', 29.90, 'combo', null, array['Alface', 'Purê', 'Batata palha', 'Ketchup', 'Cheddar', 'Catupiry']::text[], 45),
-  ('combo-x-frango', 'combos', 'Combo X-Frango', 39.90, 'combo', null, array['Mussarela', 'Maionese', 'Barbecue', 'Vinagrete', 'Purê', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 46),
-  ('combo-gran-chicken', 'combos', 'Combo Gran Chicken', 38.90, 'combo', null, array['Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa']::text[], 47),
-  ('porcao-batata', 'porcoes', 'Porção de batata turbinada', 39.90, 'porcao', null, '{}'::text[], 48),
-  ('porcao-onion', 'porcoes', 'Porção de onion', 14.90, 'porcao', null, '{}'::text[], 49),
-  ('refri-lata', 'bebidas', 'Refrigerante lata', 8.00, 'bebida', null, '{}'::text[], 50),
-  ('refri-600', 'bebidas', 'Refrigerante 600 ml', 12.00, 'bebida', null, '{}'::text[], 51),
-  ('refri-1l', 'bebidas', 'Refrigerante 1 litro', 14.00, 'bebida', null, '{}'::text[], 52),
-  ('refri-dolly', 'bebidas', 'Refrigerante Dolly', 4.50, 'bebida', null, '{}'::text[], 53),
-  ('suco-lata', 'bebidas', 'Suco lata', 7.00, 'bebida', null, '{}'::text[], 54),
-  ('suco-1l', 'bebidas', 'Suco 1 litro', 11.00, 'bebida', null, '{}'::text[], 55),
-  ('agua', 'bebidas', 'Água', 4.00, 'bebida', null, '{}'::text[], 56),
-  ('h2o', 'bebidas', 'H2O', 8.00, 'bebida', null, '{}'::text[], 57)
+insert into public.categorias_produtos (id, label, icone, descricao, ordem) values
+  ('testes', 'Teste de pagamento', 'sacola', 'Item temporário para validar o pagamento online', 0),
+  ('artesanais', 'Artesanais', 'burger', 'Hambúrguer artesanal de 200 g', 1),
+  ('tradicionais', 'Tradicionais', 'burger', 'Os clássicos da chapa', 2),
+  ('hotdog', 'Hot dog', 'hotdog', 'Salsicha Perdigão · Dog Bacon ou Dog Pizza: qualquer dog com o adicional Bacon ou Pizza', 3),
+  ('baguetes', 'Baguetes', 'baguete', 'Na baguete, do jeito mineiro', 4),
+  ('combos', 'Combos', 'combo', 'Lanche, batata e bebida', 5),
+  ('porcoes', 'Porções', 'batata', 'Pra dividir', 6),
+  ('bebidas', 'Bebidas', 'lata', 'Geladas', 7)
+on conflict (id) do nothing;
+
+insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingredientes, ordem, detalhes) values
+  ('teste-pagamento', 'testes', 'Teste de pagamento (temporário)', 1.00, 'porcao', null, '{}'::text[], 1, '{"base":"Somente validação do pagamento. Não é um alimento. Selecione retirada no local.","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-burger', 'artesanais', 'Gran Burger', 25.90, 'lanche', 'gran-burger', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue']::text[], 2, '{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-burger-bacon', 'artesanais', 'Gran Burger Bacon', 33.40, 'lanche', 'gran-burger-bacon', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon']::text[], 3, '{"base":"Gran Burger com bacon","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-salada', 'artesanais', 'Gran Salada', 26.90, 'lanche', 'gran-salada', array['Maionese grill', 'Cheddar cremoso', 'Mussarela', 'Barbecue', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']::text[], 4, '{"base":"Pão seladinho na chapa e hambúrguer angus 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-egg', 'artesanais', 'Gran Egg', 30.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Ovo', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 5, '{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-bacon', 'artesanais', 'Gran Bacon', 31.90, 'lanche', null, array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Mussarela', 'Bacon em tiras', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']::text[], 6, '{"base":"Pão seladinho na chapa e hambúrguer angus 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-egg-bacon', 'artesanais', 'Gran Egg Bacon', 33.90, 'lanche', 'gran-egg-bacon', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon', 'Ovo', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 7, '{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-big-tudo', 'artesanais', 'Gran Big Tudo', 34.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Requeijão', 'Batata palha', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 8, '{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-black', 'artesanais', 'Gran Black', 35.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 9, '{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-big-mineiro', 'artesanais', 'Gran Big Mineiro', 36.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Bacon', 'Ovo', 'Requeijão', 'Batata palha', 'Tomate', 'Cebola roxa', 'Presunto', 'Azeite e sal']::text[], 10, '{"base":"Pão e hambúrguer artesanal 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-chicken', 'artesanais', 'Gran Chicken', 24.90, 'lanche', 'gran-chicken', array['Cheddar', 'Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa']::text[], 11, '{"base":"Pão de brioche e hambúrguer de frango empanado","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-bacon-onion', 'artesanais', 'Gran Bacon Onion', 34.90, 'lanche', 'gran-bacon-onion', array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '2 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']::text[], 12, '{"base":"Pão seladinho na chapa e hambúrguer angus 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-crispy', 'artesanais', 'Gran Crispy', 27.90, 'lanche', 'gran-crispy', array['Maionese', 'Barbecue', 'Cheddar cremoso', 'Cebola caramelizada', 'Cebola crispy']::text[], 13, '{"base":"Pão de brioche e hambúrguer 200 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('x-burguer', 'tradicionais', 'X-Burguer', 16.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue']::text[], 14, '{"base":"Pão e hambúrguer","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('x-salada', 'tradicionais', 'X-Salada', 19.90, 'lanche', 'x-salada', array['Mussarela', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete', 'Azeite e sal']::text[], 15, '{"base":"Pão de hambúrguer e hambúrguer 90 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('mega-x-salada-egg', 'tradicionais', 'Mega X-Salada Egg', 21.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Ovo']::text[], 16, '{"base":"Pão e hambúrguer","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('ultra-x-salada-bacon', 'tradicionais', 'Ultra X-Salada Bacon', 23.90, 'lanche', 'ultra-x-salada-bacon', array['Cheddar cremoso', 'Mussarela', 'Bacon', 'Alface', 'Vinagrete', 'Azeite e sal']::text[], 17, '{"base":"Pão de hambúrguer e hambúrguer 90 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('exagerado-x-salada-egg-bacon', 'tradicionais', 'Exagerado X-Salada Egg Bacon', 27.90, 'lanche', 'exagerado-x-salada-egg-bacon', array['Maionese', 'Barbecue', 'Cheddar cremoso', 'Mussarela', 'Bacon', 'Ovo', 'Alface', 'Vinagrete', 'Azeite e sal']::text[], 18, '{"base":"Pão de hambúrguer e hambúrguer 90 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('big-tudo', 'tradicionais', 'Big Tudo', 28.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Bacon', 'Batata palha']::text[], 19, '{"base":"Pão e hambúrguer","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('black-master', 'tradicionais', 'Black Master', 29.90, 'lanche', null, array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Bacon']::text[], 20, '{"base":"Pão australiano e hambúrguer","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('big-mineiro', 'tradicionais', 'Big Mineiro', 30.90, 'lanche', 'big-mineiro', array['Mussarela', 'Presunto', 'Ovo', 'Bacon', 'Maionese', 'Barbecue', 'Batata palha', 'Alface', 'Vinagrete', 'Azeite e sal']::text[], 21, '{"base":"Pão de hambúrguer e hambúrguer 90 g","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-medio', 'hotdog', 'Hot Dog Médio', 13.90, 'lanche', 'dog-max', array['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 22, '{"base":"Pão médio e 1 salsicha Perdigão","nota":"Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-medio-frango', 'hotdog', 'Hot Dog Médio Frango', 19.90, 'lanche', null, array['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal']::text[], 23, '{"base":"Pão e 1 salsicha","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-max', 'hotdog', 'Hot Dog Max', 15.90, 'lanche', 'dog-max', array['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 24, '{"base":"Pão médio e 2 salsichas Perdigão","nota":"Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-max-frango', 'hotdog', 'Hot Dog Max Frango', 21.90, 'lanche', null, array['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal']::text[], 25, '{"base":"Pão e 2 salsichas","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-super', 'hotdog', 'Hot Dog Super', 18.90, 'lanche', 'dog-max', array['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 26, '{"base":"Pão médio e 3 salsichas Perdigão","nota":"Dog Bacon ou Dog Pizza: escolha o adicional Bacon ou Pizza (queijo gratinado e orégano) aqui embaixo.","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-super-frango', 'hotdog', 'Hot Dog Super Frango', 24.90, 'lanche', null, array['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal']::text[], 27, '{"base":"Pão e 3 salsichas","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-doritos', 'hotdog', 'Dog com Doritos', 23.90, 'lanche', 'dog-doritos', array['Doritos', 'Cheddar']::text[], 28, '{"base":"O hot dog com Doritos da casa","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-pizza', 'hotdog', 'Hot Dog Pizza', 26.40, 'lanche', 'dog-pizza', array['Maionese', 'Ketchup', 'Alface', 'Purê de batata', 'Azeite e sal', 'Batata palha', 'Cheddar', 'Catupiry', 'Queijo gratinado', 'Orégano']::text[], 29, '{"base":"Hot Dog Super (3 salsichas Perdigão) com o adicional Pizza","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('dog-cbo-turbo', 'hotdog', 'Hot Dog CBO Turbo', 34.90, 'lanche', 'dog-cbo-turbo', array['Maionese', 'Ketchup', 'Alface', 'Azeite e sal', 'Purê de batata', 'Batata palha', 'Cheddar', 'Catupiry', 'Mussarela gratinada', 'Bacon']::text[], 30, '{"base":"Pão de dog e 3 salsichas Perdigão","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('carne-maluca', 'baguetes', 'Carne Maluca', 26.90, 'lanche', null, array['Maionese', 'Barbecue', 'Milho', 'Batata palha', 'Vinagrete com cebola', 'Purê', 'Requeijão', 'Cheddar']::text[], 31, '{"base":"Baguete e carne desfiada","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('x-frango', 'baguetes', 'X-Frango', 25.90, 'lanche', null, array['Queijo', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal']::text[], 32, '{"base":"Baguete e filé de frango","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('x-frango-egg-bacon', 'baguetes', 'X-Frango Egg Bacon', 29.90, 'lanche', null, array['Queijo', 'Purê', 'Ovo', 'Bacon', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal']::text[], 33, '{"base":"Baguete e filé de frango","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('x-calabresa', 'baguetes', 'X-Calabresa', 25.90, 'lanche', null, array['Queijo', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Vinagrete com cebola', 'Maionese', 'Barbecue', 'Azeite e sal']::text[], 34, '{"base":"Baguete e calabresa","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('x-churrasco', 'baguetes', 'X-Churrasco', 28.90, 'lanche', 'x-churrasco', array['Maionese', 'Barbecue', 'Vinagrete', 'Mussarela', 'Purê de batata', 'Batata palha', 'Cheddar', 'Requeijão']::text[], 35, '{"base":"Pão de baguete e contra-filé","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('americano', 'baguetes', 'Americano', 21.90, 'lanche', null, array['Maionese', 'Mussarela', 'Presunto', 'Ovo', 'Tomate', 'Alface', 'Azeite e sal']::text[], 36, '{"base":"Baguete","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-diluvio', 'combos', 'Combo Dilúvio', 49.90, 'combo', 'combo-diluvio', array['Piscininha de cheddar', 'Farofinha de bacon']::text[], 37, '{"base":"","nota":"Pergunte pelo WhatsApp quantos lanches vêm.","inclui":["Gran Burgers na piscininha de cheddar","Farofinha de bacon","140 g de batata frita","Refrigerante lata 350 ml (qualquer um)"],"sabor":false,"escolheRefri":true}'::jsonb),
+  ('combo-casal', 'combos', 'Combo Casal', 99.90, 'combo', 'combo-casal', '{}'::text[], 38, '{"base":"","nota":"Na foto: 2 lanches e batata com calabresa, cheddar, maionese e cebola crispy. Pergunte pelo WhatsApp quais lanches vêm.","inclui":["2 lanches","Porção de batata"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('gran-bacon-coca-maionese', 'combos', 'Gran Bacon + Coca 350 ml + Maionese da casa', 42.90, 'combo', 'gran-bacon-maionese', array['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon', 'Alface', 'Tomate', 'Cebola roxa', 'Azeite e sal']::text[], 39, '{"base":"","nota":"","inclui":["Gran Bacon","Coca-Cola 350 ml","Maionese artesanal da casa"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-2-dog-doritos', 'combos', 'Combo 2 Hot Dog com Doritos', 57.80, 'combo', 'combo-2-dog-doritos', array['Doritos', 'Cheddar']::text[], 40, '{"base":"","nota":"","inclui":["2 Hot Dog com Doritos","Coca-Cola 600 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-gran-burger', 'combos', 'Combo Gran Burger', 39.90, 'combo', null, array['Mussarela', 'Cheddar', 'Maionese', 'Barbecue']::text[], 41, '{"base":"","nota":"","inclui":["Gran Burger (brioche, 200 g de carne angus, mussarela, cheddar, maionese e barbecue)","Coca-Cola 350 ml","250 g de batata"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-gran-bacon', 'combos', 'Combo Gran Bacon', 45.90, 'combo', null, array['Mussarela', 'Cheddar', 'Bacon', 'Maionese', 'Barbecue', 'Alface americano', 'Tomate']::text[], 42, '{"base":"","nota":"","inclui":["Gran Bacon (brioche, 200 g de carne angus, mussarela, cheddar, bacon, maionese, barbecue, alface americano e tomate)","Coca-Cola 350 ml","250 g de batata"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-gran-salada', 'combos', 'Combo Gran Salada', 42.90, 'combo', null, array['Mussarela', 'Cheddar', 'Alface americano', 'Tomate', 'Cebola roxa', 'Maionese', 'Barbecue']::text[], 43, '{"base":"","nota":"","inclui":["Gran Salada (brioche, 200 g de carne angus, mussarela, cheddar, alface americano, tomate, cebola roxa, maionese e barbecue)","Coca-Cola 350 ml","250 g de batata"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-gran-bacon-onion', 'combos', 'Combo Gran Bacon Onion', 48.90, 'combo', 'combo-gran-bacon-onion', array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '2 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']::text[], 44, '{"base":"","nota":"","inclui":["Gran Bacon Onion (angus 200 g, maionese grill, barbecue, cheddar cremoso, bacon em fatias, 2 onion rings, alface americana, tomate em rodelas e cebola roxa)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-hot-dog-max', 'combos', 'Combo Hot Dog Max', 29.90, 'combo', null, array['Alface', 'Purê', 'Batata palha', 'Ketchup', 'Cheddar', 'Catupiry']::text[], 45, '{"base":"","nota":"","inclui":["Hot dog médio com 2 salsichas, alface, purê, batata palha, ketchup, cheddar e catupiry","250 g de batata frita","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-x-frango', 'combos', 'Combo X-Frango', 39.90, 'combo', null, array['Mussarela', 'Maionese', 'Barbecue', 'Vinagrete', 'Purê', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 46, '{"base":"","nota":"","inclui":["X-Frango na baguete (filé de frango, mussarela, maionese, barbecue, vinagrete, purê, batata palha, cheddar e catupiry)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('combo-gran-chicken', 'combos', 'Combo Gran Chicken', 38.90, 'combo', null, array['Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa']::text[], 47, '{"base":"","nota":"","inclui":["Gran Chicken (brioche, frango empanado, maionese, barbecue, alface americano, tomate e cebola roxa)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('porcao-batata', 'porcoes', 'Porção de batata turbinada', 39.90, 'porcao', null, '{}'::text[], 48, '{"base":"","nota":"","inclui":["500 g de batata frita","Cheddar cremoso","Bacon","Requeijão","Calabresa","Alho-poró"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('porcao-onion', 'porcoes', 'Porção de onion', 14.90, 'porcao', null, '{}'::text[], 49, '{"base":"","nota":"","inclui":["6 onion rings"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('refri-lata', 'bebidas', 'Refrigerante lata', 8.00, 'bebida', null, '{}'::text[], 50, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('refri-600', 'bebidas', 'Refrigerante 600 ml', 12.00, 'bebida', null, '{}'::text[], 51, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('refri-1l', 'bebidas', 'Refrigerante 1 litro', 14.00, 'bebida', null, '{}'::text[], 52, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('refri-dolly', 'bebidas', 'Refrigerante Dolly', 4.50, 'bebida', null, '{}'::text[], 53, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('suco-lata', 'bebidas', 'Suco lata', 7.00, 'bebida', null, '{}'::text[], 54, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('suco-1l', 'bebidas', 'Suco 1 litro', 11.00, 'bebida', null, '{}'::text[], 55, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('agua', 'bebidas', 'Água', 4.00, 'bebida', null, '{}'::text[], 56, '{"base":"","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('h2o', 'bebidas', 'H2O', 8.00, 'bebida', null, '{}'::text[], 57, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb)
 on conflict (id) do update set
   categoria = excluded.categoria,
   nome = excluded.nome,
@@ -3984,12 +4170,14 @@ on conflict (id) do update set
   tipo = excluded.tipo,
   foto = excluded.foto,
   ingredientes = excluded.ingredientes,
+  detalhes = excluded.detalhes,
   ordem = excluded.ordem,
-  ativo = true;
+  ativo = true
+where not public.produtos.editado_painel;
 
 -- o que saiu do CONFIG fica inativo (pedidos antigos continuam apontando para ele)
 update public.produtos set ativo = false
-where ativo and id not in ('teste-pagamento', 'gran-burger', 'gran-burger-bacon', 'gran-salada', 'gran-egg', 'gran-bacon', 'gran-egg-bacon', 'gran-big-tudo', 'gran-black', 'gran-big-mineiro', 'gran-chicken', 'gran-bacon-onion', 'gran-crispy', 'x-burguer', 'x-salada', 'mega-x-salada-egg', 'ultra-x-salada-bacon', 'exagerado-x-salada-egg-bacon', 'big-tudo', 'black-master', 'big-mineiro', 'dog-medio', 'dog-medio-frango', 'dog-max', 'dog-max-frango', 'dog-super', 'dog-super-frango', 'dog-doritos', 'dog-pizza', 'dog-cbo-turbo', 'carne-maluca', 'x-frango', 'x-frango-egg-bacon', 'x-calabresa', 'x-churrasco', 'americano', 'combo-diluvio', 'combo-casal', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos', 'combo-gran-burger', 'combo-gran-bacon', 'combo-gran-salada', 'combo-gran-bacon-onion', 'combo-hot-dog-max', 'combo-x-frango', 'combo-gran-chicken', 'porcao-batata', 'porcao-onion', 'refri-lata', 'refri-600', 'refri-1l', 'refri-dolly', 'suco-lata', 'suco-1l', 'agua', 'h2o');
+where ativo and not editado_painel and id not in ('teste-pagamento', 'gran-burger', 'gran-burger-bacon', 'gran-salada', 'gran-egg', 'gran-bacon', 'gran-egg-bacon', 'gran-big-tudo', 'gran-black', 'gran-big-mineiro', 'gran-chicken', 'gran-bacon-onion', 'gran-crispy', 'x-burguer', 'x-salada', 'mega-x-salada-egg', 'ultra-x-salada-bacon', 'exagerado-x-salada-egg-bacon', 'big-tudo', 'black-master', 'big-mineiro', 'dog-medio', 'dog-medio-frango', 'dog-max', 'dog-max-frango', 'dog-super', 'dog-super-frango', 'dog-doritos', 'dog-pizza', 'dog-cbo-turbo', 'carne-maluca', 'x-frango', 'x-frango-egg-bacon', 'x-calabresa', 'x-churrasco', 'americano', 'combo-diluvio', 'combo-casal', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos', 'combo-gran-burger', 'combo-gran-bacon', 'combo-gran-salada', 'combo-gran-bacon-onion', 'combo-hot-dog-max', 'combo-x-frango', 'combo-gran-chicken', 'porcao-batata', 'porcao-onion', 'refri-lata', 'refri-600', 'refri-1l', 'refri-dolly', 'suco-lata', 'suco-1l', 'agua', 'h2o');
 
 insert into public.adicionais (id, nome, preco) values
   ('catupiry', 'Catupiry', 7.50),

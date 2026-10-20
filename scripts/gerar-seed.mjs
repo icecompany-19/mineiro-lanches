@@ -109,7 +109,8 @@ export function montarSeed(CONFIG, origem = 'src/core.js') {
   const combo = CONFIG.regras && CONFIG.regras.combo ? CONFIG.regras.combo.preco : null;
   if (typeof combo !== 'number') throw new Error('CONFIG.regras.combo.preco ausente');
   const taxa = CONFIG.entrega && CONFIG.entrega.taxa ? CONFIG.entrega.taxa : null;
-  if (!taxa || typeof taxa.porKm !== 'number' || typeof taxa.fixa !== 'number') throw new Error('CONFIG.entrega.taxa ausente (porKm e fixa)');
+  if (!taxa || typeof taxa.porKm !== 'number' || typeof taxa.fixa !== 'number')
+    throw new Error('CONFIG.entrega.taxa ausente (porKm e fixa)');
   // {"0": null, "1": ["19:00","00:00"], ...}
   const horarios = {};
   Object.keys(CONFIG.horarios || {}).forEach((d) => (horarios[String(d)] = CONFIG.horarios[d] || null));
@@ -117,7 +118,7 @@ export function montarSeed(CONFIG, origem = 'src/core.js') {
   const linhasProd = produtos.map(
     (p, i) =>
       `  (${txt(p.id)}, ${txt(p.categoria)}, ${txt(p.nome)}, ${precoProduto(p)}, ${txt(p.tipo)}, ` +
-      `${p.foto ? txt(p.foto) : 'null'}, ${arr(p.ing)}, ${i + 1})`
+      `${p.foto ? txt(p.foto) : 'null'}, ${arr(p.ing)}, ${i + 1}, ${txt(JSON.stringify({ base: p.base || '', nota: p.nota || '', inclui: p.inclui || [], sabor: !!p.sabor, escolheRefri: !!p.escolheRefri }))}::jsonb)`
   );
   const linhasAdic = adicionais.map((a) => `  (${txt(a.id)}, ${txt(a.nome)}, ${num(a.preco)})`);
   const semPreco = produtos.filter((p) => p.preco === null).map((p) => p.id);
@@ -125,10 +126,15 @@ export function montarSeed(CONFIG, origem = 'src/core.js') {
   return `-- Cardápio do Mineiro Lanche: gerado por scripts/gerar-seed.mjs a partir do CONFIG de ${origem}. Não edite à mão.
 -- ${produtos.length} produtos e ${adicionais.length} adicionais. Idempotente: atualiza nome, preço, categoria, ordem,
 -- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia. O CONFIG manda no ativo: quem está nele fica
--- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo.
+-- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo. Itens editados/criados
+-- no painel são preservados integralmente, inclusive disponibilidade, preço e categoria.
 -- Preço null = "Preço a confirmar" (o criar_pedido recusa): ${semPreco.length ? semPreco.join(', ') : 'nenhum'}.
 
-insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingredientes, ordem) values
+insert into public.categorias_produtos (id, label, icone, descricao, ordem) values
+${CONFIG.categorias.map((c, i) => `  (${txt(c.id)}, ${txt(c.label)}, ${txt(c.icone || 'burger')}, ${txt(c.desc || '')}, ${i})`).join(',\n')}
+on conflict (id) do nothing;
+
+insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingredientes, ordem, detalhes) values
 ${linhasProd.join(',\n')}
 on conflict (id) do update set
   categoria = excluded.categoria,
@@ -137,12 +143,14 @@ on conflict (id) do update set
   tipo = excluded.tipo,
   foto = excluded.foto,
   ingredientes = excluded.ingredientes,
+  detalhes = excluded.detalhes,
   ordem = excluded.ordem,
-  ativo = true;
+  ativo = true
+where not public.produtos.editado_painel;
 
 -- o que saiu do CONFIG fica inativo (pedidos antigos continuam apontando para ele)
 update public.produtos set ativo = false
-where ativo and id not in (${produtos.map((p) => txt(p.id)).join(', ')});
+where ativo and not editado_painel and id not in (${produtos.map((p) => txt(p.id)).join(', ')});
 
 insert into public.adicionais (id, nome, preco) values
 ${linhasAdic.join(',\n')}
