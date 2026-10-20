@@ -29,7 +29,17 @@ O Access Token cadastrado foi validado pelo backend em `GET /users/me`: conta br
 
 A validação local sem webhook pode usar `node --env-file=.env.mercadopago.local scripts/verificar-mercado-pago.mjs --conexao --sem-webhook`; ela não certifica a rotina agendada. A flag de pagamentos continua desligada até validar as configurações e o fluxo de teste. Apenas a homologação recebeu estas funções; nenhuma chave produtiva foi utilizada.
 
-Validação de 20/10: lint, build normal, build simulando Vercel Preview e 18 testes unitários aprovados. O bundle de preview contém o host de homologação e não contém o host produtivo. Vercel confirmou deploy `efa9bb7` com sucesso. O endereço de preview está protegido por login da Vercel; a visita anônima redireciona para `vercel.com`, portanto a compra no navegador ainda não foi homologada. A rotina `mineiro-mp-reconciliar` e seus segredos no Vault ainda não estão configurados.
+Validação de 20/10: lint, build normal, build simulando Vercel Preview e 18 testes unitários aprovados. O bundle de preview contém o host de homologação e não contém o host produtivo. Vercel confirmou deploy `efa9bb7` com sucesso. O endereço de preview está protegido por login da Vercel; a visita anônima redireciona para `vercel.com`, portanto a compra no navegador ainda não foi homologada.
+
+### Conexão efetiva e consulta agendada (20/10)
+
+Modo `test` e URL de retorno corrigidos e verificados. Foi criado pelo fluxo real do backend o pedido de homologação 0001, X-Burguer de R$ 16,90, e a Orders API retornou a order `ORDTST01M5CWY92ZFYD09JN0XGN83CJW` com checkout HTTPS válido. Conta, aplicação, total e ambiente foram conferidos pelo adaptador; a consulta subsequente retornou HTTP 200 e preservou a mesma URL de pagamento. Pedido permanece `novo` com pagamento `pendente`, sem aprovação artificial.
+
+A execução revelou falta de SELECT/UPDATE para service_role no Supabase remoto: BYPASSRLS não concede os privilégios SQL. A migration `20261020145407_pagamentos_permissoes_backend.sql` concede somente as leituras necessárias e UPDATE nas duas colunas financeiras; não amplia acesso público nem edição do status operacional. O teste 11 remove os privilégios implícitos do stub, reaplica a migration e confirma reserva e registro financeiro; bateria SQL: 599 verificações aprovadas.
+
+`mineiro-mp-reconciliar` está ativo a cada minuto na homologação. Os dois segredos foram gravados no Vault dentro do próprio backend, sem retornar credenciais ao navegador ou à sessão. Consulta direta ao reconciliador retornou 200; a chamada agendada também retornou 200, processou uma order e registrou zero falhas. O provisionamento temporário foi encerrado com resposta 410. A flag está ligada somente na homologação, com um pedido de teste; produção permanece sem pagamentos online.
+
+Pendências para concluir a homologação: entrar no checkout com uma conta de comprador de teste e confirmar aprovação/recusa; abrir o preview ao testador na configuração de proteção da Vercel. Não foi realizada compra aprovada ou cobrança real. Credenciais produtivas ainda precisam ser cadastradas no ambiente da loja e verificadas antes da publicação produtiva. Webhook permanece fechado por ausência de assinatura; a rotina de consulta já opera independentemente do navegador.
 
 ## Comportamento
 
