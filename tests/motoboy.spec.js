@@ -49,15 +49,24 @@ const pedido = (extra) => ({
   total: 38.5,
   taxaEntrega: 8,
   distanciaKm: 4.1,
+  atribuicao: '30000000-0000-4000-8000-000000000001',
   saiuEm: '2026-10-17T21:30:00-03:00',
   entregueEm: null,
   ...extra
 });
 const emRota = (extra) => pedido({ status: 'rota', ...extra });
+const resumoTaxas = (dias = 1, taxas = {}) => ({
+  dias,
+  inicio: '2026-10-17T07:00:00Z',
+  servidorEm: '2026-10-17T23:00:00Z',
+  taxas: { concluidas: 0, emAberto: 0, qtdConcluidas: 0, qtdEmAberto: 0, semTaxaConcluidas: 0, semTaxaEmAberto: 0, ...taxas }
+});
 // já entregue (migration 20261017000002): o pedido volta só com id, numero e status, sem dados do cliente
 const confirmou =
   (jaEntregue = false) =>
-  (corpo) => ({ json: { ok: true, jaEntregue, pedido: jaEntregue ? { id: corpo.p_id, numero: 11, status: 'entregue' } : pedido({ id: corpo.p_id }) } });
+  (corpo) => ({
+    json: { ok: true, jaEntregue, pedido: jaEntregue ? { id: corpo.p_id, numero: 11, status: 'entregue' } : pedido({ id: corpo.p_id }) }
+  });
 // erro de regra do banco: raise exception '<codigo>' (P0001), o texto da mensagem é só o código
 const recusa = (codigo) => () => ({ status: 400, json: { code: 'P0001', details: null, hint: null, message: codigo } });
 
@@ -100,8 +109,12 @@ function sessao(usuario) {
 // opc.confirmar: (corpo) => { status?, json } | { abort: true } | { pendente: true }.
 async function simular(page, opc = {}) {
   const usuario = opc.usuario || MOTO;
-  const c = { login: 0, logout: 0, rota: 0, confirmar: [], motoboys: 0, equipe: 0, naoSimuladas: [] };
-  const estado = { rota: opc.rota || [], confirmar: opc.confirmar || confirmou() };
+  const c = { login: 0, logout: 0, rota: 0, taxas: [], confirmar: [], motoboys: 0, equipe: 0, naoSimuladas: [] };
+  const estado = {
+    rota: opc.rota || [],
+    confirmar: opc.confirmar || confirmou(),
+    taxas: opc.taxas || ((dias) => ({ json: resumoTaxas(dias) }))
+  };
   const responder = async (route, r) => {
     if (r.abort) return route.abort('internetdisconnected');
     if (r.pendente) return new Promise(() => {}); // nunca responde
@@ -145,7 +158,28 @@ async function simular(page, opc = {}) {
     const r = estado.rota;
     return responder(route, typeof r === 'function' ? r() : { json: r });
   });
-  await page.route('**/rest/v1/rpc/confirmar_entrega', async (route) => {
+  await page.route('**/rest/v1/rpc/minhas_taxas_entrega', async (route) => {
+    if (preflight(route)) return;
+    const dias = route.request().postDataJSON().p_dias;
+    c.taxas.push(dias);
+    return responder(route, estado.taxas(dias));
+  });
+  await page.route('**/rest/v1/rpc/minha_operacao_rotas', async (route) => {
+    if (preflight(route)) return;
+    return responder(route, {
+      json: {
+        servidorEm: new Date().toISOString(),
+        modo: 'desligado',
+        entregador: { id: usuario.id, nome: usuario.email, declarado: 'fora', situacao: 'fora', qtdAbertas: 0, elegivel: false },
+        viagem: null
+      }
+    });
+  });
+  await page.route('**/rest/v1/rpc/consultar_entrega_motoboy', async (route) => {
+    if (preflight(route)) return;
+    return responder(route, { json: emRota({ id: route.request().postDataJSON().p_id }) });
+  });
+  await page.route('**/rest/v1/rpc/confirmar_entrega_offline', async (route) => {
     if (preflight(route)) return;
     const corpo = route.request().postDataJSON() || {};
     c.confirmar.push(corpo.p_id);
@@ -252,6 +286,34 @@ const resultado = (page) => page.locator('.mb-res');
 const semHash = (page) => expect.poll(() => page.evaluate(() => location.hash)).toBe('');
 
 // ---------- testes ----------
+
+test('taxas próprias acompanham o período e preservam a última consulta se a rede falhar', async ({ page, baseURL }) => {
+  await preparar(page, baseURL);
+  const s = await simular(page, {
+    taxas: (dias) => ({
+      json: resumoTaxas(dias, {
+        concluidas: dias === 1 ? 11.35 : 14.7,
+        emAberto: 9,
+        qtdConcluidas: dias === 1 ? 3 : 4,
+        qtdEmAberto: 2,
+        semTaxaConcluidas: 1
+      })
+    })
+  });
+  await abrirLogado(page);
+  await expect(page.locator('[data-taxas-concluidas]')).toHaveText(/R\$\s*11,35/);
+  await expect(page.locator('[data-taxas-aberto]')).toHaveText(/R\$\s*9,00/);
+  await expect(page.locator('[data-taxas-estado]')).toContainText('1 pedido sem taxa registrada');
+  await page.getByLabel('Período das taxas').selectOption('7');
+  await expect(page.locator('[data-taxas-concluidas]')).toHaveText(/R\$\s*14,70/);
+  await expect(page.locator('[data-taxas]')).toHaveAttribute('aria-busy', 'false');
+  s.estado.taxas = () => ({ abort: true });
+  await page.getByRole('button', { name: 'Atualizar', exact: true }).click();
+  await expect(page.locator('[data-taxas-estado]')).toContainText('Não foi possível atualizar');
+  await expect(page.locator('[data-taxas-concluidas]')).toHaveText(/R\$\s*14,70/);
+  expect(s.c.taxas).toContain(7);
+  expect(s.c.naoSimuladas).toEqual([]);
+});
 
 test('login do entregador: tela Entregas, sessão em chave própria e nada do painel carregado', async ({ page, baseURL }) => {
   const v = await preparar(page, baseURL);
@@ -407,50 +469,36 @@ test('ler de novo: "Já estava entregue" sem erro', async ({ page, baseURL }) =>
   expect(s.c.confirmar).toEqual([ID_A]);
 });
 
-test('erros do banco viram mensagens claras (retirada, cancelado, ainda não aceito, outros)', async ({ page, baseURL }) => {
-  await preparar(page, baseURL);
-  const s = await simular(page);
-  await abrirLogado(page);
-  const casos = [
-    ['nao_e_entrega', 'Esse pedido é de retirada'],
-    ['pedido_cancelado', 'Pedido cancelado'],
-    ['transicao_invalida', 'Ainda não foi aceito pela cozinha'],
-    ['nao_encontrado', 'Pedido não encontrado'],
-    ['sem_permissao', 'Este usuário não tem permissão para confirmar entregas'],
-    ['dados_invalidos', 'Esse código não é de um pedido']
-  ];
-  const ids = [
-    ID_A,
-    ID_B,
-    ID_C,
-    'd4e5f6a7-b8c9-4d0e-9f2a-3b4c5d6e7f80',
-    'e5f6a7b8-c9d0-4e1f-8a3b-4c5d6e7f8091',
-    'f6a7b8c9-d0e1-4f2a-9b4c-5d6e7f809102'
-  ];
-  for (const [i, [codigo, texto]] of casos.entries()) {
-    await test.step(codigo, async () => {
-      s.estado.confirmar = recusa(codigo);
-      await page.evaluate((id) => (location.hash = '#' + id), ids[i]);
-      const r = resultado(page);
-      await expect(r).toHaveClass(/mb-res--erro/);
-      await expect(r).toHaveText(texto);
-      await expect(r.getByRole('button', { name: 'Tentar de novo' }), 'só falta de rede oferece tentar de novo').toHaveCount(0);
-      await expect(r.getByText('Entregue', { exact: true })).toHaveCount(0);
-    });
-  }
-  expect(s.c.confirmar).toEqual(ids);
-  expect(s.c.naoSimuladas).toEqual([]);
-});
+for (const [codigo, texto] of [
+  ['nao_e_entrega', 'Esse pedido é de retirada'],
+  ['pedido_cancelado', 'Pedido cancelado'],
+  ['transicao_invalida', 'Ainda não foi aceito pela cozinha'],
+  ['nao_encontrado', 'Pedido não encontrado'],
+  ['sem_permissao', 'Este usuário não tem permissão para confirmar entregas'],
+  ['dados_invalidos', 'Esse código não é de um pedido']
+])
+  test('recusa fica preservada na fila para conferência: ' + codigo, async ({ page, baseURL }) => {
+    await preparar(page, baseURL);
+    const s = await simular(page, { confirmar: recusa(codigo) });
+    await abrirLogado(page, '#' + ID_A);
+    await expect(page.locator('[data-pendencias]')).toContainText(texto);
+    await expect(page.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
+    await expect(resultado(page).getByText('Entregue', { exact: true })).toHaveCount(0);
+    expect(s.c.confirmar).toEqual([ID_A]);
+    expect(s.c.naoSimuladas).toEqual([]);
+  });
 
 test('sem rede: avisa e deixa tentar de novo (a confirmação é idempotente no servidor)', async ({ page, baseURL }) => {
   await preparar(page, baseURL);
   const s = await simular(page, { confirmar: () => ({ abort: true }) });
   await abrirLogado(page, '#' + ID_A);
   const r = resultado(page);
-  await expect(r).toHaveClass(/mb-res--erro/);
-  await expect(r).toContainText('Sem conexão com o servidor');
+  await expect(page.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
+  // O aviso aparece ao gravar no aparelho, antes da primeira tentativa de rede.
+  await expect.poll(() => s.c.confirmar).toEqual([ID_A]);
+  await expect(page.getByRole('button', { name: 'Sincronizar agora' })).toBeEnabled();
   s.estado.confirmar = confirmou();
-  await r.getByRole('button', { name: 'Tentar de novo' }).click();
+  await page.getByRole('button', { name: 'Sincronizar agora' }).click();
   await expect(r.getByText('Entregue', { exact: true })).toBeVisible();
   await expect(r).toContainText('#0011');
   expect(s.c.confirmar).toEqual([ID_A, ID_A]);
@@ -462,12 +510,11 @@ test('servidor que não responde: desiste em 15 s e conta como falta de rede', a
   const s = await simular(page, { confirmar: () => ({ pendente: true }) });
   await abrirLogado(page, '#' + ID_A);
   const r = resultado(page);
-  await expect(r).toContainText('Confirmando a entrega');
+  await expect(r).toContainText('Confirmada neste aparelho');
   await page.clock.fastForward(14_000);
-  await expect(r).toContainText('Confirmando a entrega');
+  await expect(r).toContainText('Confirmada neste aparelho');
   await page.clock.fastForward(2_000);
-  await expect(r).toHaveClass(/mb-res--erro/);
-  await expect(r).toContainText('Sem conexão com o servidor');
+  await expect(page.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
   expect(s.c.confirmar).toEqual([ID_A]);
 });
 
@@ -517,7 +564,7 @@ test('lista Em rota: dados do pedido e um botão Entregue em cada um (plano B se
   s.estado.rota = [];
   await page.getByRole('button', { name: 'Atualizar' }).click();
   await expect(page.getByText('Nenhuma entrega em rota agora.')).toBeVisible();
-  expect(s.c.rota).toBe(2);
+  expect(s.c.rota).toBe(3);
   await v.fechar();
   expect(s.c.naoSimuladas).toEqual([]);
   expect(v.csp).toEqual([]);
@@ -534,12 +581,12 @@ test('lista Em rota: erro na confirmação fica no pedido; falha ao carregar ped
   const item = page.locator('.mb-item');
   await expect(item).toHaveCount(1);
   await item.getByRole('button', { name: 'Entregue' }).click();
-  await expect(item.getByRole('alert')).toHaveText('Ainda não foi aceito pela cozinha');
-  await expect(item.getByRole('button', { name: 'Entregue' })).toBeEnabled();
+  await expect(page.locator('[data-pendencias]')).toContainText('Ainda não foi aceito pela cozinha');
+  await expect(item.getByRole('button', { name: 'Entregue' })).toBeDisabled();
   await expect(item, 'o pedido continua na lista').toHaveCount(1);
-  // corrigiu no servidor: o mesmo botão confirma
+  // corrigiu no servidor: o mesmo evento persistido é reenviado
   s.estado.confirmar = confirmou();
-  await item.getByRole('button', { name: 'Entregue' }).click();
+  await page.getByRole('button', { name: 'Sincronizar agora' }).click();
   await expect(resultado(page).getByText('Entregue', { exact: true })).toBeVisible();
   await expect(page.locator('.mb-item')).toHaveCount(0);
   expect(s.c.confirmar).toEqual([ID_A, ID_A]);
@@ -768,4 +815,19 @@ test('painel da equipe continua igual: mesmo login e mesma tela Sem acesso', asy
   expect(chaves.some((k) => k.startsWith('mineiro:v2:sessao'))).toBe(true);
   expect(chaves.some((k) => k.startsWith('mineiro:v2:moto'))).toBe(false);
   expect(s.c.naoSimuladas).toEqual([]);
+});
+
+test('atualização automática sem mudanças mantém o foco no pedido do entregador', async ({ page, baseURL }) => {
+  await page.clock.install();
+  await preparar(page, baseURL);
+  await simular(page, { rota: [emRota()] });
+  await abrirLogado(page);
+  const sincronizar = page.getByRole('button', { name: 'Sincronizar agora' });
+  await expect(sincronizar).toHaveAttribute('aria-busy', 'false');
+  const entregar = page.locator('.mb-item').getByRole('button', { name: 'Entregue', exact: true });
+  await entregar.focus();
+  await expect(entregar).toBeFocused();
+  await page.clock.fastForward(11_000);
+  await expect(sincronizar).toHaveAttribute('aria-busy', 'false');
+  await expect(entregar).toBeFocused();
 });

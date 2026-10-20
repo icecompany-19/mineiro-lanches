@@ -142,6 +142,9 @@ test('checkout: o erro de cada campo chega ao leitor de tela (aria-invalid e des
 
 test('foco do teclado visível nas telas escuras: anel fio dourado (#FFCC00, 12,9:1 sobre a noite)', async ({ page }) => {
   await page.goto('/#cardapio');
+  // A primeira carga do banco redesenha os botões do cardápio: só então move o foco.
+  await expect.poll(() => page.evaluate(() => !!window.ML?.store)).toBe(true);
+  await page.evaluate(() => window.ML.store.iniciar());
   await page.locator('#prod-gran-burger').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#ficha')).toBeVisible();

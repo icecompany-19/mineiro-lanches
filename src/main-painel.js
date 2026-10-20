@@ -5,13 +5,16 @@ import './styles/base.css';
 import './painel/painel.css';
 import './core.js';
 import './painel/painel.js';
+import './painel/impressao-automatica.js';
 import './painel/usuarios.js';
+import './painel/entregadores.js';
 import { iniciarAcesso } from './painel/acesso.js';
 import { qrSvg } from './lib/qr-comanda.js';
 
 // QR da comanda de entrega (contrato C3): o painel.js é um IIFE sem import e lê isto na hora de montar a comanda.
 // base = o endereço público do site (VITE_SITE_URL), sem barra no fim; sem ele, o endereço desta página.
 window.MLQr = { qrSvg, base: String(import.meta.env.VITE_SITE_URL || location.origin).replace(/\/+$/, '') };
+window.ML.links.base = import.meta.env.MODE === 'development' ? location.origin : (import.meta.env.VITE_SITE_URL || location.origin);
 
 // "Simular pedido" e "Gerar exemplos" só na demonstração (VITE_DEMO=1 no .env)
 iniciarAcesso({ el: document.getElementById('view-painel'), demo: import.meta.env.VITE_DEMO === '1' });

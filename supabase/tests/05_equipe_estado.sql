@@ -17,7 +17,7 @@ select pg_temp.sou(:'equipe');
 set local role authenticated;
 
 -- ================= mudar_status =================
--- entrega: novo → preparo → rota → entregue
+-- entrega: novo → preparo → pronto → rota → entregue
 select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'pronto')$$, :'ent_id')), 'transicao_invalida', 'novo → pronto: transicao_invalida');
 select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'entregue')$$, :'ent_id')), 'transicao_invalida', 'novo → entregue: transicao_invalida');
 select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'novo')$$, :'ent_id')), 'transicao_invalida', 'novo → novo: transicao_invalida');
@@ -26,13 +26,13 @@ select pg_temp.ok(:'r'::jsonb ->> 'status' = 'preparo' and jsonb_array_length(:'
                   and :'r'::jsonb #>> '{historico,1,status}' = 'preparo' and not (:'r'::jsonb #> '{historico,1}' ? 'motivo'),
   'novo → preparo: status muda e o histórico cresce (sem motivo)');
 select pg_temp.ok((:'r'::jsonb - 'status' - 'historico') = (:'ent'::jsonb - 'status' - 'historico'), 'mudar_status devolve o pedido_json completo');
-select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'pronto')$$, :'ent_id')), 'transicao_invalida', 'entrega: preparo → pronto: transicao_invalida');
-select pg_temp.igual(mudar_status(:'ent_id', 'rota') ->> 'status', 'rota', 'entrega: preparo → rota');
+select pg_temp.igual(mudar_status(:'ent_id', 'pronto') ->> 'status', 'pronto', 'entrega: preparo → pronto registra prontidão');
+select pg_temp.igual(mudar_status(:'ent_id', 'rota') ->> 'status', 'rota', 'entrega: pronto → rota');
 select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'preparo')$$, :'ent_id')), 'transicao_invalida', 'rota → preparo: transicao_invalida');
-select mudar_status(:'ent_id', 'entregue') as r \gset
+select mudar_status(:'ent_id', 'entregue', 'Conferida pela equipe') as r \gset
 select pg_temp.ok(:'r'::jsonb ->> 'status' = 'entregue'
-                  and (select array_agg(h ->> 'status' order by n) from jsonb_array_elements(:'r'::jsonb -> 'historico') with ordinality x(h, n)) = array['novo', 'preparo', 'rota', 'entregue'],
-  'rota → entregue; histórico novo, preparo, rota, entregue');
+                  and (select array_agg(h ->> 'status' order by n) from jsonb_array_elements(:'r'::jsonb -> 'historico') with ordinality x(h, n)) = array['novo', 'preparo', 'pronto', 'rota', 'entregue'],
+  'rota → entregue; histórico conserva o momento de prontidão');
 select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'cancelado', 'tarde demais')$$, :'ent_id')), 'transicao_invalida', 'entregue → cancelado: transicao_invalida (status final)');
 -- local (comer no truck): preparo → pronto → entregue
 select pg_temp.igual(mudar_status(:'ret_id', 'preparo') ->> 'status', 'preparo', 'local: novo → preparo');
@@ -132,7 +132,7 @@ select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'a'::j
 select pg_temp.ok(:'a'::text not like '%Carla%' and :'a'::text not like '%11900000080%' and :'a'::text not like '%Secreta%',
   'acompanhar_pedido não devolve nome, telefone nem endereço');
 select pg_temp.ok(:'a'::jsonb @> '{"status":"entregue","modo":"entrega","total":25.90,"itens":[{"nome":"Gran Burger","qtd":1,"subtotal":25.90,"resumo":"Completo · Não prensado"}]}'
-                  and jsonb_array_length(:'a'::jsonb -> 'historico') = 4, 'acompanhar_pedido mostra o status atual e o histórico');
+                  and jsonb_array_length(:'a'::jsonb -> 'historico') = 5, 'acompanhar_pedido mostra o status atual e o histórico com prontidão');
 select pg_temp.ok(acompanhar_pedido('00000000-0000-4000-8000-00000000abcd') is null, 'token inexistente: null');
 select pg_temp.ok(acompanhar_pedido(null) is null, 'token null: null');
 reset role;

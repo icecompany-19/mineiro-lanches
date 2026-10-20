@@ -20,6 +20,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
   ```
 - A página cuida da barra de abas e do `hidden`. O painel não mexe em nada fora do `#view-painel`. Toasts e o diálogo de impressão podem usar `document.body`, com classes prefixadas `pn-`.
 - Todo CSS fica sob `.painel` ou com prefixo `pn-`, para não colidir com o resto da página. Sem `!important`, salvo dentro de `@media print`.
+- Impressão automática: `main-painel.js` instala `MLImpressao`; o painel monta o indicador e o bloco em Configurações. Usa a mesma `comandaHTML` em folha transitória, sem substituir modais. Ativação e fila são locais à estação, com IndexedDB e Web Locks entre abas. Não imprimir carga anterior na ativação, exemplos ou cancelados. Pausa preserva fila; envio interrompido exige conferência. “Enviado à impressão” não confirma papel. Logout suspende e limpa a folha. Guia e limites em [IMPRESSAO-AUTOMATICA.md](IMPRESSAO-AUTOMATICA.md).
 
 ## 2. API disponível (`window.ML`, de `core.js`; leia o arquivo)
 - `ML.CONFIG`: cardápio (`categorias[].itens[]` com `id`, `nome`, `preco`, `tipo`, `foto?`), `adicionais`, `regras.combo` (`preco` 14.90, `inclui`), `modos`, `horarios`, `whatsapp`.
@@ -172,3 +173,16 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
 - Sem erros no console.
 - Teste o JS com `node -e "new Function(require('fs').readFileSync('painel.js','utf8'))"`. Se quiser, crie `painel-teste.html` (que carrega `core.js` + `painel.css` + `painel.js` e define os tokens) só para conferência; ele não vai para a página final.
 - Ao terminar, responda com: lista de funcionalidades entregues, decisões tomadas e qualquer ponto do contrato que não foi possível cumprir.
+
+
+## Entregadores — 18/10/2026
+
+A aba **Entregadores** tem navegação no desktop e no celular, com atribuição, saída, acompanhamento, alertas, períodos e histórico. **Saiu para entrega** no quadro abre esta aba para atribuir e registrar a saída. **Concluir** em uma entrega abre a baixa manual com motivo; retirada/local preservam seu fluxo. Ver `docs/ENTREGADORES.md` para regras e critérios operacionais.
+
+## Viagens e rotas (19/10)
+
+Mensagens ao cliente: cartões de computador, lista do celular e detalhes usam `ML.whatsapp.confirmacao(pedido,base)`. A mensagem inclui o número, a situação real e `ML.links.pedido(pedido,base)`, com o token de acompanhamento e a raiz pública configurada em `VITE_SITE_URL` (na prévia local, usa a origem da página). Não usar UUID interno, URL do painel ou QR do motoboy. Um pedido `novo` é descrito como recebido; `preparo` já permite confirmar o preparo. O botão abre o WhatsApp com o texto preparado para a equipe enviar.
+
+A seção em **Entregadores** usa o controlador `src/painel/rotas.js` e as RPCs descritas no [contrato da API](CONTRATO-API.md). Consulta independente, foco/rascunhos preservados e cronômetros sem reescrever formulários. A central exibe turno, comunicação recente, prontos, espera, impedimentos do cálculo, sugestões com validade e viagens atuais. O mapa é carregado sob demanda, usa o percurso calculado por ruas e declara ausência de rastreamento ao vivo. Controles individuais de saída/atribuição de um pedido reservado dão lugar aos comandos da viagem.
+
+Configuração instala desligada e sem limites presumidos; a confirmação da origem deve ser feita fisicamente na loja. A automação reserva viagens pelo servidor, com saída real explícita após a carga reconhecida no celular. Desfazer antes da saída exige motivo e pausa a seleção dos pedidos; retorno conferido pela equipe também exige motivo. Guia completo em [ROTAS-OPERACAO.md](ROTAS-OPERACAO.md).

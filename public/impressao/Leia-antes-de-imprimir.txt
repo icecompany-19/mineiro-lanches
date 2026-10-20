@@ -1,0 +1,57 @@
+MINEIRO LANCHE - IMPRESSAO AUTOMATICA
+
+PREPARAR UMA VEZ NO COMPUTADOR DA LOJA
+
+1. Instale a impressora e seu driver conforme as orientacoes do fabricante.
+   Confira papel, energia e conexao. Defina a impressora da loja como padrao
+   no sistema operacional. O cupom atual do site tem largura util de 72 mm.
+   Confira no driver o tamanho de papel compativel com a sua impressora.
+
+2. Em Windows, baixe Abrir-Mineiro-Impressao.cmd e salve na Area de Trabalho.
+   Abra esse arquivo sempre que for operar a impressao automatica.
+   Ele abre Chrome ou Edge com impressao direta, em um perfil separado.
+   Nao instala driver, nao pede senha de administrador e nao altera outras
+   janelas do navegador. E necessario entrar no painel nesse perfil.
+
+3. No painel, abra Configuracoes > Impressao automatica > Testar impressao.
+   Confira fisicamente se o teste saiu na impressora correta.
+   Se o teste saiu corretamente, use "O teste saiu: ativar neste computador".
+   A ativacao vale para o navegador/perfil em que foi feita.
+   Pedidos ja existentes no momento da ativacao nao sao impressos em lote.
+
+4. Mantenha o computador ligado, conectado e com a janela do painel aberta
+   e visivel. Nao use modo anonimo. Ative somente uma estacao de impressao.
+   Outros celulares e computadores podem acompanhar os pedidos normalmente.
+
+NO DIA A DIA
+
+Abra o painel pelo atalho, entre na conta da equipe e confira o indicador
+de impressao automatica. Os proximos pedidos novos entram na fila.
+O envio nao aceita nem altera o status do pedido.
+
+A fila guarda identificadores e estado neste navegador. Ao reabrir o painel,
+ela compara os pedidos com os que ja foram vistos e recupera as pendencias.
+As abas do mesmo navegador/perfil compartilham fila e trava de impressao.
+Computadores ou perfis diferentes nao compartilham essa trava; por isso,
+ative apenas no computador/perfil ligado a impressora da loja.
+
+Se uma impressao for interrompida, confira se o cupom saiu. No painel,
+abra "Conferir comandas" e escolha "Ja saiu no papel" ou "Enviar novamente".
+Esse procedimento evita reenvios automaticos de uma impressao incerta.
+
+O navegador so informa que encaminhou a impressao; ele nao informa se houve
+papel, falha de impressora ou cancelamento na janela de impressao.
+Se houver falha fisica depois do envio, use Imprimir no proprio pedido
+para reimprimir, depois de conferir que o cupom ainda nao saiu.
+
+Para pausar, use "Pausar impressao automatica". A fila existente e preservada.
+Pedidos recebidos enquanto estiver pausada nao entram automaticamente na fila.
+Nao apague os dados do navegador enquanto houver comandas pendentes.
+
+OUTROS SISTEMAS
+
+No navegador comum, o site pode chamar a impressao ao receber o pedido,
+mas a janela de impressao continua dependendo de confirmacao.
+Em Linux ou macOS, configure Chrome/Chromium em um perfil dedicado com
+--kiosk-printing e a impressora correta definida como padrao no sistema.
+Faca o teste antes de ativar. O arquivo .cmd fornecido e exclusivo do Windows.

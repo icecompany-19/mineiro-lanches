@@ -7,6 +7,7 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { criarHandler } from '../../supabase/functions/cotar-entrega/handler.js';
+import { criarPlanejador } from '../../supabase/functions/planejar-entregas/handler.js';
 
 const SEGREDO = process.env.JWT_SECRET || 'segredo-local-de-teste-com-mais-de-32-caracteres';
 const PG = process.env.PG_URL || 'postgresql://postgres@localhost:54322/postgres';
@@ -43,6 +44,11 @@ const entregaLocal=criarHandler({
   anonKey:'sb_publishable_local',geoapifyKey:process.env.GEOAPIFY_API_KEY,orsKey:process.env.OPENROUTESERVICE_API_KEY,
   fetcher:(url,op)=>fetch(String(url).replace('http://localhost:54323/rest/v1/','http://localhost:54323/'),op)
 });
+const planejadorLocal=criarPlanejador({
+  supabaseUrl:'http://localhost:'+Number(process.env.PORTA_GATEWAY || 54321),
+  serviceKey:assinar({role:'service_role',exp:Math.floor(Date.now()/1000)+86400}),
+  geoapifyKey:process.env.GEOAPIFY_API_KEY
+});
 
 http.createServer((req, res) => {
   const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS,HEAD', 'access-control-expose-headers': 'content-range' };
@@ -53,6 +59,10 @@ http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     if(url.pathname==='/functions/v1/cotar-entrega') {
       const r=await entregaLocal(new Request('http://localhost'+req.url,{method:req.method,headers:req.headers,body:corpo || undefined}));
+      res.writeHead(r.status,Object.fromEntries(r.headers));res.end(await r.text());return;
+    }
+    if(url.pathname==='/functions/v1/planejar-entregas') {
+      const r=await planejadorLocal(new Request('http://localhost'+req.url,{method:req.method,headers:req.headers,body:corpo || undefined}));
       res.writeHead(r.status,Object.fromEntries(r.headers));res.end(await r.text());return;
     }
     if (url.pathname.startsWith('/auth/v1/')) {

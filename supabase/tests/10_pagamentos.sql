@@ -19,7 +19,7 @@ select pg_temp.igual(pg_temp.erro('select registrar_pagamento_mp(null,null,null,
 reset role;
 select pg_temp.sou(:'moto');
 set local role authenticated;
-select pg_temp.igual(pg_temp.erro(format('select confirmar_entrega(%L)',:'pid')),'nao_e_entrega','motoboy não confirma retirada pendente');
+select pg_temp.igual(pg_temp.erro(format('select confirmar_entrega(%L)',:'pid')),'nao_atribuido','motoboy não confirma pedido sem atribuição');
 reset role;
 set local role service_role;
 select preparar_pagamento_mp(:'token','teste@example.com',true) as pagamento \gset

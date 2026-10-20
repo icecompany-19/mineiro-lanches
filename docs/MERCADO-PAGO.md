@@ -53,7 +53,7 @@ Pendências para concluir a homologação: entrar no checkout com uma conta de c
 8. Recusado, expirado, estornado, parcialmente estornado, contestado e estado desconhecido ficam visíveis e bloqueiam avanço. Uma order encerrada não é recriada silenciosamente: não apagar o vínculo para tentar cobrar de novo. Uma nova compra precisa de outro pedido; uma order ainda aberta pode ser retomada pelo link. Isto evita cobranças concorrentes do mesmo pedido.
 9. Cancelar um pedido não estorna automaticamente. Uma aprovação tardia mantém o pedido cancelado, com alerta. No histórico/detalhe, **Estornar no Mercado Pago** solicita devolução integral, exige confirmação e perfil administrador, registra o autor e usa outra chave de idempotência estável. O estado só muda quando confirmado pelo provedor. Reembolso parcial é reconhecido, mas deve ser solicitado no painel Mercado Pago. Taxas, liquidação e repasses são conciliados nos relatórios do Mercado Pago; o relatório operacional da loja não substitui um extrato financeiro.
 
-A fila de confirmações offline e os indicadores individuais do motoboy são outra evolução, ainda não implementada por esta branch.
+A fila de confirmações offline, os indicadores individuais do motoboy, as viagens e a impressão automática vieram das atualizações produtivas incorporadas em 20/10 (até `c259bbc`). A impressão automática filtra pedidos online ainda não aprovados e observa a aprovação financeira do mesmo pedido para imprimi-lo uma única vez; impressão manual mantém o estado financeiro visível na comanda.
 
 ## Conectar a conta do cliente
 

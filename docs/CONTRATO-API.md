@@ -209,7 +209,9 @@ Quando o dono mandar o preço: troque o `null` pelo valor no `CONFIG`, rode `npm
 | `definir_loja(p_modo text)` | `jsonb` | O mesmo bloco `loja` do `estado_cardapio`. |
 | `remover_testes()` | `int` | Apaga os pedidos com `origem = 'exemplo'`. |
 
-### Funções do motoboy (`authenticated`; dentro, `is_motoboy()` ou `is_equipe()` decide)
+### Contrato histórico do motoboy (17/10, substituído)
+
+As regras desta seção documentam a versão anterior. O contrato vigente está em **Controle de entregadores — 18/10/2026**, ao final deste documento: exige atribuição própria e saída registrada, sem listagem geral nem conclusão direta pela equipe.
 
 Migrations `20261017000001_motoboy.sql` e `20261017000002_confirmar_entrega_ja_entregue.sql` (17/10: o caminho "já entregue" deixa de mandar os dados do cliente). O QR da comanda leva a `https://<domínio>/motoboy/#<id do pedido>` (só pedidos de entrega); a tela do motoboy, depois do login, chama `confirmar_entrega` com esse `id`. A segurança vem do login e destas funções, não do QR. Quem não está em `motoboys` (ativo) nem em `equipe` recebe `sem_permissao` antes de qualquer outra validação; `anon` leva 42501 (sem `execute`).
 
@@ -293,3 +295,42 @@ Migration `20261018185421`: `loja_json().pagamentosAtivos` (false inicialmente);
 `POST /functions/v1/mercado-pago`: `iniciar {token,email}` → `{estado,checkoutUrl,processando}`; `consultar {token}` → mesmo recorte; `estornar {pedidoId}` exige JWT real e administrador ativo, pedido cancelado e pagamento aprovado; `reconciliar` exige credencial de backend. `POST /functions/v1/mercado-pago-webhook` exige HMAC Mercado Pago e busca a order na API. Valor, conta, aplicação, ambiente e status são conferidos antes de chamar `registrar_pagamento_mp`. Detalhes, erros e homologação: `docs/MERCADO-PAGO.md`.
 
 Novos erros de RPC: `pagamento_pendente` bloqueia preparo/entrega sem aprovação; `pagamento_valor_invalido` recusa cobrança zero/entrega sem taxa. Edge: `pagamento_nao_configurado` (503), `pagamento_indisponivel` (503), `pagamento_divergente` (422), `assinatura_invalida` (401), `email_invalido`, `pagamento_encerrado`, `cancele_antes_de_estornar` (422), `sem_permissao` (403), `nao_encontrado` (404). Flag desligada não libera pedidos online existentes sem pagamento.
+
+
+## Controle de entregadores — 18/10/2026
+
+O contrato operacional de `docs/ENTREGADORES.md` substitui a listagem geral anterior do motoboy. `entregas_em_rota()` e `minhas_entregas()` devolvem somente as próprias atribuições abertas, sem corte de data, com `atribuicao`, `atribuidoEm` e os campos mínimos de `entrega_json`. `consultar_entrega_motoboy(p_id)` valida a própria atribuição no QR; encerrados devolvem somente identificação e versão.
+
+RPCs da equipe: `painel_entregadores(p_dias=1)` (1/7/30), `atribuir_entrega(p_id,p_motoboy,p_sair=false)`, `baixar_entrega_manual(p_id,p_motivo)` e `historico_entrega(p_id)`. RPCs do motoboy: `confirmar_entrega_offline(p_id,p_evento,p_atribuicao,p_confirmado_em)`, `comunicar_entregador()`, `minhas_taxas_entrega(p_dias=1)` (1/7/30, sempre o próprio usuário ativo) e `reconhecer_cancelamento_entrega` com os mesmos quatro argumentos da confirmação. Nenhum autor enviado pelo navegador é aceito.
+
+Taxas (19/10): `painel_entregadores.entregadores[]` inclui `taxas: {concluidas, emAberto, qtdConcluidas, qtdEmAberto, semTaxaConcluidas, semTaxaEmAberto}` e cada pedido inclui `taxaEntrega`. `minhas_taxas_entrega` devolve `{dias, inicio, servidorEm, taxas}` com o mesmo cálculo, sem dados de clientes ou dos outros motoboys. Concluídas somam `taxa_entrega` de pedidos efetivamente entregues e atribuídos ao usuário, pelo recebimento no servidor dentro do período operacional, inclusive baixa manual; abertas somam preparo/pronto/rota atribuídos de qualquer data. Cancelamentos e histórico sem vínculo ficam fora. Valores nulos são contados nos campos `semTaxa*`; não são tratados como taxa zero confirmada. O helper `taxas_entregador(uuid,timestamptz)` não é executável por `anon` ou `authenticated`.
+
+Confirmação: `{ok,jaEntregue,pedido}`. Mesmo evento ou pedido já entregue recebe reconhecimento sem repetir o encerramento. Confirmação posterior à baixa manual gera somente auditoria. Cancelamento conferido: `{ok:true,ocorrencia:true,evento}`; não altera status. Tabelas operacionais têm RLS e nenhum privilégio direto de anon/authenticated. `mudar_status` também exige motivo para conclusão manual de entrega.
+
+Atualização de 19/10: `painel_entregadores` inclui conclusões sem controle individual no período do último evento `entregue` do histórico original. Retorna `legado:true`, `encerramento:'anterior'` e `recebidoEm` desse evento; não inventa `motoboyId`, `atribuicao` ou `confirmadoEm`. A consulta não modifica pedidos. Baixas manuais atuais com evento operacional mantêm `legado:false`. O acesso continua exclusivo da equipe.
+
+## Viagens e planejamento — 19/10/2026
+
+Guia vigente: [ROTAS-OPERACAO.md](ROTAS-OPERACAO.md). A entrega avança `preparo → pronto → rota → entregue`; o caminho legado de preparo direto para rota permanece para recuperação manual. Uma viagem reservada mantém todos os pedidos prontos. A saída da viagem é atômica e exige reconhecimento da sua versão pelo motoboy. O DTO de `minhas_entregas()` acrescenta `viagemId`, `ordemViagem` e `versaoViagem` (nulos para atribuição individual), conservando a versão `atribuicao` de cada pedido.
+
+RPCs autenticadas, com autorização verificada no servidor:
+
+| RPC | Escopo e efeito |
+|---|---|
+| `painel_rotas_entregas()` | Equipe: `{config,entregadores,prontos,planos,viagens,ultimaExecucao,servidorEm}` e consumo interno estimado; nunca retorna token do job |
+| `configurar_rotas(p_modo,p_regras,p_limite=1000,p_versao=null)` | Equipe, versão e origem confirmada; regras obrigatórias em modo assistido/automático |
+| `definir_disponibilidade_entregador(p_situacao,p_motoboy=null,p_motivo=null)` | Próprio motoboy ativo ou equipe; alterar outra pessoa exige motivo; não libera viagem aberta |
+| `minha_operacao_rotas()` | Próprio motoboy ativo: `{entregador,viagem,modo,servidorEm}`, sem dados das outras viagens |
+| `reservar_viagem_entrega(p_plano,p_motoboy=null)` | Equipe; revalida e reserva o conjunto, idempotente por sugestão |
+| `reconhecer_carregamento_viagem(p_id,p_versao)` | Somente o próprio motoboy ativo, versão atual reservada |
+| `iniciar_viagem_entrega(p_id,p_versao)` | Equipe ou próprio motoboy; exige carga reconhecida, sem revisão pendente; não permite saída individual de pedidos da viagem |
+| `desfazer_viagem_entrega(p_id,p_versao,p_motivo)` | Equipe, antes da saída; conserva pedidos prontos, remove reserva aberta e pausa seleção automática |
+| `liberar_planejamento_pedidos(p_ids)` | Equipe, 1–12 IDs distintos prontos e sem viagem; retira a pausa explícita |
+| `conferir_destino_pedido(p_id,p_lat,p_lon,p_motivo)` | Equipe antes da reserva/saída, ponto confirmado por 30 dias, sem alterar taxa aceita |
+| `retornar_viagem_entrega(p_id,p_versao,p_motivo=null)` | Próprio motoboy ou equipe com motivo; exige todas as baixas no servidor; retorno idempotente |
+
+`config.regras` contém `maxPedidos` (inteiro 1–6), `esperaMin` (1–120), `trajetoMin` (1–180), `desvioMin` (0–120) e `paradaMin` (0–15). Não há valores comerciais predefinidos. DTOs de sugestão/viagem contêm entregador, sequência de paradas, estimativas e geometria vigente. Viagem inclui `versao`, `carregadaVersao`, `revisaoPendente`, `saiuEm` e `estado`; paradas preservam `atribuicao`. `geometriaAte` e `pontoAte` permitem expirar dados no cache local.
+
+A Edge Function `planejar-entregas` recebe `{acao:'calcular'|'verificar',pedidos?:uuid[],ordemFixa?:boolean}` com JWT de equipe, validado em Auth. Seleção explícita: até seis IDs distintos. A ação automática só aceita token privado do agendamento, sem autor do navegador. A resposta resume `{estado,planos,reservadas,verificacao}`, sem coordenadas, matriz ou credenciais. A equipe consulta as sugestões pela RPC. `iniciar_planejamento_entregas`/`concluir_planejamento_entregas` são exclusivos de `service_role`. Helpers invoker, tabelas, cache e auditoria são privados; nenhuma nova leitura direta de anon/authenticated.
+
+Confirmações offline usam o mesmo protocolo e idempotência anteriores. Reserva, disponibilidade, reconhecimento de carga e retorno exigem conexão; esses comandos não entram na fila de confirmações. Cancelamento parcial antes da saída invalida a carga e exige replanejamento. Após todas as baixas a viagem fica `retornando`, até o retorno explícito.

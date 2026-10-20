@@ -6,8 +6,8 @@ Bio, cardápio, site e painel de pedidos da loja Mineiro Lanche (Centro de Suzan
 |---|---|
 | `/` | Bio (link do Instagram) → cardápio (`#cardapio`) → site (`#site`) → acompanhar pedido (`#pedido/<token>`) |
 | `/q` e `/q/<mesa>` | Destino do QR code: redireciona para o cardápio e marca a origem (e a mesa) |
-| `/painel/` | Painel de pedidos da equipe (login do Supabase) |
-| `/motoboy/` e `/motoboy/#<pedido>` | Tela do entregador (login próprio): lê o QR da comanda e marca o pedido como entregue; lista "Em rota" como plano B |
+| `/painel/` | Pedidos, entregadores e acessos da equipe (login do Supabase) |
+| `/motoboy/` e `/motoboy/#<pedido>` | Tela do entregador (login próprio): pedidos atribuídos, QR da comanda e confirmação com fila sem internet |
 | `/qr/cartaz.html` | Cartaz para imprimir (A6; `?tamanho=a5`), com os PDFs ao lado |
 
 Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.app` continua respondendo).
@@ -20,7 +20,11 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
 - [`docs/PLANO-FASE-2.md`](docs/PLANO-FASE-2.md): plano de 12/10: fechar as telas do cliente, site imersivo, painel, bateria no Windows e go-live, com modelo de IA por tarefa.
 - [`docs/PLANO-FASE-3.md`](docs/PLANO-FASE-3.md): plano atual (17/10): horário automático, motoboy, comanda com logo e QR e domínio.
 - [`docs/CONTRATO-API.md`](docs/CONTRATO-API.md): contrato banco ⇄ front.
+- [`docs/ENTREGADORES.md`](docs/ENTREGADORES.md): atribuição, saída, painel operacional, confirmações offline e baixa manual auditada.
+- [`docs/ROTAS-OPERACAO.md`](docs/ROTAS-OPERACAO.md): viagens com paradas, turno, mapas, saída/retorno e configuração da distribuição automática.
+- [`docs/PLANO-ROTAS-ENTREGADORES.md`](docs/PLANO-ROTAS-ENTREGADORES.md): proposta de viagens com paradas ordenadas, agrupamento por percurso e distribuição automática aos motoboys.
 - [`docs/CONTRATO-PAINEL.md`](docs/CONTRATO-PAINEL.md): contrato do painel.
+- [`docs/IMPRESSAO-AUTOMATICA.md`](docs/IMPRESSAO-AUTOMATICA.md): preparação da impressora P180, estação de impressão direta, fila local e conferência de falhas.
 - [`docs/ENTREGA-CONFIAVEL.md`](docs/ENTREGA-CONFIAVEL.md): diagnóstico das taxas ausentes e proposta de cotação validada no servidor, fontes alternativas e confirmação da localização.
 - [`docs/ENTREGA-OPERACAO.md`](docs/ENTREGA-OPERACAO.md): configuração da chave, verificação das rotas, ativação da cotação e uso pela equipe.
 - [`docs/PREVIA-DECISOES.md`](docs/PREVIA-DECISOES.md): respostas do cliente e decisões da prévia.
@@ -47,6 +51,8 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
 O checkout começa pelo telefone e recupera nome e endereços já salvos **neste navegador**. O cliente pode escolher um endereço anterior ou adicionar outro; cada pedido aceito guarda o endereço usado sem apagar os demais. O rascunho anterior é aproveitado na atualização. A taxa é calculada novamente para cada endereço escolhido. Dados de outro telefone não são reaproveitados no formulário.
 
 O histórico fica na chave local `mineiro:v2:cadastros`. Ele não consulta a tabela privada `clientes` por telefone. Recuperar o cadastro em outro aparelho exige confirmar a posse do telefone antes de liberar nomes e endereços; essa integração não faz parte do histórico local.
+
+O botão **WhatsApp** de cada pedido no painel abre a mensagem ao cliente com a situação atual e o link exclusivo de acompanhamento (`/#pedido/<token>`). A mensagem do cliente em **Avisar também pelo WhatsApp** também conserva esse link. Ele abre em outro aparelho sem login. Pedidos que ainda não chegaram ao servidor não recebem um link fictício. A equipe confere e envia o texto pelo WhatsApp, como no fluxo existente.
 
 O cálculo da entrega tenta a rua e a cidade sem o bairro quando o ViaCEP e o mapa usam nomes diferentes (caso do CEP 08555-120). O formulário conserva o número preenchido antes da resposta do CEP, invalida a taxa ao trocar de endereço e aguarda CEP/rota antes de enviar. Em falhas temporárias da rota, o cliente pode tocar em **Recalcular entrega**.
 

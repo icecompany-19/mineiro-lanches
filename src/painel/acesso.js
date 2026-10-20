@@ -23,6 +23,17 @@ export function iniciarAcesso(opc) {
   const quadro = opc.el;
   const chaveSessao = opc.chave || CHAVE_SESSAO;
   const tabela = opc.tabela || 'equipe';
+  const chaveOffline = chaveSessao + ':acesso-offline';
+  const chaveSaindo = chaveSessao + ':saindo';
+  function limparSessaoLocal() {
+    try { Object.keys(localStorage).filter(k => k.indexOf(chaveSessao) === 0).forEach(k => localStorage.removeItem(k)); }
+    catch { /* sem sessão persistida */ }
+  }
+  function acessoOffline(usuario) {
+    try { return opc.permitirOffline && !navigator.onLine && JSON.parse(localStorage.getItem(chaveOffline) || 'null')?.id === usuario.id; }
+    catch { return false; }
+  }
+  function limparAcessoOffline() { try { localStorage.removeItem(chaveOffline); } catch { /* armazenamento indisponível */ } }
   quadro.hidden = true;
 
   const tela = document.createElement('section');
@@ -125,11 +136,18 @@ export function iniciarAcesso(opc) {
     aguarde('Conferindo o acesso…');
     const { data, error } = await sb.from(tabela).select('user_id').eq('user_id', usuario.id).maybeSingle();
     if (error) {
+      if (acessoOffline(usuario)) return abrirPainel(usuario);
       if (/jwt/i.test(error.message || '') || /^PGRST30/.test(error.code || ''))
         return mostrarLogin('Sua sessão expirou. Entre de novo para continuar.');
       return semRede('Não foi possível conferir o acesso agora.', () => entrar(usuario));
     }
-    if (!data) return semAcesso(usuario);
+    if (!data) {
+      if (opc.permitirOffline) limparAcessoOffline();
+      return semAcesso(usuario);
+    }
+    if (opc.permitirOffline) {
+      try { localStorage.setItem(chaveOffline, JSON.stringify({ id: usuario.id })); } catch { /* sem acesso offline */ }
+    }
     abrirPainel(usuario);
   }
   function semAcesso(usuario) {
@@ -205,6 +223,9 @@ export function iniciarAcesso(opc) {
   // Espera no máximo 3 s pelo servidor. O rascunho do checkout (mesma origem) também sai.
   async function sair() {
     saindo = true;
+    // Se a página fechar durante o logout, a próxima abertura não restaura a sessão anterior.
+    try { localStorage.setItem(chaveSaindo, '1'); } catch { /* sem armazenamento */ }
+    if (opc.permitirOffline) limparAcessoOffline();
     if (store) store.parar();
     let r;
     try {
@@ -217,10 +238,9 @@ export function iniciarAcesso(opc) {
     }
     try {
       if (r && r.error) {
-        Object.keys(localStorage)
-          .filter((k) => k.indexOf(chaveSessao) === 0)
-          .forEach((k) => localStorage.removeItem(k));
+        limparSessaoLocal();
       }
+      localStorage.removeItem(chaveSaindo);
       localStorage.removeItem('mineiro:v2:rascunho');
     } catch {
       /* sem storage: não há sessão guardada */
@@ -231,14 +251,22 @@ export function iniciarAcesso(opc) {
   // ---------- início ----------
   async function comecar() {
     aguarde('Conferindo o acesso…');
+    try { if (localStorage.getItem(chaveSaindo)) limparSessaoLocal(); } catch { /* sem sessão guardada */ }
     try {
       sb = await obterSupabase({ sessao: true, chave: chaveSessao });
     } catch {
       return semRede('Não foi possível carregar o painel. Confira a internet.', comecar);
     }
     sb.auth.onAuthStateChange((evento) => {
-      if (evento === 'SIGNED_OUT' && montado) sessaoExpirada();
+      if (evento === 'SIGNED_OUT' && montado && !(opc.permitirOffline && !navigator.onLine)) sessaoExpirada();
     });
+    // Abre só a cópia já autorizada deste usuário. Toda escrita continua validada pelo servidor ao sincronizar.
+    if (opc.permitirOffline && !navigator.onLine) {
+      try {
+        const usuario = JSON.parse(localStorage.getItem(chaveSessao) || 'null')?.user;
+        if (usuario && acessoOffline(usuario)) return abrirPainel(usuario);
+      } catch { /* login conectado necessário */ }
+    }
     const { data } = await sb.auth.getSession();
     if (data && data.session && data.session.user) entrar(data.session.user);
     else mostrarLogin();

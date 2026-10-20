@@ -1,0 +1,24 @@
+.pn-auto-resumo { margin: 1rem 1.25rem 0; padding: .7rem 1rem; border: 1px solid var(--borda-campo); border-radius: var(--r-md); display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; color: var(--creme); font-size: .9rem; }
+.pn-auto-resumo span { flex: 1; }
+.pn-auto-resumo--atencao { border-color: var(--fio); }
+.pn-auto-cab { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin-bottom: .85rem; }
+.pn-card-cfg[data-impressao-config] { grid-column: 1 / -1; min-width: 0; }
+.pn-auto-cab h3 { margin: 0; }
+.pn-auto-estado { color: var(--fio); }
+.pn-auto-passos { list-style: decimal; padding-left: 1.3rem; margin: 1rem 0; }
+.pn-auto-passos li { margin-bottom: .5rem; }
+.pn-auto-acoes { display: flex; gap: .65rem; flex-wrap: wrap; margin: .75rem 0; }
+.pn-auto-acoes a { text-decoration: none; }
+.pn-auto-ajuda { font-size: .9rem; color: var(--osso-2); margin-top: .75rem; }
+.pn-auto-fila { margin-top: 1rem; }
+.pn-auto-item { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; border-top: 1px solid var(--borda-campo); padding: .8rem 0; }
+.pn-auto-item > div:first-child { flex: 1; min-width: 12rem; }
+.pn-auto-item p { margin: .3rem 0 0; }
+.pn-auto-folha { position: fixed; left: -10000px; top: 0; width: 72mm; pointer-events: none; }
+@media (max-width: 900px) { .pn-auto-resumo { display: none; } }
+@media print {
+  body[data-pn-auto-print] > *:not(.pn-auto-folha) { display: none !important; }
+  body[data-pn-auto-print] > .pn-auto-folha { display: block !important; position: static !important; width: 72mm !important; margin: 0 !important; padding: 0 !important; }
+  .pn-auto-folha, .pn-auto-folha * { color: #000 !important; background: transparent !important; border-color: #000 !important; box-shadow: none !important; text-shadow: none !important; filter: none !important; }
+  .pn-auto-folha .pn-comanda { background: #fff !important; }
+}
