@@ -26,12 +26,15 @@ try {
     await document.fonts.ready;
     await Promise.all([...document.images].map(i => i.decode()));
   });
-  const cabe = await pagina.locator('.page').evaluateAll(paginas => paginas.every(p => {
+  const paginasComProblema = await pagina.locator('.page').evaluateAll(paginas => paginas.flatMap((p, indice) => {
     const rodape = p.querySelector('.footer');
-    return p.scrollHeight <= p.clientHeight + 1 &&
-      rodape.previousElementSibling.getBoundingClientRect().bottom < rodape.getBoundingClientRect().top - 5;
+    const limite = rodape.getBoundingClientRect().top - 5;
+    const excesso = Math.max(0, ...[...p.children].filter(el => el !== rodape)
+      .map(el => el.getBoundingClientRect().bottom - limite));
+    return p.scrollHeight > p.clientHeight + 1 || excesso > 0
+      ? [`página ${indice + 1}: excesso de ${Math.ceil(excesso)} px`] : [];
   }));
-  if (!cabe) throw new Error('O conteúdo ultrapassou o espaço disponível. Ajuste o HTML antes de gerar o PDF.');
+  if (paginasComProblema.length) throw new Error('Ajuste o HTML antes de gerar o PDF: ' + paginasComProblema.join('; '));
   mkdirSync(resolve(raiz, 'public/guias'), { recursive: true });
   const destino = resolve(raiz, 'public/guias/guia-pagamentos-mineiro-lanche.pdf');
   await pagina.pdf({ path: destino, preferCSSPageSize: true, printBackground: true, tagged: true, outline: true });

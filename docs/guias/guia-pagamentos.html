@@ -5,14 +5,16 @@
 <style>
 @font-face{font-family:Rubik;src:url('../../node_modules/@fontsource/rubik/files/rubik-latin-400-normal.woff2')}@font-face{font-family:Rubik;src:url('../../node_modules/@fontsource/rubik/files/rubik-latin-600-normal.woff2');font-weight:600}@font-face{font-family:Lilita;src:url('../../node_modules/@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2')}
 @page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;color:#2c211b;background:#fff;font:10.5pt/1.43 Rubik,Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}a{color:#9e171b;text-decoration:none}strong{font-weight:600}p{margin:0 0 9px}.page{width:210mm;height:297mm;padding:15mm 17mm 15mm;position:relative;page-break-after:always;overflow:hidden}.page:last-child{page-break-after:auto}.brand{display:flex;align-items:center;gap:13px;border-bottom:2px solid #f3c83a;padding-bottom:12px;margin-bottom:21px}.brand img{width:58px;height:48px;object-fit:contain}.brand b{display:block;font-family:Lilita;font-size:22pt;font-weight:400}.brand small{color:#75675d;letter-spacing:1.2px;font-size:8pt;text-transform:uppercase}.eyebrow{color:#a21a1d;letter-spacing:1.7px;font-size:8pt;font-weight:600;text-transform:uppercase;margin-bottom:6px}h1,h2,h3{font-family:Lilita;font-weight:400;margin:0}h1{font-size:29pt;line-height:1.06;margin-bottom:10px}h2{font-size:18pt;line-height:1.2;margin:19px 0 11px}h3{font-size:14pt;margin:0 0 7px}.lead{color:#6d5e52;font-size:11pt;max-width:157mm;margin-bottom:17px}.pill{display:inline-block;background:#e9f4e9;color:#215c33;padding:5px 9px;border-radius:4px;font-size:8pt;font-weight:600;margin:0 0 16px}.box{border:1px solid #e0d6c8;border-radius:7px;padding:12px 14px;margin:13px 0;background:#fcfaf6}.note{background:#fff6d6;border-color:#ebd47c}.warn{background:#fff0ed;border-color:#ecc0b5}.box p:last-child{margin-bottom:0}.box strong{color:#7e221d}.fine{font-size:8.3pt;color:#77685d}.footer{position:absolute;left:17mm;right:17mm;bottom:11mm;border-top:1px solid #e4ddd1;padding-top:8px;display:flex;justify-content:space-between;gap:12px;color:#78695d;font-size:8pt}.footer span{white-space:nowrap}table{width:100%;border-collapse:collapse;margin:10px 0}th{text-align:left;font-size:8.2pt;color:#746253;letter-spacing:.8px;text-transform:uppercase;border-bottom:2px solid #e8d7a0;padding:7px 10px}td{padding:10px;border-bottom:1px solid #ece5d9;vertical-align:top;font-size:10pt}td:first-child{width:31%;font-weight:600}tr:nth-child(even)td{background:#fcfaf6}.steps{list-style:none;padding:0;margin:0;counter-reset:item}.steps li{position:relative;padding:0 0 13px 34px;counter-increment:item;break-inside:avoid}.steps li:before{content:counter(item);position:absolute;left:0;top:0;width:23px;height:23px;display:flex;align-items:center;justify-content:center;background:#f4ca3d;border-radius:50%;font-weight:600;font-size:10pt;color:#412e10}.steps strong{display:block;margin:0 0 3px}.steps p{margin:0;color:#5f5248;font-size:10pt}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.two .box{margin:0}.check{list-style:none;margin:0;padding:0}.check li{padding:0 0 8px 18px;position:relative}.check li:before{content:'✓';position:absolute;left:0;color:#247046;font-weight:600}.compact td{padding:8px;font-size:9.2pt}.compact td:first-child{width:27%}.mini{font-size:9pt;color:#65574d}.links{display:flex;justify-content:space-between;align-items:center;gap:12px}.link{font-weight:600;font-size:10.5pt}.rule{font-weight:600;color:#245d37;background:#edf5e9;border-left:4px solid #438749;padding:11px 13px;margin:14px 0}
+
+.visual .brand{margin-bottom:14px}.visual h1{font-size:25pt;margin-bottom:8px}.visual .lead{font-size:10pt;margin-bottom:12px}.demo{font-size:8pt;color:#725c20;background:#fff6d6;border-left:3px solid #e2bd38;padding:7px 10px;margin:0 0 13px}.screens{display:grid;grid-template-columns:1fr 1fr;gap:7mm;align-items:start}.screens figure{margin:0;min-width:0}.screens img{display:block;width:100%;max-height:165mm;object-fit:contain;object-position:top;border:1px solid #e0d6c8;border-radius:7px;background:#140d09}.screens h3{font:600 10pt Rubik;margin:0 0 8px}.screens figcaption{font-size:9pt;line-height:1.42;margin-top:9px}.screens figcaption strong{color:#9e171b}.stepno{display:inline-flex;background:#f4ca3d;border-radius:50%;width:22px;height:22px;align-items:center;justify-content:center;margin-right:5px;color:#412e10}.visual .box{font-size:9.3pt;margin:11px 0;padding:10px 12px}.visual .rule{font-size:9.3pt;margin:11px 0;padding:9px 11px}.access{display:grid;grid-template-columns:72mm 1fr;gap:7mm;align-items:start}.access img{width:100%;border-radius:7px}.access p,.access li{font-size:10pt}.navshot{width:100%;border:1px solid #e0d6c8;border-radius:6px;display:block;margin:12px 0}.cards img{height:151mm;max-height:none;background:#fff;border:0}.cards figcaption{font-size:9.5pt}.refund img{max-height:156mm}.refund figure:first-child img{width:57mm;margin:auto}.refund figure:last-child img{width:86mm;margin:auto}.mini-list{margin:0;padding-left:19px}.mini-list li{margin-bottom:9px}
 </style>
 
 <section class="page">
   <header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>Mineiro Lanche</b><small>Guia para a loja e seus clientes</small></div></header>
   <div class="eyebrow">Pagamentos online • edição de 20/10/2026</div>
-  <h1>Como pagar pelo site</h1>
-  <p class="lead">Formas disponíveis, caminho da compra e orientações para atender cada pedido.</p>
-  <div class="pill">INTEGRAÇÃO ATIVA COM MERCADO PAGO</div>
+  <h1>Guia visual de pagamentos</h1>
+  <p class="lead">Formas disponíveis e exemplos das telas do cliente e da equipe, com instruções de onde tocar.</p>
+  <div class="pill">FORMAS DE PAGAMENTO + 7 PÁGINAS COM TELAS</div>
 
   <h2>Formas liberadas no checkout</h2>
   <table aria-label="Formas de pagamento">
@@ -30,53 +32,52 @@
   <div class="box note"><h3>O que não é oferecido pelo site</h3><p>Boleto e pagamento por lotérica/caixa eletrônico estão bloqueados. Não há parcelamento acima de 1 vez. Dinheiro e pagamento na entrega não são opções deste checkout online.</p></div>
   <div class="rule">O pedido só pode seguir para preparo após “Pagamento aprovado”.</div>
   <div class="box links"><div><p class="fine">Site e cardápio</p><a class="link" href="https://mineirolanches.store/">mineirolanches.store</a></div><div><p class="fine">Acesso da equipe</p><a class="link" href="https://mineirolanches.store/painel/">Abrir o painel da loja →</a></div></div>
-  <footer class="footer"><span>Mineiro Lanche • Pagamentos e operação</span><span>1 / 3</span></footer>
+  <footer class="footer"><span>Mineiro Lanche • Pagamentos e operação</span><span>1 / 8</span></footer>
 </section>
 
-<section class="page">
-  <header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>Passo a passo da compra</b><small>Orientação para quem faz o pedido</small></div></header>
-  <ol class="steps">
-    <li><strong>Monte sua sacola</strong><p>Entre em <a href="https://mineirolanches.store/">mineirolanches.store</a>, escolha os lanches e opcionais, confira quantidades e avance para finalizar o pedido.</p></li>
-    <li><strong>Comece pelo telefone</strong><p>Informe o telefone com DDD. Se houver dados salvos disponíveis, confira as informações recuperadas. Complete ou corrija seu nome.</p></li>
-    <li><strong>Escolha como receber</strong><p>Em <b>Entrega</b>, preencha CEP, endereço e número; confirme o ponto no mapa quando solicitado. Confira a taxa e o total. Se já houver endereço salvo, você pode escolher outro ou adicionar um novo.</p></li>
-    <li><strong>Para buscar, use “Retirada no local”</strong><p>Essa opção é para retirar o pedido na loja. Confira o resumo antes de seguir.</p></li>
-    <li><strong>Informe o e-mail e confira o total</strong><p>O e-mail é necessário para o pagamento. Revise os itens, a entrega, as observações e o valor final. Toque em <b>Pagar pedido</b>.</p></li>
-    <li><strong>Conclua no Mercado Pago</strong><p>O navegador abre o checkout do Mercado Pago na mesma aba. Escolha uma das formas exibidas e conclua o pagamento. Se a opção escolhida não aparecer, use outra que esteja disponível na tela.</p></li>
-    <li><strong>Acompanhe a confirmação</strong><p>Retorne ao acompanhamento do pedido e aguarde <b>Pagamento aprovado</b>. O preparo fica liberado após essa confirmação.</p></li>
-  </ol>
-  <div class="box note"><h3>Pagou e ainda aparece pendente?</h3><p>Aguarde a atualização automática e consulte o acompanhamento. Com o navegador fechado, a consulta ocorre a cada minuto. Não faça um segundo pagamento sem conferir o primeiro.</p></div>
-  <div class="two">
-    <div class="box"><h3>Falha ao abrir o pagamento</h3><p class="mini">Abra o acompanhamento do pedido já salvo e use <b>Pagar no Mercado Pago</b>, se o botão estiver disponível. Evite criar pedidos duplicados.</p></div>
-    <div class="box"><h3>Pagamento encerrado</h3><p class="mini">Se o checkout não permitir nova tentativa, confirme que não houve cobrança. Só depois faça outro pedido ou fale com a loja.</p></div>
-  </div>
-  <footer class="footer"><span>Site: mineirolanches.store</span><span>2 / 3</span></footer>
+<section class="page visual">
+ <header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>1. Escolher e conferir</b><small>Cliente • cardápio e sacola</small></div></header>
+ <div class="demo">TELAS DO SISTEMA COM DADOS DE DEMONSTRAÇÃO • Pedidos e pagamentos simulados em ambiente local; nenhuma cobrança real.</div>
+ <p class="lead">Exemplo: Ana escolhe <strong>1 X-Burguer por R$ 16,90</strong>, sem combo e sem adicionais.</p><div class="screens"><figure><h3><span class="stepno">1</span> Personalize o lanche</h3><img src="telas/01-opcionais.webp" alt="Personalização do X-Burguer, com botão Adicionar na parte inferior"><figcaption>Abra o lanche pelo nome ou foto. Escolha os opcionais e toque em <strong>Adicionar · R$ 16,90</strong>, na parte inferior.</figcaption></figure><figure><h3><span class="stepno">2</span> Confira a sacola</h3><img src="telas/02-sacola.webp" alt="Sacola com um X-Burguer e botão Finalizar pedido"><figcaption>Confira item, quantidade e valor. Para avançar, toque em <strong>Finalizar pedido · R$ 16,90</strong>. A entrega será definida na próxima tela.</figcaption></figure></div><div class="box note">Os preços das capturas são exemplos desta edição. O valor válido é o exibido no pedido atual.</div>
+ <footer class="footer"><span>Mineiro Lanche • Guia visual • 20/10/2026</span><span>2 / 8</span></footer>
 </section>
-
-<section class="page">
-  <header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>Rotina da loja</b><small>Orientação para equipe e administrador</small></div></header>
-  <h2 style="margin-top:0">Antes de começar o atendimento</h2>
-  <ul class="check">
-    <li>Entre em <a href="https://mineirolanches.store/painel/">mineirolanches.store/painel/</a> com seu acesso.</li>
-    <li>Confira o seletor <b>Automático / Aberta / Fechada</b>. A opção <b>Fechada</b> mantém a loja pausada até a equipe alterar o modo.</li>
-    <li>Use <b>Automático</b> para seguir os horários cadastrados. Quarta-feira permanece fechada.</li>
-    <li>Em cada pedido novo, confirme <b>Pagamento aprovado</b> antes de avançar para preparo. “Recebido” ou “Novo” não significa que o pagamento foi aprovado.</li>
-  </ul>
-  <div class="box"><h3>Comandas e atendimento</h3><p>A impressão automática, quando ativada na estação da loja, aguarda a aprovação financeira. Mantenha uma única estação de impressão ativa. A confirmação do pagamento não altera sozinha o pedido para “Em preparo”: a equipe continua conduzindo o atendimento.</p></div>
-
-  <h2>Como cancelar e devolver um pagamento</h2>
-  <div class="box warn"><p><strong>Cancelar o pedido não devolve o dinheiro automaticamente.</strong> O cancelamento do atendimento e o estorno são ações separadas.</p></div>
-  <ol class="steps" style="font-size:10pt">
-    <li><strong>Localize e cancele o pedido</strong><p>Confira o número e os dados do pedido no painel antes de cancelar o atendimento.</p></li>
-    <li><strong>Use o perfil de administrador</strong><p>No <b>Histórico</b>, abra o detalhe do pedido cancelado e pago. Clique em <b>Estornar no Mercado Pago</b> e confirme a operação.</p></li>
-    <li><strong>Aguarde a confirmação da devolução</strong><p>Confira a atualização no painel e no Mercado Pago. O prazo de recebimento pelo comprador depende do meio de pagamento e da instituição. Para devolução parcial, use a conta Mercado Pago da loja.</p></li>
-  </ol>
-
-  <table class="compact" aria-label="Situações comuns"><thead><tr><th>Se acontecer</th><th>Como agir</th></tr></thead><tbody>
-    <tr><td>Pagamento pendente</td><td>Aguarde a confirmação; não avance para preparo.</td></tr>
-    <tr><td>Recusado ou em revisão</td><td>Oriente o comprador a seguir as instruções do Mercado Pago. Não libere preparo sem aprovação.</td></tr>
-    <tr><td>Pago após cancelar</td><td>O pedido não reabre automaticamente. O administrador deve conferir o caso e providenciar a devolução quando aplicável.</td></tr>
-  </tbody></table>
-  <p class="fine"><strong>Conferência inicial:</strong> acompanhe o primeiro pagamento real e compare número do pedido, valor e status no site, no painel e no Mercado Pago. Uma compra aprovada no checkout hospedado ainda não havia sido executada na validação técnica desta edição.</p>
-  <footer class="footer"><span>Mineiro Lanche • Atualizado em 20/10/2026</span><span>3 / 3</span></footer>
+<section class="page visual">
+ <header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>2. Preencher e pagar</b><small>Cliente • finalizar pedido</small></div></header>
+ <div class="demo">TELAS DO SISTEMA COM DADOS DE DEMONSTRAÇÃO • Pedidos e pagamentos simulados em ambiente local; nenhuma cobrança real.</div>
+ <p class="lead">Exemplo preenchido para <strong>Retirada no local</strong>: o pedido será buscado na loja, sem taxa de entrega.</p><div class="screens"><figure><h3>Primeiro: telefone e identificação</h3><img src="telas/03-dados.webp" alt="Primeiro: telefone e identificação"><figcaption>Comece pelo <strong>telefone com DDD</strong>. Confira os dados recuperados ou informe seu nome. Selecione <strong>Retirada no local</strong> para buscar na loja.</figcaption></figure><figure><h3>Depois: e-mail e total</h3><img src="telas/04-pagar.webp" alt="Depois: e-mail e total"><figcaption>Preencha um e-mail válido, confira a comanda e toque em <strong>Pagar pedido · R$ 16,90</strong>. O navegador abrirá o Mercado Pago na mesma aba.</figcaption></figure></div><div class="box note"><strong>Se escolher Entrega:</strong> informe CEP, rua e número; confirme o ponto no mapa se solicitado. Se houver endereços salvos, escolha um ou toque em <b>Adicionar novo endereço</b>. Confira a taxa e o total antes de pagar.</div>
+ <footer class="footer"><span>Mineiro Lanche • Guia visual • 20/10/2026</span><span>3 / 8</span></footer>
+</section>
+<section class="page visual">
+ <header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>3. Acompanhar o pagamento</b><small>Cliente • pendente e aprovado</small></div></header>
+ <div class="demo">TELAS DO SISTEMA COM DADOS DE DEMONSTRAÇÃO • Pedidos e pagamentos simulados em ambiente local; nenhuma cobrança real.</div>
+ <p class="lead">No Mercado Pago, escolha uma das formas oferecidas e conclua o pagamento. Ao voltar, confira o status no acompanhamento.</p><div class="screens"><figure><h3>Antes da confirmação</h3><img src="telas/05-pendente.webp" alt="Antes da confirmação"><figcaption><strong>Aguardando pagamento</strong> significa que o preparo ainda não foi liberado. O botão <b>Pagar no Mercado Pago</b> permite acessar o pagamento do pedido salvo.</figcaption></figure><figure><h3>Após a confirmação</h3><img src="telas/06-aprovado.webp" alt="Após a confirmação"><figcaption><strong>Pagamento aprovado</strong> confirma a etapa financeira. A loja recebe a liberação para preparar; o andamento aparece abaixo em <b>Status</b>.</figcaption></figure></div><div class="box note"><strong>Já pagou e continua pendente?</strong> Aguarde a atualização e confira o acompanhamento antes de pagar novamente. A consulta com o navegador fechado ocorre a cada minuto. As telas do checkout externo variam conforme o Mercado Pago e o comprador.</div>
+ <footer class="footer"><span>Mineiro Lanche • Guia visual • 20/10/2026</span><span>4 / 8</span></footer>
+</section>
+<section class="page visual">
+ <header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>4. Entrar no painel</b><small>Loja • acesso e funcionamento</small></div></header>
+ <div class="demo">TELAS DO SISTEMA COM DADOS DE DEMONSTRAÇÃO • Pedidos e pagamentos simulados em ambiente local; nenhuma cobrança real.</div>
+ <div class="access"><img src="telas/07-acesso.webp" alt="Tela de acesso da equipe com E-mail, Senha e botão Entrar"><div><h2 style="margin-top:0">Acesso da equipe</h2><p>Abra <a href="https://mineirolanches.store/painel/">mineirolanches.store/painel/</a>.</p><ol class="mini-list"><li>Informe o <strong>e-mail</strong> e a <strong>senha</strong> cadastrados para a equipe.</li><li>Clique em <strong>Entrar</strong>.</li><li>No menu lateral, use <strong>Pedidos</strong> para acompanhar a operação e <strong>Histórico</strong> para consultar pedidos anteriores.</li></ol><p class="fine">A conta “equipe@teste.local” usada nas capturas é somente de demonstração e não é um acesso para o cliente.</p></div></div><h2>Confira se a loja está recebendo pedidos</h2><img class="navshot" src="telas/08-navegacao.webp" alt="Cabeçalho do painel com seletor Automático, Aberta e Fechada"><div class="box"><strong>Automático:</strong> segue os horários cadastrados.<br><strong>Aberta:</strong> mantém o atendimento aberto manualmente.<br><strong>Fechada:</strong> pausa os pedidos até a equipe alterar o modo.</div><p class="mini">Horários: segunda, terça e quinta, 19h à meia-noite; sexta, sábado e domingo, 19h à 1h do dia seguinte. <strong>Quarta-feira fechada no modo automático.</strong></p><div class="rule">A tela mostra a posição de cada controle. A opção “Aberta” está selecionada somente no ambiente de demonstração.</div>
+ <footer class="footer"><span>Mineiro Lanche • Guia visual • 20/10/2026</span><span>5 / 8</span></footer>
+</section>
+<section class="page visual">
+ <header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>5. Liberar o preparo</b><small>Loja • veja o que muda no pedido</small></div></header>
+ <div class="demo">TELAS DO SISTEMA COM DADOS DE DEMONSTRAÇÃO • Pedidos e pagamentos simulados em ambiente local; nenhuma cobrança real.</div>
+ <p class="lead">O mesmo pedido pode estar em <strong>Novo</strong> antes e depois do pagamento. Confira sempre a informação financeira no cartão.</p><div class="screens cards"><figure><h3>Pendente: aguarde</h3><img src="telas/09-card-pendente.webp" alt="Pendente: aguarde"><figcaption>O cartão informa <strong>Pagamento: Aguardando pagamento</strong>. O botão de aceitar não aparece. Aguarde a aprovação antes de iniciar o preparo.</figcaption></figure><figure><h3>Pago: pode preparar</h3><img src="telas/11-card-pago.webp" alt="Pago: pode preparar"><figcaption>O cartão muda para <strong>Pagamento: Pago no Mercado Pago</strong> e libera <strong>Aceitar e preparar</strong>. Clique nesse botão para iniciar o atendimento.</figcaption></figure></div><div class="box"><strong>Impressão automática:</strong> quando ativada, aguarda a aprovação financeira. Use <b>Configurar impressão</b> no painel e mantenha uma única estação ativa.</div><div class="rule">A aprovação do pagamento libera o preparo; a equipe continua responsável por avançar os status do pedido.</div>
+ <footer class="footer"><span>Mineiro Lanche • Guia visual • 20/10/2026</span><span>6 / 8</span></footer>
+</section>
+<section class="page visual">
+<header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>6. Cancelar o atendimento</b><small>Loja • informe o motivo</small></div></header>
+<div class="demo">TELA DO SISTEMA COM DADOS DE DEMONSTRAÇÃO • Nenhuma cobrança real.</div>
+<div class="box warn"><strong>Cancelar o pedido não devolve o dinheiro automaticamente.</strong> Após cancelar um pedido pago, um administrador precisa solicitar o estorno.</div>
+<div class="access" style="grid-template-columns:65mm 1fr;margin-top:18px"><img src="telas/12-cancelar.webp" alt="Confirmação do cancelamento com motivo preenchido e botão Confirmar cancelamento"><div><h2 style="margin-top:0">Exemplo: cliente desistiu</h2><ol class="mini-list"><li>No cartão do pedido, clique em <strong>Cancelar</strong>.</li><li>Preencha <strong>Motivo do cancelamento</strong>, por exemplo: “Cliente desistiu”.</li><li>Confira se está cancelando o pedido certo.</li><li>Clique em <strong>Confirmar cancelamento</strong>.</li><li>Se o pagamento foi aprovado, siga para a próxima página para solicitar a devolução.</li></ol><div class="box">Para desistir da ação antes de confirmar, clique em <strong>Voltar</strong>.</div></div></div>
+<h2>Se o pagamento chegar depois do cancelamento</h2><p>O pedido não volta sozinho para atendimento. Confira o caso no painel e no Mercado Pago e providencie a devolução quando aplicável.</p>
+<footer class="footer"><span>Mineiro Lanche • Guia visual • 20/10/2026</span><span>7 / 8</span></footer>
+</section>
+<section class="page visual">
+<header class="brand"><img src="../../public/assets/logo/logo-256.webp" alt="Mineiro Lanche"><div><b>7. Solicitar o estorno</b><small>Loja • acesso de administrador</small></div></header>
+<div class="demo">TELA DO SISTEMA COM DADOS DE DEMONSTRAÇÃO • O estado “pago” foi simulado; nenhuma cobrança real.</div>
+<div class="access" style="grid-template-columns:94mm 1fr"><img src="telas/14-estornar.webp" alt="Detalhe do pedido cancelado e pago com botão Estornar no Mercado Pago na parte inferior"><div><h2 style="margin-top:0">Onde clicar</h2><ol class="mini-list"><li>Entre com um perfil de <strong>administrador</strong>.</li><li>No menu lateral, abra <strong>Histórico</strong>.</li><li>Clique no <strong>número do pedido</strong> cancelado e pago.</li><li>Confira o cliente, o número e o total.</li><li>Na parte inferior do detalhe, clique em <strong>Estornar no Mercado Pago</strong>.</li><li>Confirme a operação e aguarde a atualização.</li></ol><div class="box note"><strong>Confira o resultado</strong> no painel e no Mercado Pago antes de tentar novamente.</div><p class="mini">O prazo para o dinheiro chegar ao comprador depende da forma de pagamento e da instituição.</p><p class="mini">Para <strong>devolução parcial</strong>, use a conta Mercado Pago da loja.</p></div></div>
+<p class="fine" style="margin-top:12px"><strong>Primeira venda real:</strong> acompanhe a aprovação e compare número do pedido, valor e status no site, no painel e no Mercado Pago. Os exemplos deste guia ilustram as telas do sistema.</p>
+<footer class="footer"><span>Mineiro Lanche • Guia visual • 20/10/2026</span><span>8 / 8</span></footer>
 </section>
 </html>
