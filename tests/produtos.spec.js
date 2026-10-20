@@ -260,3 +260,16 @@ test('equipe esgota e libera a categoria inteira sem alterar outras categorias',
   await expect(area.locator(`[data-produto="${p.id}"]`)).toContainText('Disponível');
   expect(sql(`select esgotado_dia is null from produtos where id='${p.id}'`)).toBe('t');
 });
+
+test('loja fechada mantém produtos dentro da largura de um celular de 320 px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 760 });
+  await page.route('**/rest/v1/rpc/estado_cardapio', async (route) => {
+    const r = await route.fetch(),
+      j = await r.json();
+    j.loja.modo = 'fechada';
+    await route.fulfill({ response: r, json: j });
+  });
+  await entrar(page);
+  await expect(page.locator('[data-lojatxt-m]')).toContainText('a loja pausou os pedidos');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});

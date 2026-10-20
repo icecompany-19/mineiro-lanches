@@ -325,6 +325,7 @@
 
 /* mobile (a lista única de pedidos; cada item é uma comanda de papel, ver o bloco do card) */
 .pn-m-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+.pn-m-topo .pn-loja-txt { min-width: 0; max-width: 100%; white-space: normal; line-height: 1.3; padding-block: .45rem; }
 .pn-aviso-m { padding: .85rem 1rem; border-radius: var(--r-md); background: var(--fio); color: var(--grafite); margin-bottom: 1rem; }
 .pn-m-lista { display: flex; flex-direction: column; gap: .75rem; }
 .pn-m-item { padding: .85rem 1rem; border: 1px solid var(--linha); border-radius: var(--r-lg); box-shadow: var(--sombra-card); display: flex; flex-direction: column; gap: .4rem; }
