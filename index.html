@@ -226,6 +226,10 @@
           <section class="bloco" aria-labelledby="pag-tit">
             <h2 id="pag-tit">Pagamento</h2>
             <div id="pagamentos"></div>
+            <div id="pagamento-online-info" hidden>
+              <p>Você paga com segurança no Mercado Pago. O preparo começa após a aprovação do pagamento.</p>
+              <div class="campo"><label for="f-email-pagamento">E-mail para o pagamento</label><input id="f-email-pagamento" type="email" autocomplete="email" maxlength="254"><span class="msg-erro" id="erro-email-pagamento" hidden>Informe um e-mail válido para continuar.</span></div>
+            </div>
           </section>
           <section class="bloco">
             <div class="campo" style="margin-top:0"><label for="f-obs">Observação para o pedido</label><textarea id="f-obs" maxlength="200" placeholder="Ex.: tocar a campainha, mandar guardanapo extra"></textarea></div>

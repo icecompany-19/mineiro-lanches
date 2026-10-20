@@ -23,6 +23,7 @@ test('sacola: o valor do combo não quebra entre o símbolo e o número e "Adici
   await abrirComSacola(page, ['gran-bacon-onion', 'x-burguer'], '#sacola');
   await expect(page.locator('#sacola-linhas .linha')).toHaveCount(2);
   const oferta = page.locator('.upsell strong');
+  await expect(oferta).toBeVisible();
   await expect(oferta).toHaveText(/^Vira combo por \+R\$ \d+,\d\d\?$/); // o textContent não muda
   const nb = oferta.locator('.nb');
   await expect(nb).toBeVisible(); // o texto já existe enquanto a troca de tela ainda está em andamento

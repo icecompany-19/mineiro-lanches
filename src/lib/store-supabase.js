@@ -10,7 +10,8 @@
    Pedidos nunca voltam no tempo: o historico só cresce (+1 a cada mudança de status), então uma versão com
    historico menor que a do cache é mais velha; e a foto de uma consulta não desfaz o que chegou (Realtime ou
    RPC) enquanto ela estava no ar. */
-import { obterSupabase, consultarEntrega } from './supabase.js';
+import { obterSupabase, consultarEntrega, consultarPagamento } from './supabase.js';
+import { financeiroRecente } from './pagamentos.js';
 
 const NS = 'mineiro:v2:';
 const CODIGOS = [
@@ -24,7 +25,9 @@ const CODIGOS = [
   'nao_encontrado',
   'cotacao_necessaria',
   'cotacao_expirada',
-  'cotacao_endereco_divergente'
+  'cotacao_endereco_divergente',
+  'pagamento_pendente',
+  'pagamento_valor_invalido'
 ];
 const JANELA_MS = 48 * 3600e3; // o painel lê os pedidos das últimas 48 h
 const TEMPO_LIMITE = 15000; // RPC sem resposta em 15 s conta como falta de rede
@@ -39,7 +42,8 @@ const AVISO = {
   produto_esgotado: 'Um item do pedido está esgotado hoje.',
   produto_invalido: 'Um item do pedido não está no cardápio.',
   sessao: 'O login precisou ser renovado e a mudança não foi salva. Tente de novo.',
-  rede: 'Sem conexão com o servidor: a mudança não foi salva. Tente de novo.'
+  rede: 'Sem conexão com o servidor: a mudança não foi salva. Tente de novo.',
+  pagamento_pendente:'Aguarde a aprovação do pagamento antes de preparar ou entregar este pedido.'
 };
 
 // ---------- localStorage com prefixo (por aparelho) ----------
@@ -96,6 +100,8 @@ export function linhaParaPedido(r) {
     ...(r.entrega_destino?{entregaDestino:r.entrega_destino}:{}),
     referencia: r.referencia || '',
     pagamento: r.pagamento || null,
+    pagamentoOnline:r.pagamento_online||r.pagamentoOnline||null,
+    pagamentoEm:r.pagamento_em||r.pagamentoEm||null,
     troco: r.troco || '',
     obs: r.obs || '',
     itens: (r.itens || []).map(itemDe),
@@ -121,6 +127,8 @@ function acompanhamentoDe(p) {
     numero: num(p.numero),
     criadoEm: isoDe(p.criadoEm),
     status: p.status,
+    pagamentoOnline:p.pagamentoOnline||null,
+    pagamentoEm:p.pagamentoEm||null,
     historico: p.historico || [],
     modo: p.modo,
     mesa: p.mesa || null,
@@ -285,7 +293,7 @@ export function criarStoreSupabase(opc) {
       ids.add(p.id);
       const a = antes.get(p.id);
       if (!a) emitir('pedido:novo', { id: p.id });
-      else if (a.status !== p.status) emitir('pedido:status', { id: p.id, status: p.status });
+      else if (a.status !== p.status||a.pagamentoOnline!==p.pagamentoOnline||a.pagamentoEm!==p.pagamentoEm) emitir('pedido:status', { id: p.id, status: p.status });
     });
     for (const id of antes.keys()) {
       if (!ids.has(id)) {
@@ -306,7 +314,12 @@ export function criarStoreSupabase(opc) {
   // versão que veio do servidor (Realtime ou resposta de RPC): não troca o cache por uma mais velha
   function receberPedido(p) {
     const atual = pedidos.find((x) => x.id === p.id);
-    if (atual && hist(atual) > hist(p)) return;
+    if (atual && hist(atual) > hist(p)) {
+      const novo=financeiroRecente(atual,p);
+      if(novo!==atual)guardarPedido(novo);
+      return;
+    }
+    p=financeiroRecente(p,atual);
     guardarPedido(p);
   }
   function tirarPedidos(ids) {
@@ -332,7 +345,8 @@ export function criarStoreSupabase(opc) {
         if (!recente(p.id)) lista.push(p);
         return;
       }
-      lista.push(recente(p.id) && hist(p) <= hist(c) ? c : p);
+      const operacional=recente(p.id)&&hist(p)<=hist(c)?c:p;
+      lista.push(financeiroRecente(operacional,operacional===c?p:c));
     });
     cache.forEach((c, id) => {
       if (!naFoto.has(id) && recente(id)) lista.push(c);
@@ -367,7 +381,7 @@ export function criarStoreSupabase(opc) {
   function aplicarLoja(l) {
     if (!l) return;
     const antes = loja.modo;
-    loja = { modo: l.modo || 'auto', aceitaFechada: !!l.aceitaFechada, cotacaoAtiva: !!l.cotacaoAtiva };
+    loja = { modo: l.modo || 'auto', aceitaFechada: !!l.aceitaFechada, cotacaoAtiva: !!l.cotacaoAtiva,pagamentosAtivos:!!l.pagamentosAtivos };
     if (pendLoja) loja.modo = pendLoja.v;
     // vale também na primeira carga: até ela o cardápio supõe 'auto' (pelo horário)
     if (loja.modo !== antes) emitir('loja:modo', { modo: loja.modo });
@@ -404,7 +418,7 @@ export function criarStoreSupabase(opc) {
       precos,
       inativos: [...inativos].sort(),
       adicionais: adic,
-      loja: { aceitaFechada: !!l.aceitaFechada, cotacaoAtiva: !!l.cotacaoAtiva, comboPreco: Number(l.comboPreco), taxaKm: Number(l.taxaKm), taxaFixa: Number(l.taxaFixa), horarios: l.horarios || C.horarios }
+      loja: { aceitaFechada: !!l.aceitaFechada, cotacaoAtiva: !!l.cotacaoAtiva,pagamentosAtivos:!!l.pagamentosAtivos, comboPreco: Number(l.comboPreco), taxaKm: Number(l.taxaKm), taxaFixa: Number(l.taxaFixa), horarios: l.horarios || C.horarios }
     });
     const mudouCardapio = nova !== assinaturaCardapio;
     assinaturaCardapio = nova;
@@ -578,6 +592,14 @@ export function criarStoreSupabase(opc) {
     buscarCepEntrega(cep, dispositivo, signal) { return consultarEntrega({acao:'cep',cep,dispositivo},signal); },
     cotarEntrega(dados, signal) { return consultarEntrega(dados,signal); },
     resumoEntregas() { return rpc('resumo_entregas',{}); },
+    iniciarPagamento(token,email) {return consultarPagamento({acao:'iniciar',token,email});},
+    consultarPagamento(token) {return consultarPagamento({acao:'consultar',token});},
+    async estornarPagamento(pedidoId) {
+      const sb=await cliente(),{data}=await sb.auth.getSession();
+      if(!data?.session?.access_token)throw erroCom('sessao');
+      const r=await consultarPagamento({acao:'estornar',pedidoId},data.session.access_token);
+      await recarregar();return r;
+    },
     async definirOrigemEntrega(ponto) { await rpc('definir_origem_entrega',{p_lat:ponto.lat,p_lon:ponto.lon});await recarregar(); },
 
     pedidos: () => pedidos.slice(),
@@ -765,7 +787,7 @@ export function criarStoreSupabase(opc) {
           'meus',
           meus.map((m) => (m.token === token ? novo : m))
         );
-      if (!antes || antes.status !== novo.status) emitir('pedido:status', { token, status: novo.status });
+      if (!antes || antes.status !== novo.status||antes.pagamentoOnline!==novo.pagamentoOnline||antes.pagamentoEm!==novo.pagamentoEm) emitir('pedido:status', { token, status: novo.status });
       return novo;
     },
 

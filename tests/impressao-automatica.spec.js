@@ -101,6 +101,20 @@ test('serializa um lote, não repete em recargas e recupera pedidos recebidos co
   expect((await cupons(page))[0].id).toBe(pedido(6).id);
 });
 
+test('aguarda aprovação financeira e imprime uma única vez após confirmar o pagamento online', async ({ page, context }) => {
+  const api = await preparar({ page, context }); await ativar(page);
+  const pendente = pedido(60, { pagamento: 'Mercado Pago', pagamento_online: 'pendente', pagamento_em: new Date().toISOString() });
+  await api.mudar([pendente]);
+  await expect.poll(() => page.evaluate(() => window.ML.store.pedidos().find(p => p.numero === 60)?.pagamentoOnline)).toBe('pendente');
+  await page.waitForTimeout(1500);
+  expect(await cupons(page)).toHaveLength(0);
+  const aprovado = { ...pendente, pagamento_online: 'aprovado', pagamento_em: new Date().toISOString() };
+  await api.mudar([aprovado]);
+  await expect.poll(async () => (await cupons(page)).length).toBe(1);
+  await api.mudar([aprovado]);
+  expect((await cupons(page)).map(c => c.id)).toEqual([pendente.id]);
+});
+
 test('pausa preserva a fila e não imprime automaticamente pedidos recebidos enquanto pausada', async ({ page, context }) => {
   const api = await preparar({ page, context }); await ativar(page);
   // Modal aberto impede que o envio interrompa uma conferência em andamento.

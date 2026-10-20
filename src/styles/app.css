@@ -728,3 +728,10 @@ html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-s
 .taxa-msg.falha{border-style:solid;border-color:var(--fio)}
 .prazo-nota{font:500 13px/1.4 var(--f-corpo);color:var(--osso-2);margin:0}
 .prazo-nota:empty{display:none}
+
+/* Pagamento hospedado: os campos de cartão ficam no Mercado Pago. */
+#pedido-pagamento{margin:18px 0;text-align:left;padding:18px;border:1px solid var(--borda-campo);border-radius:var(--r-md)}
+#pedido-pagar{display:grid;gap:12px}
+#pedido-pagar[hidden]{display:none}
+#pedido-pagamento-email{width:100%;min-width:0;padding:12px;border:1.5px solid var(--borda-campo);border-radius:var(--r-md);background:var(--chapa);color:var(--osso);font:inherit}
+#pedido-pagamento-erro{color:var(--vermelho-luz)}

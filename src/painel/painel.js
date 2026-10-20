@@ -86,8 +86,18 @@
     if (p.status === 'entregue') return ehHoje(concluidoEm(p)) ? 'concluidos' : null;
     return COL_DO_STATUS[p.status] || null;
   }
+  function proximoStatus(p) {
+    return p.pagamentoOnline && p.pagamentoOnline !== 'aprovado' ? null : ML.regras.proximoStatus(p);
+  }
+  const PAGAMENTO_TXT = { pendente:'Aguardando pagamento', aprovado:'Pago no Mercado Pago', recusado:'Pagamento recusado',
+    cancelado:'Pagamento expirado/cancelado', reembolsado:'Reembolsado', parcialmente_reembolsado:'Reembolso parcial',
+    em_disputa:'Pagamento em contestação', revisao:'Pagamento em revisão' };
+  const avisoPagamento = p => p.status === 'cancelado' && ['aprovado','parcialmente_reembolsado'].includes(p.pagamentoOnline)
+    ? '<p class="pn-taxa pn-taxa--pendente">Pedido cancelado com pagamento recebido. Confira o reembolso.</p>' : '';
+  const estornoHTML = p => p.status === 'cancelado' && p.pagamentoOnline === 'aprovado'
+    ? `<button type="button" class="pn-btn pn-btn--perigo" data-act="estornar" data-id="${esc(p.id)}">Estornar no Mercado Pago</button>` : '';
   function colAlvo(p) {
-    const n = ML.regras.proximoStatus(p);
+    const n = proximoStatus(p);
     return n ? COL_DO_STATUS[n] : null;
   }
   function rotuloAvanco(p) {
@@ -234,7 +244,7 @@
   const taxaTxt = p => p.modo !== 'entrega' ? '' : p.taxaEntrega != null
     ? 'Entrega ' + brl(p.taxaEntrega) + (p.distanciaKm ? ' · ' + ML.entrega.kmCobrados(p.distanciaKm) + ' km' : '')
     : 'Taxa de entrega pendente — não incluída no total';
-  const pagTxt = p => 'Pagamento: ' + (p.pagamento || 'a combinar') + (p.troco ? ' · troco para ' + p.troco : '');
+  const pagTxt = p => 'Pagamento: ' + (PAGAMENTO_TXT[p.pagamentoOnline] || p.pagamento || 'a combinar') + (p.troco ? ' · troco para ' + p.troco : '');
   const tagExemplo = p => p.origem === 'exemplo' ? '<span class="pn-tag pn-tag--exemplo">Pedido de exemplo</span>' : '';
   // quem pediu pelo QR da loja (e de qual mesa)
   const tagsOrigem = p => (p.origem === 'qrcode' ? '<span class="pn-tag pn-tag--qr">QR</span>' : '') +
@@ -244,7 +254,7 @@
 
   function cardHTML(p) {
     const st = p.status, num = ML.fmt.numero(p.numero), nome = nomeCli(p), n = ATIVOS.includes(st) ? nivelDe(Date.now() - new Date(p.criadoEm).getTime()) : 'ok';
-    const prox = ML.regras.proximoStatus(p), tel = telWa(p);
+    const prox = proximoStatus(p), tel = telWa(p);
     const end = p.modo === 'entrega' && p.endereco ? `<div class="pn-end">${ic('pino')}<div class="pn-end-t"><span>${esc(p.endereco)}</span>${p.referencia ? `<small>${esc(p.referencia)}</small>` : ''}</div>
         <div class="pn-end-b"><button type="button" class="pn-btn pn-btn--peq" data-act="copiar" data-id="${esc(p.id)}" aria-label="Copiar endereço do pedido ${num}">Copiar</button>
         <a class="pn-btn pn-btn--peq" href="${esc(linkMaps(p))}" target="_blank" rel="noopener" aria-label="Abrir endereço do pedido ${num} no Maps">Abrir no Maps</a></div></div>` : '';
@@ -252,14 +262,14 @@
       <header class="pn-card-topo"><span class="pn-num">${num}</span>${tempoHTML(p)}</header>
       <div class="pn-card-sub"><strong class="pn-cli">${esc(nome)}</strong><span class="pn-modo pn-modo--${esc(p.modo)}">${ic(MODO_IC[p.modo] || 'sacola')}${esc(modoLabel(p.modo))}</span></div>
       <div class="pn-tags"><span class="pn-st pn-st--${st}">${esc(statusPainel(st))}</span>${tagsOrigem(p)}${tagExemplo(p)}</div>
-      ${itensHTML(p, false)}
+      ${avisoPagamento(p)}${itensHTML(p, false)}
       ${p.obs ? `<p class="pn-obs"><strong>Obs:</strong> ${esc(p.obs)}</p>` : ''}
       ${end}
       ${p.modo === 'entrega' ? `<p class="pn-taxa${p.taxaEntrega == null ? ' pn-taxa--pendente' : ''}">${esc(taxaTxt(p))}</p>` : ''}
       <div class="pn-rodape"><span class="pn-pag">${esc(pagTxt(p))}</span><strong class="pn-total">${brl(p.total)}</strong></div>
       <div class="pn-acoes">
         ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : ''}
-        <div class="pn-acoes-sec">
+        <div class="pn-acoes-sec">${estornoHTML(p)}
           <button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}" aria-label="Imprimir comanda do pedido ${num}">${ic('impressora')}Imprimir</button>
           ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nome)} no WhatsApp">${ic('chat')}WhatsApp</a>` : ''}
           ${ATIVOS.includes(st) ? `<button type="button" class="pn-btn pn-btn--perigo" data-act="cancelar" data-id="${esc(p.id)}" aria-label="Cancelar pedido ${num}">${ic('x')}Cancelar</button>` : ''}
@@ -575,9 +585,9 @@
     const lista = S.pedidos.filter(p => ATIVOS.includes(p.status) || (p.status !== 'cancelado' && ehHoje(p.criadoEm)))
       .sort((a, b) => new Date(b.criadoEm) - new Date(a.criadoEm));
     q('[data-mobile]').innerHTML = lista.length ? '<ul class="pn-m-lista">' + lista.map(p => {
-      const prox = ML.regras.proximoStatus(p);
+      const prox = proximoStatus(p);
       return `<li class="pn-m-item"><div class="pn-m-t"><b class="pn-num">${ML.fmt.numero(p.numero)}</b> <span>${esc(nomeCli(p))}</span> ${statusChip(p.status)}${tagsOrigem(p)}</div>
-        <p>${esc(itensTxt(p))}</p><div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : ''}</div></div></li>`;
+        <p>${esc(itensTxt(p))}</p>${p.pagamentoOnline?`<p>${esc(pagTxt(p))}</p>`:""}${avisoPagamento(p)}<div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : ''}</div></div></li>`;
     }).join('') + '</ul>' : `<div class="pn-vazio">${ic('truck', 'pn-vazio-ic')}<p>${esc(textoVazio())}</p></div>`;
   }
 
@@ -806,7 +816,7 @@
       <hr>${itens}<hr>
       ${p.obs ? `<p class="pn-c-obs"><b>OBS:</b> ${esc(p.obs)}</p><hr>` : ''}
       ${p.modo === 'entrega' ? `<p class="pn-c-taxa">${esc(p.taxaEntrega != null ? taxaTxt(p).replace(/^Entrega /, 'ENTREGA: ') : taxaTxt(p).toUpperCase())}</p>` : ''}
-      <p>${esc(pagTxt(p))}</p>
+      <p>${esc(pagTxt(p))}</p>${avisoPagamento(p)}
       <p class="pn-c-total"><span>TOTAL</span><span>${brl(p.total)}</span></p>
       ${qrEntregaHTML(p)}
     </div>`;
@@ -833,13 +843,13 @@
           ${p.modo === 'entrega' ? `<div><dt>Entrega</dt><dd>${esc(taxaTxt(p).replace(/^Entrega /, ''))}</dd></div>` : ''}
           <div><dt>Pagamento</dt><dd>${esc(pagTxt(p).replace('Pagamento: ', ''))}</dd></div>
         </dl>
-        ${itensHTML(p, true)}
+        ${avisoPagamento(p)}${itensHTML(p, true)}
         ${p.obs ? `<p class="pn-obs"><strong>Obs:</strong> ${esc(p.obs)}</p>` : ''}
         <p class="pn-lat-total"><span>Total</span><strong>${brl(p.total)}</strong></p>
         <h3 class="pn-sub">Histórico do pedido</h3>
         <ol class="pn-linha">${(p.historico || []).map(h => `<li><span class="pn-linha-h">${esc(dataHora(h.em))}</span><b>${esc((ML.STATUS[h.status] || { label: h.status }).label)}</b>${h.motivo ? `<small>Motivo: ${esc(h.motivo)}</small>` : ''}</li>`).join('')}</ol>
       </div>
-      <footer class="pn-lat-acoes"><button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}">${ic('impressora')}Imprimir comanda</button>
+      <footer class="pn-lat-acoes">${estornoHTML(p)}<button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}">${ic('impressora')}Imprimir comanda</button>
         ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener">${ic('chat')}WhatsApp</a>` : ''}</footer>`;
   }
   function abrirDetalhe(id) {
@@ -871,7 +881,7 @@
     const cab = ['Numero', 'Data e hora', 'Cliente', 'Telefone', 'Modo', 'Itens', 'Taxa de entrega', 'Distancia (km)', 'Total', 'Pagamento', 'Status', 'Origem', 'Mesa'];
     const linhas = lista.map(p => [ML.fmt.numero(p.numero), dataHora(p.criadoEm), nomeCli(p), (p.cliente && p.cliente.telefone) || '', modoLabel(p.modo),
       p.itens.map(i => i.qtd + 'x ' + i.nome + (i.resumo ? ' (' + i.resumo + ')' : '')).join(' | '),
-      p.taxaEntrega != null ? p.taxaEntrega.toFixed(2).replace('.', ',') : '', p.distanciaKm != null ? String(p.distanciaKm).replace('.', ',') : '', p.total.toFixed(2).replace('.', ','), p.pagamento || 'a combinar', statusPainel(p.status), p.origem, p.mesa || ''].map(cel).join(';'));
+      p.taxaEntrega != null ? p.taxaEntrega.toFixed(2).replace('.', ',') : '', p.distanciaKm != null ? String(p.distanciaKm).replace('.', ',') : '', p.total.toFixed(2).replace('.', ','), pagTxt(p).replace('Pagamento: ', ''), statusPainel(p.status), p.origem, p.mesa || ''].map(cel).join(';'));
     return '﻿' + [cab.map(cel).join(';')].concat(linhas).join('\r\n');
   }
   function mostrarCSV(csv) {
@@ -893,7 +903,7 @@
 
   /* ---------- ações ---------- */
   function avancar(id) {
-    const p = pedidoPorId(id), prox = p && ML.regras.proximoStatus(p);
+    const p = pedidoPorId(id), prox = p && proximoStatus(p);
     if (!prox) return;
     if (prox === 'rota' && p.modo === 'entrega' && p.origem !== 'exemplo') { irPara('entregadores'); toast('Atribua o pedido a um entregador e registre a saída nesta aba.'); return; }
     if (prox === 'entregue' && p.modo === 'entrega' && p.origem !== 'exemplo') { irPara('entregadores'); toast('Use Baixa manual e informe o motivo, ou peça a confirmação ao motoboy.'); return; }
@@ -909,7 +919,7 @@
     const p = pedidoPorId(id), num = ML.fmt.numero(p.numero);
     const d = document.createElement('div');
     d.className = 'pn-cancel'; d.setAttribute('role', 'group'); d.setAttribute('aria-label', 'Cancelar pedido ' + num);
-    d.innerHTML = `<label class="pn-campo"><span class="pn-campo-r">Motivo do cancelamento</span><input type="text" class="pn-input" maxlength="120" autocomplete="off"></label>
+    d.innerHTML = `${p.pagamentoOnline==='aprovado'?'<p class="pn-taxa pn-taxa--pendente">Este pedido já foi pago. Cancelar não devolve o dinheiro: um administrador precisa solicitar o estorno.</p>':''}<label class="pn-campo"><span class="pn-campo-r">Motivo do cancelamento</span><input type="text" class="pn-input" maxlength="120" autocomplete="off"></label>
       <p class="pn-erro" role="alert" hidden>Informe o motivo.</p>
       <div class="pn-cancel-b"><button type="button" class="pn-btn pn-btn--perigo" data-act="cancelar-ok" data-id="${esc(id)}">Confirmar cancelamento</button><button type="button" class="pn-btn" data-act="cancelar-voltar">Voltar</button></div>`;
     card.appendChild(d);
@@ -919,7 +929,7 @@
   function fecharCancelar(card) {
     const d = card.querySelector('.pn-cancel'); if (d) d.remove();
     const p = pedidoPorId(card.dataset.id);
-    if (p && ML.regras.proximoStatus(p)) card.setAttribute('draggable', 'true');
+    if (p && proximoStatus(p)) card.setAttribute('draggable', 'true');
     const b = card.querySelector('[data-act="cancelar"]'); if (b) b.focus();
   }
   function confirmarCancelar(id, card) {
@@ -1023,6 +1033,13 @@
         break;
       }
       case 'apagar-ok': ML.store.removerTestes().then(n => toast(n === 1 ? '1 pedido de exemplo apagado' : n + ' pedidos de exemplo apagados'), () => {}); q('[data-confirma]').hidden = true; q('[data-act="apagar"]').focus(); agendar(); break;
+      case 'estornar': {
+        const pedido=pedidoPorId(id);
+        if(!pedido||!confirm('Devolver integralmente '+brl(pedido.total)+' do pedido '+ML.fmt.numero(pedido.numero)+' pelo Mercado Pago?'))break;
+        b.disabled=true;
+        ML.store.estornarPagamento(id).then(r=>toast(r.estado==='reembolsado'?'Reembolso confirmado':'Reembolso solicitado; aguarde a confirmação'),e=>toast(e.codigo==='sem_permissao'?'Somente administradores podem estornar.':'Não foi possível confirmar o estorno. Confira no Mercado Pago antes de tentar novamente.',{tipo:'erro'})).finally(()=>{b.disabled=false;agendar();});
+        break;
+      }
       case 'sair': b.disabled = true; if (S.opc.aoSair) S.opc.aoSair(); break;
       case 'apagar-no': q('[data-confirma]').hidden = true; q('[data-act="apagar"]').focus(); break;
       default: break;
@@ -1069,7 +1086,7 @@
       const c = e.target.closest && e.target.closest('.pn-card');
       if (!c) return;
       const p = pedidoPorId(c.dataset.id);
-      if (!p || !ML.regras.proximoStatus(p)) { e.preventDefault(); return; }
+      if (!p || !proximoStatus(p)) { e.preventDefault(); return; }
       S.arrastando = p.id;
       e.dataTransfer.effectAllowed = 'move';
       try { e.dataTransfer.setData('text/plain', p.id); } catch { /* ignorado */ }

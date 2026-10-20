@@ -79,7 +79,7 @@ select pg_temp.ok(not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and ((not p.prosecdef and p.proname not in ('reservar_entrega','emitir_cotacao_entrega','limpar_dados_entrega','gerir_acesso_usuario','taxas_entregador',
       'rotas_regras_validas','rotas_config_json','estado_entregador_rotas','viagem_entrega_json','plano_entrega_json','reservar_plano_entregas',
-      'disparar_planejador_entregas','limpar_planejamento_entregas'))
+      'disparar_planejador_entregas','limpar_planejamento_entregas','proteger_pagamento_pedido','preparar_pagamento_mp','registrar_pagamento_mp','autorizar_reembolso_mp','reservar_conciliacao_mp'))
       or not coalesce('search_path=public, pg_temp' = any (p.proconfig) or 'search_path=""' = any (p.proconfig), false))),
   'RPCs têm search_path fixo; helpers de entrega mantêm privilégios do backend');
 select pg_temp.ok(not exists (

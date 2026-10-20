@@ -42,6 +42,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
 ```
 { id, numero, criadoEm (ISO), origem: 'cardapio'|'exemplo', cliente: { nome, telefone },
   modo: 'entrega'|'retirada'|'local', endereco, referencia, pagamento|null, troco, obs,
+  pagamentoOnline: null|'pendente'|'aprovado'|'recusado'|'cancelado'|'reembolsado'|'parcialmente_reembolsado'|'em_disputa'|'revisao', pagamentoEm: ISO|null,
   itens: [{ produtoId, nome, tipo, precoUnit, qtd, completo, removidos[], prensado,
             combo: { ativo, refri }, adicionais: [{ id, nome, qtd, preco }], sabor, resumo, subtotal }],
   total, status: 'novo'|'preparo'|'pronto'|'rota'|'entregue'|'cancelado', historico: [{ status, em, motivo? }] }

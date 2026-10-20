@@ -39,7 +39,7 @@ const CSP = {
   'img-src': ["'self'", 'data:', 'blob:', 'https://tile.openstreetmap.org'],
   'font-src': ["'self'"],
   // + consulta de CEP (ViaCEP), endereço (Nominatim/OpenStreetMap) e rota (OSRM) da taxa de entrega
-  'connect-src': ["'self'", `https://${SUPABASE}`, `wss://${SUPABASE}`, 'https://viacep.com.br', 'https://nominatim.openstreetmap.org', 'https://router.project-osrm.org'],
+  'connect-src': ["'self'", `https://${SUPABASE}`, `wss://${SUPABASE}`, 'https://hkfoetwnphbauezftfgq.supabase.co', 'wss://hkfoetwnphbauezftfgq.supabase.co', 'https://viacep.com.br', 'https://nominatim.openstreetmap.org', 'https://router.project-osrm.org'],
   'manifest-src': ["'self'"],
   'media-src': ["'self'"],
   'worker-src': ["'self'", 'blob:'],

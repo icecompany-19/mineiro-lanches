@@ -288,6 +288,14 @@ A Edge Function `gerenciar-usuarios` exige JWT de usuário e valida a sessão em
 
 `usuarios_painel` e `usuarios_painel_eventos` têm RLS e são privadas ao backend. `gerir_acesso_usuario(uuid,uuid,text,text,text,boolean)` é invoker e só `service_role` executa. Sincroniza equipe/motoboy, registra auditoria sem senha e protege o próprio administrador. Equipe comum e motoboys não promovem permissões nem enumeram usuários diretamente. Consulte [operação e primeiro administrador](USUARIOS-PAINEL.md).
 
+### Mercado Pago — branch `feat/mercado-pago`
+
+Migration `20261018185421`: `loja_json().pagamentosAtivos` (false inicialmente); `pedido_json` e `acompanhar_pedido` acrescentam `pagamentoOnline`/`pagamentoEm`, nulos no legado. Pedidos da equipe recebem os mesmos campos na tabela (`pagamento_online`, `pagamento_em`). As tabelas `pagamentos_mp` e `pagamentos_mp_eventos` são privadas, com RLS e privilégios só de service_role; helpers financeiros usam invoker e não são executáveis por anon/authenticated. Não incluir e-mail, credenciais, order ou checkout_url no acompanhamento público.
+
+`POST /functions/v1/mercado-pago`: `iniciar {token,email}` → `{estado,checkoutUrl,processando}`; `consultar {token}` → mesmo recorte; `estornar {pedidoId}` exige JWT real e administrador ativo, pedido cancelado e pagamento aprovado; `reconciliar` exige credencial de backend. `POST /functions/v1/mercado-pago-webhook` exige HMAC Mercado Pago e busca a order na API. Valor, conta, aplicação, ambiente e status são conferidos antes de chamar `registrar_pagamento_mp`. Detalhes, erros e homologação: `docs/MERCADO-PAGO.md`.
+
+Novos erros de RPC: `pagamento_pendente` bloqueia preparo/entrega sem aprovação; `pagamento_valor_invalido` recusa cobrança zero/entrega sem taxa. Edge: `pagamento_nao_configurado` (503), `pagamento_indisponivel` (503), `pagamento_divergente` (422), `assinatura_invalida` (401), `email_invalido`, `pagamento_encerrado`, `cancele_antes_de_estornar` (422), `sem_permissao` (403), `nao_encontrado` (404). Flag desligada não libera pedidos online existentes sem pagamento.
+
 
 ## Controle de entregadores — 18/10/2026
 

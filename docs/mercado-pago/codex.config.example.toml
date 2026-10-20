@@ -1,0 +1,3 @@
+# Adicionar à configuração local do Codex. Não contém credenciais.
+[mcp_servers.mercadopago]
+url = "https://mcp.mercadopago.com/mcp"

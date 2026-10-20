@@ -44,7 +44,9 @@ export async function enviarComanda(html, { antesDeEnviar = async () => {}, vali
   }
 }
 
-export function montarImpressaoAutomatica(root, { pedidos, online, comanda, teste, podeImprimir, configurar }) {
+export function montarImpressaoAutomatica(root, { pedidos: todosPedidos, online, comanda, teste, podeImprimir, configurar }) {
+  // A aprovação chega como atualização financeira do mesmo pedido, antes de qualquer avanço operacional.
+  const pedidos = () => todosPedidos().filter(p => !p.pagamentoOnline || p.pagamentoOnline === 'aprovado');
   const esc = window.ML.fmt.esc, numero = window.ML.fmt.numero;
   const slot = root.querySelector('[data-impressao-config]');
   const resumo = root.querySelector('[data-impressao-resumo]');
