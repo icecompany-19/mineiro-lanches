@@ -98,7 +98,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     /* padrão */
   }
   const agora = () => Date.now() + desvio;
-  const pedidos = () => dados?.pedidos || [];
+  const pedidos = () => (dados?.pedidos || []).filter((p) => p.status !== 'cancelado');
   const longo = (p) => p.status === 'rota' && p.saiuEm && agora() - new Date(p.saiuEm) >= alerta * 60000;
   const filtrados = () => pedidos().filter((p) => filtro === 'todos' || (filtro === 'sem' ? !p.motoboyId : p.motoboyId === filtro));
   function entregadores() {
@@ -108,8 +108,11 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     return lista;
   }
   const precisaAtribuir = (p) => emAberto(p) && !p.atribuicao && !p.motoboyId && !planejamento.viagemDoPedido(p.id);
+  const precisaSair = (p) =>
+    ['preparo', 'pronto'].includes(p.status) && p.atribuicao && p.motoboyId && !p.saiuEm && !planejamento.viagemDoPedido(p.id);
   const contagem = (lista = filtrados()) => ({
     atribuir: lista.filter(precisaAtribuir).length,
+    saida: lista.filter(precisaSair).length,
     todos: lista.length,
     rota: lista.filter((p) => p.status === 'rota').length,
     espera: lista.filter((p) => ['preparo', 'pronto'].includes(p.status)).length,
@@ -126,6 +129,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     const chaveFoco = foco?.dataset.eKey;
     const chaveRota = foco?.dataset.rKey;
     const detalhes = slots.map((s) => [...s.querySelectorAll('details[open]')].map((d) => d.dataset.eDetalhe));
+    const acaoInicial = ['atribuir', 'saida'].includes(etapa);
     const c = contagem(),
       abertas = pedidos().filter(emAberto).length,
       legado = pedidos().filter((p) => p.legado).length;
@@ -145,16 +149,17 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       </header>
       <div class="pn-ent-vivo"><span class="pn-ent-conexao" data-e-conexao>Consultando servidor…</span><span>Atualização automática a cada 15 s</span><span data-e-atualizado></span></div>
     `;
-    const corpo = `<div class="pn-entregadores${etapa === 'atribuir' ? ' pn-entregadores--atribuir' : ''}">
-      ${etapa !== 'atribuir' ? cabecalho : ''}
-      <p class="pn-ent-erro" role="alert" ${erro ? '' : 'hidden'}>${ic('info')}${esc(erro)}</p><p class="pn-ent-aviso" role="status" aria-live="polite" ${aviso ? '' : 'hidden'}><span>${esc(aviso)}</span>${atribuicaoConfirmada ? '<button class="pn-btn" type="button" data-e="ver-atribuidos">Ver atribuídos</button>' : ''}</p>
+    const corpo = `<div class="pn-entregadores${acaoInicial ? ' pn-entregadores--acao' : ''}">
+      ${!acaoInicial ? cabecalho : ''}
+      <p class="pn-ent-erro" role="alert" ${erro ? '' : 'hidden'}>${ic('info')}${esc(erro)}</p><p class="pn-ent-aviso" role="status" aria-live="polite" ${aviso ? '' : 'hidden'}><span>${esc(aviso)}</span>${atribuicaoConfirmada && etapa !== 'saida' ? '<button class="pn-btn" type="button" data-e="ver-atribuidos">Ir para registrar saída</button>' : ''}</p>
       ${
         dados
           ? `
       <section class="pn-ent-central pn-ent-central--primeiro" aria-label="Central de entregas">
-        <div class="pn-ent-secao-cab"><div><p class="pn-ent-kicker">${etapa === 'atribuir' ? 'Próxima ação' : 'Acompanhamento'}</p><h3>${etapa === 'atribuir' ? 'Atribuir motoboy' : 'Central de entregas'}</h3></div><button type="button" class="pn-btn" data-e="retorno" data-e-key="retorno">${ic('completo')} Conferir retorno</button></div>
+        <div class="pn-ent-secao-cab"><div><p class="pn-ent-kicker">${acaoInicial ? 'Próxima ação' : 'Acompanhamento'}</p><h3>${etapa === 'atribuir' ? 'Atribuir motoboy' : etapa === 'saida' ? 'Registrar saída' : 'Central de entregas'}</h3></div><button type="button" class="pn-btn" data-e="retorno" data-e-key="retorno">${ic('completo')} Conferir retorno</button></div>
         <div class="pn-entregadores-retorno" ${retorno ? '' : 'hidden'}><div>${ic('check')}<b>Conferência no retorno</b></div><p>Peça ao motoboy para abrir a tela conectado e conferir “Tudo sincronizado”. Há <b>${abertas} ${abertas === 1 ? 'entrega aberta' : 'entregas abertas'}</b> no sistema. Confira as pendências abaixo.</p><button class="pn-btn" type="button" data-e="fechar-retorno">Entendi</button></div>
         ${etapa === 'atribuir' ? '<p class="pn-ent-atribuir-dica">Escolha o entregador do pedido e toque em Atribuir.</p>' : ''}
+        ${etapa === 'saida' ? '<p class="pn-ent-atribuir-dica">Confira o pedido e o motoboy. Toque em Registrar saída somente quando ele sair da loja.</p>' : ''}
         <div class="pn-ent-toolbar"><label class="pn-ent-busca">${ic('busca')}<span class="pn-sr">Buscar pedido ou cliente</span><input type="search" placeholder="Buscar pedido ou cliente" value="${esc(busca)}" data-e-busca data-e-key="busca"></label><label class="pn-ent-filtro"><span class="pn-sr">Entregador</span><select data-e-filtro data-e-key="filtro"><option value="todos">Todos os entregadores</option><option value="sem" ${filtro === 'sem' ? 'selected' : ''}>Sem atribuição</option>${entregadores()
           .map(
             (e) => `<option value="${esc(e.id)}" ${filtro === e.id ? 'selected' : ''}>${esc(e.nome)}${e.ativo ? '' : ' (inativo)'}</option>`
@@ -164,6 +169,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
           )}</select></label><details class="pn-ent-ajustes" data-e-detalhe="ajustes"><summary aria-label="Ajustar alerta">${ic('config')} Alerta</summary><label>Alertar após (min)<input type="number" min="1" max="1440" value="${alerta}" required data-e-alerta data-e-key="alerta"></label><p>Limite interno de acompanhamento. Não é prazo de entrega.</p></details></div>
         <div class="pn-ent-etapas" role="group" aria-label="Filtrar situação">${[
           ['atribuir', 'Atribuir motoboy'],
+          ['saida', 'Registrar saída'],
           ['todos', 'Todas'],
           ['rota', 'Em entrega'],
           ['espera', 'Aguardando'],
@@ -182,7 +188,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       `
           : ''
       }
-      ${etapa === 'atribuir' ? cabecalho : ''}
+      ${acaoInicial ? cabecalho : ''}
       <section class="pn-ent-kpis" aria-label="Resumo das entregas">${kpi('rota', 'Em entrega', 'moto', 'Acompanhar em andamento')}${kpi('espera', 'Aguardando saída', 'sacola', 'Preparar próxima saída')}${kpi('entregue', 'Concluídas', 'check', 'Recebidas no período')}${kpi('atencao', 'Precisam de atenção', 'sino', 'Sem atribuição ou tempo alto')}</section>
       ${
         !dados
@@ -239,13 +245,15 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
           etapa === 'todos' ||
           (etapa === 'atribuir'
             ? precisaAtribuir(p)
-            : etapa === 'anteriores'
-              ? p.legado
-              : etapa === 'espera'
-                ? ['preparo', 'pronto'].includes(p.status)
-                : etapa === 'atencao'
-                  ? longo(p) || (emAberto(p) && !p.atribuicao)
-                  : p.status === etapa);
+            : etapa === 'saida'
+              ? precisaSair(p)
+              : etapa === 'anteriores'
+                ? p.legado
+                : etapa === 'espera'
+                  ? ['preparo', 'pronto'].includes(p.status)
+                  : etapa === 'atencao'
+                    ? longo(p) || (emAberto(p) && !p.atribuicao)
+                    : p.status === etapa);
         return (
           situacao && normalizar(`${p.numero} ${window.ML.fmt.numero(p.numero)} ${p.nome} ${p.motoboyNome}`).includes(normalizar(busca))
         );
@@ -263,14 +271,14 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     const lista = visiveis(),
       html = lista
         .slice(0, limite)
-        .map((p) => (etapa === 'atribuir' ? atribuicaoHTML(p) : pedidoHTML(p)))
+        .map((p) => (etapa === 'atribuir' ? atribuicaoHTML(p) : etapa === 'saida' ? saidaHTML(p) : pedidoHTML(p)))
         .join('');
     for (const el of slots) {
       const area = el.querySelector('[data-e-lista]');
       if (!area) continue;
       area.innerHTML =
         html ||
-        `<div class="pn-ent-vazio">${ic('check')}<h4>${etapa === 'atribuir' ? 'Nenhum pedido aguardando motoboy' : 'Nenhuma entrega neste filtro'}</h4><p>${etapa === 'atribuir' ? 'Pedidos em preparo ou prontos aparecem aqui quando precisam de um entregador. Use Aguardando para conferir os já atribuídos.' : 'Altere os filtros ou aguarde novas atribuições.'}</p></div>`;
+        `<div class="pn-ent-vazio">${ic('check')}<h4>${etapa === 'atribuir' ? 'Nenhum pedido aguardando motoboy' : etapa === 'saida' ? 'Nenhum pedido aguardando saída' : 'Nenhuma entrega neste filtro'}</h4><p>${etapa === 'atribuir' ? 'Pedidos em preparo ou prontos aparecem aqui quando precisam de um entregador. Abra Registrar saída para conferir os já atribuídos.' : etapa === 'saida' ? 'Atribua um motoboy ao pedido primeiro. Pedidos em viagens planejadas têm saída em Viagens e rotas.' : 'Altere os filtros ou aguarde novas atribuições.'}</p></div>`;
       if (lista.length > limite)
         area.insertAdjacentHTML(
           'beforeend',
@@ -290,6 +298,10 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
   }
   function atribuicaoHTML(p) {
     return `<article class="pn-entrega pn-ent-atribuir-pedido" data-entrega="${esc(p.id)}"><div class="pn-ent-atribuir-cliente"><span class="pn-entrega-numero">${esc(window.ML.fmt.numero(p.numero))}</span><h4>${esc(p.nome)}</h4><p>${p.status === 'preparo' ? 'Em preparo' : p.status === 'pronto' ? 'Pronto para entrega' : 'Em entrega, sem motoboy'}</p></div><div class="pn-entrega-acoes">${formularioAtribuicao(p)}</div></article>`;
+  }
+  function saidaHTML(p) {
+    const num = esc(window.ML.fmt.numero(p.numero));
+    return `<article class="pn-entrega pn-ent-atribuir-pedido" data-entrega="${esc(p.id)}"><div class="pn-ent-atribuir-cliente"><span class="pn-entrega-numero">${num}</span><h4>${esc(p.nome)}</h4><p>${esc(p.motoboyNome)} · ${p.status === 'preparo' ? 'Em preparo' : 'Pronto para entrega'}</p></div><div class="pn-entrega-acoes"><button class="pn-btn pn-ent-prim" type="button" data-e="sair" data-e-key="sair-${esc(p.id)}" ${ocupado ? 'disabled' : ''}>${ic('moto')} Registrar saída ${num}</button></div></article>`;
   }
   function pedidoHTML(p) {
     const viagem = planejamento.viagemDoPedido(p.id);
@@ -430,8 +442,10 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       atribuicoes.delete(args.p_id);
       atribuicaoConfirmada = nome === 'atribuir_entrega' && !args.p_sair;
       aviso = atribuicaoConfirmada
-        ? `${window.ML.fmt.numero(pedidos().find((p) => p.id === args.p_id)?.numero)} atribuído. Abra Aguardando para registrar a saída.`
-        : 'Alteração registrada no servidor.';
+        ? `${window.ML.fmt.numero(pedidos().find((p) => p.id === args.p_id)?.numero)} atribuído. Próximo passo: Registrar saída quando o motoboy sair da loja.`
+        : nome === 'atribuir_entrega' && args.p_sair
+          ? 'Saída registrada. Acompanhe o pedido na aba Em entrega.'
+          : 'Alteração registrada no servidor.';
     } catch (e) {
       erro = ERROS[e.message] || 'Não foi possível registrar. Confira a conexão e tente novamente.';
     } finally {
@@ -460,7 +474,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       case 'atualizar':
         return carregar();
       case 'ver-atribuidos':
-        etapa = 'espera';
+        etapa = 'saida';
         filtro = 'todos';
         busca = '';
         limite = 12;
@@ -469,13 +483,13 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
         return;
       case 'etapa':
         etapa = b.dataset.etapa;
-        if (etapa === 'atribuir') filtro = 'todos';
+        if (['atribuir', 'saida'].includes(etapa)) filtro = 'todos';
         limite = 12;
         render();
         if (b.classList.contains('pn-ent-kpi')) mostrarCentral();
         return;
       case 'entregador':
-        if (etapa === 'atribuir') etapa = 'todos';
+        if (['atribuir', 'saida'].includes(etapa)) etapa = 'todos';
         filtro = filtro === b.dataset.motoboy ? 'todos' : b.dataset.motoboy;
         limite = 12;
         render();

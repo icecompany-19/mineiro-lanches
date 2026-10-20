@@ -274,10 +274,16 @@ test('histórico anterior aparece no total e pode ser consultado sem inventar en
   expect(sql(`select count(*) from entregas_operacao where pedido_id='${p.id}'`)).toBe('0');
 });
 
-test('atribuição abre no topo, preserva seleção na atualização e move o pedido para aguardando', async ({ page }) => {
+test('atribuição abre no topo, preserva seleção na atualização e permite registrar saída em uma fila própria', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const p = pedido('Pedido para atribuir no início');
   const emRota = pedido('Já tem um motoboy');
   atribuir(emRota);
+  const cancelado = pedido('Teste cancelado fora da operação');
+  atribuir(cancelado);
+  sql(
+    `begin;select set_config('request.jwt.claims','{"sub":"${equipe}","role":"authenticated"}',true);select mudar_status('${cancelado.id}','cancelado','Teste validado');commit;`
+  );
   sql(
     `begin;select set_config('request.jwt.claims','{"sub":"${equipe}","role":"authenticated"}',true);select mudar_status('${p.id}','preparo');commit;`
   );
@@ -299,9 +305,22 @@ test('atribuição abre no topo, preserva seleção na atualização e move o pe
   await expect(area.locator('.pn-ent-aviso')).toContainText('atribuído');
   await expect(card).toHaveCount(0);
   expect(sql(`select motoboy_id from entregas_operacao where pedido_id='${p.id}'`)).toBe(moto);
-  await area.getByRole('button', { name: 'Ver atribuídos', exact: true }).click();
+  await area.getByRole('button', { name: 'Ir para registrar saída', exact: true }).click();
+  await expect(area.getByRole('heading', { name: 'Registrar saída', exact: true })).toBeVisible();
   await expect(card).toContainText('Moto operação');
   await expect(card.getByRole('button', { name: /Registrar saída/ })).toBeVisible();
+  await expect(area.locator(`[data-entrega="${emRota.id}"]`)).toHaveCount(0);
+  await page.screenshot({ path: test.info().outputPath('registrar-saida.png'), fullPage: false });
+  await card.getByRole('button', { name: /Registrar saída/ }).click();
+  await expect(area.locator('.pn-ent-aviso')).toContainText('Saída registrada');
+  await expect(card).toHaveCount(0);
+  expect(sql(`select status from pedidos where id='${p.id}'`)).toBe('rota');
+  await area.locator('.pn-ent-etapas [data-e="etapa"][data-etapa="rota"]').click();
+  await expect(card).toContainText('Em entrega');
+  await area.locator('[data-e="etapa"][data-etapa="todos"]').click();
+  await expect(area.locator(`[data-entrega="${cancelado.id}"]`)).toHaveCount(0);
+  expect(sql(`select encerramento from entregas_operacao where pedido_id='${cancelado.id}'`)).toBe('cancelado');
+  expect(sql(`select count(*) from entregas_eventos where pedido_id='${cancelado.id}' and tipo='cancelado'`)).toBe('1');
   await page.setViewportSize({ width: 320, height: 760 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });

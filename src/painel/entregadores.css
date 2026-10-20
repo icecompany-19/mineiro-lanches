@@ -1181,7 +1181,7 @@
 .pn-ent-atribuir-pedido select {
   width: 100%;
 }
-.pn-entregadores--atribuir :is(.pn-ent-filtro, .pn-ent-ajustes, .pn-ent-periodo, [data-e='retorno']) {
+.pn-entregadores--acao :is(.pn-ent-filtro, .pn-ent-ajustes, .pn-ent-periodo, [data-e='retorno']) {
   display: none;
 }
 @media (max-width: 640px) {
@@ -1193,7 +1193,7 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .pn-entregadores--atribuir .pn-ent-cab-acoes > [data-e='organizar'] {
+  .pn-entregadores--acao .pn-ent-cab-acoes > [data-e='organizar'] {
     flex-basis: auto;
     order: 0;
   }
