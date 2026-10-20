@@ -4,6 +4,8 @@ Integração desenvolvida em `feat/mercado-pago` e publicada pela PR #1 na branc
 
 ## Publicação produtiva — 20/10
 
+**Publicado e ativo:** PR #1 mesclada no commit `151e536`, deploy Vercel confirmado, `loja.pagamentos_ativos=true`. Verificação no domínio público em viewport de 390 px confirmou o formulário com e-mail e botão “Pagar pedido”; o bundle usa o JWT público e o backend do projeto produtivo. Nenhum pedido ou pagamento real foi enviado pelo teste. A loja permanece pausada por sua configuração operacional anterior, sem alteração de modo ou horário nesta publicação.
+
 O Access Token produtivo cadastrado pelo responsável foi aceito em `GET /users/me`: conta brasileira, ID `256378111`, sem marca de conta de teste. O token não foi exportado, registrado em commit ou devolvido ao cliente. O backend espera a aplicação `5499483276102597`, a mesma da integração validada em homologação, e confere esse ID em cada resposta de order antes de persistir o pagamento ou expor o checkout.
 
 - Aplicadas somente as migrations de pagamentos e de privilégios mínimos ao projeto produtivo; não houve seed, alteração de preços/horários ou reclassificação do histórico.
