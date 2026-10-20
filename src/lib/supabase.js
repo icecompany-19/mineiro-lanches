@@ -6,6 +6,8 @@
 
 const URL_SUPABASE = import.meta.env.VITE_SUPABASE_URL;
 const CHAVE = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// O gateway das funções de pagamento mantém verify_jwt=true; publishable não é um JWT legado.
+const CHAVE_FUNCOES = import.meta.env.VITE_SUPABASE_FUNCTIONS_ANON_KEY || CHAVE;
 // onde o login do painel fica guardado (o supabase-js grava também chaves com este prefixo)
 export const CHAVE_SESSAO = 'mineiro:v2:sessao';
 
@@ -15,7 +17,7 @@ export async function consultarPagamento(body, jwt) {
   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),25000);
   try {
   const r=await fetch(URL_SUPABASE+'/functions/v1/mercado-pago',{
-    method:'POST',headers:{apikey:CHAVE,Authorization:'Bearer '+(jwt||CHAVE),'Content-Type':'application/json'},
+    method:'POST',headers:{apikey:CHAVE,Authorization:'Bearer '+(jwt||CHAVE_FUNCOES),'Content-Type':'application/json'},
     body:JSON.stringify(body),signal:ctl.signal
   });
   const j=await r.json();

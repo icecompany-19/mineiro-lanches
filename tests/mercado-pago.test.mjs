@@ -4,6 +4,7 @@ import { createHmac } from 'node:crypto';
 import { criarPagamentos } from '../supabase/functions/mercado-pago/handler.js';
 import { criarOrder, conferirOrder, assinaturaValida, centavos, urlCheckout } from '../supabase/functions/_shared/mercado-pago.js';
 import { checkoutSeguro, permitePagar, financeiroRecente } from '../src/lib/pagamentos.js';
+import { configuracaoMP } from '../supabase/functions/_shared/mercado-pago-env.js';
 const id = '00000000-0000-4000-8000-000000000010',
   token = '00000000-0000-4000-8000-000000000020';
 const orderId = 'ORDTST01KS5AJ6HTK2HRQ3XJ3C2JCKP9';
@@ -45,6 +46,21 @@ const order = {
   integration_data: { application_id: '456' }
 };
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { 'Content-Type': 'application/json' } });
+test('identificadores produtivos só são usados no projeto correto e não fornecem token ou segredo', () => {
+  const prod = configuracaoMP(n => ({ SUPABASE_URL: 'https://puwylyfmwcvpfsftsrta.supabase.co' })[n]);
+  assert.equal(prod.accountId, '256378111');
+  assert.equal(prod.applicationId, '5499483276102597');
+  assert.equal(prod.mode, 'production');
+  assert.equal(prod.siteUrl, 'https://mineirolanches.store');
+  assert.equal(prod.accessToken, undefined);
+  assert.equal(prod.webhookSecret, undefined);
+  const outro = configuracaoMP(n => ({ SUPABASE_URL: 'https://homologacao.invalid' })[n]);
+  assert.equal(outro.accountId, undefined);
+  assert.equal(outro.mode, undefined);
+  const explicito = configuracaoMP(n => ({ SUPABASE_URL: 'https://homologacao.invalid', MERCADO_PAGO_MODE: 'test', MERCADO_PAGO_ACCOUNT_ID: '123' })[n]);
+  assert.equal(explicito.accountId, '123');
+  assert.equal(explicito.mode, 'test');
+});
 function preparar({ p = { ...pagamento, criar: true }, o = order, webhook = false, conf = config, erroMP = false, negado = false } = {}) {
   const calls = [];
   const handler = criarPagamentos(conf, {

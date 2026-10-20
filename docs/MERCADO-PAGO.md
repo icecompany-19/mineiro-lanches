@@ -1,6 +1,20 @@
 # Pagamentos com Mercado Pago
 
-Branch `feat/mercado-pago`, separada da branch produtiva `claude/modest-galileo-t43m7f`. A implementação usa **Checkout Pro via Orders API**, conforme a documentação oficial consultada em 18/10/2026. Nenhuma cobrança, migração ou mudança de flag desta branch foi aplicada à produção.
+Integração desenvolvida em `feat/mercado-pago` e publicada pela PR #1 na branch produtiva `claude/modest-galileo-t43m7f`. Usa **Checkout Pro via Orders API**, conforme a documentação oficial consultada em 18/10/2026. O histórico de homologação abaixo precede a publicação produtiva descrita nesta seção.
+
+## Publicação produtiva — 20/10
+
+O Access Token produtivo cadastrado pelo responsável foi aceito em `GET /users/me`: conta brasileira, ID `256378111`, sem marca de conta de teste. O token não foi exportado, registrado em commit ou devolvido ao cliente. O backend espera a aplicação `5499483276102597`, a mesma da integração validada em homologação, e confere esse ID em cada resposta de order antes de persistir o pagamento ou expor o checkout.
+
+- Aplicadas somente as migrations de pagamentos e de privilégios mínimos ao projeto produtivo; não houve seed, alteração de preços/horários ou reclassificação do histórico.
+- Publicadas `mercado-pago` (JWT obrigatório) e `mercado-pago-webhook` (assinatura obrigatória; permanece fechado enquanto não houver segredo).
+- Identificadores públicos, ambiente `production` e retorno `https://mineirolanches.store` são padrões restritos à URL exata do projeto produtivo em `_shared/mercado-pago-env.js`. Secrets explícitos podem substituí-los; não há padrão de Access Token, service_role ou segredo de webhook. Outros projetos não herdam dados produtivos.
+- O frontend usa `VITE_SUPABASE_FUNCTIONS_ANON_KEY` para o Bearer JWT público do gateway de pagamentos, preservando o publishable nas chamadas anteriores. Preview substitui ambos pelos valores de homologação. Nenhuma chave privilegiada vai ao bundle.
+- Reconciliação instalada a cada minuto com segredos no Vault do próprio projeto. Chamada de manutenção validada com HTTP 200 e zero falhas. O provisionamento temporário foi encerrado.
+
+Validação: conta produtiva e chamada do frontend ao backend conferidas, sem criar cobranças reais. Lint, build e 19 testes de configuração/pagamentos aprovados; a integração anterior passou em 610 verificações SQL, 160 testes Node e 21 cenários desktop/iPhone, incluindo impressão após aprovação.
+
+A aprovação de uma compra no checkout hospedado ainda não foi executada nesta sessão. Conferir o primeiro pagamento real no Mercado Pago e no acompanhamento/painel; nunca marcar manualmente como aprovado para concluir essa conferência. Sem webhook, a recuperação com navegador fechado é periódica e pode levar cerca de um minuto. Monitorar `net._http_response` e não apenas o sucesso SQL do cron. A ativação vale somente para novos pedidos; históricos continuam com a forma anterior.
 
 ## Ambiente de homologação preparado (19/10)
 
