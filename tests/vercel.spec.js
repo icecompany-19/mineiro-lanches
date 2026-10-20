@@ -36,7 +36,7 @@ const CSP = {
   'default-src': ["'self'"],
   'script-src': ["'self'"],
   'style-src': ["'self'", "'unsafe-inline'"],
-  'img-src': ["'self'", 'data:', 'blob:', 'https://tile.openstreetmap.org'],
+  'img-src': ["'self'", 'data:', 'blob:', 'https://tile.openstreetmap.org', 'https://puwylyfmwcvpfsftsrta.supabase.co/storage/v1/object/public/produtos-fotos/', 'https://hkfoetwnphbauezftfgq.supabase.co/storage/v1/object/public/produtos-fotos/'],
   'font-src': ["'self'"],
   // + consulta de CEP (ViaCEP), endereço (Nominatim/OpenStreetMap) e rota (OSRM) da taxa de entrega
   'connect-src': ["'self'", `https://${SUPABASE}`, `wss://${SUPABASE}`, 'https://hkfoetwnphbauezftfgq.supabase.co', 'wss://hkfoetwnphbauezftfgq.supabase.co', 'https://viacep.com.br', 'https://nominatim.openstreetmap.org', 'https://router.project-osrm.org'],

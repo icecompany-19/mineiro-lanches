@@ -25,3 +25,5 @@ Os testes `tests/produtos.spec.js` cobrem cadastro e edição pela equipe, categ
 Também foi realizado um teste real em produção com conta temporária da equipe e produto sempre oculto: login, upload WebP, cadastro, edição de preço, catálogo persistido, leitura pública da imagem com tamanho conferido e recusa de escrita anônima. Os dados e o acesso temporários são removidos após a conferência do painel publicado.
 
 Validação em 20/10/2026: lint e build aprovados; 35 cenários de cardápio, preços, ficha e gestão de produtos aprovados em Android, desktop e WebKit iPhone, mais 5 verificações de estoque por categoria e atribuição/saída. A suíte confirma também a abertura dos ingredientes no campo visível após escolher “Tirar algum item”.
+
+A CSP da Vercel permite imagens somente da origem do site, fontes já existentes e dos caminhos públicos do bucket de produtos em produção/homologação. A conferência no navegador publicado identifica também bloqueios de imagem que o Vite local não aplica. Os 15 testes de cabeçalhos, redirecionamentos e CSP em `tests/vercel.spec.js` passaram com essa política.
