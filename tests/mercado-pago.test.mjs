@@ -195,6 +195,28 @@ test('rotina de recuperação não aceita chave pública; backend pode reconcili
   assert.equal(calls.length, 0);
   assert.equal((await enviar({ acao: 'reconciliar' }, { Authorization: 'Bearer ' + config.serviceKey })).status, 200);
 });
+test('sem segredo de webhook, API consulta estado no provedor e reconciliação continua exclusiva do backend', async () => {
+  const conf = { ...config, webhookSecret: '' };
+  const a = preparar({ conf, p: { ...pagamento, order_id: orderId, consultar: true } });
+  const r = await a.enviar({ acao: 'consultar', token });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json()).estado, 'aprovado');
+  assert(a.calls.some((c) => c.url.endsWith('/v1/orders/' + orderId) && c.method === 'GET'));
+  assert(a.calls.some((c) => c.url.endsWith('/registrar_pagamento_mp')));
+  const b = preparar({ conf, p: { ...pagamento, order_id: orderId } });
+  assert.equal((await b.enviar({ acao: 'reconciliar' }, { Authorization: 'Bearer anon' })).status, 403);
+  assert.equal(b.calls.length, 0);
+  assert.equal((await b.enviar({ acao: 'reconciliar' }, { Authorization: 'Bearer ' + config.serviceKey })).status, 200);
+  const c = preparar({ conf });
+  assert.equal((await c.enviar({ acao: 'iniciar', token, email: pagamento.email })).status, 200);
+});
+test('webhook sem segredo nunca aceita notificação, mesmo com corpo de aprovação e assinatura', async () => {
+  const { handler, calls } = preparar({ webhook: true, conf: { ...config, webhookSecret: '' } });
+  const r = await handler(notificacao());
+  assert.equal(r.status, 503);
+  assert.equal((await r.json()).codigo, 'pagamento_nao_configurado');
+  assert.equal(calls.length, 0);
+});
 test('estorno valida sessão e autorização administrativa antes de chamar o provedor', async () => {
   const a = preparar({ negado: true });
   assert.equal((await a.enviar({ acao: 'estornar', pedidoId: pagamento.pedido_id }, { Authorization: 'Bearer motoboy' })).status, 403);

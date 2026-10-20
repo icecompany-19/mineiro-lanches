@@ -98,7 +98,7 @@ export function criarPagamentos(config, { webhook = false, fetcher = fetch } = {
       !base ||
       !serviceKey ||
       !accessToken ||
-      !webhookSecret ||
+      (webhook && !webhookSecret) ||
       !/^\d+$/.test(String(accountId || '')) ||
       !/^\d+$/.test(String(applicationId || '')) ||
       !['test', 'production'].includes(mode) ||

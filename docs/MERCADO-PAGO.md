@@ -9,12 +9,25 @@ Branch Supabase `mercado-pago-homologacao`, projeto `hkfoetwnphbauezftfgq`, cria
 - [Cadastrar secrets de TESTE](https://supabase.com/dashboard/project/hkfoetwnphbauezftfgq/functions/secrets).
 - Webhook de TESTE: `https://hkfoetwnphbauezftfgq.supabase.co/functions/v1/mercado-pago-webhook`.
 - Cadastre Access Token, assinatura do webhook, ID do vendedor e ID da aplicação de teste com os nomes da tabela abaixo; `MERCADO_PAGO_MODE=test`. `MERCADO_PAGO_SITE_URL` será a origem HTTPS estável do preview, ainda a configurar.
-- Falta configurar Vercel Preview com as variáveis públicas desse Supabase, limitadas à branch `feat/mercado-pago`, e redeployar. A CSP desta branch permite exclusivamente os hosts Supabase da loja e desta homologação, incluindo Realtime; as demais diretivas são preservadas.
+- O build Vercel Preview da branch `feat/mercado-pago` usa automaticamente a configuração pública desse Supabase, via `scripts/build.mjs` e `config/mercado-pago-homologacao.json`. Usa `VERCEL_BRANCH_URL` para o endereço de retorno e interrompe o build se essa URL estiver ausente/inválida. Produção e builds locais preservam suas variáveis. A CSP desta branch permite exclusivamente os hosts Supabase da loja e desta homologação, incluindo Realtime; as demais diretivas são preservadas.
 - Depois dos secrets e preview, validar identidade da conta, configurar reconciliação e executar a matriz de homologação antes de ativar a produção.
 
 Não mesclar esta branch **do Supabase** na loja: a publicação produtiva será controlada pela PR do GitHub e pelas migrations necessárias, sem copiar seed/configuração de teste. A branch é temporária e tem consumo de infraestrutura; removê-la após a homologação, preservando os registros necessários dos testes.
 
 O advisor registra as [tabelas privadas com RLS sem policies públicas](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy) e os [RPCs públicos existentes com SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable). O bloqueio das tabelas financeiras é intencional; helpers financeiros novos usam SECURITY INVOKER e execução exclusiva de service_role.
+
+## Avançar com as credenciais, sem login na conta (20/10)
+
+O Access Token cadastrado foi validado pelo backend em `GET /users/me`: conta brasileira de teste e ID do vendedor correspondente ao configurado. Não houve criação de cobrança nem divulgação do token. O diagnóstico temporário foi encerrado e substituído por resposta 410. Foram detectados `MERCADO_PAGO_MODE=teste` (corrigir para `test`) e ausência da URL de retorno e do segredo de webhook.
+
+- Cadastrar `MERCADO_PAGO_SITE_URL=https://mineiro-lanches-git-feat-mercado-pago-ice-company19.vercel.app` no Supabase de homologação.
+- O Access Token permite chamadas autenticadas à API sem login interativo do dono. A Public Key não substitui o Access Token. O ID da aplicação cadastrado ainda precisa ser conferido na criação/consulta de uma order real de teste.
+- Criação, consulta, reconciliação e estorno não exigem o segredo de webhook: cada atualização financeira é obtida da API autenticada e validada. Sem esse segredo, o endpoint de webhook permanece indisponível e nunca aceita notificações sem autenticação.
+- A consulta do acompanhamento depende do navegador aberto. Para atualizar pedidos com o comprador desconectado, configurar e verificar a reconciliação agendada no backend; ela NÃO é ativada automaticamente apenas por instalar a migration.
+- A assinatura de webhook é um segredo diferente do Access Token. Não pode ser inventada nem deduzida dele. Para habilitar notificações, o dono precisa configurar a aplicação e disponibilizar esse segredo ou conceder acesso adequado ao desenvolvedor. As instruções oficiais estão em [notificações de Orders](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-orders/notifications).
+- Consulta periódica é uma alternativa à ausência de notificações, com latência e consumo de API. O Mercado Pago recomenda Webhooks; concluir sua configuração antes de considerar a integração totalmente homologada em produção.
+
+A validação local sem webhook pode usar `node --env-file=.env.mercadopago.local scripts/verificar-mercado-pago.mjs --conexao --sem-webhook`; ela não certifica a rotina agendada. A flag de pagamentos continua desligada até validar as configurações e o fluxo de teste. Apenas a homologação recebeu estas funções; nenhuma chave produtiva foi utilizada.
 
 ## Comportamento
 
@@ -37,13 +50,13 @@ A fila de confirmações offline e os indicadores individuais do motoboy são ou
 1. Acesse [Suas integrações](https://www.mercadopago.com.br/developers/panel/app) com a conta do cliente. Crie ou selecione uma aplicação brasileira com Checkout Pro via Orders API.
 2. Separe ambiente de teste e produção: aplicação/conta de teste, comprador de teste diferente do vendedor e credenciais correspondentes. Registre o ID do vendedor e da aplicação; o backend exige que correspondam à resposta do Mercado Pago.
 3. Use um projeto Supabase de homologação, aplicando migrations/seed e criando somente a equipe necessária. **Não aplicar `setup.sql` ao banco produtivo existente**: ele contém seed de preços/configurações. Para a futura produção, aplicar somente a nova migration, depois da homologação e do merge.
-4. Configure Vercel Preview desta branch com URL e chave pública anon JWT legada do Supabase de homologação. Esta aplicação mantém `verify_jwt=true` nas funções de cliente; não passar uma `sb_publishable_...` como Bearer JWT. A URL configurada em `MERCADO_PAGO_SITE_URL` precisa ser essa origem HTTPS estável, sem caminho, query ou hash. Nunca apontar um preview com pagamento habilitado para a loja produtiva.
+4. Confirme no build que Vercel informa `VERCEL_ENV=preview`, `VERCEL_GIT_COMMIT_REF=feat/mercado-pago` e `VERCEL_BRANCH_URL`. O script seleciona URL e chave pública anon JWT legada do Supabase de homologação automaticamente. Esta aplicação mantém `verify_jwt=true` nas funções de cliente; não passar uma `sb_publishable_...` como Bearer JWT. A URL configurada em `MERCADO_PAGO_SITE_URL` precisa ser essa origem HTTPS estável, sem caminho, query ou hash. Nunca apontar um preview com pagamento habilitado para a loja produtiva.
 5. Em Supabase > Edge Functions > Secrets, cadastre:
 
 | Secret | Valor |
 | --- | --- |
 | `MERCADO_PAGO_ACCESS_TOKEN` | Access Token da aplicação/conta escolhida |
-| `MERCADO_PAGO_WEBHOOK_SECRET` | Assinatura secreta gerada na configuração de Webhooks |
+| `MERCADO_PAGO_WEBHOOK_SECRET` | Assinatura secreta gerada na configuração de Webhooks; obrigatória para receber notificações, dispensável nas chamadas de criação/consulta |
 | `MERCADO_PAGO_ACCOUNT_ID` | ID do vendedor, conferido em `/users/me` |
 | `MERCADO_PAGO_APPLICATION_ID` | ID da aplicação, conferido também em cada order |
 | `MERCADO_PAGO_MODE` | `test` ou `production` |

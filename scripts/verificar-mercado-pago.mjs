@@ -7,7 +7,8 @@ const nomes = [
   'MERCADO_PAGO_MODE',
   'MERCADO_PAGO_SITE_URL'
 ];
-const faltam = nomes.filter((n) => !process.env[n]);
+const semWebhook = process.argv.includes('--sem-webhook');
+const faltam = nomes.filter((n) => !(semWebhook && n === 'MERCADO_PAGO_WEBHOOK_SECRET') && !process.env[n]);
 if (faltam.length) {
   console.error('Configuração pendente: ' + faltam.join(', '));
   process.exit(1);
@@ -30,4 +31,5 @@ if (process.argv.includes('--conexao')) {
   console.log('Conexão de leitura confirmada com a conta configurada.');
 }
 console.log('Configuração validada. Ambiente: ' + process.env.MERCADO_PAGO_MODE + '. Credenciais não foram exibidas.');
+if (semWebhook) console.log('Webhook não validado: a atualização com o navegador fechado depende da reconciliação agendada funcionando.');
 console.log('O recebimento de webhook, a aplicação e uma compra sandbox ainda precisam ser homologados antes de ativar.');
