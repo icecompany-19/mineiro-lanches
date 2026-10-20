@@ -29,6 +29,8 @@ O Access Token cadastrado foi validado pelo backend em `GET /users/me`: conta br
 
 A validação local sem webhook pode usar `node --env-file=.env.mercadopago.local scripts/verificar-mercado-pago.mjs --conexao --sem-webhook`; ela não certifica a rotina agendada. A flag de pagamentos continua desligada até validar as configurações e o fluxo de teste. Apenas a homologação recebeu estas funções; nenhuma chave produtiva foi utilizada.
 
+Validação de 20/10: lint, build normal, build simulando Vercel Preview e 18 testes unitários aprovados. O bundle de preview contém o host de homologação e não contém o host produtivo. Vercel confirmou deploy `efa9bb7` com sucesso. O endereço de preview está protegido por login da Vercel; a visita anônima redireciona para `vercel.com`, portanto a compra no navegador ainda não foi homologada. A rotina `mineiro-mp-reconciliar` e seus segredos no Vault ainda não estão configurados.
+
 ## Comportamento
 
 1. `loja.pagamentos_ativos=false` mantém o fluxo anterior. Pedidos históricos continuam sem obrigação de pagamento online.
