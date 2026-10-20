@@ -41,6 +41,8 @@ A execução revelou falta de SELECT/UPDATE para service_role no Supabase remoto
 
 Pendências para concluir a homologação: entrar no checkout com uma conta de comprador de teste e confirmar aprovação/recusa; abrir o preview ao testador na configuração de proteção da Vercel. Não foi realizada compra aprovada ou cobrança real. Credenciais produtivas ainda precisam ser cadastradas no ambiente da loja e verificadas antes da publicação produtiva. Webhook permanece fechado por ausência de assinatura; a rotina de consulta já opera independentemente do navegador.
 
+Após incorporar a produção até `c259bbc`, a bateria passou com 610 verificações SQL, 160 testes Node e 21 cenários de navegador (17 desktop, incluindo impressão automática, e quatro WebKit/iPhone). Inclui a regressão que impede impressão automática de pedido online pendente e imprime uma única vez depois da aprovação financeira. Vercel confirmou a publicação da branch integrada `9c3b795`.
+
 ## Comportamento
 
 1. `loja.pagamentos_ativos=false` mantém o fluxo anterior. Pedidos históricos continuam sem obrigação de pagamento online.
