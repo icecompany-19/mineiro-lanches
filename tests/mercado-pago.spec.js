@@ -1,4 +1,4 @@
-/* global window */
+/* global document, window */
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { createHmac } from 'node:crypto';
@@ -67,6 +67,12 @@ async function preparar(page, { falhar = false } = {}) {
       };
       estado.orders.set(id, order);
       return json(order, 201);
+    }
+    if (url.endsWith('/cancel')) {
+      const o=estado.orders.get(url.split('/').at(-2));
+      Object.assign(o,{status:'canceled',status_detail:'canceled',last_updated_date:new Date().toISOString()});
+      estado.canceladas=(estado.canceladas||0)+1;
+      return json({status:'canceled'});
     }
     if (url.endsWith('/refund')) {
       const order = estado.orders.get(url.split('/').at(-2));
@@ -261,4 +267,48 @@ test('administrador estorna pedido pago e cancelado pelo detalhe do histórico',
       sql(`update usuarios_painel set perfil='${a.perfil}',ativo=${a.ativo} where user_id='${admin}'`);
     } else sql(`delete from usuarios_painel where user_id='${admin}'`);
   }
+});
+
+test('pagamento na entrega dispensa e-mail e checkout, libera preparo e registra recebimento separado',async({page,browser})=>{
+ const estado=await preparar(page);
+ const nome=await checkout(page);
+ await page.locator('[data-pag="Pagamento na entrega"]').click();
+ await expect(page.locator('#f-email-pagamento')).toBeHidden();
+ await page.evaluate(()=>{document.querySelector('#f-email-pagamento').value='';});
+ await page.locator('#btn-enviar').click();
+ await expect(page.locator('#pedido-pagamento-status')).toContainText('Pagamento na retirada');
+ expect(estado.criadas).toHaveLength(0);
+ const p=JSON.parse(sql(`select json_build_object('id',id,'online',pagamento_online,'cod',pagamento_na_entrega,'numero',numero) from pedidos where cliente_nome='${nome}'`));
+ expect(p.cod).toBe(true);expect(p.online).toBeNull();
+ const contexto=await browser.newContext({viewport:{width:1280,height:800}}),painel=await contexto.newPage();
+ await painel.goto('/painel/');await painel.getByLabel('E-mail').fill('equipe@teste.local');await painel.getByLabel('Senha').fill('teste');await painel.getByRole('button',{name:'Entrar',exact:true}).click();
+ const card=painel.locator(`.pn-card[data-id="${p.id}"]`);
+ await expect(card).toContainText('A receber na retirada');
+ await card.getByRole('button',{name:'Aceitar e preparar',exact:true}).click();
+ await expect(card).toContainText('Em preparo');
+ painel.once('dialog',d=>d.accept());
+ await card.getByRole('button',{name:'Confirmar pagamento recebido',exact:true}).click();
+ await expect(card).toContainText('Recebido na retirada');
+ expect(sql(`select pagamento_online is null and pagamento_entrega_recebido_em is not null from pedidos where id='${p.id}'`)).toBe('t');
+ await contexto.close();
+});
+
+
+test('equipe troca pedido online pendente para entrega depois de cancelar checkout, sem duplicar pedido',async({page})=>{
+ const estado=await preparar(page);
+ const nome=await checkout(page);
+ await page.locator('#btn-enviar').click();
+ await expect(page).toHaveURL(/mercadopago/);
+ const p=JSON.parse(sql(`select json_build_object('id',id,'numero',numero) from pedidos where cliente_nome='${nome}'`));
+ await page.goto('/painel/');
+ await page.getByLabel('E-mail').fill('equipe@teste.local');await page.getByLabel('Senha').fill('teste');await page.getByRole('button',{name:'Entrar',exact:true}).click();
+ const card=page.locator('.pn-card:visible,.pn-m-item:visible').filter({hasText:nome});
+ page.once('dialog',d=>d.accept());
+ await card.getByRole('button',{name:'Receber na entrega',exact:true}).click();
+ await expect(card).toContainText('A receber na retirada');
+ await expect(card.getByRole('button',{name:'Aceitar e preparar',exact:true})).toBeVisible();
+ expect(estado.canceladas).toBe(1);
+ expect(sql(`select estado from pagamentos_mp where pedido_id='${p.id}'`)).toBe('cancelado');
+ expect(sql(`select pagamento_na_entrega and pagamento_online is null from pedidos where id='${p.id}'`)).toBe('t');
+ expect(sql(`select count(*) from pedidos where cliente_nome='${nome}'`)).toBe('1');
 });

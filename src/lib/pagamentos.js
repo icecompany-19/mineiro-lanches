@@ -41,5 +41,5 @@ export async function aguardarCheckout(iniciar, { ativo = () => true, esperar = 
 // O histórico operacional não muda ao receber um pagamento; sua versão é independente.
 export function financeiroRecente(pedido, outro) {
   const em = (p) => (p?.pagamentoEm ? Date.parse(p.pagamentoEm) : -Infinity);
-  return em(outro) > em(pedido) ? { ...pedido, pagamentoOnline: outro.pagamentoOnline, pagamentoEm: outro.pagamentoEm } : pedido;
+  return em(outro) > em(pedido) ? { ...pedido, pagamentoOnline: outro.pagamentoOnline, pagamentoEm: outro.pagamentoEm, ...(Object.hasOwn(outro,'pagamentoNaEntrega')?{pagamentoNaEntrega:outro.pagamentoNaEntrega}:{}), ...(Object.hasOwn(outro,'pagamentoRecebidoEm')?{pagamentoRecebidoEm:outro.pagamentoRecebidoEm}:{}) } : pedido;
 }

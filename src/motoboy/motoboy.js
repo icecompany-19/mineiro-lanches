@@ -600,6 +600,7 @@ function desenharLista(t) {
           ${p.endereco ? `<p class="mb-item-end">${ic('pino')}<span>${esc(p.endereco)}</span></p>` : ''}
           ${p.referencia ? `<p class="mb-item-ref"><b>Ref.:</b> ${esc(p.referencia)}</p>` : ''}
           ${p.obs ? `<p class="mb-item-obs"><b>Obs.:</b> ${esc(p.obs)}</p>` : ''}
+          ${p.pagamentoNaEntrega && !p.pagamentoRecebidoEm && !p.pagamentoOnline ? `<p class="mb-item-obs"><b>Cobrar na entrega: ${esc(brl(p.total))}</b></p>` : p.pagamentoRecebidoEm ? '<p class="mb-item-obs">Pagamento já recebido pela loja</p>' : p.pagamentoOnline==='aprovado' ? '<p class="mb-item-obs">Pago no Mercado Pago</p>' : ''}
           <div class="mb-item-meta">${p.total == null ? '' : `<p class="mb-item-total">Total do pedido <b>${esc(brl(p.total))}</b></p>`}<p class="mb-item-saida">${p.status === 'rota' ? `Saída ${p.saiuEm ? esc(new Date(p.saiuEm).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })) : 'registrada'}` : 'Atribuído — aguardando saída'}</p></div>
           ${pendencia ? `<p class="mb-item-guardada" role="status">${ic('check')} Confirmada neste aparelho — aguardando envio</p>` : ''}
           <p class="pn-erro" role="alert" data-erro hidden></p>

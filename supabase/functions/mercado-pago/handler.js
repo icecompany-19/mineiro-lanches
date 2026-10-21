@@ -6,10 +6,15 @@ const permitidos = new Set([
   'pagamento_encerrado',
   'sem_permissao',
   'cancele_antes_de_estornar',
-  'pagamento_divergente'
+  'pagamento_divergente',
+  'pagamento_em_criacao',
+  'pagamento_online_ativo'
 ]);
 const falhar = (codigo, status = 503) => Object.assign(new Error(codigo), { codigo, status });
-export function criarPagamentos(config, { webhook = false, fetcher = fetch, registrarErro = evento => console.error(JSON.stringify(evento)) } = {}) {
+export function criarPagamentos(
+  config,
+  { webhook = false, fetcher = fetch, registrarErro = (evento) => console.error(JSON.stringify(evento)) } = {}
+) {
   const { supabaseUrl, serviceKey, accessToken, webhookSecret, accountId, applicationId, mode, siteUrl } = config;
   const base = String(supabaseUrl || '').replace(/\/$/, '');
   const origens = new Set([
@@ -141,6 +146,35 @@ export function criarPagamentos(config, { webhook = false, fetcher = fetch, regi
         const falhas = resultados.filter((r) => r.status === 'rejected').length;
         return resposta(falhas ? 503 : 200, { processados: resultados.length - falhas, falhas });
       }
+      if (body.acao === 'pagar_na_entrega') {
+        if (!UUID.test(body.pedidoId || '')) return resposta(422, { codigo: 'dados_invalidos' });
+        const jwt = req.headers.get('authorization');
+        if (!jwt?.startsWith('Bearer ') || jwt === 'Bearer ' + serviceKey) return resposta(401, { codigo: 'sessao' });
+        const user = await http(base + '/auth/v1/user', { headers: { apikey: serviceKey, Authorization: jwt } });
+        if (!UUID.test(user.id || '')) return resposta(401, { codigo: 'sessao' });
+        const args = { p_autor: user.id, p_id: body.pedidoId };
+        let p = await rpc('autorizar_pagamento_entrega_mp', args);
+        if (p.naEntrega) return resposta(200, { naEntrega: true });
+        try {
+          if (p.order_id) {
+            p = await consultar(p);
+            if (['pendente', 'recusado'].includes(p.estado)) {
+              const cancelKey = (parseInt(p.id[0], 16) ^ 4).toString(16) + p.id.slice(1);
+              try {
+                await mp('/v1/orders/' + encodeURIComponent(p.order_id) + '/cancel', {}, cancelKey);
+              } catch {
+                /* consulta confirma o resultado; erro/timeout nunca libera a conversão */
+              }
+              p = await consultar(p);
+            }
+            if (p.estado !== 'cancelado') throw falhar(p.estado === 'aprovado' ? 'pagamento_encerrado' : 'pagamento_online_ativo', 422);
+          }
+          await rpc('autorizar_pagamento_entrega_mp', { ...args, p_finalizar: true });
+          return resposta(200, { naEntrega: true });
+        } finally {
+          await rpc('liberar_reserva_pagamento_entrega_mp', args).catch(() => {});
+        }
+      }
       if (body.acao === 'estornar') {
         if (!UUID.test(body.pedidoId || '')) return resposta(422, { codigo: 'dados_invalidos' });
         const jwt = req.headers.get('authorization');
@@ -171,8 +205,11 @@ export function criarPagamentos(config, { webhook = false, fetcher = fetch, regi
           ? 'pagamento_divergente'
           : 'pagamento_indisponivel');
       // Somente metadados internos: nunca registrar payload, e-mail, token, URL ou credenciais.
-      try { registrarErro({ evento: 'pagamento_falhou', codigo, etapa: e.etapa || 'operacao', servico: e.servico, httpStatus: e.httpStatus }); }
-      catch { /* uma falha na observabilidade não muda a resposta financeira */ }
+      try {
+        registrarErro({ evento: 'pagamento_falhou', codigo, etapa: e.etapa || 'operacao', servico: e.servico, httpStatus: e.httpStatus });
+      } catch {
+        /* uma falha na observabilidade não muda a resposta financeira */
+      }
       return resposta(e.status || (codigo === 'pagamento_divergente' ? 422 : 503), { codigo });
     }
   };

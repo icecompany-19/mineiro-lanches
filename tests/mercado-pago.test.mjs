@@ -320,3 +320,20 @@ test('estorno não opera com outra conta/aplicação ou quando a API já mostra 
   assert.equal((await a.enviar({ acao: 'estornar', pedidoId: pagamento.pedido_id }, { Authorization: 'Bearer admin' })).status, 422);
   assert(!a.calls.some((c) => c.url.endsWith('/refund')));
 });
+
+for (const estado of ['created','processed','falha']) test('conversão para entrega só libera após confirmar cancelamento: '+estado, async()=>{
+  let cancelado=false,finalizou=false;
+  const handler=criarPagamentos(config,{registrarErro:()=>{},fetcher:async(u,op)=>{
+    if(u.endsWith('/auth/v1/user'))return json({id:token});
+    if(u.endsWith('/rpc/autorizar_pagamento_entrega_mp')){
+      const b=JSON.parse(op.body);if(b.p_finalizar){finalizou=true;return json({naEntrega:true});}
+      return json({...pagamento,order_id:orderId});
+    }
+    if(u.endsWith('/cancel')){if(estado==='falha')return json({},503);cancelado=true;return json({});}
+    if(u.startsWith('https://api.mercadopago.com/'))return json({...order,status:cancelado?'canceled':estado==='processed'?'processed':'created',status_detail:cancelado?'canceled':estado==='processed'?'accredited':'created',total_paid_amount:estado==='processed'?'28.90':'0.00'});
+    if(u.endsWith('/rpc/registrar_pagamento_mp'))return json({estado:JSON.parse(op.body).p_estado});
+    throw new Error('URL não esperada');
+  }});
+  const r=await handler(new Request('https://edge.invalid',{method:'POST',headers:{authorization:'Bearer sessao-equipe'},body:JSON.stringify({acao:'pagar_na_entrega',pedidoId:pagamento.pedido_id})}));
+  assert.equal(finalizou,estado==='created');assert.equal(r.status,estado==='created'?200:422);
+});

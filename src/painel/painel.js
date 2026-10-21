@@ -95,6 +95,7 @@
     em_disputa:'Pagamento em contestação', revisao:'Pagamento em revisão' };
   const avisoPagamento = p => p.status === 'cancelado' && ['aprovado','parcialmente_reembolsado'].includes(p.pagamentoOnline)
     ? '<p class="pn-taxa pn-taxa--pendente">Pedido cancelado com pagamento recebido. Confira o reembolso.</p>' : '';
+  const entregaPagamentoHTML = p => p.pagamentoNaEntrega && !p.pagamentoOnline && !p.pagamentoRecebidoEm && p.status!=='cancelado' ? `<button type="button" class="pn-btn" data-act="receber-entrega" data-id="${esc(p.id)}">Confirmar pagamento recebido</button>` : ['pendente','recusado','cancelado'].includes(p.pagamentoOnline) && p.status==='novo' ? `<button type="button" class="pn-btn" data-act="pagar-entrega" data-id="${esc(p.id)}">Receber na entrega</button>` : '';
   const estornoHTML = p => p.status === 'cancelado' && p.pagamentoOnline === 'aprovado'
     ? `<button type="button" class="pn-btn pn-btn--perigo" data-act="estornar" data-id="${esc(p.id)}">Estornar no Mercado Pago</button>` : '';
   function colAlvo(p) {
@@ -245,7 +246,7 @@
   const taxaTxt = p => p.modo !== 'entrega' ? '' : p.taxaEntrega != null
     ? 'Entrega ' + brl(p.taxaEntrega) + (p.distanciaKm ? ' · ' + ML.entrega.kmCobrados(p.distanciaKm) + ' km' : '')
     : 'Taxa de entrega pendente — não incluída no total';
-  const pagTxt = p => 'Pagamento: ' + (PAGAMENTO_TXT[p.pagamentoOnline] || p.pagamento || 'a combinar') + (p.troco ? ' · troco para ' + p.troco : '');
+  const pagTxt = p => 'Pagamento: ' + (p.pagamentoNaEntrega && !p.pagamentoOnline ? (p.pagamentoRecebidoEm ? (p.modo==='entrega'?'Recebido na entrega':'Recebido na retirada') : p.modo==='entrega' ? 'A receber na entrega' : 'A receber na retirada') : PAGAMENTO_TXT[p.pagamentoOnline] || p.pagamento || 'a combinar') + (p.troco ? ' · troco para ' + p.troco : '');
   const tagExemplo = p => p.origem === 'exemplo' ? '<span class="pn-tag pn-tag--exemplo">Pedido de exemplo</span>' : '';
   // quem pediu pelo QR da loja (e de qual mesa)
   const tagsOrigem = p => (p.origem === 'qrcode' ? '<span class="pn-tag pn-tag--qr">QR</span>' : '') +
@@ -270,7 +271,7 @@
       <div class="pn-rodape"><span class="pn-pag">${esc(pagTxt(p))}</span><strong class="pn-total">${brl(p.total)}</strong></div>
       <div class="pn-acoes">
         ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : ''}
-        <div class="pn-acoes-sec">${estornoHTML(p)}
+        <div class="pn-acoes-sec">${entregaPagamentoHTML(p)}${estornoHTML(p)}
           <button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}" aria-label="Imprimir comanda do pedido ${num}">${ic('impressora')}Imprimir</button>
           ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nome)} no WhatsApp">${ic('chat')}WhatsApp</a>` : ''}
           ${ATIVOS.includes(st) ? `<button type="button" class="pn-btn pn-btn--perigo" data-act="cancelar" data-id="${esc(p.id)}" aria-label="Cancelar pedido ${num}">${ic('x')}Cancelar</button>` : ''}
@@ -574,7 +575,7 @@
     q('[data-mobile]').innerHTML = lista.length ? '<ul class="pn-m-lista">' + lista.map(p => {
       const prox = proximoStatus(p);
       return `<li class="pn-m-item"><div class="pn-m-t"><b class="pn-num">${ML.fmt.numero(p.numero)}</b> <span>${esc(nomeCli(p))}</span> ${statusChip(p.status)}${tagsOrigem(p)}</div>
-        <p>${esc(itensTxt(p))}</p>${p.pagamentoOnline?`<p>${esc(pagTxt(p))}</p>`:""}${avisoPagamento(p)}<div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : ''}</div></div></li>`;
+        <p>${esc(itensTxt(p))}</p>${p.pagamentoOnline||p.pagamentoNaEntrega?`<p>${esc(pagTxt(p))}</p>`:""}${avisoPagamento(p)}<div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${entregaPagamentoHTML(p)}${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : ''}</div></div></li>`;
     }).join('') + '</ul>' : `<div class="pn-vazio">${ic('truck', 'pn-vazio-ic')}<p>${esc(textoVazio())}</p></div>`;
   }
 
@@ -837,7 +838,7 @@
         <h3 class="pn-sub">Histórico do pedido</h3>
         <ol class="pn-linha">${(p.historico || []).map(h => `<li><span class="pn-linha-h">${esc(dataHora(h.em))}</span><b>${esc((ML.STATUS[h.status] || { label: h.status }).label)}</b>${h.motivo ? `<small>Motivo: ${esc(h.motivo)}</small>` : ''}</li>`).join('')}</ol>
       </div>
-      <footer class="pn-lat-acoes">${estornoHTML(p)}<button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}">${ic('impressora')}Imprimir comanda</button>
+      <footer class="pn-lat-acoes">${entregaPagamentoHTML(p)}${estornoHTML(p)}<button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}">${ic('impressora')}Imprimir comanda</button>
         ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener">${ic('chat')}WhatsApp</a>` : ''}</footer>`;
   }
   function abrirDetalhe(id) {
@@ -1015,6 +1016,15 @@
         break;
       }
       case 'apagar-ok': ML.store.removerTestes().then(n => toast(n === 1 ? '1 pedido de exemplo apagado' : n + ' pedidos de exemplo apagados'), () => {}); q('[data-confirma]').hidden = true; q('[data-act="apagar"]').focus(); agendar(); break;
+      case 'pagar-entrega':
+      case 'receber-entrega': {
+        const p=pedidoPorId(id), receber=b.dataset.act==='receber-entrega';
+        if(!p||!confirm(receber?'Confirmar que a loja recebeu '+brl(p.total)+' deste pedido?':'Mudar para pagamento na entrega e encerrar o checkout online deste pedido?')) break;
+        b.disabled=true;
+        const operacao=receber?ML.store.confirmarPagamentoEntrega(id):ML.store.definirPagamentoEntrega(id);
+        operacao.then(()=>toast(receber?'Recebimento registrado.':'Pagamento na entrega liberado.'),e=>toast(e.codigo==='pagamento_encerrado'?'O pagamento já mudou. Atualize o pedido.':'Não foi possível concluir. Confira a conexão e tente novamente.',{tipo:'erro'})).finally(()=>{b.disabled=false;agendar();});
+        break;
+      }
       case 'estornar': {
         const pedido=pedidoPorId(id);
         if(!pedido||!confirm('Devolver integralmente '+brl(pedido.total)+' do pedido '+ML.fmt.numero(pedido.numero)+' pelo Mercado Pago?'))break;

@@ -1004,6 +1004,7 @@ export function iniciarApp() {
   renderEnderecosCliente();
 
   function modoLabel(m) { return m.id === 'local' && origemQR && origemQR.mesa ? m.label + ' · Mesa ' + origemQR.mesa : m.label; }
+  function pagaOnline() { return !!ML.store.loja().pagamentosAtivos && st.pagamento !== 'Pagamento na entrega'; }
   function renderCheckout() {
     if(entr.cotacaoAtiva!==usaCotacao()) {entr.cotacaoAtiva=usaCotacao();if(entr.ok)agendarTaxa(true);}
     if (restaurarCep) { restaurarCep = false; buscarCep($('#f-cep').value.replace(/\D/g, ''), true); }
@@ -1011,12 +1012,13 @@ export function iniciarApp() {
       return '<button type="button" class="modo" data-modo="' + m.id + '" aria-pressed="' + (st.modo === m.id) + '">' + ic(ICONE_MODO[m.id]) + '<span><strong>' + esc(modoLabel(m)) + '</strong><small>' + esc(m.desc) + '</small></span>' + ic('check', 'modo-check') + '</button>';
     }).join('');
     $('#bloco-endereco').hidden = st.modo !== 'entrega';
-    var onlinePagamento=!!ML.store.loja().pagamentosAtivos;
-    var temPagamentos = !onlinePagamento&&Array.isArray(C.pagamentos) && C.pagamentos.length > 0;
-    $('#pagamentos').closest('.bloco').hidden = !temPagamentos&&!onlinePagamento;
+    var pagamentosAtivos=!!ML.store.loja().pagamentosAtivos, onlinePagamento=pagaOnline();
+    var temPagamentos = !pagamentosAtivos&&Array.isArray(C.pagamentos) && C.pagamentos.length > 0;
+    $('#pagamentos').closest('.bloco').hidden = !temPagamentos&&!pagamentosAtivos;
     $('#pagamento-online-info').hidden=!onlinePagamento;
     $('#f-email-pagamento').required=onlinePagamento;
-    $('#pagamentos').innerHTML = temPagamentos
+    $('#f-email-pagamento').disabled=!onlinePagamento;
+    $('#pagamentos').innerHTML = pagamentosAtivos ? segHTML('pagamento', [{attr:'data-pag="Mercado Pago"',on:onlinePagamento,txt:'Pagar online'}, {attr:'data-pag="Pagamento na entrega"',on:!onlinePagamento,txt:st.modo==='entrega'?'Pagar na entrega':'Pagar na retirada'}]) : temPagamentos
       ? segHTML('pagamento', C.pagamentos.map(function (p) { return { attr: 'data-pag="' + esc(p) + '"', on: st.pagamento === p, txt: esc(p) }; }))
       : '';
     var t = totaisSacola();
@@ -1107,7 +1109,7 @@ export function iniciarApp() {
     btn.classList.toggle('enviando', sim);
     btn.setAttribute('aria-disabled', String(sim));
     $('#form-pedido').setAttribute('aria-busy', String(sim));
-    $('span', btn).textContent = sim ? (ML.store.loja().pagamentosAtivos?'Registrando pedido…':'Enviando para a loja…') : ML.store.loja().pagamentosAtivos?'Pagar pedido':'Enviar pedido';
+    $('span', btn).textContent = sim ? (pagaOnline()?'Registrando pedido…':'Enviando para a loja…') : pagaOnline()?'Pagar pedido':'Enviar pedido';
   }
   function validar() {
     var nome = $('#f-nome').value.trim(), tel = digitosTel($('#f-tel').value), end = $('#f-end').value.trim(), ok = true;
@@ -1121,7 +1123,7 @@ export function iniciarApp() {
       campo.setAttribute('aria-invalid', String(c[1]));
       if (c[1]) campo.setAttribute('aria-describedby', c[3]); else if (campo.id === 'f-tel') campo.setAttribute('aria-describedby', 'cliente-dica'); else campo.removeAttribute('aria-describedby');
     });
-    var email=$('#f-email-pagamento'),emailInvalido=!!ML.store.loja().pagamentosAtivos&&(!email.value.trim()||!email.validity.valid);
+    var email=$('#f-email-pagamento'),emailInvalido=pagaOnline()&&(!email.value.trim()||!email.validity.valid);
     $('#erro-email-pagamento').hidden=!emailInvalido;
     email.setAttribute('aria-invalid',String(emailInvalido));
     if(emailInvalido){email.focus();ok=false;}
@@ -1204,7 +1206,8 @@ export function iniciarApp() {
   $('#pedido-topo').insertAdjacentHTML('afterend','<section id="pedido-pagamento" aria-label="Pagamento do pedido" hidden><p id="pedido-pagamento-status" role="status" aria-live="polite"></p><form id="pedido-pagar"><label for="pedido-pagamento-email">E-mail para o pagamento</label><input id="pedido-pagamento-email" type="email" autocomplete="email" maxlength="254" required><button class="btn btn-vermelho" type="submit">Pagar no Mercado Pago</button></form><p id="pedido-pagamento-erro" role="alert" hidden></p></section>');
   var pagamentoEnviando=false;
   function renderPagamentoPedido(p) {
-    $('#pedido-pagamento').hidden=!p?.pagamentoOnline;
+    $('#pedido-pagamento').hidden=!p?.pagamentoOnline&&!p?.pagamentoNaEntrega;
+    if(p?.pagamentoNaEntrega&&!p.pagamentoOnline) { $('#pedido-pagamento-status').textContent=p.pagamentoRecebidoEm?'Pagamento recebido pela loja':(p.modo==='entrega'?'Pagamento na entrega':'Pagamento na retirada')+' · '+brl(p.total); $('#pedido-pagar').hidden=true; return; }
     if(!p?.pagamentoOnline)return;
     $('#pedido-pagamento-status').textContent=textoPagamento(p.pagamentoOnline)+(p.status==='cancelado'&&p.pagamentoOnline==='aprovado'?'. Pedido cancelado: fale com a loja sobre o reembolso.':'');
     $('#pedido-pagar').hidden=!permitePagar(p);

@@ -101,6 +101,8 @@ export function linhaParaPedido(r) {
     ...(r.entrega_destino?{entregaDestino:r.entrega_destino}:{}),
     referencia: r.referencia || '',
     pagamento: r.pagamento || null,
+    pagamentoNaEntrega:!!(r.pagamento_na_entrega ?? r.pagamentoNaEntrega),
+    pagamentoRecebidoEm:r.pagamento_entrega_recebido_em || r.pagamentoRecebidoEm || null,
     pagamentoOnline:r.pagamento_online||r.pagamentoOnline||null,
     pagamentoEm:r.pagamento_em||r.pagamentoEm||null,
     troco: r.troco || '',
@@ -128,6 +130,8 @@ function acompanhamentoDe(p) {
     numero: num(p.numero),
     criadoEm: isoDe(p.criadoEm),
     status: p.status,
+    pagamentoNaEntrega:!!p.pagamentoNaEntrega,
+    pagamentoRecebidoEm:p.pagamentoRecebidoEm||null,
     pagamentoOnline:p.pagamentoOnline||null,
     pagamentoEm:p.pagamentoEm||null,
     historico: p.historico || [],
@@ -597,6 +601,12 @@ export function criarStoreSupabase(opc) {
     resumoEntregas() { return rpc('resumo_entregas',{}); },
     iniciarPagamento(token,email) {return consultarPagamento({acao:'iniciar',token,email});},
     consultarPagamento(token) {return consultarPagamento({acao:'consultar',token});},
+    async definirPagamentoEntrega(pedidoId) {
+      const sb = await cliente(); const {data} = await sb.auth.getSession();
+      const r = await consultarPagamento({acao:'pagar_na_entrega',pedidoId},data?.session?.access_token);
+      await recarregar(); return r;
+    },
+    async confirmarPagamentoEntrega(pedidoId) { const r = await rpc('confirmar_pagamento_entrega',{p_id:pedidoId}); await recarregar(); return r; },
     async estornarPagamento(pedidoId) {
       const sb=await cliente(),{data}=await sb.auth.getSession();
       if(!data?.session?.access_token)throw erroCom('sessao');
