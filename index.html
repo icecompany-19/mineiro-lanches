@@ -228,7 +228,18 @@
             <div id="pagamentos"></div>
             <div id="pagamento-online-info" hidden>
               <p>Você paga com segurança no Mercado Pago. O preparo começa após a aprovação do pagamento.</p>
-              <div class="campo"><label for="f-email-pagamento">E-mail para o pagamento</label><input id="f-email-pagamento" type="email" autocomplete="email" maxlength="254"><span class="msg-erro" id="erro-email-pagamento" hidden>Informe um e-mail válido para continuar.</span></div>
+              <div class="campo"><label for="f-email-pagamento">E-mail para o pagamento (opcional)</label><input id="f-email-pagamento" type="email" autocomplete="email" maxlength="254" aria-describedby="email-pagamento-dica erro-email-pagamento"><small id="email-pagamento-dica">Pode deixar em branco. O Mercado Pago poderá solicitar seus dados ao concluir o pagamento.</small><span class="msg-erro" id="erro-email-pagamento" hidden>Confira o e-mail informado ou deixe em branco.</span></div>
+            </div>
+            <div id="pagamento-entrega-info" hidden>
+              <p>Como você vai pagar ao receber?</p>
+              <div id="pagamento-entrega-formas" role="group" aria-label="Forma de pagamento ao receber"></div>
+              <p class="msg-erro" id="erro-forma-entrega" role="alert" hidden>Selecione a forma de pagamento ao receber.</p>
+              <div id="pagamento-dinheiro-info" hidden>
+                <p id="troco-pergunta">Vai precisar de troco?</p>
+                <div id="troco-opcoes" role="group" aria-labelledby="troco-pergunta"></div>
+                <p class="msg-erro" id="erro-troco-opcao" role="alert" hidden>Informe se vai precisar de troco.</p>
+                <div class="campo" id="campo-troco" hidden><label for="f-troco">Troco para quanto? (R$)</label><input id="f-troco" type="text" inputmode="decimal" maxlength="12" placeholder="Ex.: 100,00" aria-describedby="troco-dica erro-troco"><small id="troco-dica">Informe o valor que vai entregar em dinheiro.</small><span class="msg-erro" id="erro-troco" hidden>Informe um valor maior que o total do pedido.</span></div>
+              </div>
             </div>
           </section>
           <section class="bloco">

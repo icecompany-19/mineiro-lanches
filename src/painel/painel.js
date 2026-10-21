@@ -246,7 +246,7 @@
   const taxaTxt = p => p.modo !== 'entrega' ? '' : p.taxaEntrega != null
     ? 'Entrega ' + brl(p.taxaEntrega) + (p.distanciaKm ? ' · ' + ML.entrega.kmCobrados(p.distanciaKm) + ' km' : '')
     : 'Taxa de entrega pendente — não incluída no total';
-  const pagTxt = p => 'Pagamento: ' + (p.pagamentoNaEntrega && !p.pagamentoOnline ? (p.pagamentoRecebidoEm ? (p.modo==='entrega'?'Recebido na entrega':'Recebido na retirada') : p.modo==='entrega' ? 'A receber na entrega' : 'A receber na retirada') : PAGAMENTO_TXT[p.pagamentoOnline] || p.pagamento || 'a combinar') + (p.troco ? ' · troco para ' + p.troco : '');
+  const pagTxt = p => 'Pagamento: ' + (p.pagamentoNaEntrega && !p.pagamentoOnline ? (p.pagamentoRecebidoEm ? (p.modo==='entrega'?'Recebido na entrega':'Recebido na retirada') : p.modo==='entrega' ? 'A receber na entrega' : 'A receber na retirada') + (p.pagamento&&p.pagamento!=='Pagamento na entrega'?' · '+p.pagamento.replace(/ na (entrega|retirada)$/,''):'') : PAGAMENTO_TXT[p.pagamentoOnline] || p.pagamento || 'a combinar') + (p.troco ? (p.troco==='Sem troco'?' · Sem troco':' · troco para R$ '+p.troco) : '');
   const tagExemplo = p => p.origem === 'exemplo' ? '<span class="pn-tag pn-tag--exemplo">Pedido de exemplo</span>' : '';
   // quem pediu pelo QR da loja (e de qual mesa)
   const tagsOrigem = p => (p.origem === 'qrcode' ? '<span class="pn-tag pn-tag--qr">QR</span>' : '') +

@@ -88,6 +88,8 @@ function pedidoDe(p) {
     referencia: String(p.referencia || ''),
     obs: String(p.obs || ''),
     pagamentoNaEntrega: !!p.pagamentoNaEntrega,
+    pagamento: String(p.pagamento || ''),
+    troco: String(p.troco || ''),
     pagamentoRecebidoEm: p.pagamentoRecebidoEm || null,
     pagamentoOnline: p.pagamentoOnline || null,
     total: p.total == null ? null : Number(p.total),

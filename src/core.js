@@ -339,7 +339,7 @@
     out.push(modoTxt);
     if (pedido.modo === 'entrega') out.push('Endereço: ' + (pedido.endereco || 'a informar') + (pedido.referencia ? ' (' + pedido.referencia + ')' : ''));
     if (pedido.cliente.nome) out.push('Nome: ' + pedido.cliente.nome);
-    out.push('Pagamento: ' + (pedido.pagamento || 'a combinar') + (pedido.troco ? ' · troco para ' + pedido.troco : ''));
+    out.push('Pagamento: ' + (pedido.pagamento || 'a combinar') + (pedido.troco ? (pedido.troco==='Sem troco'?' · Sem troco':' · troco para ' + pedido.troco) : ''));
     if (pedido.obs) out.push('Observação: ' + pedido.obs);
     var link = linkAcompanhamento(pedido, base);
     var rodape = link ? '\n\nAcompanhe seu pedido por aqui:\n' + link : '';

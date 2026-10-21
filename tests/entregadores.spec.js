@@ -29,11 +29,11 @@ async function abrirCentral(page, atribuicao = false) {
   await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
   if (!atribuicao) await page.locator('[data-e="etapa"][data-etapa="todos"]:visible').click();
 }
-function pedido(nome = 'Entrega operacional') {
+function pedido(nome = 'Entrega operacional', extra = {}) {
   const tel = '119666' + String(Math.floor(Math.random() * 100000)).padStart(5, '0');
   return JSON.parse(
     sql(
-      `select criar_pedido('${JSON.stringify({ cliente: { nome, telefone: tel }, modo: 'entrega', endereco: 'Rua Teste, 10', distanciaKm: 2.5, itens: [{ produtoId: 'gran-burger', qtd: 1 }], idempotencia: randomUUID() })}'::jsonb)`
+      `select criar_pedido('${JSON.stringify({ cliente: { nome, telefone: tel }, modo: 'entrega', endereco: 'Rua Teste, 10', distanciaKm: 2.5, itens: [{ produtoId: 'gran-burger', qtd: 1 }], idempotencia: randomUUID(), ...extra })}'::jsonb)`
     )
   );
 }
@@ -50,7 +50,7 @@ async function prepararCelular(page) {
 }
 
 test('fila persiste ao fechar e reabrir sem internet; sincronização entrega só uma vez', async ({ page, context }) => {
-  const p = pedido(),
+  const p = pedido('Entrega em dinheiro com troco', {pagamento:'Dinheiro na entrega',troco:'100,00'}),
     alheio = pedido('Outro entregador');
   atribuir(p);
   atribuir(alheio, outro);
@@ -66,6 +66,8 @@ test('fila persiste ao fechar e reabrir sem internet; sincronização entrega s�
   await expect(page.locator('[data-taxas-concluidas]')).toHaveText(taxasAntes);
   const item = page.locator(`.mb-item[data-id="${p.id}"]`);
   await expect(item).toBeVisible();
+  await expect(item).toContainText('Dinheiro na entrega');
+  await expect(item).toContainText('Troco para R$ 100,00');
   await expect(page.locator(`.mb-item[data-id="${alheio.id}"]`)).toHaveCount(0);
   await context.setOffline(true);
   await item.getByRole('button', { name: 'Entregue', exact: true }).click();
@@ -82,6 +84,7 @@ test('fila persiste ao fechar e reabrir sem internet; sincronização entrega s�
   await reaberta.goto('/motoboy/');
   await expect(reaberta.locator('[data-sync]')).toContainText('1 confirmação aguardando envio');
   await expect(reaberta.locator(`.mb-item[data-id="${p.id}"]`)).toContainText('Confirmada neste aparelho');
+  await expect(reaberta.locator(`.mb-item[data-id="${p.id}"]`)).toContainText('Troco para R$ 100,00');
   await expect(reaberta.locator('[data-taxas-concluidas]')).toHaveText(taxasAntes);
   await expect(reaberta.locator('[data-taxas-estado]')).toContainText('valores da última consulta');
   await context.setOffline(false);

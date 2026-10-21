@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { criarPagamentos } from '../supabase/functions/mercado-pago/handler.js';
 import { criarOrder, conferirOrder, assinaturaValida, centavos, urlCheckout } from '../supabase/functions/_shared/mercado-pago.js';
-import { checkoutSeguro, permitePagar, financeiroRecente, aguardarCheckout } from '../src/lib/pagamentos.js';
+import { checkoutSeguro, permitePagar, financeiroRecente, aguardarCheckout, trocoEmCentavos } from '../src/lib/pagamentos.js';
 import { configuracaoMP } from '../supabase/functions/_shared/mercado-pago-env.js';
 const id = '00000000-0000-4000-8000-000000000010',
   token = '00000000-0000-4000-8000-000000000020';
@@ -131,6 +131,17 @@ test('checkout rejeita destinos externos, credenciais e protocolos inseguros no 
     assert.throws(() => checkoutSeguro(bad));
   }
   assert.equal(checkoutSeguro(order.checkout_url), order.checkout_url);
+});
+
+test('order sem e-mail omite payer inteiro e mantém total, retorno e referência',()=>{
+ const semEmail=criarOrder({...pagamento,email:''},config.siteUrl);
+ assert(!Object.hasOwn(semEmail,'payer'));
+ assert.equal(semEmail.total_amount,'28.90');assert.equal(semEmail.external_reference,id);
+ assert.deepEqual(criarOrder(pagamento,config.siteUrl).payer,{email:pagamento.email});
+});
+test('troco aceita reais com vírgula ou ponto e rejeita entradas ambíguas',()=>{
+ for(const [entrada,centavos] of [['100',10000],['100,00',10000],['100.5',10050],[' 20,01 ',2001]])assert.equal(trocoEmCentavos(entrada),centavos);
+ for(const entrada of ['',null,'-1','1e3','100abc','1,234','1.000,00','Infinity'])assert.equal(trocoEmCentavos(entrada),null);
 });
 test('aprovação confere conta, referência, moeda, ambiente, total, valor efetivamente pago e tipo', () => {
   assert.equal(conferirOrder(order, pagamento, '123', 'test').p_estado, 'aprovado');

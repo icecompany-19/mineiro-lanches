@@ -43,3 +43,9 @@ export function financeiroRecente(pedido, outro) {
   const em = (p) => (p?.pagamentoEm ? Date.parse(p.pagamentoEm) : -Infinity);
   return em(outro) > em(pedido) ? { ...pedido, pagamentoOnline: outro.pagamentoOnline, pagamentoEm: outro.pagamentoEm, ...(Object.hasOwn(outro,'pagamentoNaEntrega')?{pagamentoNaEntrega:outro.pagamentoNaEntrega}:{}), ...(Object.hasOwn(outro,'pagamentoRecebidoEm')?{pagamentoRecebidoEm:outro.pagamentoRecebidoEm}:{}) } : pedido;
 }
+// Entrada decimal em reais, sem aceitar negativos, exponenciais ou texto parcial.
+export function trocoEmCentavos(valor) {
+  const texto=String(valor ?? '').trim();
+  if(!/^\d{1,7}(?:[,.]\d{1,2})?$/.test(texto))return null;
+  return Math.round(Number(texto.replace(',','.'))*100);
+}

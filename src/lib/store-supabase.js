@@ -131,6 +131,8 @@ function acompanhamentoDe(p) {
     criadoEm: isoDe(p.criadoEm),
     status: p.status,
     pagamentoNaEntrega:!!p.pagamentoNaEntrega,
+    pagamento:p.pagamento||null,
+    troco:p.troco||'',
     pagamentoRecebidoEm:p.pagamentoRecebidoEm||null,
     pagamentoOnline:p.pagamentoOnline||null,
     pagamentoEm:p.pagamentoEm||null,

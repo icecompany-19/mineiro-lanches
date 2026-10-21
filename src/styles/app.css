@@ -731,6 +731,9 @@ html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-s
 
 /* Pagamento hospedado: os campos de cartão ficam no Mercado Pago. */
 #pedido-pagamento{margin:18px 0;text-align:left;padding:18px;border:1px solid var(--borda-campo);border-radius:var(--r-md)}
+#pagamento-entrega-info>p,#pagamento-dinheiro-info>p{margin:18px 0 10px}
+#pagamento-entrega-info .msg-erro{color:var(--vermelho-luz);font-size:14px}
+#pagamento-online-info small,#pedido-pagar small{display:block;color:var(--osso-2);font-size:14px;line-height:1.5}
 #pedido-pagar{display:grid;gap:12px}
 #pedido-pagar[hidden]{display:none}
 #pedido-pagamento-email{width:100%;min-width:0;padding:12px;border:1.5px solid var(--borda-campo);border-radius:var(--r-md);background:var(--chapa);color:var(--osso);font:inherit}

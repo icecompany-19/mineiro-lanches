@@ -7,7 +7,7 @@
    CSS dele); o contrato com ele é o ML.app (montado no início, mais abaixo). */
 import FOTOS_JSON from 'virtual:fotos'; // public/assets/fotos.json (plugin em vite.config.js)
 import { criarHistoricoClientes, normalizarTelefone as digitosTel, chaveEndereco } from './lib/historico-clientes.js';
-import { checkoutSeguro, textoPagamento, permitePagar, aguardarCheckout } from './lib/pagamentos.js';
+import { checkoutSeguro, textoPagamento, permitePagar, aguardarCheckout, trocoEmCentavos } from './lib/pagamentos.js';
 import { urlFotoProduto } from './lib/catalogo.js';
 
 export function iniciarApp() {
@@ -113,7 +113,7 @@ export function iniciarApp() {
   // ================= estado =================
   // aba: 'app' (bio, cardápio e telas do pedido) ou 'site'; tela: a tela visível dentro do app
   // pedidoToken: o pedido aberto em "Acompanhe" (#pedido/<token>, link que pode ser compartilhado)
-  var st = { aba: 'app', tela: 'bio', busca: '', filtro: null, pedidoToken: null, modo: 'entrega', pagamento: null };
+  var st = { aba: 'app', tela: 'bio', busca: '', filtro: null, pedidoToken: null, modo: 'entrega', pagamento: null, formaEntrega: null, precisaTroco: null };
   // sacola e rascunho do checkout ficam no aparelho (localStorage, prefixo mineiro:v2:) e nunca se perdem num erro de envio
   var CHAVE_SACOLA = 'mineiro:v2:sacola', CHAVE_RASCUNHO = 'mineiro:v2:rascunho';
   function lerLocal(k, padrao) { try { var v = localStorage.getItem(k); return v == null ? padrao : JSON.parse(v); } catch { return padrao; } }
@@ -1016,11 +1016,19 @@ export function iniciarApp() {
     var temPagamentos = !pagamentosAtivos&&Array.isArray(C.pagamentos) && C.pagamentos.length > 0;
     $('#pagamentos').closest('.bloco').hidden = !temPagamentos&&!pagamentosAtivos;
     $('#pagamento-online-info').hidden=!onlinePagamento;
-    $('#f-email-pagamento').required=onlinePagamento;
+    $('#f-email-pagamento').required=false;
     $('#f-email-pagamento').disabled=!onlinePagamento;
     $('#pagamentos').innerHTML = pagamentosAtivos ? segHTML('pagamento', [{attr:'data-pag="Mercado Pago"',on:onlinePagamento,txt:'Pagar online'}, {attr:'data-pag="Pagamento na entrega"',on:!onlinePagamento,txt:st.modo==='entrega'?'Pagar na entrega':'Pagar na retirada'}]) : temPagamentos
       ? segHTML('pagamento', C.pagamentos.map(function (p) { return { attr: 'data-pag="' + esc(p) + '"', on: st.pagamento === p, txt: esc(p) }; }))
       : '';
+    var aoReceber=st.pagamento==='Pagamento na entrega', dinheiro=aoReceber&&st.formaEntrega==='Dinheiro';
+    $('#pagamento-entrega-info').hidden=!aoReceber;
+    $('#pagamento-entrega-formas').innerHTML=segHTML('forma-entrega', [{attr:'data-forma-entrega="Dinheiro"',on:st.formaEntrega==='Dinheiro',txt:'Dinheiro'}, {attr:'data-forma-entrega="outro"',on:st.formaEntrega==='outro',txt:'Outra forma de pagamento'}]);
+    $('#pagamento-dinheiro-info').hidden=!dinheiro;
+    $('#troco-opcoes').innerHTML=segHTML('troco', [{attr:'data-troco="nao"',on:st.precisaTroco==='nao',txt:'Não preciso'}, {attr:'data-troco="sim"',on:st.precisaTroco==='sim',txt:'Preciso de troco'}]);
+    $('#campo-troco').hidden=!dinheiro||st.precisaTroco!=='sim';
+    $('#f-troco').disabled=!dinheiro||st.precisaTroco!=='sim';
+    $('#f-troco').required=dinheiro&&st.precisaTroco==='sim';
     var t = totaisSacola();
     $('#chk-itens').textContent = plural(t.n);
     renderTaxa();
@@ -1051,7 +1059,8 @@ export function iniciarApp() {
       endereco: st.modo === 'entrega' ? enderecoCompleto() : '', referencia: st.modo === 'entrega' ? $('#f-ref').value.trim() : '',
       distanciaKm: st.modo === 'entrega' && entr.estado === 'ok' ? entr.km : null,
       cotacaoId: st.modo==='entrega' && entr.cotacao?entr.cotacao.id:null,
-      pagamento: st.pagamento, troco: '', obs: $('#f-obs').value.trim(),
+      pagamento: st.pagamento==='Pagamento na entrega'&&st.formaEntrega&&st.formaEntrega!=='outro' ? st.formaEntrega+' na '+(st.modo==='entrega'?'entrega':'retirada') : st.pagamento,
+      troco: st.pagamento==='Pagamento na entrega'&&st.formaEntrega==='Dinheiro' ? (st.precisaTroco==='nao'?'Sem troco':(trocoEmCentavos($('#f-troco').value)/100).toFixed(2).replace('.',',')) : '', obs: $('#f-obs').value.trim(),
       origem: origemQR ? 'qrcode' : 'cardapio', mesa: mesa,
       itens: sacola.map(function (l) { return l.sel; })
     };
@@ -1063,6 +1072,8 @@ export function iniciarApp() {
     return Object.assign({}, d, { numero: null, itens: itens, taxaEntrega: taxa, total: Math.round((itens.reduce(function (a, i) { return a + i.subtotal; }, 0) + (taxa || 0)) * 100) / 100 });
   }
   var ERRO_ENVIO = {
+    troco_necessario:['Informe o troco',function(){return 'Escolha se precisa de troco antes de enviar o pedido.';}],
+    troco_invalido:['Confira o troco',function(){return 'O valor entregue em dinheiro deve ser maior que o total do pedido, incluindo a entrega.';}],
     cotacao_necessaria:['Atualize a taxa de entrega',function(){return 'Recalcule a entrega, confira o total e envie novamente. Se a página estava aberta há algum tempo, atualize o site.';}],
     cotacao_expirada:['Atualize a taxa de entrega',function(){return 'A cotação venceu ou mudou. Recalcule a entrega e confira o novo total antes de enviar.';}],
     cotacao_endereco_divergente:['Confira o endereço de entrega',function(){return 'O endereço mudou após o cálculo. Recalcule a entrega antes de enviar.';}],
@@ -1123,10 +1134,16 @@ export function iniciarApp() {
       campo.setAttribute('aria-invalid', String(c[1]));
       if (c[1]) campo.setAttribute('aria-describedby', c[3]); else if (campo.id === 'f-tel') campo.setAttribute('aria-describedby', 'cliente-dica'); else campo.removeAttribute('aria-describedby');
     });
-    var email=$('#f-email-pagamento'),emailInvalido=pagaOnline()&&(!email.value.trim()||!email.validity.valid);
+    var email=$('#f-email-pagamento'),emailInvalido=pagaOnline()&&!!email.value.trim()&&!email.validity.valid;
     $('#erro-email-pagamento').hidden=!emailInvalido;
     email.setAttribute('aria-invalid',String(emailInvalido));
     if(emailInvalido){email.focus();ok=false;}
+    var aoReceber=st.pagamento==='Pagamento na entrega',dinheiro=aoReceber&&st.formaEntrega==='Dinheiro';
+    var semForma=aoReceber&&!st.formaEntrega,semOpcao=dinheiro&&!st.precisaTroco;
+    var troco=trocoEmCentavos($('#f-troco').value),trocoInvalido=dinheiro&&st.precisaTroco==='sim'&&(troco===null||troco<=Math.round((totaisSacola().v+(taxaCalculada()||0))*100));
+    $('#erro-forma-entrega').hidden=!semForma;$('#erro-troco-opcao').hidden=!semOpcao;$('#erro-troco').hidden=!trocoInvalido;
+    $('#f-troco').setAttribute('aria-invalid',String(trocoInvalido));
+    if(semForma||semOpcao||trocoInvalido){ok=false;$(semForma?'[data-forma-entrega]':semOpcao?'[data-troco]':'#f-troco').focus();}
     if (!ok) { var prim = $('.campo.erro input'); if (prim) prim.focus(); }
     return ok;
   }
@@ -1175,6 +1192,7 @@ export function iniciarApp() {
       // o cliente que volta só confere: nome, telefone, endereço e referência continuam no aparelho (rascunho);
       // sai apenas a observação, que valia para aquele pedido
       $('#f-obs').value = '';
+      st.formaEntrega=null;st.precisaTroco=null;$('#f-troco').value='';
       salvarRascunho();
       travarEnvio(false);
       st.pedidoToken = pedido.token;
@@ -1203,11 +1221,11 @@ export function iniciarApp() {
   var MSG = { novo: 'Pedido recebido pelo Mineiro Lanche', preparo: 'Seu lanche está na chapa', pronto: 'Pronto!', rota: 'Saiu para entrega', entregue: 'Bom apetite!', cancelado: 'Pedido cancelado' };
   var FINAIS = ['entregue', 'cancelado'];
   $('#ped-msg').insertAdjacentHTML('afterend', '<p class="sr" id="ped-status" role="status" aria-live="polite"></p>');
-  $('#pedido-topo').insertAdjacentHTML('afterend','<section id="pedido-pagamento" aria-label="Pagamento do pedido" hidden><p id="pedido-pagamento-status" role="status" aria-live="polite"></p><form id="pedido-pagar"><label for="pedido-pagamento-email">E-mail para o pagamento</label><input id="pedido-pagamento-email" type="email" autocomplete="email" maxlength="254" required><button class="btn btn-vermelho" type="submit">Pagar no Mercado Pago</button></form><p id="pedido-pagamento-erro" role="alert" hidden></p></section>');
+  $('#pedido-topo').insertAdjacentHTML('afterend','<section id="pedido-pagamento" aria-label="Pagamento do pedido" hidden><p id="pedido-pagamento-status" role="status" aria-live="polite"></p><form id="pedido-pagar"><label for="pedido-pagamento-email">E-mail para o pagamento (opcional)</label><input id="pedido-pagamento-email" type="email" autocomplete="email" maxlength="254"><small>O Mercado Pago poderá solicitar seus dados ao concluir o pagamento.</small><button class="btn btn-vermelho" type="submit">Pagar no Mercado Pago</button></form><p id="pedido-pagamento-erro" role="alert" hidden></p></section>');
   var pagamentoEnviando=false;
   function renderPagamentoPedido(p) {
     $('#pedido-pagamento').hidden=!p?.pagamentoOnline&&!p?.pagamentoNaEntrega;
-    if(p?.pagamentoNaEntrega&&!p.pagamentoOnline) { $('#pedido-pagamento-status').textContent=p.pagamentoRecebidoEm?'Pagamento recebido pela loja':(p.modo==='entrega'?'Pagamento na entrega':'Pagamento na retirada')+' · '+brl(p.total); $('#pedido-pagar').hidden=true; return; }
+    if(p?.pagamentoNaEntrega&&!p.pagamentoOnline) { $('#pedido-pagamento-status').textContent=p.pagamentoRecebidoEm?'Pagamento recebido pela loja':(p.pagamento&&p.pagamento!=='Pagamento na entrega'?p.pagamento:p.modo==='entrega'?'Pagamento na entrega':'Pagamento na retirada')+' · '+brl(p.total)+(p.troco?(p.troco==='Sem troco'?' · Sem troco':' · Troco para R$ '+p.troco):''); $('#pedido-pagar').hidden=true; return; }
     if(!p?.pagamentoOnline)return;
     $('#pedido-pagamento-status').textContent=textoPagamento(p.pagamentoOnline)+(p.status==='cancelado'&&p.pagamentoOnline==='aprovado'?'. Pedido cancelado: fale com a loja sobre o reembolso.':'');
     $('#pedido-pagar').hidden=!permitePagar(p);
@@ -1628,7 +1646,7 @@ export function iniciarApp() {
 
   // ================= eventos =================
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('a[href^="#"],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
+    var t = e.target.closest('a[href^="#"],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-forma-entrega],[data-troco],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
     if (!t) return;
     var A = function (n) { return t.getAttribute(n); };
     // links internos (#bio, #site, #cardapio/<categoria>…): mesma navegação dos botões, com o histórico do app
@@ -1670,6 +1688,8 @@ export function iniciarApp() {
     }
     else if (t.hasAttribute('data-modo')) { st.modo = A('data-modo'); agendarTaxa(true); renderCheckout(); salvarRascunho(); }
     else if (t.hasAttribute('data-pag')) { st.pagamento = A('data-pag'); renderCheckout(); }
+    else if (t.hasAttribute('data-forma-entrega')) { st.formaEntrega=A('data-forma-entrega'); renderCheckout(); $('[data-forma-entrega="'+st.formaEntrega+'"]').focus(); }
+    else if (t.hasAttribute('data-troco')) { st.precisaTroco=A('data-troco'); renderCheckout(); $(st.precisaTroco==='sim'?'#f-troco':'[data-troco="nao"]').focus(); }
     else if (t.hasAttribute('data-story-abrir')) abrirStory(+A('data-story-abrir'));
     else if (t.hasAttribute('data-story')) passarStory(+A('data-story'));
     else if (t.hasAttribute('data-fechar-story')) fecharStory();

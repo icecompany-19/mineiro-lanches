@@ -50,7 +50,7 @@ export function criarOrder(pagamento, site) {
     total_amount: (centavos(pagamento.total) / 100).toFixed(2),
     external_reference: pagamento.id,
     expiration_time: 'PT30M',
-    payer: { email: pagamento.email },
+    ...(pagamento.email ? { payer: { email: pagamento.email } } : {}),
     items,
     description: 'Pedido Mineiro Lanche #' + pagamento.numero,
     config: {

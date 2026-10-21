@@ -273,6 +273,7 @@ test('pagamento na entrega dispensa e-mail e checkout, libera preparo e registra
  const estado=await preparar(page);
  const nome=await checkout(page);
  await page.locator('[data-pag="Pagamento na entrega"]').click();
+ await page.locator('[data-forma-entrega="outro"]').click();
  await expect(page.locator('#f-email-pagamento')).toBeHidden();
  await page.evaluate(()=>{document.querySelector('#f-email-pagamento').value='';});
  await page.locator('#btn-enviar').click();
@@ -291,6 +292,72 @@ test('pagamento na entrega dispensa e-mail e checkout, libera preparo e registra
  await expect(card).toContainText('Recebido na retirada');
  expect(sql(`select pagamento_online is null and pagamento_entrega_recebido_em is not null from pedidos where id='${p.id}'`)).toBe('t');
  await contexto.close();
+});
+
+test('checkout online aceita e-mail em branco; um endereço inválido continua bloqueado',async({page})=>{
+ const estado=await preparar(page);
+ const nome=await checkout(page);
+ await page.locator('#f-email-pagamento').fill('nao-e-email');
+ await page.locator('#btn-enviar').click();
+ await expect(page.locator('#erro-email-pagamento')).toBeVisible();
+ expect(estado.criadas).toHaveLength(0);
+ expect(sql(`select count(*) from pedidos where cliente_nome='${nome}'`)).toBe('0');
+ await page.locator('#f-email-pagamento').fill('');
+ await page.locator('#btn-enviar').click();
+ await expect(page).toHaveURL(/mercadopago/);
+ expect(estado.criadas).toHaveLength(1);
+ expect(estado.criadas[0].body).not.toHaveProperty('payer');
+ expect(sql(`select m.email from pagamentos_mp m join pedidos p on p.id=m.pedido_id where p.cliente_nome='${nome}'`)).toBe('');
+});
+
+test('dinheiro exige resposta sobre troco e valor válido; painel e comanda conservam a informação',async({page,browser})=>{
+ const estado=await preparar(page);
+ const nome=await checkout(page);
+ await page.locator('[data-pag="Pagamento na entrega"]').click();
+ await page.locator('#btn-enviar').click();
+ await expect(page.locator('#erro-forma-entrega')).toBeVisible();
+ await page.locator('[data-forma-entrega="Dinheiro"]').click();
+ await page.locator('#btn-enviar').click();
+ await expect(page.locator('#erro-troco-opcao')).toBeVisible();
+ await page.locator('[data-troco="sim"]').click();
+ for(const valor of ['', '10', '-100', '16,90']) {
+  await page.locator('#f-troco').fill(valor);
+  await page.locator('#btn-enviar').click();
+  await expect(page.locator('#erro-troco')).toBeVisible();
+ }
+ expect(sql(`select count(*) from pedidos where cliente_nome='${nome}'`)).toBe('0');
+ await page.locator('#f-troco').fill('100,00');
+ await page.locator('#btn-enviar').click();
+ await expect(page.locator('#pedido-pagamento-status')).toContainText('Dinheiro na retirada');
+ await expect(page.locator('#pedido-pagamento-status')).toContainText('Troco para R$ 100,00');
+ expect(estado.criadas).toHaveLength(0);
+ const p=JSON.parse(sql(`select json_build_object('id',id,'cod',pagamento_na_entrega,'online',pagamento_online,'troco',troco,'pagamento',pagamento) from pedidos where cliente_nome='${nome}'`));
+ expect(p.cod).toBe(true);expect(p.online).toBeNull();expect(p.troco).toBe('100,00');expect(p.pagamento).toBe('Dinheiro na retirada');
+ await page.reload();
+ await expect(page.locator('#pedido-pagamento-status')).toContainText('Troco para R$ 100,00');
+ const ctx=await browser.newContext({viewport:{width:1280,height:800}}),painel=await ctx.newPage();
+ try {
+  await painel.goto('/painel/');await painel.getByLabel('E-mail').fill('equipe@teste.local');await painel.getByLabel('Senha').fill('teste');await painel.getByRole('button',{name:'Entrar',exact:true}).click();
+  const card=painel.locator(`.pn-card[data-id="${p.id}"]`);
+  await expect(card).toContainText('A receber na retirada · Dinheiro');await expect(card).toContainText('troco para R$ 100,00');
+  await painel.evaluate(()=>{window.print=()=>{};});
+  await card.getByRole('button',{name:/Imprimir comanda/}).click();
+  await expect(painel.locator('[data-comanda]')).toContainText('troco para R$ 100,00');
+ }finally{await ctx.close();}
+});
+
+test('dinheiro sem troco é uma escolha explícita e não reaproveita valor de outro meio',async({page})=>{
+ const estado=await preparar(page);
+ await checkout(page);
+ await page.locator('[data-pag="Pagamento na entrega"]').click();
+ await page.locator('[data-forma-entrega="Dinheiro"]').click();
+ await page.locator('[data-troco="sim"]').click();await page.locator('#f-troco').fill('100');
+ await page.locator('[data-troco="nao"]').click();
+ await expect(page.locator('#f-troco')).toBeHidden();await expect(page.locator('#f-troco')).toBeDisabled();
+ await page.locator('#btn-enviar').click();
+ await expect(page.locator('#pedido-pagamento-status')).toContainText('Sem troco');
+ await expect(page.locator('#pedido-pagamento-status')).not.toContainText('100');
+ expect(estado.criadas).toHaveLength(0);
 });
 
 
