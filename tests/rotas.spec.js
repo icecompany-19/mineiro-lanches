@@ -45,15 +45,15 @@ async function entrar(page, rota, email) {
 async function central(page) {
   await entrar(page, '/painel/', 'equipe@teste.local');
   await page.locator('[data-nav="entregadores"]:visible, [data-usuarios-ir="entregadores"]:visible').first().click();
-  await page.getByRole('button', { name: 'Organizar saída', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Viagens e rotas', exact: true })).toBeFocused();
+  await expect(page.locator('.rt-central:visible')).toBeVisible();
+  await page.locator('.rt-central:visible [data-r-detail="rotas"] > summary').click();
   return page.locator('.rt-central:visible');
 }
 async function motorista(page) {
   await entrar(page, '/motoboy/', 'viagem-ui@teste.local');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
-  await page.getByRole('button', { name: 'Começar turno na loja' }).click();
+  await page.locator('[data-v="na_loja"]').click();
   await expect(page.locator('.mb-operacao')).toContainText('Você informou que está na loja');
 }
 function pedido(nome = 'Entrega da viagem') {
@@ -126,8 +126,8 @@ test('viagem da equipe ao celular: carrega, sai em conjunto, confirma offline e 
   await expect(viagem).toContainText('Aguardando saída');
   await expect(viagem).toBeFocused();
   expect(sql(`select string_agg(status,',' order by id) from pedidos where id in('${a.id}','${b.id}')`)).toBe('pronto,pronto');
-  await mb.getByRole('button', { name: 'Recarregar viagem', exact: true }).click();
-  await expect(mb.locator('.mb-operacao')).toContainText('Viagem carregada no aparelho');
+  await mb.locator('[data-v="atualizar"]').click();
+  await expect(mb.locator('.mb-operacao')).toContainText('Pedidos carregados neste aparelho');
   await mb.locator('.mb-operacao').screenshot({ path: `/workspace/scratch/mineiro-rotas-motoboy-${test.info().project.name}.png` });
   let liberarConsulta, consultaIniciada;
   const respostaAntiga = new Promise((resolve) => {
@@ -146,9 +146,9 @@ test('viagem da equipe ao celular: carrega, sai em conjunto, confirma offline e 
     await liberarResposta;
     await rota.fulfill({ response: resposta });
   });
-  await mb.getByRole('button', { name: 'Atualizar', exact: true }).click();
+  await mb.locator('[data-act="atualizar"]').click();
   await respostaAntiga;
-  await mb.getByRole('button', { name: 'Registrar saída da viagem', exact: true }).click();
+  await mb.locator('[data-v="sair"]').click();
   try {
     await expect.poll(() => sql(`select estado from entrega_viagens where id='${id}'`)).toBe('em_rota');
   } finally {
@@ -174,12 +174,12 @@ test('viagem da equipe ao celular: carrega, sai em conjunto, confirma offline e 
   await mc.setOffline(false);
   await mb.getByRole('button', { name: 'Sincronizar agora' }).click();
   await expect(mb.locator('[data-sync]')).toHaveText('Tudo sincronizado');
-  await expect(mb.getByRole('button', { name: 'Retornei à loja' })).toBeEnabled();
+  await expect(mb.locator('[data-v="retornar"]')).toBeEnabled();
   expect(sql(`select estado from entrega_viagens where id='${id}'`)).toBe('retornando');
-  await mb.getByRole('button', { name: 'Retornei à loja' }).click();
+  await mb.locator('[data-v="retornar"]').click();
   await expect(mb.locator('.mb-operacao')).toContainText('Você informou que está na loja');
   expect(sql(`select estado from entrega_viagens where id='${id}'`)).toBe('encerrada');
-  await painel.getByRole('button', { name: 'Recarregar viagens' }).click();
+  await painel.locator('[data-r="atualizar"]').click();
   await expect(painel.locator(`[data-r-viagem="${id}"]`)).toHaveCount(0);
   await mc.close();
 });
@@ -273,7 +273,7 @@ test('cliente recebe mensagem de pronto para sair e regras do painel preservam r
   await painel.getByText('Configurar rotas', { exact: true }).click();
   const capacidade = painel.getByLabel('Pedidos por saída', { exact: true });
   await capacidade.fill('2');
-  await painel.getByRole('button', { name: 'Recarregar viagens' }).click();
+  await painel.locator('[data-r="atualizar"]').click();
   await expect(capacidade).toHaveValue('2');
   await painel.getByRole('button', { name: 'Salvar configuração' }).click();
   await expect(painel.locator('.rt-aviso')).toContainText('Operação registrada');
@@ -289,7 +289,7 @@ test('primeiro uso orienta a configuração sem exigir conhecimento técnico', a
   await page.context().grantPermissions(['geolocation']);
   await page.context().setGeolocation({ latitude: -23.5409, longitude: -46.3129, accuracy: 10 });
   const painel = await central(page);
-  await expect(painel.locator('.rt-proximo')).toContainText('Vamos preparar as rotas da loja');
+  await expect(painel.locator('.rt-proximo')).toContainText('O despacho automático está pausado');
   await expect(painel.getByRole('button', { name: 'Sugerir viagens' })).toHaveCount(0);
   await painel.getByRole('button', { name: 'Preparar rotas da loja' }).click();
   await expect(painel.getByLabel('Pedidos por saída', { exact: true })).toBeFocused();
@@ -300,11 +300,11 @@ test('primeiro uso orienta a configuração sem exigir conhecimento técnico', a
   await painel.getByRole('button', { name: 'Confirmar saída na loja' }).click();
   await expect(painel.getByRole('button', { name: 'Confirmar saída na loja' })).toHaveCount(0);
   await painel.getByRole('button', { name: 'Salvar configuração' }).click();
-  await expect(painel.locator('.rt-modo')).toHaveText('Sugestões com liberação pela equipe');
+  await expect(painel.locator('.rt-modo')).toHaveText('Rotas com liberação pela equipe');
   await expect(painel.locator('.rt-proximo')).toContainText('Na aba Pedidos, use “Marcar pronto”');
   expect(sql("select regras->>'maxPedidos' from entrega_rotas_config where id=1")).toBe('2');
   pedido('Próxima viagem simples');
-  await painel.getByRole('button', { name: 'Recarregar viagens' }).click();
+  await painel.locator('[data-r="atualizar"]').click();
   await expect(painel.locator('.rt-proximo')).toContainText('Aguardando um motoboy disponível na loja');
   await expect(painel.getByText('Entregador das viagens', { exact: true })).not.toBeVisible();
   await painel.getByText('Quem está na loja?', { exact: true }).click();

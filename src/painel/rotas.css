@@ -384,3 +384,66 @@
 .rt-equipe {
   margin-bottom: 18px;
 }
+
+.rt-resumo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 20px;
+}
+.rt-resumo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: var(--noite);
+}
+.rt-resumo b {
+  color: var(--osso);
+  font-size: 24px;
+  line-height: 1.2;
+}
+.rt-resumo span,
+.rt-turno .rt-secao-cab > span {
+  color: var(--osso-2);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.rt-turno .rt-pessoas {
+  margin: 12px 0 20px;
+}
+.rt-central .rt-quantidade {
+  margin-top: 12px;
+  color: var(--osso);
+  font-size: 15px;
+  font-weight: 600;
+}
+.rt-central .rt-reserva {
+  margin-top: 10px;
+  font-size: 11px;
+}
+.rt-despacho-config,
+.rt-avancado {
+  margin-top: 12px;
+  border-top: 1px solid var(--borda);
+}
+.rt-despacho-config > p,
+.rt-avancado > p {
+  margin: 0 0 12px;
+}
+.rt-avancado > .pn-btn {
+  margin-bottom: 12px;
+}
+.rt-central :where(.rt-resumo, .rt-operacao, .rt-turno, .rt-viagem) {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 440px) {
+  .rt-resumo {
+    gap: 6px;
+  }
+  .rt-resumo > div {
+    padding: 10px;
+  }
+}

@@ -123,3 +123,10 @@
   width: 100%;
   justify-content: center;
 }
+.mb-operacao .mb-reserva {
+  font-size: 11px;
+  margin: 8px 0 14px;
+}
+.mb-operacao {
+  overflow-wrap: anywhere;
+}

@@ -59,7 +59,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
   let dados = null,
     dias = 1,
     filtro = 'todos',
-    etapa = 'atribuir',
+    etapa = 'todos',
     busca = '',
     limite = 12;
   let erro = '',
@@ -136,7 +136,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     const total = c.entregue + c.rota + c.espera;
     const cabecalho = `
       <header class="pn-ent-cab">
-        <div><p class="pn-ent-kicker">${ic('moto')} Operação de entregas</p><h2>Entregadores<span>.</span></h2><p class="pn-ent-sub">Cada saída, cada confirmação. Tudo à vista.</p></div>
+        <div><p class="pn-ent-kicker">${ic('moto')} Operação de entregas</p><h2>Entregadores<span>.</span></h2><p class="pn-ent-sub">Marcou pronto? O próximo motoboy recebe a saída.</p></div>
         <div class="pn-ent-cab-acoes"><label class="pn-ent-periodo"><span>Período</span><select data-e-periodo data-e-key="periodo">${[
           [1, 'Hoje'],
           [7, 'Últimos 7 dias'],
@@ -145,13 +145,15 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
           .map(([v, t]) => `<option value="${v}" ${dias === v ? 'selected' : ''}>${t}</option>`)
           .join(
             ''
-          )}</select></label><button class="pn-btn" type="button" data-e="organizar" data-e-key="organizar" ${!dados ? 'disabled' : ''}>${ic('moto')} Organizar saída</button><button class="pn-btn pn-ent-atualizar" type="button" data-e="atualizar" data-e-key="atualizar" ${ocupado ? 'disabled' : ''}>${ic('relogio')} Atualizar</button></div>
+          )}</select></label><button class="pn-btn" type="button" data-e="organizar" data-e-key="organizar" ${!dados ? 'disabled' : ''}>${ic('moto')} Ver saídas</button><button class="pn-btn pn-ent-atualizar" type="button" data-e="atualizar" data-e-key="atualizar" ${ocupado ? 'disabled' : ''}>${ic('relogio')} Atualizar</button></div>
       </header>
       <div class="pn-ent-vivo"><span class="pn-ent-conexao" data-e-conexao>Consultando servidor…</span><span>Atualização automática a cada 15 s</span><span data-e-atualizado></span></div>
     `;
-    const corpo = `<div class="pn-entregadores${acaoInicial ? ' pn-entregadores--acao' : ''}">
-      ${!acaoInicial ? cabecalho : ''}
+    const corpo = `<div class="pn-entregadores">
+      ${cabecalho}
       <p class="pn-ent-erro" role="alert" ${erro ? '' : 'hidden'}>${ic('info')}${esc(erro)}</p><p class="pn-ent-aviso" role="status" aria-live="polite" ${aviso ? '' : 'hidden'}><span>${esc(aviso)}</span>${atribuicaoConfirmada && etapa !== 'saida' ? '<button class="pn-btn" type="button" data-e="ver-atribuidos">Ir para registrar saída</button>' : ''}</p>
+      ${dados ? '<div data-planejamento-slot></div>' : ''}
+      <details class="pn-ent-manual" data-e-detalhe="manual"><summary>Controle manual e histórico</summary><p class="pn-ent-manual-dica">Use para conferir o histórico ou resolver uma exceção. Na rotina, basta marcar o pedido pronto e acompanhar a saída acima.</p>
       ${
         dados
           ? `
@@ -188,7 +190,6 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       `
           : ''
       }
-      ${acaoInicial ? cabecalho : ''}
       <section class="pn-ent-kpis" aria-label="Resumo das entregas">${kpi('rota', 'Em entrega', 'moto', 'Acompanhar em andamento')}${kpi('espera', 'Aguardando saída', 'sacola', 'Preparar próxima saída')}${kpi('entregue', 'Concluídas', 'check', 'Recebidas no período')}${kpi('atencao', 'Precisam de atenção', 'sino', 'Sem atribuição ou tempo alto')}</section>
       ${
         !dados
@@ -201,10 +202,10 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
           .map((e) => entregadorHTML(e))
           .join('') || '<p class="pn-ent-vazio">Nenhum entregador cadastrado. Administradores podem cadastrar em Usuários.</p>'
       }</div></section>
-      <div data-planejamento-slot></div>
       <footer class="pn-ent-rodape"><p>${ic('info')} Confirmações offline aparecem após o envio. Última comunicação não indica localização ou disponibilidade.</p><details data-e-detalhe="indicadores"><summary>Como os indicadores são calculados</summary><p>Período a partir de ${esc(hora(dados.inicio))}; o dia operacional vira às 4h. Entregas abertas de qualquer data continuam visíveis. A média usa a saída e o horário consistente do celular; exclui baixas manuais e histórico anterior. O relógio do aparelho pode afetar a medida. Concluídas são contadas uma vez no recebimento pelo servidor; o histórico anterior usa o horário de conclusão já gravado.</p><p>Taxas concluídas somam as taxas de entrega dos pedidos atribuídos ao motoboy e concluídos no período, inclusive baixas manuais. Em aberto inclui pedidos atribuídos de qualquer data. Cancelamentos e entregas sem vínculo individual ficam fora. Taxas não registradas são sinalizadas; o total não presume um valor para elas.</p></details></footer>`
       }
       ${historico ? historicoHTML() : ''}
+      </details>
     </div>`;
     slots.forEach((el, i) => {
       el.innerHTML = corpo;
@@ -352,6 +353,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       confirmacao_posterior: 'Confirmação posterior preservada',
       cancelamento_conferido: 'Cancelamento conferido',
       viagem_desfeita: 'Viagem desfeita para replanejamento',
+      reserva_expirada: 'Reserva expirou antes da saída',
       planejamento_liberado: 'Pedido liberado para planejamento',
       destino_conferido: 'Ponto de entrega conferido pela equipe'
     };
@@ -457,6 +459,10 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     render();
   }
   function mostrarCentral() {
+    for (const el of slots) {
+      const manual = el.querySelector('[data-e-detalhe="manual"]');
+      if (manual) manual.open = true;
+    }
     slots
       .find((el) => el.offsetParent !== null)
       ?.querySelector('.pn-ent-central')

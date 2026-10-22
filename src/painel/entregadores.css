@@ -1184,6 +1184,42 @@
 .pn-entregadores--acao :is(.pn-ent-filtro, .pn-ent-ajustes, .pn-ent-periodo, [data-e='retorno']) {
   display: none;
 }
+.pn-ent-manual {
+  margin-top: 24px;
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  padding: 0 18px;
+  min-width: 0;
+}
+.pn-ent-manual > summary {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--fio);
+  font-size: 14px;
+}
+.pn-ent-manual > summary::before {
+  content: '+';
+  font-size: 20px;
+}
+.pn-ent-manual[open] > summary::before {
+  content: '−';
+}
+.pn-ent-manual > summary:focus-visible {
+  outline: 2px solid var(--fio);
+  outline-offset: 3px;
+}
+.pn-ent-manual-dica {
+  color: var(--osso-2);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+.pn-ent-manual[open] {
+  padding-bottom: 18px;
+}
 @media (max-width: 640px) {
   .pn-ent-atribuir-pedido {
     grid-template-columns: minmax(0, 1fr);

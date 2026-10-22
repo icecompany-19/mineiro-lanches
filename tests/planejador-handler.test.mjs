@@ -120,3 +120,24 @@ test('seleção duplicada, pedido inválido e tentativa de automatizar pelo nave
   assert.equal((await enviar({ acao: 'automatico' })).status, 403);
   assert.equal(chamadas.length, 0);
 });
+
+test('despacho individual devolve resultado do banco sem chave, matriz ou chamada de mapas', async () => {
+  const chamadas = [];
+  const resultado = { estado: 'concluida', tipoDespacho: 'individual', planos: 0, reservadas: 1, expiradas: 0 };
+  const handler = criarPlanejador({
+    supabaseUrl: 'https://db.invalid',
+    serviceKey: 'privada-servidor',
+    fetcher: async (url, op) => {
+      chamadas.push(String(url));
+      assert(String(url).endsWith('/iniciar_planejamento_entregas'));
+      assert.equal(JSON.parse(op.body).p_token, 'token-job');
+      return json(resultado);
+    }
+  });
+  const r = await handler(new Request('https://local.invalid', {
+    method: 'POST', body: JSON.stringify({ acao: 'automatico', tokenJob: 'token-job' })
+  }));
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), resultado);
+  assert.equal(chamadas.length, 1);
+});

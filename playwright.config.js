@@ -18,7 +18,11 @@ export default defineConfig({
     { name: 'celular', use: { ...devices['Pixel 7'] }, testIgnore: E2E },
     { name: 'desktop', use: { viewport: { width: 1280, height: 800 } }, testIgnore: E2E },
     // Chrome e Safari no iPhone usam WebKit; o Chromium do Android não reproduz o layout do dialog.
-    { name: 'iphone', testMatch: /(?:ficha|cotacao-entrega|usuarios|mercado-pago|produtos)\.spec\.js$/, use: { ...devices['iPhone 13'], browserName: 'webkit', launchOptions: { executablePath: undefined } } },
+    {
+      name: 'iphone',
+      testMatch: /(?:ficha|cotacao-entrega|usuarios|mercado-pago|produtos|despacho)\.spec\.js$/,
+      use: { ...devices['iPhone 13'], browserName: 'webkit', launchOptions: { executablePath: undefined } }
+    },
     // fluxo completo com dois aparelhos ao mesmo tempo (celular do cliente + computador do painel): o próprio teste abre os dois
     { name: 'e2e', testMatch: E2E, use: { viewport: { width: 1280, height: 800 } } }
   ],

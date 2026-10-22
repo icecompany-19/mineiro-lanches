@@ -9,8 +9,9 @@ const SITUACOES = {
   em_rota: 'Em rota',
   retornando: 'Retornando'
 };
-const minuto = (s) => `${Math.ceil((s || 0) / 60)} min`;
-const distancia = (m) => `${((m || 0) / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km`;
+const minuto = (s) => (Number.isFinite(s) ? `${Math.ceil(s / 60)} min` : 'Tempo não calculado');
+const distancia = (m) =>
+  Number.isFinite(m) ? `${(m / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km` : 'Distância não calculada';
 
 export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
   const esc = window.ML.fmt.esc,
@@ -33,6 +34,15 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
   const agora = () => Date.now() + desvio;
   const elegiveis = () => (dados?.entregadores || []).filter((e) => e.elegivel);
   const viagemDoPedido = (id) => (dados?.viagens || []).find((v) => v.paradas.some((p) => p.id === id));
+  const quantidade = (n) => `${n} ${n === 1 ? 'pedido' : 'pedidos'}`;
+  const estimativa = (v) =>
+    Number.isFinite(v.metros) && Number.isFinite(v.segundos)
+      ? `${distancia(v.metros)} com retorno · ${minuto(v.segundos)} estimados`
+      : 'Distância e tempo não calculados';
+  function despachoHTML() {
+    const c = dados.config;
+    return `<details class="rt-despacho-config" data-r-detail="despacho"><summary>Ajustar despacho automático</summary><p>O despacho individual envia um pedido por saída ao próximo motoboy disponível, sem depender do cálculo de mapas.</p><p>Os pedidos já reservados ou em entrega continuam com o mesmo motoboy ao pausar a automação.</p><button type="button" class="pn-btn" data-r="despacho" data-r-key="despacho" ${ocupado || (!c.despachoIndividualAtivo && !c.automacaoDisponivel) ? 'disabled' : ''}>${c.despachoIndividualAtivo ? 'Pausar despacho individual' : 'Ativar despacho individual'}</button>${!c.automacaoDisponivel ? '<p>O agendamento automático precisa estar disponível no servidor.</p>' : ''}</details>`;
+  }
   function configHTML() {
     const c = dados.config,
       r = rascunho || { ...c.regras, modo: c.modo, limite: c.limiteCreditosDia, versao: c.versao };
@@ -66,10 +76,10 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
       <div class="rt-acoes"><button type="submit" class="pn-btn pn-ent-prim" ${ocupado ? 'disabled' : ''}>Salvar configuração</button><button type="button" class="pn-btn" data-r="verificar" ${ocupado ? 'disabled' : ''}>Verificar mapas</button></div>
     </form></details>`;
   }
-  function entregadorHTML(e) {
+  function entregadorHTML(e, ajustes = true) {
     const recente = e.ultimaEm && agora() - Date.parse(e.ultimaEm) < 120000;
-    return `<article class="rt-pessoa"><div><b>${esc(e.nome)}</b><span class="rt-situacao ${e.elegivel ? 'rt-situacao--livre' : ''}">${esc(e.ativo ? SITUACOES[e.situacao] || 'Indisponível' : 'Cadastro inativo')}</span></div><p>${e.elegivel ? 'Disponível para uma viagem' : !recente ? 'Sem comunicação recente' : e.qtdAbertas && !e.viagemId ? 'Tem pedidos atribuídos abertos' : 'A disponibilidade considera o turno e a viagem atual.'}</p>${
-      e.ativo && !e.viagemId
+    return `<article class="rt-pessoa" data-r-entregador="${esc(e.id)}"><div><b>${esc(e.nome)}</b><span class="rt-situacao ${e.elegivel ? 'rt-situacao--livre' : ''}">${esc(e.ativo ? SITUACOES[e.situacao] || 'Indisponível' : 'Cadastro inativo')}</span></div><p>${e.elegivel ? 'Recebe a próxima saída automaticamente' : e.qtdAbertas && !e.viagemId ? 'Tem pedidos atribuídos abertos' : !dados.config.despachoIndividualAtivo && !recente ? 'Sem comunicação recente para receber uma rota' : e.situacao === 'fora' ? 'Precisa começar o turno no celular' : e.situacao === 'pausado' ? 'Precisa informar disponibilidade no celular' : 'Acompanhe a saída e o retorno abaixo.'}</p>${
+      ajustes && e.ativo && !e.viagemId
         ? `<details data-r-detail="pessoa-${esc(e.id)}"><summary>Registrar situação</summary><form data-r-form="situacao" data-r-id="${esc(e.id)}"><label>Situação<select name="r_situacao" data-r-field="estado-${esc(e.id)}" data-r-key="estado-${esc(e.id)}">${[
             ['na_loja', 'Na loja'],
             ['pausado', 'Pausado'],
@@ -83,7 +93,7 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
     }</article>`;
   }
   function paradasHTML(v) {
-    return `<ol class="rt-paradas">${v.paradas.map((p) => `<li><span class="rt-ordem">${p.ordem}</span><div><b>${esc(numero(p.numero))} · ${esc(p.nome)}</b><p>${esc(p.endereco)}</p><span>${p.status === 'entregue' ? 'Entregue' : p.status === 'cancelado' ? 'Cancelado' : `Chegada estimada em ${minuto(p.chegadaSeg)} após a saída`}</span></div></li>`).join('')}</ol>`;
+    return `<ol class="rt-paradas">${v.paradas.map((p) => `<li><span class="rt-ordem">${p.ordem}</span><div><b>${esc(numero(p.numero))} · ${esc(p.nome)}</b><p>${esc(p.endereco)}</p><span>${p.status === 'entregue' ? 'Entregue' : p.status === 'cancelado' ? 'Cancelado' : Number.isFinite(p.chegadaSeg) ? `Chegada estimada em ${minuto(p.chegadaSeg)} após a saída` : 'Tempo de chegada não calculado'}</span></div></li>`).join('')}</ol>`;
   }
   function mapaHTML(v) {
     return `<button type="button" class="pn-btn" data-r="mapa" data-r-id="${esc(v.id)}" ${!v.geometria || !navigator.onLine ? 'disabled' : ''}>Ver percurso no mapa</button>`;
@@ -100,10 +110,12 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
       )}</select></label><div class="rt-acoes">${mapaHTML(p)}<button type="button" class="pn-btn pn-ent-prim" data-r="reservar" data-r-id="${esc(p.id)}" data-r-expira="${esc(p.validoAte)}" ${ocupado ? 'disabled' : ''}>Vincular viagem</button></div></article>`;
   }
   function viagemHTML(v) {
-    return `<article class="rt-viagem" data-r-viagem="${esc(v.id)}" data-r-key="viagem-${esc(v.id)}" tabindex="-1"><div class="rt-viagem-cab"><div><span class="rt-kicker">${esc(SITUACOES[v.estado] || v.estado)}</span><h4>${esc(v.motoboyNome)}</h4></div><span>${v.automatica ? 'Vínculo automático' : 'Liberada pela equipe'}</span></div><p class="rt-estimativa">${distancia(v.metros)} com retorno · ${minuto(v.segundos)} estimados</p>${paradasHTML(v)}
+    return `<article class="rt-viagem" data-r-viagem="${esc(v.id)}" data-r-tipo="${esc(v.tipoDespacho || 'rotas')}" data-r-key="viagem-${esc(v.id)}" tabindex="-1"><div class="rt-viagem-cab"><div><span class="rt-kicker">${esc(SITUACOES[v.estado] || v.estado)}</span><h4>${esc(v.motoboyNome)}</h4></div><span>${v.tipoDespacho === 'individual' ? 'Despacho individual automático' : v.automatica ? 'Vínculo automático' : 'Liberada pela equipe'}</span></div><p class="rt-quantidade">${quantidade(v.paradas.length)} nesta saída</p><p class="rt-estimativa">${estimativa(v)}</p>${paradasHTML(v)}
       ${v.revisaoPendente ? '<p class="rt-atencao">Um pedido mudou. Desfaça e recalcule esta viagem antes de sair.</p>' : ''}
-      ${v.estado === 'reservada' ? `<p>${v.carregadaVersao === v.versao ? 'Viagem carregada no celular do motoboy.' : 'Aguardando o motoboy abrir a tela conectado e carregar esta viagem.'}</p>` : ''}
-      <div class="rt-acoes">${mapaHTML(v)}${v.estado === 'reservada' ? `<button type="button" class="pn-btn pn-ent-prim" data-r="sair" data-r-id="${esc(v.id)}" ${ocupado || v.revisaoPendente || v.carregadaVersao !== v.versao ? 'disabled' : ''}>Registrar saída da viagem</button>` : ''}</div>
+      ${v.estado === 'reservada' ? `<p>${v.carregadaVersao === v.versao ? `Pedidos carregados. O motoboy deve tocar em “Sair com ${quantidade(v.paradas.length)}” quando sair da loja.` : 'Aguardando o motoboy abrir a tela conectado e carregar os pedidos.'}</p>${v.reservaAte ? `<p class="rt-reserva" data-r-reserva="${esc(v.reservaAte)}">Reserva até ${esc(new Date(v.reservaAte).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }))}. Sem saída, o pedido volta à fila e o motoboy fica pausado.</p>` : ''}` : ''}
+      ${v.estado === 'retornando' ? '<p>Entregas sincronizadas. O motoboy deve tocar em “Voltei à loja” quando retornar.</p>' : ''}
+      ${v.geometria ? `<div class="rt-acoes">${mapaHTML(v)}</div>` : ''}
+      ${v.estado === 'reservada' ? `<details data-r-detail="saida-${esc(v.id)}"><summary>Registrar saída pela equipe</summary><p>Use somente após conferir a saída física do motoboy.</p><button type="button" class="pn-btn" data-r="sair" data-r-id="${esc(v.id)}" ${ocupado || v.revisaoPendente || v.carregadaVersao !== v.versao ? 'disabled' : ''}>Registrar saída da viagem</button></details>` : ''}
       ${v.estado === 'reservada' ? `<details data-r-detail="desfazer-${esc(v.id)}"><summary>Replanejar esta viagem</summary><form data-r-form="desfazer" data-r-id="${esc(v.id)}"><p>Os pedidos continuarão prontos e ficarão pausados na seleção automática. Você poderá calcular a seleção corrigida ou liberá-los novamente.</p><label>Motivo<input name="r_motivo" data-r-field="viagem-${esc(v.id)}" data-r-key="viagem-${esc(v.id)}" required maxlength="200" value="${esc(campos.get('viagem-' + v.id) || '')}"></label><button class="pn-btn" ${ocupado ? 'disabled' : ''}>Desfazer viagem para replanejar</button></form></details>` : ''}
       ${v.estado === 'retornando' ? `<details data-r-detail="retorno-${esc(v.id)}"><summary>Conferir retorno à loja</summary><form data-r-form="retornar" data-r-id="${esc(v.id)}"><p>Confirme presencialmente o retorno e peça ao motoboy para conferir “Tudo sincronizado” no celular.</p><label>Motivo da conferência<input name="r_motivo" data-r-field="retorno-${esc(v.id)}" data-r-key="retorno-${esc(v.id)}" required maxlength="200" value="${esc(campos.get('retorno-' + v.id) || '')}"></label><button class="pn-btn" ${ocupado ? 'disabled' : ''}>Registrar retorno conferido</button></form></details>` : ''}
     </article>`;
@@ -138,8 +150,17 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
     return `<div class="rt-execucao ${e.estado === 'erro' || grupos.size ? 'rt-atencao' : ''}"><p>${e.estado === 'calculando' ? 'Calculando sugestões de viagem…' : e.estado === 'erro' ? mensagemRota({ message: e.erro }) : e.verificacao ? 'Serviço de mapas verificado.' : 'Último cálculo concluído.'}</p>${[...grupos].map(([k, n]) => `<p>${n} ${esc(motivos[k] || 'pedido precisa de conferência')}.</p>`).join('')}</div>`;
   }
   function proximoPassoHTML() {
+    if (dados.config.despachoIndividualAtivo) {
+      if (dados.viagens.some((v) => v.estado === 'reservada'))
+        return '<div class="rt-proximo" data-r-proximo="saida"><b>O pedido já tem motoboy</b><p>Ele confere a embalagem e registra a saída pelo celular. Você pode continuar preparando os próximos pedidos.</p></div>';
+      if (!dados.prontos.length)
+        return '<div class="rt-proximo" data-r-proximo="pronto"><b>Seu próximo passo é marcar o pedido pronto</b><p>Quando estiver embalado, use “Marcar pronto” na aba Pedidos. O sistema escolhe o próximo motoboy disponível.</p></div>';
+      if (!elegiveis().length)
+        return '<div class="rt-proximo" data-r-proximo="motoboy"><b>Aguardando um motoboy disponível</b><p>Ao chegar à loja, ele deve abrir o celular e tocar em “Começar turno” ou “Voltei à loja”. Você não precisa atribuir cada pedido.</p></div>';
+      return '<div class="rt-proximo" data-r-proximo="automatico"><b>O sistema está preparando a próxima saída</b><p>Os pedidos prontos seguem pela ordem de espera, um por saída. O motoboy aparecerá aqui automaticamente.</p></div>';
+    }
     if (dados.config.modo === 'desligado')
-      return `<div class="rt-proximo"><b>Vamos preparar as rotas da loja</b><p>Isso é feito uma vez. Confirme a saída estando na loja e informe quantos pedidos o motoboy pode levar e os tempos da operação.</p><button type="button" class="pn-btn pn-ent-prim" data-r="preparar">Preparar rotas da loja</button></div>`;
+      return '<div class="rt-proximo" data-r-proximo="pausado"><b>O despacho automático está pausado</b><p>Ative o despacho individual para enviar um pedido por saída, sem escolher motoboy nem configurar mapas.</p><button type="button" class="pn-btn" data-r="abrir-despacho">Ajustar despacho automático</button></div>';
     if (dados.viagens.some((v) => v.estado === 'reservada'))
       return '<div class="rt-proximo"><b>Agora, confira os pedidos da viagem</b><p>Peça ao motoboy para abrir a tela no celular. Quando aparecer “Viagem carregada”, registre a saída no cartão da viagem.</p></div>';
     if (dados.viagens.some((v) => v.estado === 'retornando'))
@@ -158,20 +179,21 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
     for (const [i, host] of hosts.entries()) {
       const foco = host.contains(document.activeElement) ? document.activeElement.dataset.rKey : null;
       const detalhes = [...host.querySelectorAll('details[open]')].map((d) => d.dataset.rDetail);
-      host.innerHTML = `<section class="rt-central" aria-labelledby="rt-t-${i}"><div class="rt-cab"><div><p class="rt-kicker">Pronto para sair</p><h3 id="rt-t-${i}" tabindex="-1" data-r-key="titulo">Viagens e rotas</h3><p>Agrupe pedidos pelo percurso e acompanhe a saída e o retorno.</p></div><button type="button" class="pn-btn" data-r="atualizar" ${ocupado ? 'disabled' : ''}>Recarregar viagens</button></div><p class="rt-erro" role="alert" tabindex="-1" data-r-key="erro" ${erro ? '' : 'hidden'}>${esc(erro)}</p><p class="rt-aviso" role="status" ${aviso ? '' : 'hidden'}>${esc(aviso)}</p>${
+      const noTurno = (dados?.entregadores || []).filter((e) => e.ativo && (e.declarado !== 'fora' || e.viagemId || e.qtdAbertas));
+      host.innerHTML = `<section class="rt-central" data-r-central aria-labelledby="rt-t-${i}"><div class="rt-cab"><div><p class="rt-kicker">Operação de entregas</p><h3 id="rt-t-${i}" tabindex="-1" data-r-key="titulo">Saídas da loja</h3><p>Marque o pedido pronto. O sistema organiza a saída.</p></div><button type="button" class="pn-btn" data-r="atualizar" ${ocupado ? 'disabled' : ''}>Atualizar saídas</button></div><p class="rt-erro" role="alert" tabindex="-1" data-r-key="erro" ${erro ? '' : 'hidden'}>${esc(erro)}</p><p class="rt-aviso" role="status" ${aviso ? '' : 'hidden'}>${esc(aviso)}</p>${
         !dados
           ? '<p>Consultando planejamento…</p>'
           : `
-        <div class="rt-operacao"><span class="rt-modo">${dados.config.modo === 'automatico' ? 'Vínculo automático ativo' : dados.config.modo === 'assistido' ? 'Sugestões com liberação pela equipe' : 'Planejamento desligado'}</span><span>${elegiveis().length} ${elegiveis().length === 1 ? 'entregador disponível' : 'entregadores disponíveis'}</span></div>${proximoPassoHTML()}${configHTML()}
-        <div class="rt-viagens rt-viagens--ativas">${dados.viagens.map(viagemHTML).join('')}</div>
-        ${dados.config.modo !== 'desligado' ? `<div class="rt-viagens rt-viagens--sugestoes">${dados.planos.map(planoHTML).join('')}</div>` : ''}
-        ${
-          dados.config.modo !== 'desligado'
-            ? `<details class="rt-equipe" data-r-detail="equipe"><summary>Quem está na loja?</summary><div class="rt-pessoas">${dados.entregadores.map(entregadorHTML).join('')}</div></details>
-        ${prontosHTML()}<div class="rt-acoes rt-calcular"><button type="button" class="pn-btn pn-ent-prim" data-r="calcular" ${ocupado || !elegiveis().length || !dados.prontos.some((p) => p.pontoValido) ? 'disabled' : ''}>${ocupado ? 'Aguarde…' : selecionados.length ? 'Calcular seleção' : 'Sugerir viagens'}</button><p>Confira a sequência antes de liberar. O mapa mostra o percurso previsto pelas ruas.</p></div>
-        ${execucaoHTML()}`
-            : ''
-        }`
+        <div class="rt-operacao"><span class="rt-modo" data-r-modo>${dados.config.despachoIndividualAtivo ? 'Despacho individual automático ativo' : dados.config.modo === 'automatico' ? 'Vínculo automático de rotas ativo' : dados.config.modo === 'assistido' ? 'Rotas com liberação pela equipe' : 'Despacho automático pausado'}</span></div>
+        <div class="rt-resumo" aria-label="Situação das saídas"><div><b data-r-disponiveis>${elegiveis().length}</b><span>motoboys disponíveis</span></div><div><b data-r-prontos-total>${dados.prontos.length}</b><span>prontos sem saída</span></div><div><b data-r-viagens-total>${dados.viagens.filter((v) => v.estado === 'em_rota').length}</b><span>saídas em entrega</span></div></div>
+        ${proximoPassoHTML()}
+        <div class="rt-viagens rt-viagens--ativas" data-r-saidas>${dados.viagens.map(viagemHTML).join('') || '<p class="rt-vazio">Nenhuma saída em andamento.</p>'}</div>
+        <section class="rt-turno" aria-label="Motoboys do turno"><div class="rt-secao-cab"><h4>Motoboys do turno</h4><span>Presença informada na loja</span></div><div class="rt-pessoas">${noTurno.map((e) => entregadorHTML(e, false)).join('') || '<p class="rt-vazio">O motoboy deve tocar em “Começar turno” no celular ao chegar à loja.</p>'}</div></section>
+        ${despachoHTML()}
+        <details class="rt-avancado" data-r-detail="rotas"><summary>Viagens e rotas: opções avançadas</summary><p>Agrupe vários pedidos pelas ruas após configurar a capacidade e os limites da operação. O despacho individual continua disponível sem mapas.</p>${dados.config.modo === 'desligado' ? '<button type="button" class="pn-btn" data-r="preparar">Preparar rotas da loja</button>' : ''}${configHTML()}
+          <details class="rt-equipe" data-r-detail="equipe"><summary>Quem está na loja?</summary><div class="rt-pessoas">${dados.entregadores.map((e) => entregadorHTML(e)).join('')}</div></details>
+          ${dados.config.modo !== 'desligado' ? `<div class="rt-viagens rt-viagens--sugestoes">${dados.planos.map(planoHTML).join('')}</div>${prontosHTML()}<div class="rt-acoes rt-calcular"><button type="button" class="pn-btn pn-ent-prim" data-r="calcular" ${ocupado || !elegiveis().length || !dados.prontos.some((p) => p.pontoValido) ? 'disabled' : ''}>${ocupado ? 'Aguarde…' : selecionados.length ? 'Calcular seleção' : 'Sugerir viagens'}</button><p>Confira a sequência antes de liberar. O mapa mostra o percurso previsto pelas ruas.</p></div>${execucaoHTML()}` : ''}
+        </details>`
       }</section>`;
       for (const d of host.querySelectorAll('details[data-r-detail]')) if (detalhes.includes(d.dataset.rDetail)) d.open = true;
       if (foco) host.querySelector(`[data-r-key="${CSS.escape(foco)}"]`)?.focus({ preventScroll: true });
@@ -263,6 +285,27 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
         return;
       case 'atualizar':
         return atualizar();
+      case 'abrir-despacho':
+        for (const host of hosts) {
+          const detalhe = host.querySelector('[data-r-detail="despacho"]');
+          if (detalhe) detalhe.open = true;
+        }
+        focarElemento('[data-r="despacho"]');
+        return;
+      case 'despacho':
+        return escrever(async () => {
+          const ativar = !dados.config.despachoIndividualAtivo;
+          await consultar('configurar_despacho_entregas', {
+            p_ativo: ativar,
+            p_versao: dados.config.versao,
+            p_janela_agrupamento_seg: dados.config.janelaAgrupamentoSeg || 0,
+            p_prazo_reserva_seg: dados.config.prazoReservaSeg || 300
+          });
+          aviso = ativar
+            ? 'Despacho individual ativado. O motoboy deve começar o turno no celular.'
+            : 'Despacho individual pausado. As saídas existentes foram preservadas.';
+          return false;
+        });
       case 'calcular':
         return escrever(async () => {
           const r = await calcularRotas({ acao: 'calcular', pedidos: selecionados.length ? selecionados : null, ordemFixa });

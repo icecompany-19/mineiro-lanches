@@ -7,6 +7,10 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import { resolve, extname, sep } from 'node:path';
 
 const raiz = resolve(import.meta.dirname, '..');
+const guia = process.argv[2] || 'pagamentos';
+if (!['pagamentos', 'entregas'].includes(guia)) throw new Error('Use pagamentos ou entregas.');
+const entrada = guia === 'entregas' ? 'guia-entregas-automaticas.html' : 'guia-pagamentos.html';
+const saida = guia === 'entregas' ? 'guia-entregas-automaticas-mineiro-lanche.pdf' : 'guia-pagamentos-mineiro-lanche.pdf';
 const tipos = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.woff2': 'font/woff2' };
 const servidor = createServer((req, res) => {
   const arquivo = resolve(raiz, '.' + new URL(req.url, 'http://localhost').pathname);
@@ -21,7 +25,7 @@ let navegador;
 try {
   navegador = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });
   const pagina = await navegador.newPage();
-  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/docs/guias/guia-pagamentos.html`);
+  await pagina.goto(`http://127.0.0.1:${servidor.address().port}/docs/guias/${entrada}`);
   await pagina.evaluate(async () => {
     await document.fonts.ready;
     await Promise.all([...document.images].map(i => i.decode()));
@@ -36,7 +40,7 @@ try {
   }));
   if (paginasComProblema.length) throw new Error('Ajuste o HTML antes de gerar o PDF: ' + paginasComProblema.join('; '));
   mkdirSync(resolve(raiz, 'public/guias'), { recursive: true });
-  const destino = resolve(raiz, 'public/guias/guia-pagamentos-mineiro-lanche.pdf');
+  const destino = resolve(raiz, 'public/guias', saida);
   await pagina.pdf({ path: destino, preferCSSPageSize: true, printBackground: true, tagged: true, outline: true });
   console.log(destino);
 } finally {
