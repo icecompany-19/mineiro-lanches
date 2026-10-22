@@ -13,7 +13,7 @@ Fonte: conversa de WhatsApp com Cauan Oliveira, de 06 a 12/10/2026, exportada em
 | Endereço | Rua Eliziel Alves Costa, 300, Centro, Suzano/SP (ponto da loja) |
 | Horário | **Segunda, terça e quinta: 19:00–00:00. Sexta, sábado e domingo: 19:00–01:00 do dia seguinte. Quarta fechada.** Horário real corrigido pelo dono em 17/10/2026, substitui a configuração anterior de 18h–0h. `CONFIG.horarios` e `CONFIG.horarioTexto` |
 | Prensado | "Avisar antes; não cobramos para prensar" |
-| Prazo de espera | **Até 50 minutos, podendo chegar antes** (16/10/2026). Aparece no checkout, no acompanhamento e na seção "onde" do site |
+| Prazo de espera | **45 a 55 minutos, podendo chegar antes** (atualizado pelo dono em 22/10/2026). Aparece no checkout, no acompanhamento e na seção "onde" do site |
 | Taxa de entrega | **km de distância + R$ 4, sempre arredondando para cima** (16/10/2026: "10 km + 4 reais" = R$ 14). Lido como R$ 1 por km rodado + R$ 4 fixos; **confirmar com o dono**. O cliente **não vê a regra**: só o valor calculado para o endereço dele (decisão de 16/10/2026). Distância pela rota de carro, da loja até o endereço do cliente. `CONFIG.entrega.taxa` |
 | Impressora da comanda | Térmica, papel **72 mm × 210 mm** (203 dpi), foto do dono em 16/10/2026. A comanda sai em negrito |
 | Endereço do cliente | Por CEP: o cliente digita o CEP, vêm rua, bairro e cidade; ele completa o número |

@@ -2,7 +2,7 @@
 //   - CEP → rua, bairro e cidade vêm sozinhos (ViaCEP); o cliente completa o número;
 //   - taxa = km da rota (sempre para cima) × R$ 1 + R$ 4, mostrada no checkout, no total e gravada pelo banco;
 //   - se a rota falha, a taxa fica "a combinar" e o pedido segue;
-//   - prazo de espera de até 50 minutos, podendo chegar antes.
+//   - prazo de espera de 45 a 55 minutos, podendo chegar antes.
 // As três consultas externas (ViaCEP, Nominatim, OSRM) são simuladas com page.route; o pedido vai de verdade ao Supabase local.
 // Uso: npx playwright test tests/entrega.spec.js --project=celular   (precisa do Supabase local no ar)
 /* global window, localStorage */
@@ -68,17 +68,17 @@ test('regra da taxa: km sempre para cima × R$ 1 + R$ 4', async ({ page }) => {
     const t = window.ML.entrega.taxa;
     return { dez: t(10), tresDois: t(3.2), tres: t(3), meio: t(0.4), mil: t(3.001), dec: t(3.0004), zero: t(0), neg: t(-1), txt: window.ML.entrega.prazo() };
   });
-  expect(r).toEqual({ dez: 14, tresDois: 8, tres: 7, meio: 5, mil: 8, dec: 7, zero: null, neg: null, txt: 'até 50 minutos, podendo chegar antes' });
+  expect(r).toEqual({ dez: 14, tresDois: 8, tres: 7, meio: 5, mil: 8, dec: 7, zero: null, neg: null, txt: '45 a 55 minutos, podendo chegar antes' });
 });
 
-test('prazo de até 50 minutos, podendo chegar antes, no checkout e no acompanhamento', async ({ page }) => {
+test('prazo de 45 a 55 minutos, podendo chegar antes, no checkout e no acompanhamento', async ({ page }) => {
   await simular(page);
   await irAoCheckout(page, { nome: NOME + ' prazo' });
-  await expect(page.locator('[data-screen="checkout"] [data-prazo]')).toHaveText('Prazo de espera: até 50 minutos, podendo chegar antes.');
+  await expect(page.locator('[data-screen="checkout"] [data-prazo]')).toHaveText('Prazo de espera: 45 a 55 minutos, podendo chegar antes.');
   await page.locator('[data-modo="local"]').click();
   await page.locator('#btn-enviar').click();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
-  await expect(page.locator('[data-screen="pedido"] [data-prazo]')).toHaveText('Prazo de espera: até 50 minutos, podendo chegar antes.');
+  await expect(page.locator('[data-screen="pedido"] [data-prazo]')).toHaveText('Prazo de espera: 45 a 55 minutos, podendo chegar antes.');
 });
 
 test('CEP preenche rua, bairro e cidade; com o número vem a taxa e ela entra no total e no banco', async ({ page }) => {

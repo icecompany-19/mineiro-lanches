@@ -34,10 +34,10 @@
     // null = fechado naquele dia (o banco pode mandar outros horários pelo estado_cardapio)
     horarios: { 0: ['19:00', '01:00'], 1: ['19:00', '00:00'], 2: ['19:00', '00:00'], 3: null, 4: ['19:00', '00:00'], 5: ['19:00', '01:00'], 6: ['19:00', '01:00'] },
     horarioTexto: ['Segunda, terça e quinta, das 19h à meia-noite', 'Sexta, sábado e domingo, das 19h à 1h', 'Fechado às quartas'],
-    // entrega (cliente, 16/10/2026): prazo de até 50 min, podendo chegar antes; taxa = km rodado (arredondado para cima) x porKm + fixa.
+    // entrega (cliente, 22/10/2026): prazo de 45 a 55 min, podendo chegar antes; taxa = km rodado (arredondado para cima) x porKm + fixa.
     // origem: Rua Eliziel Alves Costa, trecho do nº 300 (CEP 08674-185), coordenadas do OpenStreetMap no nível da rua; confirmar o ponto exato da loja.
     // taxaAtiva: o estado_cardapio liga quando o banco já calcula a taxa (taxaKm); sem isso o checkout deixa "a combinar" e o total não diverge do servidor
-    entrega: { prazoMin: 50, taxa: { porKm: 1, fixa: 4 }, origem: { lat: -23.5409777, lon: -46.312935 }, taxaAtiva: false },
+    entrega: { prazoMin: 45, prazoMax: 55, taxa: { porKm: 1, fixa: 4 }, origem: { lat: -23.5409777, lon: -46.312935 }, taxaAtiva: false },
     modos: [
       { id: 'entrega', label: 'Entrega', desc: 'Suzano e região · taxa calculada pelo endereço' },
       { id: 'local', label: 'Retirada no local', desc: 'Retire seu pedido na loja' }
@@ -220,7 +220,7 @@
     var n = kmCobrados(km);
     return n == null ? null : arred(n * CONFIG.entrega.taxa.porKm + CONFIG.entrega.taxa.fixa);
   }
-  function prazoTxt() { return 'até ' + CONFIG.entrega.prazoMin + ' minutos, podendo chegar antes'; }
+  function prazoTxt() { return CONFIG.entrega.prazoMin + ' a ' + CONFIG.entrega.prazoMax + ' minutos, podendo chegar antes'; }
 
   // ================= horário (America/Sao_Paulo) =================
   var DIAS = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
