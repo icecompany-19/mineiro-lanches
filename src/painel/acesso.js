@@ -25,6 +25,23 @@ export function iniciarAcesso(opc) {
   const tabela = opc.tabela || 'equipe';
   const chaveOffline = chaveSessao + ':acesso-offline';
   const chaveSaindo = chaveSessao + ':saindo';
+  // As entradas configuram um limite também para a espera interna de Auth,
+  // antes que o SDK chegue à rede. Sem a opção, conserva o comportamento anterior.
+  const prazoAcesso = Number(opc.prazoAcessoMs) || 0;
+  function comPrazo(operacao, aoExpirar) {
+    if (!prazoAcesso) return operacao;
+    let timer;
+    return Promise.race([
+      operacao,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          aoExpirar?.();
+          reject(new Error('tempo_acesso_esgotado'));
+        }, prazoAcesso);
+      })
+    ]).finally(() => clearTimeout(timer));
+  }
+  const tentarInicio = () => prazoAcesso ? location.reload() : comecar();
   function limparSessaoLocal() {
     try { Object.keys(localStorage).filter(k => k.indexOf(chaveSessao) === 0).forEach(k => localStorage.removeItem(k)); }
     catch { /* sem sessão persistida */ }
@@ -54,6 +71,7 @@ export function iniciarAcesso(opc) {
   let saindo = false;
   let expirou = false;
   let conferindo = null;
+  let geracao = 0;
 
   function etapa(html, foco) {
     tela.hidden = false;
@@ -102,7 +120,7 @@ export function iniciarAcesso(opc) {
       botao.textContent = 'Entrando…';
       let r;
       try {
-        r = await sb.auth.signInWithPassword({ email, password: senha });
+        r = await comPrazo(sb.auth.signInWithPassword({ email, password: senha }));
       } catch (x) {
         r = { error: x };
       }
@@ -133,8 +151,21 @@ export function iniciarAcesso(opc) {
 
   // ---------- equipe ----------
   async function entrar(usuario) {
+    const minhaGeracao = ++geracao;
     aguarde('Conferindo o acesso…');
-    const { data, error } = await sb.from(tabela).select('user_id').eq('user_id', usuario.id).maybeSingle();
+    const ctrl = new AbortController();
+    let resultado;
+    try {
+      let consulta = sb.from(tabela).select('user_id').eq('user_id', usuario.id).maybeSingle();
+      if (prazoAcesso) consulta = consulta.abortSignal(ctrl.signal);
+      resultado = await comPrazo(consulta, () => ctrl.abort());
+    } catch {
+      if (minhaGeracao !== geracao) return;
+      if (acessoOffline(usuario)) return abrirPainel(usuario);
+      return semRede('O acesso demorou para responder. Confira a conexão e tente novamente.', tentarInicio);
+    }
+    if (minhaGeracao !== geracao) return;
+    const { data, error } = resultado;
     if (error) {
       if (acessoOffline(usuario)) return abrirPainel(usuario);
       if (/jwt/i.test(error.message || '') || /^PGRST30/.test(error.code || ''))
@@ -169,24 +200,55 @@ export function iniciarAcesso(opc) {
     expirou = false;
     // outra tela no lugar do painel (entregador): sem store, sem Realtime, sem MLPainel
     if (opc.aoAbrir) {
+      const minhaGeracao = geracao;
+      try {
+        await comPrazo(Promise.resolve().then(() => opc.aoAbrir(usuario, { sb, sair })));
+      } catch {
+        if (minhaGeracao !== geracao) return;
+        try { opc.aoEsconder?.(); } catch { /* conserva o acesso visível para recuperação */ }
+        quadro.hidden = true;
+        montado = false;
+        geracao++;
+        return semRede('Não foi possível abrir esta tela. Tente recarregar o acesso.', tentarInicio);
+      }
+      if (minhaGeracao !== geracao) return;
       tela.hidden = true;
       quadro.hidden = false;
       montado = true;
-      opc.aoAbrir(usuario, { sb, sair });
       return;
     }
     aguarde('Carregando os pedidos…');
     const minha = instalarStoreSupabase({ papel: 'painel', aoSessaoExpirada: conferirSessao });
     store = minha;
     const avisoLento = setTimeout(() => !expirou && store === minha && aguarde('Sem resposta do servidor. Tentando de novo…'), 8000);
-    await minha.iniciar();
-    clearTimeout(avisoLento);
+    try {
+      await comPrazo(minha.iniciar());
+    } catch {
+      minha.parar();
+      if (store === minha) {
+        store = null;
+        geracao++;
+        semRede('O acesso demorou para responder. Confira a conexão e tente novamente.', tentarInicio);
+      }
+      return;
+    } finally {
+      clearTimeout(avisoLento);
+    }
     if (expirou || store !== minha) return;
-    tela.hidden = true;
-    quadro.hidden = false;
-    montado = true;
-    window.MLPainel.montar(quadro, { demo: !!opc.demo, usuario: usuario.email || '', aoSair: sair });
-    window.MLPainel.mostrar();
+    try {
+      window.MLPainel.montar(quadro, { demo: !!opc.demo, usuario: usuario.email || '', aoSair: sair });
+      window.MLPainel.mostrar();
+      tela.hidden = true;
+      quadro.hidden = false;
+      montado = true;
+    } catch {
+      minha.parar();
+      store = null;
+      quadro.hidden = true;
+      montado = false;
+      geracao++;
+      semRede('Não foi possível abrir esta tela. Tente recarregar o acesso.', tentarInicio);
+    }
   }
   // o servidor recusou o token: tenta renovar; se não der, volta para o login
   function conferirSessao() {
@@ -210,6 +272,7 @@ export function iniciarAcesso(opc) {
   function sessaoExpirada() {
     if (expirou || saindo) return;
     expirou = true;
+    geracao++;
     if (store) store.parar();
     if (montado) {
       if (opc.aoEsconder) opc.aoEsconder();
@@ -223,6 +286,7 @@ export function iniciarAcesso(opc) {
   // Espera no máximo 3 s pelo servidor. O rascunho do checkout (mesma origem) também sai.
   async function sair() {
     saindo = true;
+    geracao++;
     // Se a página fechar durante o logout, a próxima abertura não restaura a sessão anterior.
     try { localStorage.setItem(chaveSaindo, '1'); } catch { /* sem armazenamento */ }
     if (opc.permitirOffline) limparAcessoOffline();
@@ -250,13 +314,16 @@ export function iniciarAcesso(opc) {
 
   // ---------- início ----------
   async function comecar() {
+    const minhaGeracao = ++geracao;
     aguarde('Conferindo o acesso…');
     try { if (localStorage.getItem(chaveSaindo)) limparSessaoLocal(); } catch { /* sem sessão guardada */ }
     try {
-      sb = await obterSupabase({ sessao: true, chave: chaveSessao });
+      sb = await comPrazo(obterSupabase({ sessao: true, chave: chaveSessao }));
     } catch {
-      return semRede('Não foi possível carregar o painel. Confira a internet.', comecar);
+      if (minhaGeracao !== geracao) return;
+      return semRede('Não foi possível carregar o painel. Confira a internet.', tentarInicio);
     }
+    if (minhaGeracao !== geracao) return;
     sb.auth.onAuthStateChange((evento) => {
       if (evento === 'SIGNED_OUT' && montado && !(opc.permitirOffline && !navigator.onLine)) sessaoExpirada();
     });
@@ -267,9 +334,16 @@ export function iniciarAcesso(opc) {
         if (usuario && acessoOffline(usuario)) return abrirPainel(usuario);
       } catch { /* login conectado necessário */ }
     }
-    const { data } = await sb.auth.getSession();
-    if (data && data.session && data.session.user) entrar(data.session.user);
-    else mostrarLogin();
+    try {
+      const { data, error } = await comPrazo(sb.auth.getSession());
+      if (minhaGeracao !== geracao) return;
+      if (error) throw error;
+      if (data && data.session && data.session.user) entrar(data.session.user);
+      else mostrarLogin();
+    } catch {
+      if (minhaGeracao !== geracao) return;
+      return semRede('O acesso demorou para responder. Confira a conexão e tente novamente.', tentarInicio);
+    }
   }
   comecar();
 }

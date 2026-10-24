@@ -84,6 +84,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     slots.map(() => document.createElement('div')),
     {
       consultar,
+      aoConsultar: () => render(),
       aoAlterar: () => {
         carregar();
         render();
@@ -123,6 +124,12 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
   function kpi(tipo, titulo, icone, dica) {
     return `<button class="pn-ent-kpi pn-ent-kpi--${tipo}" type="button" data-e="etapa" data-etapa="${tipo}" data-e-key="kpi-${tipo}" aria-pressed="${etapa === tipo}"><span class="pn-ent-kpi-cab">${ic(icone)}${titulo}</span><strong data-e-contagem="${tipo}">${dados ? contagem()[tipo] : '—'}</strong><span class="pn-ent-kpi-dica">${dica}${ic('avancar')}</span></button>`;
   }
+  function resumoManuaisHTML() {
+    if (!planejamento.temDados()) return '';
+    const lista = pedidos().filter((p) => emAberto(p) && p.motoboyId && !planejamento.viagemDoPedido(p.id));
+    if (!lista.length) return '';
+    return `<section class="pn-ent-manuais-abertos" data-e-manuais aria-label="Pedidos atribuídos pela loja"><div class="pn-ent-secao-cab"><div><h3>Pedidos atribuídos pela loja</h3><p><b data-e-manuais-total>${lista.length}</b> ${lista.length === 1 ? 'pedido em aberto' : 'pedidos em aberto'}</p></div><button type="button" class="pn-btn" data-e="ver-manuais">Ver controle manual</button></div><ul>${lista.map((p) => `<li data-e-manual-pedido="${esc(p.id)}"><b>${esc(window.ML.fmt.numero(p.numero))}</b><span>${esc(p.motoboyNome || 'Motoboy atribuído')}</span><span class="pn-ent-manual-status">${p.status === 'rota' ? 'Em entrega' : 'Aguardando saída'}</span></li>`).join('')}</ul></section>`;
+  }
   function render() {
     const foco = document.activeElement,
       slotFoco = slots.findIndex((s) => s.contains(foco));
@@ -152,7 +159,9 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
     const corpo = `<div class="pn-entregadores">
       ${cabecalho}
       <p class="pn-ent-erro" role="alert" ${erro ? '' : 'hidden'}>${ic('info')}${esc(erro)}</p><p class="pn-ent-aviso" role="status" aria-live="polite" ${aviso ? '' : 'hidden'}><span>${esc(aviso)}</span>${atribuicaoConfirmada && etapa !== 'saida' ? '<button class="pn-btn" type="button" data-e="ver-atribuidos">Ir para registrar saída</button>' : ''}</p>
-      ${dados ? '<div data-planejamento-slot></div>' : ''}
+      ${resumoManuaisHTML()}
+      <div data-planejamento-slot></div>
+      ${!dados && !erro ? `<div class="pn-ent-carregando" role="status">${ic('moto')}<p>Carregando entregadores…</p><span>Consultando a operação no servidor.</span></div>` : ''}
       <details class="pn-ent-manual" data-e-detalhe="manual"><summary>Controle manual e histórico</summary><p class="pn-ent-manual-dica">Use para conferir o histórico ou resolver uma exceção. Na rotina, basta marcar o pedido pronto e acompanhar a saída acima.</p>
       ${
         dados
@@ -193,7 +202,7 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
       <section class="pn-ent-kpis" aria-label="Resumo das entregas">${kpi('rota', 'Em entrega', 'moto', 'Acompanhar em andamento')}${kpi('espera', 'Aguardando saída', 'sacola', 'Preparar próxima saída')}${kpi('entregue', 'Concluídas', 'check', 'Recebidas no período')}${kpi('atencao', 'Precisam de atenção', 'sino', 'Sem atribuição ou tempo alto')}</section>
       ${
         !dados
-          ? `<div class="pn-ent-carregando" role="status">${ic('moto')}<p>Carregando entregadores…</p><span>Consultando a operação no servidor.</span></div>`
+          ? ''
           : `
       <div class="pn-ent-progresso"><span><b>${c.entregue}</b> de ${total} entregas concluídas neste recorte</span><progress max="${Math.max(total, 1)}" value="${c.entregue}" aria-label="Entregas concluídas neste recorte"></progress><span>${total ? Math.round((c.entregue / total) * 100) : 0}%</span></div>
       ${legado ? `<div class="pn-ent-legado">${ic('info')}<p><b>${legado} ${legado === 1 ? 'entrega anterior recuperada' : 'entregas anteriores recuperadas'}.</b> O histórico foi preservado. O sistema anterior não identificava qual motoboy confirmou.</p><button type="button" data-e="anteriores" data-e-key="anteriores">Ver histórico anterior ${ic('avancar')}</button></div>` : ''}
@@ -479,6 +488,14 @@ export function montarEntregadores(root, { consultar = consultarEntregadores } =
         return;
       case 'atualizar':
         return carregar();
+      case 'ver-manuais':
+        etapa = 'todos';
+        filtro = 'todos';
+        busca = '';
+        limite = 12;
+        render();
+        mostrarCentral();
+        return;
       case 'ver-atribuidos':
         etapa = 'saida';
         filtro = 'todos';

@@ -10,6 +10,11 @@ import QRCode from 'qrcode';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
+// Nestes dois smokes de acesso, toda a API passa por page.route. No WebKit,
+// um worker que assume a página faz Auth escapar desse mock para a rede real.
+// Os cenários de funcionamento offline conservam o worker habilitado.
+const testarAcesso = test.extend({ serviceWorkers: 'block' });
+
 const RAIZ = resolve(import.meta.dirname, '..');
 const lerEnv = (arq) =>
   Object.fromEntries(
@@ -287,6 +292,73 @@ const semHash = (page) => expect.poll(() => page.evaluate(() => location.hash)).
 
 // ---------- testes ----------
 
+test('restauração pendente da sessão não prende o acesso do entregador', async ({ page }) => {
+  await page.clock.install();
+  await simular(page);
+  const salva = { ...sessao(MOTO), expires_at: Math.floor(Date.now() / 1000) - 120 };
+  await page.addInitScript((s) => {
+    localStorage.setItem('mineiro:v2:moto', JSON.stringify(s));
+    localStorage.setItem('motoboy:preservar-teste', 'confirmacoes-preservadas');
+  }, salva);
+  let renovacoes = 0;
+  await page.route('**/auth/v1/token*', () => {
+    renovacoes++;
+    return new Promise(() => {});
+  });
+  await page.goto('/motoboy/');
+  await expect.poll(() => renovacoes).toBeGreaterThan(0);
+  await page.clock.runFor(15100);
+  await expect(page.getByRole('alert')).toContainText('O acesso demorou para responder');
+  await expect(page.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+  await expect(page.locator('.mb-app')).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('motoboy:preservar-teste'))).toBe('confirmacoes-preservadas');
+});
+
+test('conferência pendente do motoboy informa falha sem conceder acesso', async ({ page }) => {
+  await page.clock.install();
+  await simular(page);
+  await page.addInitScript((s) => localStorage.setItem('mineiro:v2:moto', JSON.stringify(s)), sessao(MOTO));
+  let consultas = 0;
+  await page.route('**/rest/v1/motoboys*', () => {
+    consultas++;
+    return new Promise(() => {});
+  });
+  await page.goto('/motoboy/');
+  await expect.poll(() => consultas).toBeGreaterThan(0);
+  await page.clock.runFor(15100);
+  await expect(page.getByRole('alert')).toContainText('O acesso demorou para responder');
+  await expect(page.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+  await expect(page.locator('.mb-app')).toHaveCount(0);
+});
+
+test('módulo do entregador indisponível conserva instrução de recarregar', async ({ page }) => {
+  await page.route(/\/(?:src\/main-motoboy\.js|_app\/motoboy-[^/]+\.js)(?:\?.*)?$/, (route) => route.abort());
+  await page.goto('/motoboy/');
+  await expect(page.locator('#view-motoboy')).toContainText('Abrindo o acesso do entregador');
+  await expect(page.getByRole('link', { name: 'recarregue o acesso' })).toHaveAttribute('href', '/motoboy/');
+});
+
+test('primeira carga pendente do painel termina espera e ignora resposta atrasada', async ({ page }) => {
+  await page.clock.install();
+  await simular(page);
+  await page.addInitScript((s) => localStorage.setItem('mineiro:v2:sessao', JSON.stringify(s)), sessao(MOTO));
+  let pendente;
+  await page.route('**/rest/v1/rpc/estado_cardapio', (route) => {
+    pendente = route;
+    return new Promise(() => {});
+  });
+  await page.route('**/rest/v1/pedidos*', (route) => route.fulfill({ headers: CORS, json: [] }));
+  await page.goto('/painel/');
+  await expect.poll(() => !!pendente).toBe(true);
+  await page.clock.runFor(15100);
+  await expect(page.getByRole('alert')).toContainText('O acesso demorou para responder');
+  await expect(page.locator('#view-painel')).toBeHidden();
+  await pendente.fulfill({ headers: CORS, json: { loja: {}, adicionais: {} } });
+  await page.clock.runFor(100);
+  await expect(page.locator('#view-painel')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Tentar de novo' })).toBeVisible();
+});
+
 test('taxas próprias acompanham o período e preservam a última consulta se a rede falhar', async ({ page, baseURL }) => {
   await preparar(page, baseURL);
   const s = await simular(page, {
@@ -315,7 +387,7 @@ test('taxas próprias acompanham o período e preservam a última consulta se a 
   expect(s.c.naoSimuladas).toEqual([]);
 });
 
-test('login do entregador: tela Entregas, sessão em chave própria e nada do painel carregado', async ({ page, baseURL }) => {
+testarAcesso('login do entregador: tela Entregas, sessão em chave própria e nada do painel carregado', async ({ page, baseURL }) => {
   const v = await preparar(page, baseURL);
   const s = await simular(page);
   await page.goto('/motoboy/');
@@ -340,7 +412,7 @@ test('login do entregador: tela Entregas, sessão em chave própria e nada do pa
   await expect(app.getByRole('button', { name: 'Ler QR da comanda' })).toBeVisible();
   await expect(app.getByRole('heading', { name: 'Em rota' })).toBeVisible();
   await expect(app.getByText('Nenhuma entrega em rota agora.')).toBeVisible();
-  await expect(app.getByRole('button', { name: 'Atualizar' })).toBeVisible();
+  await expect(app.getByRole('button', { name: 'Atualizar', exact: true })).toBeVisible();
   await expect(app.getByRole('button', { name: 'Sair' })).toBeVisible();
   await expect(acesso).toBeHidden();
 
@@ -366,7 +438,7 @@ test('login do entregador: tela Entregas, sessão em chave própria e nada do pa
   expect(v.externas, 'requisições a outros domínios').toEqual([]);
 });
 
-test('sem acesso: usuário fora da tabela motoboys não vê entregas', async ({ page, baseURL }) => {
+testarAcesso('sem acesso: usuário fora da tabela motoboys não vê entregas', async ({ page, baseURL }) => {
   const v = await preparar(page, baseURL);
   const s = await simular(page, { motoboy: false, usuario: { id: '00000000-0000-4000-8000-000000000009', email: 'outro@teste.local' } });
   await page.goto('/motoboy/#' + ID_A);

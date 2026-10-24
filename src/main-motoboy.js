@@ -22,6 +22,7 @@ iniciarAcesso({
   tabela: 'motoboys',
   chave: 'mineiro:v2:moto',
   permitirOffline: true,
+  prazoAcessoMs: 15000,
   textoSemAcesso: 'Este usuário não está na lista de entregadores.',
   aoAbrir: (usuario, ctx) => montarMotoboy(document.getElementById('view-motoboy'), usuario, ctx),
   aoEsconder: esconderMotoboy

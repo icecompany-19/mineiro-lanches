@@ -18,4 +18,4 @@ window.MLQr = { qrSvg, base: String(import.meta.env.VITE_SITE_URL || location.or
 window.ML.links.base = import.meta.env.MODE === 'development' ? location.origin : (import.meta.env.VITE_SITE_URL || location.origin);
 
 // "Simular pedido" e "Gerar exemplos" só na demonstração (VITE_DEMO=1 no .env)
-iniciarAcesso({ el: document.getElementById('view-painel'), demo: import.meta.env.VITE_DEMO === '1' });
+iniciarAcesso({ el: document.getElementById('view-painel'), demo: import.meta.env.VITE_DEMO === '1', prazoAcessoMs: 15000 });

@@ -13,7 +13,7 @@ const minuto = (s) => (Number.isFinite(s) ? `${Math.ceil(s / 60)} min` : 'Tempo 
 const distancia = (m) =>
   Number.isFinite(m) ? `${(m / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km` : 'Distância não calculada';
 
-export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
+export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {}, aoConsultar = () => {} }) {
   const esc = window.ML.fmt.esc,
     numero = window.ML.fmt.numero;
   let dados = null,
@@ -33,6 +33,7 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
   const campos = new Map();
   const agora = () => Date.now() + desvio;
   const elegiveis = () => (dados?.entregadores || []).filter((e) => e.elegivel);
+  const pedidosEmViagens = (r) => [...new Set((r?.viagens || []).flatMap((v) => v.paradas.map((p) => p.id)))].sort().join(',');
   const viagemDoPedido = (id) => (dados?.viagens || []).find((v) => v.paradas.some((p) => p.id === id));
   const quantidade = (n) => `${n} ${n === 1 ? 'pedido' : 'pedidos'}`;
   const estimativa = (v) =>
@@ -185,9 +186,9 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
           ? '<p>Consultando planejamento…</p>'
           : `
         <div class="rt-operacao"><span class="rt-modo" data-r-modo>${dados.config.despachoIndividualAtivo ? 'Despacho individual automático ativo' : dados.config.modo === 'automatico' ? 'Vínculo automático de rotas ativo' : dados.config.modo === 'assistido' ? 'Rotas com liberação pela equipe' : 'Despacho automático pausado'}</span></div>
-        <div class="rt-resumo" aria-label="Situação das saídas"><div><b data-r-disponiveis>${elegiveis().length}</b><span>motoboys disponíveis</span></div><div><b data-r-prontos-total>${dados.prontos.length}</b><span>prontos sem saída</span></div><div><b data-r-viagens-total>${dados.viagens.filter((v) => v.estado === 'em_rota').length}</b><span>saídas em entrega</span></div></div>
+        <div class="rt-resumo" aria-label="Situação das saídas"><div><b data-r-disponiveis>${elegiveis().length}</b><span>motoboys disponíveis</span></div><div><b data-r-prontos-total>${dados.prontos.length}</b><span>prontos sem saída</span></div><div><b data-r-viagens-total>${dados.viagens.filter((v) => v.estado === 'em_rota').length}</b><span>viagens em entrega</span></div></div>
         ${proximoPassoHTML()}
-        <div class="rt-viagens rt-viagens--ativas" data-r-saidas>${dados.viagens.map(viagemHTML).join('') || '<p class="rt-vazio">Nenhuma saída em andamento.</p>'}</div>
+        <div class="rt-viagens rt-viagens--ativas" data-r-saidas>${dados.viagens.map(viagemHTML).join('') || '<p class="rt-vazio">Nenhuma viagem em andamento.</p>'}</div>
         <section class="rt-turno" aria-label="Motoboys do turno"><div class="rt-secao-cab"><h4>Motoboys do turno</h4><span>Presença informada na loja</span></div><div class="rt-pessoas">${noTurno.map((e) => entregadorHTML(e, false)).join('') || '<p class="rt-vazio">O motoboy deve tocar em “Começar turno” no celular ao chegar à loja.</p>'}</div></section>
         ${despachoHTML()}
         <details class="rt-avancado" data-r-detail="rotas"><summary>Viagens e rotas: opções avançadas</summary><p>Agrupe vários pedidos pelas ruas após configurar a capacidade e os limites da operação. O despacho individual continua disponível sem mapas.</p>${dados.config.modo === 'desligado' ? '<button type="button" class="pn-btn" data-r="preparar">Preparar rotas da loja</button>' : ''}${configHTML()}
@@ -221,12 +222,14 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
     try {
       const r = await consultar('painel_rotas_entregas');
       if (!aberto || g !== geracao) return;
+      const mudouVinculo = !dados || pedidosEmViagens(r) !== pedidosEmViagens(dados);
       const mudou = JSON.stringify({ ...r, servidorEm: null }) !== JSON.stringify(dados ? { ...dados, servidorEm: null } : null);
       dados = r;
       desvio = Date.parse(r.servidorEm) - Date.now();
       selecionados = selecionados.filter((id) => r.prontos.some((p) => p.id === id));
       const editando = hosts.some((h) => h.contains(document.activeElement) && document.activeElement.matches('input,select,textarea'));
       if (!silencioso || (mudou && !editando)) render();
+      if (mudouVinculo) aoConsultar();
     } catch (e) {
       if (aberto && g === geracao) {
         erro = mensagemRota(e);
@@ -474,6 +477,7 @@ export function montarPlanejamento(hosts, { consultar, aoAlterar = () => {} }) {
   render();
   return {
     hosts,
+    temDados: () => !!dados,
     viagemDoPedido,
     focar() {
       const h = hosts.find((h) => h.getClientRects().length);

@@ -20,7 +20,7 @@ export default defineConfig({
     // Chrome e Safari no iPhone usam WebKit; o Chromium do Android não reproduz o layout do dialog.
     {
       name: 'iphone',
-      testMatch: /(?:ficha|cotacao-entrega|usuarios|mercado-pago|produtos|despacho)\.spec\.js$/,
+      testMatch: /(?:ficha|cotacao-entrega|usuarios|mercado-pago|produtos|despacho|entregadores-carregamento)\.spec\.js$/,
       use: { ...devices['iPhone 13'], browserName: 'webkit', launchOptions: { executablePath: undefined } }
     },
     // fluxo completo com dois aparelhos ao mesmo tempo (celular do cliente + computador do painel): o próprio teste abre os dois
