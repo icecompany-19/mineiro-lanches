@@ -37,6 +37,7 @@ export function montarOperacaoRotas(el, { consultar, armazenamento, pedidosCarre
     filaAviso = '',
     filaContexto = '',
     filaAberta = true,
+    versaoListaPedida = null,
     timer;
   const esc = window.ML.fmt.esc;
   const hora = (iso) =>
@@ -194,6 +195,19 @@ export function montarOperacaoRotas(el, { consultar, armazenamento, pedidosCarre
         erro = '';
         if (f) fila = f;
         await armazenamento.guardarOperacaoRotas(dados).catch(() => {});
+        // Saída nova ou alterada: carrega os pedidos na hora, sem esperar a próxima carga da lista.
+        const v = dados?.viagem;
+        if (
+          v &&
+          v.versao !== versaoListaPedida &&
+          !v.paradas.every((p) =>
+            pedidosCarregados().some((l) => l.id === p.id && l.atribuicao === p.atribuicao && l.versaoViagem === v.versao)
+          )
+        ) {
+          versaoListaPedida = v.versao;
+          await atualizarPedidos();
+          if (!ativa || g !== geracao) return;
+        }
       }
       await conferirCarga();
     } catch (e) {
@@ -321,9 +335,17 @@ export function montarOperacaoRotas(el, { consultar, armazenamento, pedidosCarre
   el.addEventListener('toggle', alternar, true);
   render();
   atualizar();
-  timer = setInterval(() => {
-    if (!document.hidden) atualizar();
-  }, 30000);
+  // Na loja a reserva e a fila precisam aparecer na hora: consulta a cada 3 s com a tela visível; na rua, a cada 15 s.
+  const agendar = () => {
+    timer = setTimeout(
+      async () => {
+        if (!document.hidden) await atualizar();
+        if (ativa) agendar();
+      },
+      ['em_rota', 'retornando'].includes(dados?.viagem?.estado) ? 15000 : 3000
+    );
+  };
+  agendar();
   return {
     atualizar,
     conferirCarga,
@@ -331,7 +353,7 @@ export function montarOperacaoRotas(el, { consultar, armazenamento, pedidosCarre
     parar() {
       ativa = false;
       geracao++;
-      clearInterval(timer);
+      clearTimeout(timer);
       el.removeEventListener('click', clicar);
       el.removeEventListener('toggle', alternar, true);
     }

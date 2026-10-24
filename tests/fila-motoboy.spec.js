@@ -98,8 +98,10 @@ test('fila da loja: vê os prontos, pega mais um antes de sair e perde a disputa
     expect(
       JSON.parse(sql('select iniciar_planejamento_entregas(null,(select job_token from entrega_rotas_config where id=1))')).reservadas
     ).toBe(1);
-    await mb.locator('[data-v="atualizar"]').click();
-    await expect(mb.locator('[data-v-operacao]')).toContainText('1 pedido nesta saída');
+    // Sem tocar em Atualizar: a reserva aparece e é carregada no aparelho em poucos segundos.
+    const instantes = { timeout: 5000 };
+    await expect(mb.locator('[data-v-operacao]')).toContainText('1 pedido nesta saída', instantes);
+    await expect(mb.locator('[data-v-carregamento]')).toContainText('Pedidos carregados neste aparelho', instantes);
     await expect(itens).toHaveCount(2);
     await expect(fila).toContainText('Toque em Pegar para levar junto nesta saída');
 
@@ -114,15 +116,17 @@ test('fila da loja: vê os prontos, pega mais um antes de sair e perde a disputa
     await expect(mb.locator(`.mb-item[data-id="${p2.id}"]`)).toContainText('Aguardando saída');
     await expect(itens).toHaveCount(1);
 
-    // Outro motoboy leva o terceiro antes; a tela ainda mostra o pedido até a próxima consulta.
+    // Outro motoboy leva o terceiro: some da fila sozinho, sem tocar em Atualizar.
     sql(`insert into entregadores_disponibilidade(user_id,situacao,desde) values('${outro}','na_loja',now())
       on conflict(user_id) do update set situacao='na_loja',desde=now()`);
     como(outro, `select pegar_pedido_entrega('${p3.id}')`);
-    mb.once('dialog', (d) => d.accept());
-    await fila.getByRole('button', { name: `Pegar pedido #${String(p3.numero).padStart(4, '0')}` }).click();
-    await expect(fila.locator('[role="alert"]')).toContainText('Outro entregador pegou este pedido primeiro');
+    await expect(itens).toHaveCount(0, instantes);
     await expect(fila).toContainText('Nenhum pedido pronto aguardando entregador agora.');
     expect(sql(`select motoboy_id from entregas_operacao where pedido_id='${p3.id}'`)).toBe(outro);
+
+    // Pedido que fica pronto agora aparece na fila em poucos segundos.
+    const p4 = pedidoPronto(4, 0);
+    await expect(fila.locator(`[data-v-disp="${p4.id}"]`)).toBeVisible(instantes);
 
     // Sai com os dois; na rua a fila fica só para consulta.
     await mb.locator('[data-v="sair"]').click();
