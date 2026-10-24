@@ -119,6 +119,10 @@ test('despacho individual: pronto e turno, saída carregada, dinheiro, confirma�
     await capturaPedido('03-marcar-pronto');
     await avancar().click();
     await expect.poll(() => sql(`select status from pedidos where id='${p.id}'`)).toBe('pronto');
+    // Pronto de entrega fica no quadro, sem botão de saída: o motoboy recebe e sai pelo celular.
+    await expect(page.locator('.pn-aguarda-moto:visible').first()).toHaveText('Aguardando saída do motoboy');
+    await expect(avancar()).toHaveCount(0);
+    await expect(page.locator('[data-entregadores]:visible')).toHaveCount(0);
     expect(sql(`select entrega_destino is null from pedidos where id='${p.id}'`)).toBe('t');
     await navegar(page, 'entregadores');
     const central = page.locator('[data-r-central]:visible');

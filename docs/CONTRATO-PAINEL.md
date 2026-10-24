@@ -119,7 +119,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
      - observação destacada;
      - pagamento/troco ("a combinar" se null).
    - **Ações:**
-     - botão principal com o próximo passo ("Aceitar e preparar", "Marcar pronto" / "Saiu para entrega", "Concluir");
+     - botão principal com o próximo passo ("Aceitar e preparar", "Marcar pronto", "Concluir"); entrega pronta mostra "Aguardando saída do motoboy", sem botão (24/10);
      - Imprimir comanda;
      - Cancelar (pede motivo num mini-diálogo dentro do card);
      - WhatsApp do cliente, só se houver telefone.
@@ -177,7 +177,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
 
 ## Entregadores — 18/10/2026
 
-A aba **Entregadores** tem navegação no desktop e no celular, com atribuição, saída, acompanhamento, alertas, períodos e histórico. **Saiu para entrega** no quadro abre esta aba para atribuir e registrar a saída. **Concluir** em uma entrega abre a baixa manual com motivo; retirada/local preservam seu fluxo. Ver `docs/ENTREGADORES.md` para regras e critérios operacionais.
+A aba **Entregadores** tem navegação no desktop e no celular, com atribuição, saída, acompanhamento, alertas, períodos e histórico. Desde 24/10, entrega pronta não tem botão no quadro nem abre esta aba: o despacho automático reserva o pedido e o motoboy registra a saída pelo celular ("Aguardando saída do motoboy"). Atribuição manual continua por esta aba. **Concluir** em uma entrega abre a baixa manual com motivo; retirada/local preservam seu fluxo. Ver `docs/ENTREGADORES.md` para regras e critérios operacionais.
 
 ## Viagens e rotas (19/10)
 

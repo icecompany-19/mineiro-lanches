@@ -87,7 +87,11 @@
     if (p.status === 'entregue') return ehHoje(concluidoEm(p)) ? 'concluidos' : null;
     return COL_DO_STATUS[p.status] || null;
   }
+  // Entrega pronta sai pelo celular do motoboy (despacho automático): o quadro não tem próximo passo nem abre Entregadores.
+  const saidaPeloMotoboy = p => p.status === 'pronto' && p.modo === 'entrega' && p.origem !== 'exemplo';
+  const aguardaMotoboyHTML = (p, classe) => saidaPeloMotoboy(p) ? `<p class="${classe}">${ic('moto')}Aguardando saída do motoboy</p>` : '';
   function proximoStatus(p) {
+    if (saidaPeloMotoboy(p)) return null;
     return p.pagamentoOnline && p.pagamentoOnline !== 'aprovado' ? null : ML.regras.proximoStatus(p);
   }
   const PAGAMENTO_TXT = { pendente:'Aguardando pagamento', aprovado:'Pago no Mercado Pago', recusado:'Pagamento recusado',
@@ -270,7 +274,7 @@
       ${p.modo === 'entrega' ? `<p class="pn-taxa${p.taxaEntrega == null ? ' pn-taxa--pendente' : ''}">${esc(taxaTxt(p))}</p>` : ''}
       <div class="pn-rodape"><span class="pn-pag">${esc(pagTxt(p))}</span><strong class="pn-total">${brl(p.total)}</strong></div>
       <div class="pn-acoes">
-        ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : ''}
+        ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : aguardaMotoboyHTML(p, 'pn-aguarda-moto')}
         <div class="pn-acoes-sec">${entregaPagamentoHTML(p)}${estornoHTML(p)}
           <button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}" aria-label="Imprimir comanda do pedido ${num}">${ic('impressora')}Imprimir</button>
           ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nome)} no WhatsApp">${ic('chat')}WhatsApp</a>` : ''}
@@ -575,7 +579,7 @@
     q('[data-mobile]').innerHTML = lista.length ? '<ul class="pn-m-lista">' + lista.map(p => {
       const prox = proximoStatus(p);
       return `<li class="pn-m-item"><div class="pn-m-t"><b class="pn-num">${ML.fmt.numero(p.numero)}</b> <span>${esc(nomeCli(p))}</span> ${statusChip(p.status)}${tagsOrigem(p)}</div>
-        <p>${esc(itensTxt(p))}</p>${p.pagamentoOnline||p.pagamentoNaEntrega?`<p>${esc(pagTxt(p))}</p>`:""}${avisoPagamento(p)}<div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${entregaPagamentoHTML(p)}${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : ''}</div></div></li>`;
+        <p>${esc(itensTxt(p))}</p>${p.pagamentoOnline||p.pagamentoNaEntrega?`<p>${esc(pagTxt(p))}</p>`:""}${avisoPagamento(p)}<div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${entregaPagamentoHTML(p)}${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : aguardaMotoboyHTML(p, 'pn-aguarda-moto pn-aguarda-moto--m')}</div></div></li>`;
     }).join('') + '</ul>' : `<div class="pn-vazio">${ic('truck', 'pn-vazio-ic')}<p>${esc(textoVazio())}</p></div>`;
   }
 
@@ -894,7 +898,6 @@
   function avancar(id) {
     const p = pedidoPorId(id), prox = p && proximoStatus(p);
     if (!prox) return;
-    if (prox === 'rota' && p.modo === 'entrega' && p.origem !== 'exemplo') { irPara('entregadores'); toast('Atribua o pedido a um entregador e registre a saída nesta aba.'); return; }
     if (prox === 'entregue' && p.modo === 'entrega' && p.origem !== 'exemplo') { irPara('entregadores'); toast('Use Baixa manual e informe o motivo, ou peça a confirmação ao motoboy.'); return; }
     S.focoId = id;
     if (prox === 'entregue') S.concluidosAqui.add(id);

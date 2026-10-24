@@ -739,7 +739,7 @@ test.describe('entregador (/motoboy/)', () => {
     vigiar(painel, 'painel', erros);
     vigiar(moto, 'entregador', erros);
 
-    // cliente pede entrega; a equipe aceita e marca "Saiu para entrega" pelo painel
+    // cliente pede entrega; a equipe aceita e marca pronto; com o despacho pausado, atribui pela aba Entregadores
     const pedido = await criarPedidoApi('Elisa Entrega', '11977770010', ENTREGA);
     const num = '#' + String(pedido.numero).padStart(4, '0');
     expect(pedido.total).toBe(24.9);
@@ -752,7 +752,11 @@ test.describe('entregador (/motoboy/)', () => {
     await emPreparo.getByRole('button', { name: 'Marcar pronto' }).click();
     const pronto = painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' });
     await expect(pronto).toBeVisible();
-    await pronto.getByRole('button', { name: 'Saiu para entrega' }).click();
+    // pronto de entrega não tem próximo passo no quadro nem abre outra aba: a saída é do motoboy
+    await expect(pronto.locator('.pn-aguarda-moto')).toHaveText('Aguardando saída do motoboy');
+    await expect(pronto.getByRole('button', { name: 'Saiu para entrega' })).toHaveCount(0);
+    await expect(painel.locator('[data-view="pedidos"]')).toBeVisible();
+    await painel.locator('[data-nav="entregadores"]').click();
     const atribuicao = painel.locator(`.pn-entrega[data-entrega="${pedido.id}"]:visible`);
     await atribuicao.getByRole('combobox').selectOption(ID_MOTO);
     await atribuicao.getByRole('button', { name: 'Atribuir', exact: true }).click();
