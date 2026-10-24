@@ -803,7 +803,7 @@ test.describe('entregador (/motoboy/)', () => {
     await expect(painel.locator('.pn-toast', { hasText: num + ' entregue pelo motoboy · Elisa Entrega' })).toBeVisible();
 
     // a lista do entregador, atualizada, não tem mais o pedido
-    await moto.getByRole('button', { name: 'Atualizar' }).click();
+    await moto.getByRole('button', { name: 'Atualizar', exact: true }).click();
     await expect(moto.getByText('Nenhuma entrega em rota agora.')).toBeVisible();
     await expect(moto.locator('.mb-item', { hasText: 'Elisa Entrega' })).toHaveCount(0);
 

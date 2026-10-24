@@ -112,13 +112,17 @@ function sessao(usuario) {
 // opc.equipe: o mesmo para a tabela equipe (só o teste do painel usa).
 // opc.rota: lista de entregas_em_rota (ou função que devolve { status, json } / { abort }).
 // opc.confirmar: (corpo) => { status?, json } | { abort: true } | { pendente: true }.
+// opc.operacao / opc.fila / opc.pegar: minha_operacao_rotas, pedidos_disponiveis_entrega e pegar_pedido_entrega.
 async function simular(page, opc = {}) {
   const usuario = opc.usuario || MOTO;
-  const c = { login: 0, logout: 0, rota: 0, taxas: [], confirmar: [], motoboys: 0, equipe: 0, naoSimuladas: [] };
+  const c = { login: 0, logout: 0, rota: 0, taxas: [], confirmar: [], pegar: [], fila: 0, motoboys: 0, equipe: 0, naoSimuladas: [] };
   const estado = {
     rota: opc.rota || [],
     confirmar: opc.confirmar || confirmou(),
-    taxas: opc.taxas || ((dias) => ({ json: resumoTaxas(dias) }))
+    taxas: opc.taxas || ((dias) => ({ json: resumoTaxas(dias) })),
+    operacao: opc.operacao || null,
+    fila: opc.fila || { motivo: 'entregador_indisponivel', pedidos: [], emPreparo: 0 },
+    pegar: opc.pegar || (() => ({ json: { ok: true } }))
   };
   const responder = async (route, r) => {
     if (r.abort) return route.abort('internetdisconnected');
@@ -176,9 +180,22 @@ async function simular(page, opc = {}) {
         servidorEm: new Date().toISOString(),
         modo: 'desligado',
         entregador: { id: usuario.id, nome: usuario.email, declarado: 'fora', situacao: 'fora', qtdAbertas: 0, elegivel: false },
-        viagem: null
+        viagem: null,
+        ...estado.operacao
       }
     });
+  });
+  await page.route('**/rest/v1/rpc/pedidos_disponiveis_entrega', async (route) => {
+    if (preflight(route)) return;
+    c.fila++;
+    const f = estado.fila;
+    return responder(route, typeof f === 'function' ? f() : { json: { servidorEm: new Date().toISOString(), ...f } });
+  });
+  await page.route('**/rest/v1/rpc/pegar_pedido_entrega', async (route) => {
+    if (preflight(route)) return;
+    const corpo = route.request().postDataJSON() || {};
+    c.pegar.push(corpo.p_id);
+    return responder(route, estado.pegar(corpo));
   });
   await page.route('**/rest/v1/rpc/consultar_entrega_motoboy', async (route) => {
     if (preflight(route)) return;
@@ -634,7 +651,7 @@ test('lista Em rota: dados do pedido e um botão Entregue em cada um (plano B se
 
   // Atualizar consulta de novo
   s.estado.rota = [];
-  await page.getByRole('button', { name: 'Atualizar' }).click();
+  await page.getByRole('button', { name: 'Atualizar', exact: true }).click();
   await expect(page.getByText('Nenhuma entrega em rota agora.')).toBeVisible();
   expect(s.c.rota).toBe(3);
   await v.fechar();
@@ -649,7 +666,7 @@ test('lista Em rota: erro na confirmação fica no pedido; falha ao carregar ped
   await abrirLogado(page);
   await expect(page.getByRole('alert').filter({ hasText: 'Sem conexão com o servidor' })).toBeVisible();
   s.estado.rota = [emRota()];
-  await page.getByRole('button', { name: 'Atualizar' }).click();
+  await page.getByRole('button', { name: 'Atualizar', exact: true }).click();
   const item = page.locator('.mb-item');
   await expect(item).toHaveCount(1);
   await item.getByRole('button', { name: 'Entregue' }).click();
@@ -902,4 +919,137 @@ test('atualização automática sem mudanças mantém o foco no pedido do entreg
   await page.clock.fastForward(11_000);
   await expect(sincronizar).toHaveAttribute('aria-busy', 'false');
   await expect(entregar).toBeFocused();
+});
+
+// ---------- fila da loja (migration 20261024023500) ----------
+const naLoja = {
+  entregador: { id: MOTO.id, nome: MOTO.email, declarado: 'na_loja', situacao: 'reservada', qtdAbertas: 1, elegivel: false },
+  despachoIndividualAtivo: true,
+  viagem: {
+    id: '50000000-0000-4000-8000-000000000001',
+    versao: '50000000-0000-4000-8000-000000000002',
+    estado: 'reservada',
+    tipoDespacho: 'individual',
+    reservaAte: new Date(Date.now() + 300_000).toISOString(),
+    carregadaVersao: null,
+    revisaoPendente: false,
+    geometria: null,
+    paradas: [
+      {
+        id: ID_A,
+        numero: 11,
+        nome: 'Maria Souza',
+        endereco: 'Rua das Flores, 120',
+        status: 'pronto',
+        ordem: 1,
+        atribuicao: '30000000-0000-4000-8000-000000000001'
+      }
+    ]
+  }
+};
+const disponivel = (id, numero, extra) => ({
+  id,
+  numero,
+  endereco: `Rua da Fila, ${numero}, Centro, Suzano/SP`,
+  prontoEm: new Date(Date.now() - 5 * 60_000).toISOString(),
+  cobrarNaEntrega: false,
+  ...extra
+});
+
+test('fila da loja: mostra os pedidos prontos sem entregador e pega mais um antes de sair', async ({ page, baseURL }) => {
+  const v = await preparar(page, baseURL);
+  const s = await simular(page, {
+    rota: [pedido({ status: 'pronto', saiuEm: null, viagemId: naLoja.viagem.id, versaoViagem: naLoja.viagem.versao })],
+    operacao: naLoja,
+    fila: { motivo: null, emPreparo: 1, pedidos: [disponivel(ID_B, 12, { cobrarNaEntrega: true }), disponivel(ID_C, 13)] }
+  });
+  const cargas = [];
+  await page.route('**/rest/v1/rpc/reconhecer_carregamento_viagem', (route) => {
+    if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
+    cargas.push(route.request().postDataJSON().p_versao);
+    return route.fulfill({ headers: CORS, json: { ok: true } });
+  });
+  await abrirLogado(page);
+  const fila = page.locator('[data-v-fila]');
+  await expect(fila).toHaveAttribute('open', '');
+  await expect(fila.locator('.mb-disp-qtd')).toHaveText('2');
+  await expect(fila.locator('li')).toHaveCount(2);
+  await expect(fila.locator('li').first()).toContainText('#0012');
+  await expect(fila.locator('li').first()).toContainText('Rua da Fila, 12');
+  await expect(fila.locator('li').first()).toContainText('Cobrar na entrega');
+  await expect(fila.locator('li').first()).toContainText(/Pronto há \d+:\d\d/);
+  await expect(fila).toContainText('Toque em Pegar para levar junto nesta saída');
+  await expect(fila).toContainText('Mais 1 pedido de entrega em preparo na cozinha.');
+  // nada de nome nem telefone de quem ainda não é do motoboy
+  await expect(fila).not.toContainText('Maria');
+
+  // cancelar a confirmação não pega
+  page.once('dialog', (d) => d.dismiss());
+  await fila.getByRole('button', { name: 'Pegar pedido #0012' }).click();
+  expect(s.c.pegar).toEqual([]);
+
+  s.estado.pegar = () => {
+    s.estado.fila = { motivo: null, emPreparo: 1, pedidos: [disponivel(ID_C, 13)] };
+    return { json: { ok: true } };
+  };
+  const dialogo = new Promise((ok) =>
+    page.once('dialog', (d) => {
+      ok(d.message());
+      d.accept();
+    })
+  );
+  await fila.getByRole('button', { name: 'Pegar pedido #0012' }).click();
+  expect(await dialogo).toBe('Pegar o pedido #0012 para levar junto nesta saída?');
+  await expect.poll(() => s.c.pegar).toEqual([ID_B]);
+  await expect(fila.locator('.mb-disp-aviso')).toContainText('Pedido #0012 reservado para você');
+  await expect(fila.locator('li')).toHaveCount(1);
+  await expect(fila.locator('.mb-disp-qtd')).toHaveText('1');
+
+  // disputa: outro motoboy levou primeiro
+  s.estado.pegar = () => {
+    s.estado.fila = { motivo: null, emPreparo: 0, pedidos: [] };
+    return recusa('pedido_indisponivel')();
+  };
+  page.once('dialog', (d) => d.accept());
+  await fila.getByRole('button', { name: 'Pegar pedido #0013' }).click();
+  await expect(fila.locator('[role="alert"]')).toHaveText(
+    'Outro entregador pegou este pedido primeiro ou ele mudou. A fila foi atualizada.'
+  );
+  await expect(fila).toContainText('Nenhum pedido pronto aguardando entregador agora.');
+  expect(s.c.pegar).toEqual([ID_B, ID_C]);
+  expect(s.c.naoSimuladas).toEqual([]);
+  await v.fechar();
+  expect(v.csp).toEqual([]);
+  expect(v.erros.filter((e) => !/status of 400/.test(e))).toEqual([]);
+});
+
+test('fila da loja: na rua fica só para consulta, sem botão ativo', async ({ page, baseURL }) => {
+  await preparar(page, baseURL);
+  const s = await simular(page, {
+    operacao: { ...naLoja, viagem: { ...naLoja.viagem, estado: 'em_rota' } },
+    fila: { motivo: 'entrega_em_andamento', emPreparo: 0, pedidos: [disponivel(ID_B, 12)] }
+  });
+  await abrirLogado(page);
+  const fila = page.locator('[data-v-fila]');
+  await expect(fila.locator('.mb-disp-qtd')).toHaveText('1');
+  await expect(fila).not.toHaveAttribute('open', '');
+  await fila.locator('summary').click();
+  await expect(fila).toContainText('A fila fica aqui só para consulta');
+  await expect(fila.getByRole('button', { name: 'Pegar pedido #0012' })).toBeDisabled();
+  // aberta pelo motoboy, continua aberta nas atualizações seguintes
+  await page.getByRole('button', { name: 'Atualizar saída' }).click();
+  await expect.poll(() => s.c.fila).toBeGreaterThan(1);
+  await expect(fila).toHaveAttribute('open', '');
+  expect(s.c.pegar).toEqual([]);
+});
+
+test('fila da loja: banco sem a função nova esconde a seção sem acusar erro', async ({ page, baseURL }) => {
+  await preparar(page, baseURL);
+  await simular(page, {
+    fila: () => ({ status: 404, json: { code: 'PGRST202', details: null, hint: null, message: 'Could not find the function' } })
+  });
+  await abrirLogado(page);
+  await expect(page.locator('.mb-operacao')).toContainText('Fora do turno');
+  await expect(page.locator('[data-v-fila]')).toHaveCount(0);
+  await expect(page.locator('.mb-operacao .mb-operacao-erro')).toBeHidden();
 });

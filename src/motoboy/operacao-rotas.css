@@ -130,3 +130,110 @@
 .mb-operacao {
   overflow-wrap: anywhere;
 }
+/* Fila da loja: pedidos prontos sem entregador */
+.mb-disponiveis {
+  margin-top: 12px;
+  padding: 0 18px 6px;
+  border: 1px solid var(--borda);
+  border-radius: 16px;
+  background: var(--chapa);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.mb-disponiveis summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  cursor: pointer;
+}
+.mb-disponiveis summary > span:first-child {
+  display: flex;
+  flex-direction: column;
+}
+.mb-disponiveis summary b {
+  font: 500 20px/1.2 var(--f-placa);
+  color: var(--osso);
+}
+.mb-disponiveis .mb-secao-label {
+  margin: 0;
+}
+.mb-disp-qtd {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 18px;
+  background: var(--fio);
+  color: var(--grafite);
+  font-weight: 600;
+}
+.mb-disponiveis p {
+  color: var(--osso-2);
+  line-height: 1.6;
+  margin: 10px 0;
+}
+.mb-disponiveis .mb-disp-aviso {
+  padding: 12px;
+  border: 1px solid var(--neon-aberto);
+  border-radius: 10px;
+  color: var(--neon-aberto);
+}
+.mb-disponiveis .mb-operacao-erro {
+  padding: 12px;
+  border: 1px solid var(--fio);
+  border-radius: 10px;
+  color: var(--fio);
+}
+.mb-disponiveis .mb-operacao-consulta {
+  font-size: 10px;
+}
+.mb-disp-lista {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 14px 0;
+}
+.mb-disp-lista li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: var(--chapa-2);
+}
+.mb-disp-lista li > div {
+  flex: 1;
+  min-width: 0;
+}
+.mb-disponiveis .mb-disp-lista p {
+  margin: 2px 0;
+  font-size: 12px;
+}
+.mb-disponiveis .mb-disp-cab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.mb-disponiveis .mb-disp-cab > b {
+  font-size: 18px;
+  color: var(--fio);
+}
+.mb-disp-lista small {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--letreiro);
+}
+.mb-disp-lista .pn-btn {
+  flex: none;
+  min-width: 88px;
+  min-height: 56px;
+  justify-content: center;
+}

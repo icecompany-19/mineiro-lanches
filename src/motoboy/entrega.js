@@ -157,7 +157,9 @@ export function consultarOperacaoRotas(sb, nome, args = {}) {
       'definir_disponibilidade_entregador',
       'reconhecer_carregamento_viagem',
       'iniciar_viagem_entrega',
-      'retornar_viagem_entrega'
+      'retornar_viagem_entrega',
+      'pedidos_disponiveis_entrega',
+      'pegar_pedido_entrega'
     ].includes(nome)
   )
     throw erroCom('dados_invalidos');

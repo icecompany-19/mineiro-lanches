@@ -576,7 +576,7 @@ function desenharLista(t) {
     return;
   }
   if (!t.lista.length) {
-    t.areaLista.innerHTML = `<div class="mb-vazio">${ic('check')}<p>Nenhuma entrega em rota agora.</p><span>Novos pedidos aparecem aqui quando a equipe atribuir a você.</span></div>`;
+    t.areaLista.innerHTML = `<div class="mb-vazio">${ic('check')}<p>Nenhuma entrega em rota agora.</p><span>Seus pedidos aparecem aqui quando a equipe atribuir a você ou quando você pegar um da fila da loja.</span></div>`;
     return;
   }
   const lista = t.lista.filter(
