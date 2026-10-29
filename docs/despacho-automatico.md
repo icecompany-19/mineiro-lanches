@@ -1,5 +1,7 @@
 # Despacho automático individual
 
+> **Retirado em 29/10/2026.** A pedido do dono, as entregas passaram a ser manuais no painel e a operação do motoboy saiu do sistema. Este documento fica só como histórico. Ver [`ENTREGAS-MANUAIS.md`](ENTREGAS-MANUAIS.md).
+
 Migração: `20261022193306_despacho_automatico_individual.sql`. Atualização aditiva, instalada desligada. Aplicar somente a migração ao banco existente; não reaplicar setup/seed em produção. A Edge Function `planejar-entregas` existente já aceita o resultado direto do banco e não precisa ser republicada.
 
 ## Comportamento

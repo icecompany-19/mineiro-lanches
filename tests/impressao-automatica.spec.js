@@ -32,7 +32,7 @@ async function preparar({ page, context }, iniciais = []) {
     window.print = () => {
       const c = document.querySelector('.pn-auto-folha .pn-comanda') || document.querySelector('.pn-comanda');
       window.__cupons.push({ id: c?.dataset.pedidoId || null, texto: c?.textContent, largura: c?.getBoundingClientRect().width,
-        logo: c?.querySelector('img')?.complete, pagina: [...document.querySelectorAll('style')].map(s => s.textContent).find(s => /@page \{ size: 72mm/.test(s)) });
+        logo: c?.querySelector('img')?.complete, qr: c ? c.querySelectorAll('.pn-c-qr, svg').length : null, pagina: [...document.querySelectorAll('style')].map(s => s.textContent).find(s => /@page \{ size: 72mm/.test(s)) });
       if (!window.__reterImpressao) setTimeout(() => window.dispatchEvent(new Event('afterprint')), 10);
     };
   });
@@ -65,7 +65,7 @@ async function estados(page) {
   }));
 }
 
-test('ativa após teste, ignora pedidos antigos e imprime o próximo pedido com logo, QR e 72 mm sem mudar seu status', async ({ page, context }) => {
+test('ativa após teste, ignora pedidos antigos e imprime o próximo pedido com logo e 72 mm, sem QR do entregador, sem mudar seu status', async ({ page, context }) => {
   const api = await preparar({ page, context }, [pedido(1)]);
   await page.getByRole('button', { name: 'Configurar impressão', exact: true }).click();
   await expect(page.getByRole('button', { name: 'O teste saiu: ativar neste computador' })).toBeDisabled();
@@ -75,7 +75,9 @@ test('ativa após teste, ignora pedidos antigos e imprime o próximo pedido com 
   await expect.poll(async () => (await cupons(page)).length).toBe(1);
   const [cupom] = await cupons(page);
   expect(cupom.id).toBe(pedido(2).id);
-  expect(cupom.texto).toContain('ENTREGADOR: LEIA AO ENTREGAR');
+  expect(cupom.texto).not.toContain('ENTREGADOR');
+  expect(cupom.texto).not.toContain('LEIA AO ENTREGAR');
+  expect(cupom.qr, 'cupom de entrega sem QR nem svg').toBe(0);
   expect(cupom.texto).toContain('Conferir observação');
   expect(cupom.logo).toBe(true);
   expect(Math.abs(cupom.largura - 72 * 96 / 25.4)).toBeLessThan(1);
@@ -201,14 +203,15 @@ test('sair interrompe a fila, remove a comanda do documento e não imprime novos
   expect(await cupons(page)).toHaveLength(0);
 });
 
-test('PDF automático contém só o cupom e mantém uma página de 72 mm com logo e QR', async ({ page, context }, info) => {
+test('PDF automático contém só o cupom e mantém uma página de 72 mm com logo e sem QR', async ({ page, context }, info) => {
   const api = await preparar({ page, context }); await ativar(page);
   await page.evaluate(() => { window.__reterImpressao = true; });
   await api.mudar([pedido(21)]);
   await expect.poll(async () => (await cupons(page)).length).toBe(1);
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('.pn-auto-folha .pn-comanda')).toBeVisible();
-  await expect(page.locator('.pn-auto-folha .pn-c-qr')).toBeVisible();
+  await expect(page.locator('.pn-auto-folha .pn-c-logo')).toBeVisible();
+  await expect(page.locator('.pn-auto-folha .pn-c-qr')).toHaveCount(0);
   await expect(page.locator('#view-painel')).toBeHidden();
   await page.screenshot({ path: info.outputPath('cupom-automatico.png'), fullPage: true });
   const pdf = await page.pdf({ path: info.outputPath('cupom-automatico.pdf'), preferCSSPageSize: true, printBackground: true });

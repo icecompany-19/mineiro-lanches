@@ -1,5 +1,7 @@
 # Planejamento de rotas e distribuição aos entregadores
 
+> **Retirado em 29/10/2026.** A pedido do dono, as entregas passaram a ser manuais no painel e a operação do motoboy saiu do sistema. Este documento fica só como histórico. Ver [`ENTREGAS-MANUAIS.md`](ENTREGAS-MANUAIS.md).
+
 Proposta original de 19/10/2026, baseada no código publicado em `66bb7a4`, em consultas agregadas de leitura no banco e na documentação dos provedores. As etapas técnicas de prontidão, disponibilidade, planejamento, viagens e reserva automática foram implementadas posteriormente. O guia vigente está em [ROTAS-OPERACAO.md](ROTAS-OPERACAO.md). O piloto e a ativação dependem da confirmação física da origem e dos limites definidos pela operação; a instalação fica desligada.
 
 ## Decisão recomendada

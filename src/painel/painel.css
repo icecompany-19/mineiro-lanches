@@ -187,8 +187,6 @@
 .pn-total { font: 600 1.5rem var(--f-placa); font-variant-numeric: tabular-nums; color: var(--pn-tinta); }
 .pn-acoes { display: flex; flex-direction: column; gap: .5rem; }
 .pn-avancar { width: 100%; min-height: 48px; padding: .3rem .4rem; font-size: 15px; letter-spacing: .03em; line-height: 1.1; text-align: center; }
-.pn-aguarda-moto { display: flex; align-items: center; justify-content: center; gap: .4rem; min-height: 48px; margin: 0; padding: .3rem .6rem; border: 1px dashed var(--pn-linha); border-radius: var(--r-sm); color: var(--pn-tinta-2); font-size: .85rem; text-align: center; }
-.pn-aguarda-moto--m { min-height: 44px; }
 .pn-acoes-sec { display: flex; flex-wrap: wrap; gap: .4rem; }
 .pn-acoes-sec .pn-btn { flex: 1 1 0; min-width: 0; font-size: .8rem; padding: 0 .4rem; }
 .pn-acoes-sec .pn-ic { display: none; }
@@ -370,11 +368,6 @@
 .pn-c-v { font-weight: 800; }
 .pn-c-taxa { font-weight: 800; }
 .pn-c-total { display: flex; justify-content: space-between; font-weight: 700; font-size: 18px; margin-top: 4px; }
-/* QR do entregador (só em pedido de entrega): o <svg> traz o tamanho em mm; a legenda e o número repetido saem em negrito */
-.pn-c-qr { text-align: center; break-inside: avoid; page-break-inside: avoid; }
-.pn-c-qr svg { display: block; margin: 0 auto; max-width: 100%; }
-.pn-c-qr .pn-c-qr-t { margin: 2mm 0 0; font-weight: 800; font-size: 12px; letter-spacing: .02em; }
-.pn-c-qr .pn-c-qr-n { margin: 0; font-weight: 800; font-size: 22px; line-height: 1.15; }
 
 /* ---------- animações ---------- */
 @keyframes pn-entra { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }

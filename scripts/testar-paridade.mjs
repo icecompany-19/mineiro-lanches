@@ -386,15 +386,17 @@ async function main() {
     );
     const listaMotoboys = await http('GET', '/rest/v1/motoboys?select=user_id', { token: estranho });
     ok(listaMotoboys.status === 200 && Array.isArray(listaMotoboys.json) && listaMotoboys.json.length === 0, 'logado fora dos motoboys: GET /motoboys vem vazio');
+    // as RPCs da tela do motoboy foram revogadas de quem está logado (migration 20261029190000_entregas_manuais): erro de permissão
     for (const [fn, args] of [
       ['entregas_em_rota', {}],
       ['confirmar_entrega', { p_id: criados[0].resp.id }]
     ]) {
       const r = await http('POST', `/rest/v1/rpc/${fn}`, { corpo: args, token: estranho });
-      ok(r.status >= 400 && r.json && r.json.message === 'sem_permissao', `logado fora dos motoboys: ${fn} → sem_permissao`);
+      ok(r.status >= 400, `logado fora dos motoboys: ${fn} revogada (HTTP ${r.status})`);
     }
 
-    // motoboy pelo login do proxy: lê só a própria linha, não lê pedidos nem muda status, e vê só a lista de entregas em rota
+    // conta antiga de motoboy pelo login do proxy: lê só a própria linha, não lê pedidos nem muda status, e não chama mais
+    // as RPCs da tela do motoboy (revogadas em 29/10/2026)
     const loginMoto = await http('POST', '/auth/v1/token?grant_type=password', {
       corpo: { email: 'moto@teste.local', password: 'qualquer' }
     });
@@ -417,15 +419,12 @@ async function main() {
       const escreveu = await http('PATCH', `/rest/v1/pedidos?id=eq.${criados[0].resp.id}`, { corpo: { status: 'entregue' }, token: tokenMoto });
       ok(escreveu.status >= 400, `motoboy: PATCH /pedidos: erro (HTTP ${escreveu.status})`);
       const lista = await http('POST', '/rest/v1/rpc/entregas_em_rota', { corpo: {}, token: tokenMoto });
-      ok(
-        lista.status === 200 && Array.isArray(lista.json) && lista.json.every((e) => !('itens' in e) && !('token' in e)),
-        'motoboy: entregas_em_rota devolve uma lista sem itens e sem token'
-      );
+      ok(lista.status >= 400, `motoboy: entregas_em_rota revogada (HTTP ${lista.status})`);
       const sumiu = await http('POST', '/rest/v1/rpc/confirmar_entrega', {
         corpo: { p_id: '00000000-0000-4000-8000-00000000abcd' },
         token: tokenMoto
       });
-      ok(sumiu.status >= 400 && sumiu.json && sumiu.json.message === 'nao_encontrado', 'motoboy: confirmar_entrega de id inexistente → nao_encontrado');
+      ok(sumiu.status >= 400, `motoboy: confirmar_entrega revogada (HTTP ${sumiu.status})`);
     }
 
     // equipe pelo login do proxy: lê pedidos e muda status

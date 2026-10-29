@@ -71,10 +71,11 @@ async function entrar(page, email = 'user-test-admin@teste.local') {
   await page.getByRole('button', { name: 'Entrar', exact: true }).click();
   await page.getByRole('button', { name: 'Usuários', exact: true }).click();
 }
-async function criar(page, nome = 'Entregador novo') {
+async function criar(page, nome = 'Usuário novo', { aoAbrir } = {}) {
   const email = 'user-test-' + randomUUID() + '@teste.local';
   await page.getByRole('button', { name: 'Novo usuário', exact: true }).click();
   const f = page.getByRole('form', { name: 'Cadastrar usuário' });
+  if (aoAbrir) await aoAbrir(f);
   await f.getByLabel('Nome', { exact: true }).fill(nome);
   await f.getByLabel('E-mail', { exact: true }).fill(email);
   await f.getByLabel('Senha inicial').fill('Senha!123456');
@@ -82,25 +83,56 @@ async function criar(page, nome = 'Entregador novo') {
   await expect(page.getByRole('heading', { name: nome, exact: true })).toBeVisible();
   return email;
 }
-test('cadastra motoboy pelo painel e preserva separação da equipe', async ({ page }) => {
+test('cadastra usuário pelo painel: o formulário oferece só Administrador e Equipe (Equipe por padrão) e o acesso é o painel', async ({ page }) => {
   await preparar(page);
   await entrar(page);
-  const email = await criar(page);
+  const email = await criar(page, 'Usuário novo', {
+    aoAbrir: async (f) => {
+      const perfil = f.getByLabel('Perfil');
+      await expect(perfil.locator('option')).toHaveText(['Administrador', 'Equipe']);
+      await expect(perfil).toHaveValue('equipe');
+      await expect(perfil.locator('option', { hasText: 'Motoboy' })).toHaveCount(0);
+    }
+  });
   expect(
     sql(
-      `select u.perfil,u.ativo,exists(select 1 from motoboys m where m.user_id=u.user_id and m.ativo),exists(select 1 from equipe e where e.user_id=u.user_id) from usuarios_painel u where u.email=${lit(email)}`
+      `select u.perfil,u.ativo,exists(select 1 from motoboys m where m.user_id=u.user_id),exists(select 1 from equipe e where e.user_id=u.user_id) from usuarios_painel u where u.email=${lit(email)}`
     )
-  ).toBe('motoboy|t|t|f');
+  ).toBe('equipe|t|f|t');
   await expect(
-    page.locator('[data-usuarios]:visible').getByText('Usuário cadastrado. Acesso: mineirolanches.store/motoboy/', { exact: true })
+    page.locator('[data-usuarios]:visible').getByText('Usuário cadastrado. Acesso: mineirolanches.store/painel/', { exact: true })
   ).toBeVisible();
+  await expect(page.locator('[data-usuarios]:visible').getByText('/motoboy/')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: test.info().outputPath('usuarios.png'), fullPage: true });
-  await page.goto('/motoboy/');
-  await page.getByLabel('E-mail', { exact: true }).fill(email);
-  await page.getByLabel('Senha', { exact: true }).fill('Senha!123456');
-  await page.getByRole('button', { name: 'Entrar', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Entregas', exact: true })).toBeVisible();
+  // a conta nova entra pelo próprio painel (sai do administrador e entra com ela; ela não gerencia usuários)
+  await page.getByRole('button', { name: 'Sair', exact: true }).first().click();
+  await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeVisible();
+  await entrar(page, email);
+  await expect(page.getByRole('heading', { name: 'Sem acesso' })).toHaveCount(0);
+  await expect(
+    page.locator('[data-usuarios]:visible').getByText('Somente administradores podem gerenciar usuários.', { exact: true })
+  ).toBeVisible();
+});
+test('conta antiga de motoboy continua listada como "Motoboy (tela retirada)" e a edição mantém esse perfil', async ({ page }) => {
+  const id = randomUUID(),
+    email = 'user-test-moto-' + id + '@teste.local';
+  sql(`insert into auth.users(id,email) values('${id}',${lit(email)});
+ insert into usuarios_painel(user_id,nome,email,perfil,ativo) values('${id}','Moto antigo',${lit(email)},'motoboy',true);
+ insert into motoboys(user_id,nome,ativo) values('${id}','Moto antigo',true);`);
+  await preparar(page);
+  await entrar(page);
+  await expect(page.locator('[data-usuarios]:visible').getByText('Motoboy (tela retirada)', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Editar Moto antigo', exact: true }).click();
+  const f = page.getByRole('form', { name: 'Editar usuário' });
+  const perfil = f.getByLabel('Perfil');
+  await expect(perfil).toHaveValue('motoboy');
+  await expect(perfil.locator('option:checked')).toHaveText('Motoboy (tela retirada)');
+  await expect(perfil.locator('option')).toHaveText(['Administrador', 'Equipe', 'Motoboy (tela retirada)']);
+  // salvar sem mexer no perfil não promove a conta a administrador nem a equipe
+  await f.getByRole('button', { name: 'Salvar usuário' }).click();
+  await expect(page.locator('[data-usuarios]:visible').getByText('Acesso atualizado.', { exact: true })).toBeVisible();
+  expect(sql(`select perfil,ativo from usuarios_painel where user_id='${id}'`)).toBe('motoboy|t');
 });
 test('edita perfil, desativa, reativa e redefine senha sem abrir o Supabase', async ({ page }) => {
   const senhas = await preparar(page);
@@ -108,8 +140,11 @@ test('edita perfil, desativa, reativa e redefine senha sem abrir o Supabase', as
   const email = await criar(page, 'Teste de acesso');
   await page.getByRole('button', { name: 'Editar Teste de acesso', exact: true }).click();
   const f = page.getByRole('form', { name: 'Editar usuário' });
-  await f.getByLabel('Perfil').selectOption('equipe');
+  await expect(f.getByLabel('Perfil')).toHaveValue('equipe'); // o cadastro novo nasce como Equipe
+  await f.getByLabel('Perfil').selectOption('admin');
   await f.getByRole('button', { name: 'Salvar usuário' }).click();
+  await expect(page.locator('[data-usuarios]:visible').getByText('Acesso atualizado.', { exact: true })).toBeVisible();
+  expect(sql(`select perfil from usuarios_painel where email=${lit(email)}`)).toBe('admin');
   await page.getByRole('button', { name: 'Desativar Teste de acesso' }).click();
   await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Reativar Teste de acesso' })).toBeVisible();
@@ -158,7 +193,7 @@ test('bloqueia retirada da própria administração mesmo adulterando o formulá
   const f = page.getByRole('form', { name: 'Editar usuário' });
   await expect(f.getByLabel('Perfil')).toBeDisabled();
   await f.getByLabel('Perfil').evaluate((el) => (el.disabled = false));
-  await f.getByLabel('Perfil').selectOption('motoboy');
+  await f.getByLabel('Perfil').selectOption('equipe');
   await f.getByRole('button', { name: 'Salvar usuário' }).click();
   await expect(f.getByRole('alert')).toContainText('próprio acesso');
   expect(sql(`select perfil from usuarios_painel where user_id='${admin}'`)).toBe('admin');

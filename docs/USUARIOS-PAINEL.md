@@ -5,9 +5,9 @@ Acesse `https://mineirolanches.store/painel/` e abra **Usuários**. A tela funci
 ## Cadastro e operação
 
 1. Clique em **Novo usuário** e preencha nome, e-mail, perfil e senha inicial de 10 a 128 caracteres.
-2. Selecione **Motoboy** para o entregador, **Equipe** para operar pedidos ou **Administrador** para também gerenciar usuários.
+2. Selecione **Equipe** para operar pedidos ou **Administrador** para também gerenciar usuários. (O perfil Motoboy saiu em 29/10 com as [entregas manuais](ENTREGAS-MANUAIS.md); contas antigas aparecem como "Motoboy (tela retirada)" e podem ser desativadas.)
 3. Salve e entregue as credenciais diretamente à pessoa. O cadastro confirma o e-mail pela API administrativa e não depende de convite/SMTP. Senhas não aparecem na lista, não são armazenadas no cadastro nem entram na auditoria.
-4. O entregador entra em `https://mineirolanches.store/motoboy/`; equipe e administradores entram em `/painel/`.
+4. Equipe e administradores entram em `/painel/`.
 5. Se a conta já existir no Auth e ainda não aparecer na lista, use **Liberar conta existente** com o mesmo e-mail e o perfil desejado. Essa operação preserva a senha existente. Se já aparecer na lista, use **Editar**.
 6. **Editar** permite mudar nome, perfil e situação do acesso. O e-mail permanece o identificador do login e não é alterado por essa tela.
 7. **Nova senha** define outra senha para a conta; entregue-a diretamente ao usuário. Não é enviada por e-mail.

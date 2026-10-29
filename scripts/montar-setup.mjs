@@ -29,7 +29,7 @@ const cabecalho = `-- ==========================================================
 --  e gatilhos; pode confirmar.)
 -- Idempotente: rodar de novo não dá erro nem duplica dados, policies ou tabelas no Realtime.
 -- Roda numa transação só: se algo falhar, nada fica pela metade.
--- Depois: dê acesso ao painel (e ao motoboy) com os comandos comentados no fim do arquivo.
+-- Depois: dê acesso ao painel com os comandos comentados no fim do arquivo.
 -- =====================================================================================
 
 begin;
@@ -49,13 +49,8 @@ commit;
 -- insert into usuarios_painel(user_id,nome,email,perfil,ativo)
 -- select id,'Dono',lower(email),'admin',true from auth.users where email='EMAIL_AQUI'
 -- on conflict(user_id) do update set perfil='admin',ativo=true;
--- Depois, use Painel > Usuários para cadastrar/liberar equipe e motoboys sem abrir o Supabase.
---
--- Acesso do motoboy (tela /motoboy/): crie o usuário em Authentication → Users (e-mail e senha, Auto Confirm) e rode,
--- trocando EMAIL_AQUI pelo e-mail dele. O motoboy NÃO entra na equipe: ele só enxerga suas próprias atribuições abertas.
--- Para cortar o acesso sem apagar o usuário: update public.motoboys set ativo = false where user_id = (select id from auth.users where email = 'EMAIL_AQUI');
---
--- insert into public.motoboys (user_id, nome) select id, 'Motoboy' from auth.users where email = 'EMAIL_AQUI' on conflict do nothing;
+-- Depois, use Painel > Usuários para cadastrar/liberar a equipe sem abrir o Supabase.
+-- (A tela do motoboy saiu em 29/10: as entregas são manuais no painel. Ver docs/ENTREGAS-MANUAIS.md.)
 -- =====================================================================================
 `;
 

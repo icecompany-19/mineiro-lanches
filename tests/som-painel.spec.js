@@ -1,7 +1,8 @@
 // Aviso sonoro de pedido novo no painel (cliente, 16/10/2026: "o som precisa ser mais alto para identificar o pedido"):
 // três "ding-dong" em onda quadrada (1568 e 2093 Hz), no ganho máximo do navegador, com compressor; "Testar o som" em Configurações.
 // O AudioContext é trocado por um gravador (o teste não depende de som de verdade). Quadro simulado por page.route.
-// Também o contrário (17/10): pedido entregue em outro aparelho (o motoboy) ganha só um aviso discreto, sem som.
+// Também o contrário (17/10): pedido entregue em outro aparelho (outro computador ou celular da equipe) ganha só um aviso discreto, sem som.
+// (29/10, entregas manuais) a tela do motoboy saiu: o aviso é sempre "#0031 entregue · Cliente 31", sem "pelo motoboy".
 // Uso: npx playwright test tests/som-painel.spec.js --project=desktop   (precisa do Supabase local no ar)
 /* global window */
 import { test, expect } from '@playwright/test';
@@ -98,7 +99,7 @@ test('pedido novo toca o aviso alto; com o som desligado não toca', async ({ pa
   expect((await resumo(page)).n).toBe(6);
 });
 
-test('pedido entregue em outro aparelho (o motoboy): aviso discreto e sem som; o que o próprio painel conclui não repete o aviso', async ({ page }) => {
+test('pedido entregue em outro aparelho: aviso discreto e sem som; o que o próprio painel conclui não repete o aviso', async ({ page }) => {
   await espiarAudio(page);
   const hora = new Date(Date.now() - 1800_000).toISOString();
   const emRota = (n) => {
@@ -119,17 +120,17 @@ test('pedido entregue em outro aparelho (o motoboy): aviso discreto e sem som; o
   await page.locator('[data-nav="pedidos"]').click();
   await expect(page.locator('.pn-col--saida .pn-card')).toHaveCount(2);
 
-  // o motoboy confirma o #0031 (confirmar_entrega grava "por": "motoboy"): o cartão vai para Concluídos com o aviso
+  // outro aparelho da equipe conclui o #0031 (a próxima lista já vem com ele entregue): o cartão vai para Concluídos com o aviso
   const p31 = dados.pedidos[0];
-  dados.pedidos[0] = Object.assign({}, p31, { status: 'entregue', historico: [...p31.historico, { status: 'entregue', em: new Date().toISOString(), por: 'motoboy' }] });
+  dados.pedidos[0] = Object.assign({}, p31, { status: 'entregue', historico: [...p31.historico, { status: 'entregue', em: new Date().toISOString() }] });
   await page.evaluate(() => window.ML.store.recarregar());
   await expect(page.locator('.pn-col--concluidos .pn-card[data-id$="31"]')).toBeVisible();
-  const aviso = page.locator('.pn-toast', { hasText: '#0031 entregue pelo motoboy · Cliente 31' });
+  const aviso = page.locator('.pn-toast', { hasText: '#0031 entregue · Cliente 31' });
   await expect(aviso).toBeVisible();
   await expect(aviso).not.toHaveClass(/pn-toast--(novo|erro)/);
   expect((await resumo(page)).n, 'sem som').toBe(0);
 
-  // a equipe conclui a retirada #0032 aqui mesmo: só o aviso do avanço ("#0032: Entregue"), nenhum "entregue pelo"
+  // a equipe conclui a retirada #0032 aqui mesmo: só o aviso do avanço ("#0032: Entregue"), nenhum aviso de "entregue em outro aparelho"
   await page.locator('.pn-col--saida .pn-card[data-id$="32"]').getByRole('button', { name: 'Concluir' }).click();
   await expect(page.locator('.pn-col--concluidos .pn-card[data-id$="32"]')).toBeVisible();
   await page.evaluate(() => window.ML.store.recarregar());

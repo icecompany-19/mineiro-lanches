@@ -1,14 +1,13 @@
 import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createHash } from 'node:crypto';
 
 const RAIZ = import.meta.dirname;
 const SPRITE = resolve(RAIZ, 'src/partials/sprite.svg');
 const MARCADOR = '<!-- sprite -->';
 const FOTOS = resolve(RAIZ, 'public/assets/fotos.json');
 
-// Injeta o sprite de ícones (src/partials/sprite.svg) no lugar de <!-- sprite --> das três páginas.
+// Injeta o sprite de ícones (src/partials/sprite.svg) no lugar de <!-- sprite --> das duas páginas.
 // Os <use href="#i-…"> continuam apontando para o mesmo documento.
 function sprite() {
   const ler = () =>
@@ -70,44 +69,17 @@ function preloadLetreiro() {
   };
 }
 
-// Três páginas: cliente (bio, cardápio, site, acompanhar), painel (equipe, com login) e motoboy (entregador, com login).
+// Duas páginas: cliente (bio, cardápio, site, acompanhar) e painel (equipe, com login). A tela do motoboy saiu em 29/10.
 // Os bundles do Vite vão para /_app (hash no nome, cache imutável); as fotos ficam em /assets (public/).
-function motoboyOffline() {
-  return {
-    name: 'ml-motoboy-offline',
-    apply: 'build',
-    generateBundle(_, bundle) {
-      const arquivos = Object.keys(bundle).filter(n => /\.(js|css|woff2?)$/.test(n)).map(n => '/' + n);
-      arquivos.push('/motoboy/', '/assets/logo/selo-256.webp');
-      const versao = createHash('sha256').update(arquivos.join('|') + readFileSync(resolve(RAIZ, 'motoboy/index.html'), 'utf8') + readFileSync(SPRITE, 'utf8')).digest('hex').slice(0, 16);
-      this.emitFile({ type: 'asset', fileName: 'motoboy/sw.js', source: `
-const CACHE='mineiro-motoboy-${versao}';
-const ARQUIVOS=${JSON.stringify(arquivos)};
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ARQUIVOS))));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('mineiro-motoboy-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{
-  const u=new URL(e.request.url);
-  if(e.request.method!=='GET'||u.origin!==self.location.origin)return;
-  if(e.request.mode==='navigate'&&u.pathname==='/motoboy/'){
-    e.respondWith(fetch(e.request).catch(()=>caches.match('/motoboy/')));return;
-  }
-  if(ARQUIVOS.includes(u.pathname))e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
-});
-` });
-    }
-  };
-}
-
 export default defineConfig({
-  plugins: [sprite(), fotos(), preloadLetreiro(), motoboyOffline()],
+  plugins: [sprite(), fotos(), preloadLetreiro()],
   build: {
     assetsDir: '_app',
     target: 'es2020',
     rollupOptions: {
       input: {
         cliente: resolve(RAIZ, 'index.html'),
-        painel: resolve(RAIZ, 'painel/index.html'),
-        motoboy: resolve(RAIZ, 'motoboy/index.html')
+        painel: resolve(RAIZ, 'painel/index.html')
       }
     }
   },

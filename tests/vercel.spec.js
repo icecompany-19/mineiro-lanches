@@ -28,10 +28,8 @@ const SEGURANCA = {
   'x-frame-options': 'DENY',
   'strict-transport-security': 'max-age=63072000; includeSubDomains'
 };
-// Permissions-Policy: a câmera só é liberada (para o próprio site) na tela do entregador, em /motoboy/; no resto, fechada.
+// Permissions-Policy: a câmera fica fechada no site todo (a tela do entregador, que a abria em /motoboy/, saiu em 29/10/2026).
 const PERMISSOES = 'camera=(), microphone=(), geolocation=(self), payment=()';
-const PERMISSOES_MOTOBOY = 'camera=(self), microphone=(), geolocation=(), payment=()';
-const permissoesDe = (rota) => (rota.startsWith('/motoboy/') ? PERMISSOES_MOTOBOY : PERMISSOES);
 const CSP = {
   'default-src': ["'self'"],
   'script-src': ["'self'"],
@@ -59,9 +57,11 @@ const REDIRECTS = [
   ['/q', '/?origem=qrcode'],
   ['/q/3', '/?origem=qrcode&mesa=3'],
   ['/painel', '/painel/'],
-  ['/motoboy', '/motoboy/']
+  // a tela do motoboy saiu em 29/10/2026: quem tinha o endereço salvo cai no painel
+  ['/motoboy', '/painel/'],
+  ['/motoboy/', '/painel/']
 ];
-const PAGINAS = ['/', '/#cardapio', '/#site', '/q', '/q/3', '/painel/', '/motoboy/'];
+const PAGINAS = ['/', '/#cardapio', '/#site', '/q', '/q/3', '/painel/'];
 // Cartaz do QR (public/qr/cartaz.html, fora do Vite): também é servido com a mesma CSP.
 const CARTAZ = '/qr/cartaz';
 
@@ -101,8 +101,8 @@ function lerCsp(valor) {
 
 function conferirSeguranca(h, rota) {
   for (const [k, v] of Object.entries(SEGURANCA)) expect(h[k], `${k} em ${rota}`).toBe(v);
-  // valor exato: se a Vercel somasse as duas regras, "camera=()" continuaria no cabeçalho e a câmera ficaria bloqueada
-  expect(h['permissions-policy'], `Permissions-Policy em ${rota}`).toBe(permissoesDe(rota));
+  // valor exato: uma regra global só, com a câmera fechada em qualquer rota
+  expect(h['permissions-policy'], `Permissions-Policy em ${rota}`).toBe(PERMISSOES);
   expect(h['content-security-policy'], `CSP em ${rota}`).toBeTruthy();
   const csp = lerCsp(h['content-security-policy']);
   for (const [diretiva, fontes] of Object.entries(CSP)) {
@@ -174,8 +174,8 @@ test('cabeçalhos de segurança e de cache', async ({ request }) => {
     ['/', { 'cache-control': CACHE.html }],
     ['/painel/', { 'cache-control': CACHE.html, 'x-robots-tag': 'noindex, nofollow' }],
     ['/painel/manifest.webmanifest', { 'x-robots-tag': 'noindex, nofollow' }],
-    ['/motoboy/', { 'cache-control': CACHE.html, 'x-robots-tag': 'noindex, nofollow' }],
-    ['/motoboy/manifest.webmanifest', { 'x-robots-tag': 'noindex, nofollow' }],
+    // worker que só limpa o cache da tela antiga do motoboy: nunca fica em cache do navegador
+    ['/motoboy/sw.js', { 'cache-control': CACHE.html }],
     ['/_app/' + appJs, { 'cache-control': CACHE.app }],
     ['/assets/og.jpg', { 'cache-control': CACHE.assets }],
     ['/manifest.webmanifest', {}],
@@ -194,48 +194,53 @@ test('cabeçalhos de segurança e de cache', async ({ request }) => {
     const h = r.headers();
     conferirSeguranca(h, rota);
     for (const [k, v] of Object.entries(esperado)) expect(h[k], `${k} em ${rota}`).toBe(v);
-    if (!rota.startsWith('/painel/') && !rota.startsWith('/motoboy/')) expect(h['x-robots-tag'], `X-Robots-Tag fora do painel e do entregador (${rota})`).toBeUndefined();
+    if (!rota.startsWith('/painel/')) expect(h['x-robots-tag'], `X-Robots-Tag fora do painel (${rota})`).toBeUndefined();
   }
 });
 
-// Câmera: só /motoboy/ (e o que está debaixo dele) recebe camera=(self); o resto do site continua com camera=().
-// Assim o cliente e a equipe nunca pedem a câmera, e o entregador consegue abrir o leitor de QR.
-test('Permissions-Policy: câmera liberada só em /motoboy/', async ({ request }) => {
-  const fechadas = ['/', '/painel/', '/painel/manifest.webmanifest', '/manifest.webmanifest', '/robots.txt', '/sitemap.xml', '/icons/icon-192.png', '/assets/og.jpg'];
-  for (const rota of fechadas) {
+// Câmera: fechada no site todo. A tela do motoboy (única que pedia camera=(self), para ler o QR da comanda) saiu em 29/10/2026.
+test('Permissions-Policy: câmera fechada no site todo', async ({ request }) => {
+  const rotas = ['/', '/painel/', '/painel/manifest.webmanifest', '/manifest.webmanifest', '/robots.txt', '/sitemap.xml', '/icons/icon-192.png', '/assets/og.jpg', '/motoboy/sw.js'];
+  for (const rota of rotas) {
     const r = await request.get(base + rota, { maxRedirects: 0 });
     expect(r.status(), rota).toBe(200);
-    expect(r.headers()['permissions-policy'], `Permissions-Policy em ${rota}`).toBe(PERMISSOES);
+    const valor = r.headers()['permissions-policy'];
+    expect(valor, `Permissions-Policy em ${rota}`).toBe(PERMISSOES);
+    expect(valor, `câmera fechada em ${rota}`).toContain('camera=()');
   }
-  for (const rota of ['/motoboy/', '/motoboy/manifest.webmanifest']) {
-    const r = await request.get(base + rota, { maxRedirects: 0 });
-    expect(r.status(), rota).toBe(200);
-    expect(r.headers()['permissions-policy'], `Permissions-Policy em ${rota}`).toBe(PERMISSOES_MOTOBOY);
-  }
-  // "/motoboyx/" não é a tela do entregador: nada de câmera
-  const outra = await request.get(base + '/motoboyx/', { maxRedirects: 0 });
-  expect(outra.headers()['permissions-policy']).toBe(PERMISSOES);
 });
 
-// C4 (plano, seção 7): em vez de depender de como a Vercel junta duas regras que dão o mesmo cabeçalho, a regra global
-// não alcança /motoboy/ e a regra do entregador repete os mesmos cabeçalhos (CSP incluída) com camera=(self).
-// Este teste pega a CSP ou qualquer outro cabeçalho que mude numa das regras e não na outra.
-test('vercel.json: a regra do entregador repete os cabeçalhos da global (só a câmera muda)', () => {
+// A regra global é a única que mexe em CSP e Permissions-Policy, e continua sendo headers[0] (tests/apoio/aceite.js lê a CSP dali).
+// Saíram a exclusão do motoboy por lookahead e a regra /motoboy/(.*) que repetia os cabeçalhos com a câmera aberta.
+// Sobra uma regra para /motoboy/sw.js, só para o cache do worker de limpeza.
+test('vercel.json: uma regra global de cabeçalhos (headers[0]), câmera fechada e nenhuma regra do motoboy com câmera', () => {
   const cfg = JSON.parse(readFileSync(join(RAIZ, 'vercel.json'), 'utf8'));
-  const global = cfg.headers[0]; // tests/apoio/aceite.js lê a CSP de headers[0]
-  const moto = cfg.headers.find((r) => r.source === '/motoboy/(.*)');
-  expect(global.source).toBe('/((?!motoboy(?:/|$)).*)');
-  expect(moto, 'regra /motoboy/(.*)').toBeTruthy();
-  const mapa = (regra) => Object.fromEntries(regra.headers.map((h) => [h.key, h.value]));
-  const { 'Permissions-Policy': camGlobal, ...restoGlobal } = mapa(global);
-  const { 'Permissions-Policy': camMoto, 'X-Robots-Tag': robots, ...restoMoto } = mapa(moto);
-  expect(restoMoto).toEqual(restoGlobal);
-  expect(camGlobal).toBe(PERMISSOES);
-  expect(camMoto).toBe(PERMISSOES_MOTOBOY);
-  expect(robots).toBe('noindex, nofollow');
-  // nenhuma outra regra mexe em Permissions-Policy
-  const outras = cfg.headers.filter((r) => r !== global && r !== moto && r.headers.some((h) => h.key === 'Permissions-Policy'));
-  expect(outras).toEqual([]);
+  const global = cfg.headers[0];
+  expect(global.source).toBe('/(.*)');
+  const mapa = Object.fromEntries(global.headers.map((h) => [h.key, h.value]));
+  expect(mapa['Permissions-Policy']).toBe(PERMISSOES);
+  expect(mapa['Content-Security-Policy']).toBeTruthy();
+  const outras = cfg.headers.filter((r) => r !== global && r.headers.some((h) => ['Permissions-Policy', 'Content-Security-Policy'].includes(h.key)));
+  expect(outras, 'nenhuma outra regra mexe em CSP nem em Permissions-Policy').toEqual([]);
+  expect(JSON.stringify(cfg), 'nenhuma regra libera a câmera').not.toMatch(/camera=\(self\)/);
+  expect(cfg.headers.filter((r) => r.source.startsWith('/motoboy')).map((r) => r.source)).toEqual(['/motoboy/sw.js']);
+  const sw = cfg.headers.find((r) => r.source === '/motoboy/sw.js');
+  expect(sw.headers).toEqual([{ key: 'Cache-Control', value: CACHE.html }]);
+});
+
+// A tela do motoboy não existe mais no build; o worker antigo, instalado nos celulares dela, é trocado por um que só limpa e se desinstala.
+test('motoboy: sem tela nem manifesto no build, e /motoboy/sw.js só limpa o cache antigo e se desinstala', async ({ request }) => {
+  expect(existsSync(join(pasta, 'motoboy', 'index.html')), 'dist/motoboy/index.html').toBe(false);
+  const manifesto = await request.get(base + '/motoboy/manifest.webmanifest', { maxRedirects: 0 });
+  expect(manifesto.status(), 'manifesto da tela antiga').toBe(404);
+  const r = await request.get(base + '/motoboy/sw.js', { maxRedirects: 0 });
+  expect(r.status()).toBe(200);
+  expect(r.headers()['content-type']).toContain('javascript');
+  const codigo = await r.text();
+  expect(codigo).toContain("k.startsWith('mineiro-motoboy-')");
+  expect(codigo).toContain('caches.delete');
+  expect(codigo).toContain('registration.unregister()');
+  expect(codigo, 'não guarda nada em cache nem intercepta requisições').not.toMatch(/addEventListener\(\s*'fetch'|caches\.open|addAll/);
 });
 
 test('manifestos e ícones', async ({ request }) => {
@@ -253,15 +258,6 @@ test('manifestos e ícones', async ({ request }) => {
       short_name: 'Painel',
       start_url: '/painel/',
       scope: '/painel/',
-      background_color: '#120B09'
-    },
-    '/motoboy/manifest.webmanifest': {
-      id: '/motoboy/',
-      name: 'Entregas · Mineiro Lanche',
-      short_name: 'Entregas',
-      start_url: '/motoboy/',
-      scope: '/motoboy/',
-      theme_color: '#120B09',
       background_color: '#120B09'
     }
   };
@@ -299,7 +295,7 @@ test('manifestos e ícones', async ({ request }) => {
 test('robots.txt e sitemap.xml', async ({ request }) => {
   const robots = await (await request.get(base + '/robots.txt')).text();
   expect(robots).toMatch(/^Disallow: \/painel\/$/m);
-  expect(robots).toMatch(/^Disallow: \/motoboy\/$/m);
+  expect(robots, 'a tela do motoboy saiu: nada dela no robots.txt').not.toContain('motoboy');
   expect(robots).toContain(`Sitemap: ${SITE}/sitemap.xml`);
   const sitemap = await request.get(base + '/sitemap.xml');
   expect(sitemap.status()).toBe(200);

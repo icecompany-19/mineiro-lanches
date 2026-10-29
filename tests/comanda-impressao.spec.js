@@ -3,9 +3,10 @@
 //     sem margem, venha a impressão do cartão, do detalhe do pedido ou da própria visualização;
 //   - cada pedido imprime em UMA página (nada de cupom cortado em duas folhas);
 //   - as informações saem em negrito; a taxa de entrega aparece na comanda;
-//   - (17/10, contrato C3 do docs/PLANO-FASE-3.md) a comanda abre com a logo oficial (logo-512.webp, arte intacta) e, no pedido
-//     de entrega, fecha com o QR do entregador (<site>/motoboy/#<id>), a legenda "ENTREGADOR: LEIA AO ENTREGAR" e o número
-//     repetido; retirada e retirada no local não levam QR; a impressão espera a logo se ela ainda não chegou.
+//   - (17/10, contrato C3 do docs/PLANO-FASE-3.md) a comanda abre com a logo oficial (logo-512.webp, arte intacta); a impressão
+//     espera a logo se ela ainda não chegou.
+//   - (29/10, entregas manuais) a tela do motoboy saiu: nenhuma comanda leva QR do entregador nem a legenda "ENTREGADOR: LEIA
+//     AO ENTREGAR"; a de entrega fecha no TOTAL, como a de retirada e a de consumo no local.
 // O quadro vem de page.route sobre o GET dos pedidos (o banco não é alterado) e o window.print é trocado por um espião.
 // Uso: npx playwright test tests/comanda-impressao.spec.js --project=desktop   (precisa do Supabase local no ar)
 // Os casos que rasterizam o PDF precisam do pdftoppm (poppler) no PATH; sem ele são pulados (padrão de tests/qrcode.test.mjs).
@@ -13,7 +14,6 @@
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
-import jsQR from 'jsqr';
 import sharp from 'sharp';
 
 const PG = process.env.PG_URL || 'postgresql://postgres@localhost:54322/postgres';
@@ -199,18 +199,7 @@ test('impressão térmica tem margens brancas, sem faixas escuras ou sombras do 
   expect(sombras).toEqual(['none', 'none', 'none']);
 });
 
-// ---------- logo oficial e QR do entregador (17/10/2026, contrato C3) ----------
-
-// decodifica um PNG com o jsQR; umBit = cinza + limiar em 128, como a impressora térmica
-async function lerQr(png, { umBit = false } = {}) {
-  let img = sharp(png).flatten({ background: '#fff' }).grayscale();
-  if (umBit) img = img.threshold(128);
-  const { data, info } = await img.raw().toBuffer({ resolveWithObject: true });
-  const rgba = new Uint8ClampedArray(info.width * info.height * 4); // o jsQR quer RGBA; o cinza do sharp vem com 1 canal
-  for (let i = 0; i < info.width * info.height; i++) rgba.set([data[i * info.channels], data[i * info.channels], data[i * info.channels], 255], i * 4);
-  const achado = jsQR(rgba, info.width, info.height);
-  return achado ? achado.data : null;
-}
+// ---------- logo oficial (17/10/2026, contrato C3) e comanda sem QR do entregador (29/10/2026) ----------
 
 // abre a comanda do pedido n (já no quadro) e espera o diálogo parar de animar (entra com opacidade e deslocamento)
 async function abrirComanda(page, n) {
@@ -220,9 +209,7 @@ async function abrirComanda(page, n) {
   await expect(page.locator('.pn-modal-caixa')).toHaveCSS('transform', /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/); // a animação termina na identidade
 }
 
-test.describe('logo e QR do entregador na comanda', () => {
-  test.use({ deviceScaleFactor: 4 }); // o QR é lido de screenshot: precisa de pixels de sobra por módulo
-
+test.describe('logo na comanda e comanda sem QR do entregador', () => {
   test('a logo oficial abre a comanda: carregada, em 38 mm, sem filter, blend nem máscara, e o número continua grande', async ({ page }) => {
     await entrar(page, [linha(21)]);
     await abrirComanda(page, 21);
@@ -266,46 +253,41 @@ test.describe('logo e QR do entregador na comanda', () => {
     expect(Math.abs(impressao.caixa[0] - 38 * MM)).toBeLessThan(1);
   });
 
-  test('a comanda de entrega traz o QR do entregador: lido, igual a <site>/motoboy/#<id>, com legenda e número repetido', async ({ page }) => {
-    const pedido = linha(22);
-    await entrar(page, [pedido]);
+  test('a comanda de entrega sai sem QR do entregador nem a legenda "ENTREGADOR: LEIA AO ENTREGAR", e fecha no total', async ({ page }) => {
+    const erros = [];
+    page.on('pageerror', (e) => erros.push(e.message));
+    await entrar(page, [linha(22)]);
     await abrirComanda(page, 22);
     const comanda = page.locator('.pn-comanda');
-    const qr = comanda.locator('.pn-c-qr');
-    await expect(qr).toHaveCount(1);
-    const base = await page.evaluate(() => window.MLQr.base);
-    expect(base, 'base sem barra no fim').toMatch(/^https?:\/\/[^/]+$/);
-    const esperado = base + '/motoboy/#' + pedido.id;
 
-    // legenda em negrito e o número do pedido repetido (o primeiro está no topo, em .pn-c-num)
-    await expect(qr.locator('.pn-c-qr-t')).toHaveText('ENTREGADOR: LEIA AO ENTREGAR');
-    await expect(qr.locator('.pn-c-qr-n')).toHaveText('#0022');
-    await expect(comanda.getByText('#0022')).toHaveCount(2);
-    for (const sel of ['.pn-c-qr-t', '.pn-c-qr-n']) expect(Number(await qr.locator(sel).evaluate((e) => getComputedStyle(e).fontWeight)), sel).toBeGreaterThanOrEqual(700);
-    // o QR fecha a comanda (depois do total) e não se parte entre páginas
-    const total = await comanda.locator('.pn-c-total').boundingBox();
-    expect((await qr.boundingBox()).y).toBeGreaterThan(total.y + total.height - 1);
-    expect(await qr.evaluate((e) => getComputedStyle(e).breakInside)).toBe('avoid');
+    // nada de QR: nem o bloco, nem a legenda, nem o número repetido, nem svg
+    await expect(comanda.locator('.pn-c-qr')).toHaveCount(0);
+    await expect(comanda.locator('.pn-c-qr-t, .pn-c-qr-n')).toHaveCount(0);
+    await expect(comanda.locator('svg')).toHaveCount(0);
+    await expect(comanda).not.toContainText('ENTREGADOR');
+    await expect(comanda).not.toContainText('LEIA AO ENTREGAR');
+    await expect(comanda.getByText('#0022')).toHaveCount(1); // só o número do topo
 
-    // um <svg> com um único <path>; sem "Mineiro" nem URL no rótulo; lado entre 28 e 40 mm
-    const svg = qr.locator('svg');
-    await expect(svg).toHaveCount(1);
-    await expect(svg.locator('path')).toHaveCount(1);
-    expect(await svg.getAttribute('shape-rendering')).toBe('crispEdges');
-    const rotulo = await svg.getAttribute('aria-label');
-    expect(rotulo).toBeTruthy();
-    expect(rotulo).not.toMatch(/mineiro|http/i);
-    const lado = (await svg.boundingBox()).width / MM;
-    expect(lado, `QR com ${lado.toFixed(1)} mm`).toBeGreaterThanOrEqual(28);
-    expect(lado).toBeLessThanOrEqual(40);
+    // o resto da comanda de entrega continua: logo, número, endereço, taxa, pagamento e total
+    await expect(comanda.locator('img.pn-c-logo')).toHaveCount(1);
+    await expect(comanda.locator('.pn-c-num')).toHaveText('#0022');
+    await expect(comanda.locator('.pn-c-modo')).toContainText(/entrega/i);
+    await expect(comanda).toContainText('Marina Souza');
+    await expect(comanda).toContainText('Rua Eliziél Alves Costa, 300');
+    await expect(comanda).toContainText('Portão azul');
+    await expect(comanda.locator('.pn-c-taxa')).toContainText('ENTREGA: R$ 8,00 · 4 km');
+    await expect(comanda.locator('.pn-c-total')).toContainText('R$ 105,70');
 
-    // lê de verdade: o bloco inteiro (com a legenda) e só o svg, em cores e em 1 bit
-    const bloco = await qr.screenshot();
-    expect(await lerQr(bloco), 'bloco do QR').toBe(esperado);
-    expect(await lerQr(bloco, { umBit: true }), 'bloco do QR em 1 bit').toBe(esperado);
-    const so = await svg.screenshot();
-    expect(await lerQr(so), 'só o svg').toBe(esperado);
-    expect(await lerQr(so, { umBit: true }), 'só o svg em 1 bit').toBe(esperado);
+    // o total é o último bloco: não sobra nada depois dele
+    await expect(comanda.locator(':scope > *').last()).toHaveClass(/pn-c-total/);
+
+    // imprimir continua em uma página de 72 mm
+    await page.locator('.pn-modal [data-m="imprimir"]').click();
+    expect(await page.evaluate(() => window.__impressoes)).toBe(1);
+    const pdf = await pdfDaImpressao(page);
+    expect(pdf.paginas, 'cupom numa página só').toBe(1);
+    expect(Math.abs(pdf.caixas[0].larguraPt - PT_72MM)).toBeLessThan(1.5);
+    expect(erros, 'erros de JS').toEqual([]);
   });
 
   for (const modo of ['retirada', 'local']) {
@@ -313,7 +295,6 @@ test.describe('logo e QR do entregador na comanda', () => {
       const erros = [];
       page.on('pageerror', (e) => erros.push(e.message));
       await entrar(page, [linha(23, { modo, endereco: '', referencia: '', taxa_entrega: null, distancia_km: null, total: 97.7 })]);
-      expect(await page.evaluate(() => typeof window.MLQr.qrSvg), 'o gerador está carregado: a falta do QR é só da regra').toBe('function');
       await abrirComanda(page, 23);
       const comanda = page.locator('.pn-comanda');
       await expect(comanda.locator('.pn-c-qr')).toHaveCount(0);
@@ -332,7 +313,7 @@ test.describe('logo e QR do entregador na comanda', () => {
     });
   }
 
-  test('com logo e QR a página de impressão continua com 72 mm × a altura do cupom, em uma página, e o QR cabe inteiro nela', async ({ page }) => {
+  test('com a logo a página de impressão da entrega continua com 72 mm × a altura do cupom, em uma página, e a logo cabe inteira nela', async ({ page }) => {
     await entrar(page, [linha(24)]);
     await abrirComanda(page, 24);
     const alturaCupomMm = (await page.locator('.pn-comanda').boundingBox()).height / MM;
@@ -349,30 +330,21 @@ test.describe('logo e QR do entregador na comanda', () => {
     expect(Math.abs(pdf.caixas[0].larguraPt - PT_72MM), `largura da página ${pdf.caixas[0].larguraPt} pt`).toBeLessThan(1.5);
     expect(Math.abs(pdf.caixas[0].alturaPt - Number(h) * (72 / 25.4)), 'altura da página = a medida posta').toBeLessThan(1.5);
 
-    // na mídia de impressão: a comanda tem 72 mm, o QR e a logo ficam dentro dela, o QR em preto sobre branco
+    // na mídia de impressão: a comanda tem 72 mm, a logo fica dentro dela e não há QR nem imagem além da logo
     await page.emulateMedia({ media: 'print' });
     const m = await page.evaluate(() => {
       const r = (sel) => {
         const b = document.querySelector(sel).getBoundingClientRect();
         return { esq: b.left, dir: b.right, base: b.bottom, l: b.width };
       };
-      return {
-        comanda: r('.pn-comanda'), qr: r('.pn-c-qr svg'), logo: r('.pn-c-logo'),
-        caminho: document.querySelector('.pn-c-qr svg path').getAttribute('fill'), fundo: document.querySelector('.pn-c-qr svg rect').getAttribute('fill'),
-        preto: getComputedStyle(document.querySelector('.pn-c-qr svg path')).fill
-      };
+      return { comanda: r('.pn-comanda'), logo: r('.pn-c-logo'), qr: document.querySelectorAll('.pn-comanda .pn-c-qr, .pn-comanda svg').length, imagens: document.querySelectorAll('.pn-comanda img').length };
     });
     await page.emulateMedia({ media: 'screen' });
     expect(Math.abs(m.comanda.l - 72 * MM)).toBeLessThan(1.5);
-    for (const parte of [m.qr, m.logo]) {
-      expect(parte.esq).toBeGreaterThanOrEqual(m.comanda.esq - 0.5);
-      expect(parte.dir).toBeLessThanOrEqual(m.comanda.dir + 0.5);
-      expect(parte.base).toBeLessThanOrEqual(m.comanda.base + 0.5);
-    }
-    expect(m.qr.l / MM).toBeGreaterThanOrEqual(28);
-    expect(m.qr.l / MM).toBeLessThanOrEqual(40);
-    expect([m.caminho, m.fundo]).toEqual(['#000', '#fff']);
-    expect(m.preto).toBe('rgb(0, 0, 0)');
+    expect(m.logo.esq).toBeGreaterThanOrEqual(m.comanda.esq - 0.5);
+    expect(m.logo.dir).toBeLessThanOrEqual(m.comanda.dir + 0.5);
+    expect(m.logo.base).toBeLessThanOrEqual(m.comanda.base + 0.5);
+    expect([m.qr, m.imagens], 'sem QR; só a logo').toEqual([0, 1]);
   });
 
   test('a impressão espera a logo que ainda não chegou e imprime uma vez só, mesmo com cliques repetidos em Imprimir', async ({ page }) => {
@@ -418,42 +390,5 @@ test.describe('logo e QR do entregador na comanda', () => {
     await page.waitForTimeout(2600);
     expect(await page.evaluate(() => window.__impressoes), 'diálogo fechado: não imprime').toBe(1);
     for (const rota of presas) await rota.abort().catch(() => {});
-  });
-
-  test('o PDF da impressão, rasterizado a 203 dpi em 1 bit, ainda deixa ler o QR do entregador', async ({ page }, testInfo) => {
-    test.skip(!temPdftoppm, 'sem pdftoppm (poppler) no PATH');
-    const pedido = linha(27);
-    await entrar(page, [pedido]);
-    await abrirComanda(page, 27);
-    await page.locator('.pn-modal [data-m="imprimir"]').click();
-    const base = await page.evaluate(() => window.MLQr.base);
-    await page.emulateMedia({ media: 'print' });
-    const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
-    await page.emulateMedia({ media: 'screen' });
-    const caminho = testInfo.outputPath('comanda-qr.pdf');
-    const imagem = testInfo.outputPath('comanda-qr');
-    writeFileSync(caminho, pdf);
-    execFileSync('pdftoppm', ['-r', '203', '-png', '-singlefile', caminho, imagem]);
-    await testInfo.attach('comanda-termica-qr', { path: imagem + '.png', contentType: 'image/png' });
-    const png = await sharp(imagem + '.png').toBuffer();
-    expect(await lerQr(png, { umBit: true }), 'QR lido na página inteira, em 1 bit').toBe(base + '/motoboy/#' + pedido.id);
-  });
-});
-
-// A resolução da térmica (203 dpi = 2,1146 pixels de tela por ponto): o navegador desenha o QR vetorial em ~6,4 pontos por módulo.
-// Não precisa do poppler: é a captura da própria página em mídia de impressão, passada a 1 bit.
-test.describe('na resolução da térmica', () => {
-  test.use({ deviceScaleFactor: 203 / 96 });
-
-  test('em mídia de impressão e em 1 bit (203 dpi) o QR do entregador ainda lê', async ({ page }) => {
-    const pedido = linha(28);
-    await entrar(page, [pedido]);
-    await page.setViewportSize({ width: 1280, height: 1400 }); // a comanda inteira cabe na captura
-    await abrirComanda(page, 28);
-    const base = await page.evaluate(() => window.MLQr.base);
-    await page.emulateMedia({ media: 'print' });
-    const png = await page.locator('.pn-comanda').screenshot();
-    await page.emulateMedia({ media: 'screen' });
-    expect(await lerQr(png, { umBit: true }), 'página inteira em 1 bit').toBe(base + '/motoboy/#' + pedido.id);
   });
 });

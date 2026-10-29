@@ -93,9 +93,9 @@ select pg_temp.ok((select bool_and(has_function_privilege('anon', f, 'execute') 
 select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execute') and has_function_privilege('authenticated', f, 'execute'))
                    from unnest(array['mudar_status(uuid,text,text)', 'marcar_esgotado(text,boolean)', 'definir_loja(text)', 'remover_testes()']) f),
   'funções da equipe: só authenticated (dentro, is_equipe() decide)');
-select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execute') and has_function_privilege('authenticated', f, 'execute'))
+select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execute') and not has_function_privilege('authenticated', f, 'execute'))
                    from unnest(array['entregas_em_rota()', 'confirmar_entrega(uuid)']) f),
-  'funções do motoboy: só authenticated (dentro, is_motoboy() ou is_equipe() decide)');
+  'funções do motoboy fechadas desde as entregas manuais (29/10; detalhes em 16_entregas_manuais.sql)');
 select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execute') and not has_function_privilege('authenticated', f, 'execute'))
                    from unnest(array['pedido_json(pedidos)', 'resumo_item(jsonb,numeric)', 'loja_json()', 'horario_aberto(jsonb,timestamptz)',
                                      'turno_minutos(jsonb)', 'campo_texto(jsonb,integer)', 'campo_inteiro(jsonb,integer,integer,integer)',

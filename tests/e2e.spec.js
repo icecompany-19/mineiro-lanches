@@ -1,7 +1,7 @@
 // Fluxo completo com o Supabase local e dois aparelhos ao mesmo tempo: celular do cliente e computador do painel.
 // Antes de tudo recria o banco local (iniciar.sh --reset + supabase/setup.sql), põe a equipe e deixa a loja aberta.
 // Não há Realtime local: tudo chega pelo plano B (painel consulta a cada 5 s, acompanhamento a cada 10 s).
-// O último grupo é o do entregador (/motoboy/): num describe próprio, para uma falha do cliente ou do painel não o pular.
+// O último grupo é o da entrega com as etapas manuais no painel (29/10/2026): num describe próprio, para uma falha do cliente ou do painel não o pular.
 // Uso: npx playwright test --project=e2e
 /* global window, localStorage, location */
 import { test, expect, devices } from '@playwright/test';
@@ -22,8 +22,6 @@ const CHAVE = ENV_DEV.VITE_SUPABASE_ANON_KEY || 'sb_publishable_local';
 const BASH = process.env.BASH || 'bash';
 const EQUIPE = 'equipe@teste.local';
 const FORA = 'fora@teste.local';
-const MOTO = 'moto@teste.local';
-const ID_MOTO = '00000000-0000-4000-8000-000000000003'; // criado pelo stub.sql (scripts/supabase-local)
 const CELULAR = { ...devices['Pixel 7'] };
 const COMPUTADOR = { viewport: { width: 1280, height: 800 } };
 const RE_TOKEN = /#pedido\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -117,31 +115,6 @@ async function entrarNoPainel(page, email) {
   await page.getByLabel('E-mail').fill(email);
   await page.getByLabel('Senha').fill('qualquer-senha');
   await page.getByRole('button', { name: 'Entrar' }).click();
-}
-
-// tela do entregador: abre /motoboy/ (com o #<id> do link da comanda, se houver) e entra com a senha de teste
-async function entrarComoMotoboy(page, hash = '') {
-  await page.goto('/motoboy/' + hash);
-  await page.getByLabel('E-mail').fill(MOTO);
-  await page.getByLabel('Senha').fill('qualquer-senha');
-  await page.getByRole('button', { name: 'Entrar' }).click();
-}
-
-// a equipe mexendo no pedido pela API, com o JWT que o login local devolve (o proxy aceita qualquer senha)
-async function mudarStatusPelaEquipe(id, status) {
-  const login = await fetch(API + '/auth/v1/token?grant_type=password', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', apikey: CHAVE },
-    body: JSON.stringify({ email: EQUIPE, password: 'qualquer-senha' })
-  });
-  if (!login.ok) throw new Error('login da equipe: ' + login.status);
-  const { access_token: jwt } = await login.json();
-  const r = await fetch(API + '/rest/v1/rpc/mudar_status', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', apikey: CHAVE, authorization: 'Bearer ' + jwt },
-    body: JSON.stringify({ p_id: id, p_status: status })
-  });
-  if (!r.ok) throw new Error('mudar_status ' + status + ': ' + r.status + ' ' + (await r.text()));
 }
 
 // cardápio → ficha → sacola → checkout preenchido (sem enviar)
@@ -713,161 +686,102 @@ test.describe('cliente e painel', () => {
   });
 });
 
-// Entregador (/motoboy/, migration 20261017000001) contra o banco local de verdade, em describe próprio (sem 'serial' e sem
-// depender do grupo de cima): cada prova cria o seu pedido, e uma falha do cliente ou do painel não as pula.
+// Entrega com as etapas manuais (29/10/2026, migration 20261029190000_entregas_manuais.sql) contra o banco local de verdade,
+// em describe próprio (sem 'serial' e sem depender do grupo de cima): a equipe leva a entrega do início ao fim pelo painel,
+// sem motoboy, atribuição nem baixa manual, e o cliente acompanha cada etapa no celular. Cada prova cria o seu pedido.
 // A loja fica 'aberta' durante o grupo (criar_pedido recusa pedido fora do horário) e volta para 'auto' no fim.
-test.describe('entregador (/motoboy/)', () => {
+test.describe('entrega com etapas manuais no painel', () => {
   test.beforeAll(() => {
-    psql(`insert into auth.users (id, email) values ('${ID_MOTO}', '${MOTO}') on conflict do nothing;
-          insert into motoboys (user_id, nome, ativo) values ('${ID_MOTO}', 'Moto teste', true)
-            on conflict (user_id) do update set ativo = true;
-          update loja set modo = 'aberta' where id = 1;`);
+    psql("update loja set modo = 'aberta' where id = 1");
   });
   test.afterAll(() => {
     psql("update loja set modo = 'auto' where id = 1");
   });
 
-  test('entrega de ponta a ponta: a equipe leva à rota, o entregador confirma pelo link e o painel mostra em Concluídos', async ({
+  test('entrega de ponta a ponta: Aceitar e preparar, Marcar pronto, Saiu para entrega e Concluir, e o cliente vê cada etapa', async ({
     browser
   }) => {
-    test.setTimeout(150_000);
+    test.setTimeout(180_000);
     const erros = [];
     const pc = await browser.newContext(COMPUTADOR);
-    const mc = await browser.newContext(CELULAR);
+    const cel = await browser.newContext(CELULAR);
     const painel = await pc.newPage();
-    const moto = await mc.newPage();
+    const celular = await cel.newPage();
     vigiar(painel, 'painel', erros);
-    vigiar(moto, 'entregador', erros);
+    vigiar(celular, 'celular', erros);
 
-    // cliente pede entrega; a equipe aceita e marca pronto; com o despacho pausado, atribui pela aba Entregadores
+    // cliente pede entrega e acompanha pelo link do pedido (consulta a cada 10 s: sem Realtime local)
     const pedido = await criarPedidoApi('Elisa Entrega', '11977770010', ENTREGA);
+    const status = () => psql(`select status from pedidos where id = '${pedido.id}'`);
     const num = '#' + String(pedido.numero).padStart(4, '0');
     expect(pedido.total).toBe(24.9);
+    await celular.goto('/#pedido/' + pedido.token);
+    await expect(celular.locator('#ped-num')).toHaveText(num);
+    await expect(celular.locator('.passo.atual')).toContainText('Recebido');
+    await expect(celular.locator('#ped-status')).toHaveText('Status do pedido: Recebido');
+
+    // painel: o pedido chega em Novos; a aba Entregadores não existe mais
     await entrarNoPainel(painel, EQUIPE);
+    await expect(painel.locator('.pn-desktop')).toBeVisible();
+    await expect(painel.locator('[data-nav="entregadores"]')).toHaveCount(0);
     const novo = painel.locator('.pn-col--novos .pn-card', { hasText: 'Elisa Entrega' });
     await expect(novo).toBeVisible({ timeout: 8_000 });
+
+    // 1. Aceitar e preparar
     await novo.getByRole('button', { name: 'Aceitar e preparar' }).click();
     const emPreparo = painel.locator('.pn-col--preparo .pn-card', { hasText: 'Elisa Entrega' });
     await expect(emPreparo).toBeVisible();
+    await expect.poll(status).toBe('preparo');
+    await expect(celular.locator('.passo.atual')).toContainText('Na chapa', { timeout: 15_000 });
+    await expect(celular.locator('#ped-status')).toHaveText('Status do pedido: Em preparo');
+    await expect(celular.locator('#ped-msg')).toHaveText('Seu lanche está na chapa');
+
+    // 2. Marcar pronto: o pronto de entrega tem o próprio botão, sem "Aguardando saída do motoboy" nem desvio para outra aba
     await emPreparo.getByRole('button', { name: 'Marcar pronto' }).click();
     const pronto = painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' });
     await expect(pronto).toBeVisible();
-    // pronto de entrega não tem próximo passo no quadro nem abre outra aba: a saída é do motoboy
-    await expect(pronto.locator('.pn-aguarda-moto')).toHaveText('Aguardando saída do motoboy');
-    await expect(pronto.getByRole('button', { name: 'Saiu para entrega' })).toHaveCount(0);
+    await expect(pronto.getByRole('button', { name: 'Saiu para entrega' })).toBeVisible();
+    await expect(pronto.locator('.pn-aguarda-moto')).toHaveCount(0);
+    await expect(painel.getByText('Aguardando saída do motoboy')).toHaveCount(0);
+    await expect.poll(status).toBe('pronto');
+    await expect(celular.locator('.passo.atual')).toContainText('Pronto para sair', { timeout: 15_000 });
+    await expect(celular.locator('#ped-status')).toHaveText('Status do pedido: Pronto para sair');
+    await expect(celular.locator('#ped-msg')).toHaveText('Seu pedido está pronto, aguardando saída para entrega');
+
+    // 3. Saiu para entrega: registra a saída direto no quadro; o cartão fica em Saída com o botão Concluir
+    await pronto.getByRole('button', { name: 'Saiu para entrega' }).click();
+    await expect.poll(status).toBe('rota');
+    const emRota = painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' });
+    await expect(emRota.getByRole('button', { name: 'Concluir' })).toBeVisible();
+    await expect(emRota.getByRole('button', { name: 'Saiu para entrega' })).toHaveCount(0);
+    await expect(celular.locator('.passo.atual')).toContainText('Saiu para entrega', { timeout: 15_000 });
+    await expect(celular.locator('#ped-status')).toHaveText('Status do pedido: Saiu para entrega');
+    await expect(celular.locator('#ped-msg')).toHaveText('Saiu para entrega');
+
+    // 4. Concluir: conclui direto, sem pedir motivo, sem baixa manual e sem trocar de aba
+    await emRota.getByRole('button', { name: 'Concluir' }).click();
+    const concluido = painel.locator('.pn-col--concluidos .pn-card', { hasText: 'Elisa Entrega' });
+    await expect(concluido).toBeVisible();
+    await expect(concluido.locator('.pn-num')).toHaveText(num);
+    await expect(painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' })).toHaveCount(0);
     await expect(painel.locator('[data-view="pedidos"]')).toBeVisible();
-    await painel.locator('[data-nav="entregadores"]').click();
-    const atribuicao = painel.locator(`.pn-entrega[data-entrega="${pedido.id}"]:visible`);
-    await atribuicao.getByRole('combobox').selectOption(ID_MOTO);
-    await atribuicao.getByRole('button', { name: 'Atribuir', exact: true }).click();
-    await atribuicao.getByRole('button', { name: /Registrar saída/ }).click();
-    await painel.locator('[data-nav="pedidos"]').click();
-    await expect(painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' })).toBeVisible();
-    await expect.poll(() => psql(`select status from pedidos where id = '${pedido.id}'`)).toBe('rota');
-
-    // entregador: login em /motoboy/ e a lista "Em rota" mostra o pedido, sem itens
-    await entrarComoMotoboy(moto);
-    await expect(moto.locator('.mb-usuario')).toHaveText(MOTO);
-    await expect(moto.getByRole('heading', { name: 'Em rota' })).toBeVisible();
-    const item = moto.locator('.mb-item', { hasText: 'Elisa Entrega' });
-    await expect(item).toBeVisible();
-    await expect(item.locator('.mb-item-num')).toHaveText(num);
-    await expect(item.locator('.mb-item-end')).toHaveText(ENTREGA.endereco);
-    await expect(item.locator('.mb-item-ref')).toContainText(ENTREGA.referencia);
-    await expect(item.locator('.mb-item-total b')).toHaveText(brl(pedido.total));
-    await expect(moto.locator('#view-motoboy')).not.toContainText('X-Burguer');
-
-    // a câmera do celular abre o link da comanda (outra aba do mesmo aparelho, já com o login guardado): ler já marca entregue
-    const aba = await mc.newPage();
-    vigiar(aba, 'entregador (link)', erros);
-    await aba.goto('/motoboy/#' + pedido.id);
-    const res = aba.locator('[data-res]');
-    await expect(res).toHaveClass(/mb-res--ok/);
-    await expect(res.locator('.mb-res-t')).toHaveText('Entregue');
-    await expect(res.locator('.mb-res-num')).toHaveText(num);
-    await expect(res.locator('.mb-res-nome')).toHaveText('Elisa Entrega');
-    await expect(aba).toHaveURL(/\/motoboy\/$/); // o uuid sai da barra
-    expect(psql(`select status from pedidos where id = '${pedido.id}'`)).toBe('entregue');
-    expect(psql(`select (historico -> -1) ->> 'status' from pedidos where id = '${pedido.id}'`)).toBe('entregue');
-    expect(psql(`select (historico -> -1) ->> 'por' from pedidos where id = '${pedido.id}'`), 'o último evento é do entregador').toBe(
-      'motoboy'
-    );
+    await expect(painel.getByText('Baixa manual')).toHaveCount(0);
+    await expect.poll(status).toBe('entregue');
     expect(
       psql(
         `select string_agg(e ->> 'status', ',' order by n) from pedidos, jsonb_array_elements(historico) with ordinality as h(e, n) where id = '${pedido.id}'`
-      )
+      ),
+      'o histórico tem as cinco etapas, na ordem'
     ).toBe('novo,preparo,pronto,rota,entregue');
+    expect(psql(`select coalesce((historico -> -1) ->> 'motivo', '') from pedidos where id = '${pedido.id}'`), 'concluída sem motivo').toBe('');
 
-    // o painel da equipe (sem Realtime local: plano B de 5 s) tira o pedido de "Em rota" e o põe em Concluídos
-    const concluido = painel.locator('.pn-col--concluidos .pn-card', { hasText: 'Elisa Entrega' });
-    await expect(concluido).toBeVisible({ timeout: 12_000 });
-    await expect(concluido.locator('.pn-num')).toHaveText(num);
-    await expect(painel.locator('.pn-col--saida .pn-card', { hasText: 'Elisa Entrega' })).toHaveCount(0);
-    // e avisa, sem som, que foi o entregador
-    await expect(painel.locator('.pn-toast', { hasText: num + ' entregue pelo motoboy · Elisa Entrega' })).toBeVisible();
-
-    // a lista do entregador, atualizada, não tem mais o pedido
-    await moto.getByRole('button', { name: 'Atualizar', exact: true }).click();
-    await expect(moto.getByText('Nenhuma entrega em rota agora.')).toBeVisible();
-    await expect(moto.locator('.mb-item', { hasText: 'Elisa Entrega' })).toHaveCount(0);
-
-    // o mesmo link de novo (na aba já aberta): "Já estava entregue", sem erro e sem mexer no histórico
-    const estado = () => psql(`select jsonb_array_length(historico) || '|' || atualizado_em from pedidos where id = '${pedido.id}'`);
-    const antes = estado();
-    expect(antes.startsWith('5|')).toBe(true);
-    await aba.goto('/motoboy/#' + pedido.id);
-    await expect(res).toHaveClass(/mb-res--ja/);
-    await expect(res.locator('.mb-res-t')).toHaveText('Já estava entregue');
-    await expect(res.locator('.mb-res-num')).toHaveText(num);
-    await expect(res.locator('.mb-res-nome'), 'já entregue: o banco não manda mais o nome do cliente').toHaveCount(0);
-    expect(estado(), 'histórico e atualizado_em intactos').toBe(antes);
-    expect(psql(`select status from pedidos where id = '${pedido.id}'`)).toBe('entregue');
+    // o cliente vê a entrega concluída
+    await expect(celular.locator('#ped-status')).toHaveText('Status do pedido: Entregue', { timeout: 15_000 });
+    await expect(celular.locator('#ped-msg')).toHaveText('Bom apetite!');
+    await expect(celular.locator('.passo.feito')).toHaveCount(4);
 
     expect(erros, 'erros no console').toEqual([]);
     await pc.close();
-    await mc.close();
-  });
-
-  test('o entregador não entra no painel: em /painel/ vê "Sem acesso", e o Sair de lá não derruba o login dele', async ({ browser }) => {
-    const ctx = await browser.newContext(COMPUTADOR);
-    const page = await ctx.newPage();
-    await entrarComoMotoboy(page);
-    await expect(page.locator('.mb-usuario')).toHaveText(MOTO);
-
-    // o painel guarda a sessão em outra chave: pede o login de novo e, com o e-mail do entregador, diz "Sem acesso"
-    await entrarNoPainel(page, MOTO);
-    await expect(page.getByRole('heading', { name: 'Sem acesso' })).toBeVisible();
-    await expect(page.getByText(MOTO)).toBeVisible();
-    await expect(page.locator('.pn-app')).toHaveCount(0);
-    await expect(page.locator('#view-painel')).toBeHidden();
-
-    // Sair no painel apaga a sessão do painel, não a do entregador
-    await page.getByRole('button', { name: 'Sair' }).click();
-    await expect(page.getByLabel('E-mail')).toBeVisible();
-    await page.goto('/motoboy/');
-    await expect(page.locator('.mb-usuario')).toHaveText(MOTO);
-    await ctx.close();
-  });
-
-  test('pedido de retirada lido pelo entregador: a tela avisa que é retirada e o pedido não muda', async ({ browser }) => {
-    const retirada = await criarPedidoApi('Rui Retirada', '11977770011'); // modo 'local'
-    await mudarStatusPelaEquipe(retirada.id, 'preparo');
-    await mudarStatusPelaEquipe(retirada.id, 'pronto');
-    const estado = () =>
-      psql(`select status || '|' || jsonb_array_length(historico) || '|' || atualizado_em from pedidos where id = '${retirada.id}'`);
-    const antes = estado();
-    expect(antes.startsWith('pronto|3|')).toBe(true);
-
-    // o link chega antes do login: o uuid fica guardado e a leitura sai logo depois de entrar
-    const mc = await browser.newContext(CELULAR);
-    const moto = await mc.newPage();
-    await entrarComoMotoboy(moto, '#' + retirada.id);
-    const res = moto.locator('[data-res]');
-    await expect(res).toHaveClass(/mb-res--erro/);
-    await expect(res.locator('.mb-res-t')).toHaveText('Pedido não atribuído a você. Confira com a equipe');
-    await expect(res.locator('.mb-res-num')).toHaveCount(0);
-    await expect(moto.locator('.mb-item', { hasText: 'Rui Retirada' })).toHaveCount(0);
-    expect(estado(), 'a retirada continua pronta, sem evento novo').toBe(antes);
-    await mc.close();
+    await cel.close();
   });
 });

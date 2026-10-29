@@ -1,6 +1,9 @@
 import { obterSupabase } from '../lib/supabase.js';
 import './usuarios.css';
-const ROTULOS = { admin: 'Administrador', equipe: 'Equipe', motoboy: 'Motoboy' };
+const ROTULOS = { admin: 'Administrador', equipe: 'Equipe', motoboy: 'Motoboy (tela retirada)' };
+// A tela do motoboy saiu em 29/10 (entregas manuais): perfil novo só Administrador ou Equipe. Uma conta antiga de
+// motoboy continua listada com o próprio perfil, para não virar administrador sem querer ao editar.
+const perfisDoFormulario = (atual) => Object.keys(ROTULOS).filter((v) => v !== 'motoboy' || atual === 'motoboy');
 const MENSAGENS = {
   sem_permissao: 'Somente administradores podem gerenciar usuários.',
   sessao: 'Sua sessão expirou. Saia e entre novamente.',
@@ -54,12 +57,12 @@ export function montarUsuarios(root, { consultar = consultarUsuarios } = {}) {
     confirmacao = null;
   function render() {
     for (const el of slots) {
-      el.innerHTML = `<div class="pn-usuarios"><div class="pn-usuarios-topo"><div><h2>Usuários</h2><p>Gerencie os acessos da equipe e dos entregadores.</p></div>${admin ? '<button type="button" class="pn-btn pn-btn--prim" data-u="novo">Novo usuário</button><button type="button" class="pn-btn" data-u="vincular">Liberar conta existente</button>' : ''}</div>
+      el.innerHTML = `<div class="pn-usuarios"><div class="pn-usuarios-topo"><div><h2>Usuários</h2><p>Gerencie os acessos da equipe.</p></div>${admin ? '<button type="button" class="pn-btn pn-btn--prim" data-u="novo">Novo usuário</button><button type="button" class="pn-btn" data-u="vincular">Liberar conta existente</button>' : ''}</div>
     <p class="pn-erro" role="alert" ${erro ? '' : 'hidden'}>${esc(erro)}</p><p role="status" aria-live="polite">${esc(aviso)}</p>
     ${!carregou ? '<p role="status">Conferindo o acesso…</p>' : ''}
     ${
       admin
-        ? `<p class="pn-cfg-dica">Administrador gerencia usuários e o painel. Equipe opera o painel. Motoboy acessa somente a tela de entregas.</p><button type="button" class="pn-btn" data-u="atualizar" ${ocupado ? 'disabled' : ''}>Atualizar lista</button>
+        ? `<p class="pn-cfg-dica">Administrador gerencia usuários e o painel. Equipe opera o painel.</p><button type="button" class="pn-btn" data-u="atualizar" ${ocupado ? 'disabled' : ''}>Atualizar lista</button>
      ${formulario ? formHTML() : ''}
      <div class="pn-usuarios-lista">${
        lista
@@ -91,10 +94,8 @@ export function montarUsuarios(root, { consultar = consultarUsuarios } = {}) {
        ? `<p>${esc(f.nome)} · ${esc(f.email)}</p>`
        : `<label class="pn-campo"><span class="pn-campo-r">Nome</span><input class="pn-input" name="nome" required maxlength="80" value="${esc(f.nome || '')}" autocomplete="name"></label>
     <label class="pn-campo"><span class="pn-campo-r">E-mail</span><input class="pn-input" name="email" type="email" required maxlength="254" value="${esc(f.email || '')}" ${novo ? '' : 'readonly'} autocomplete="off"></label>
-    <label class="pn-campo"><span class="pn-campo-r">Perfil</span><select class="pn-input" name="perfil" ${eu ? 'disabled' : ''}>${Object.entries(
-      ROTULOS
-    )
-      .map(([v, t]) => `<option value="${v}" ${f.perfil === v ? 'selected' : ''}>${t}</option>`)
+    <label class="pn-campo"><span class="pn-campo-r">Perfil</span><select class="pn-input" name="perfil" ${eu ? 'disabled' : ''}>${perfisDoFormulario(f.perfil)
+      .map((v) => `<option value="${v}" ${f.perfil === v ? 'selected' : ''}>${ROTULOS[v]}</option>`)
       .join('')}</select></label>
     ${!novo ? `<label class="pn-campo"><span class="pn-campo-r">Acesso</span><select class="pn-input" name="ativo" ${eu ? 'disabled' : ''}><option value="true" ${f.ativo ? 'selected' : ''}>Ativo</option><option value="false" ${!f.ativo ? 'selected' : ''}>Desativado</option></select></label>` : ''}`
    }
@@ -136,7 +137,7 @@ export function montarUsuarios(root, { consultar = consultarUsuarios } = {}) {
         p.acao === 'senha'
           ? 'Senha atualizada. Informe a nova senha diretamente ao usuário.'
           : ['criar', 'vincular'].includes(p.acao)
-            ? `Usuário cadastrado. Acesso: ${p.perfil === 'motoboy' ? 'mineirolanches.store/motoboy/' : 'mineirolanches.store/painel/'}`
+            ? 'Usuário cadastrado. Acesso: mineirolanches.store/painel/'
             : 'Acesso atualizado.';
       if (r.usuario) {
         lista = lista
@@ -174,7 +175,7 @@ export function montarUsuarios(root, { consultar = consultarUsuarios } = {}) {
         return;
       case 'vincular':
       case 'novo':
-        formulario = { tipo: b.dataset.u, perfil: 'motoboy' };
+        formulario = { tipo: b.dataset.u, perfil: 'equipe' };
         confirmacao = null;
         break;
       case 'editar':

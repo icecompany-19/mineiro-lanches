@@ -1,5 +1,7 @@
 # Controle de entregadores
 
+> **Retirado em 29/10/2026.** A pedido do dono, as entregas passaram a ser manuais no painel e a operação do motoboy saiu do sistema. Este documento fica só como histórico. Ver [`ENTREGAS-MANUAIS.md`](ENTREGAS-MANUAIS.md).
+
 Atualização de viagens: consulte [Viagens, rotas e distribuição](ROTAS-OPERACAO.md) para turno, pedidos prontos, agrupamento por ruas, carregamento do conjunto, saída e retorno. Esse fluxo complementa as atribuições individuais e mantém a fila e a baixa manual descritas abaixo.
 
 Implementado em 18–19/10/2026. Painel da equipe em `/painel/` → **Entregadores**; celular em `/motoboy/`.

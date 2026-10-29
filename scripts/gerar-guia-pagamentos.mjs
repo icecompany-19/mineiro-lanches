@@ -7,10 +7,9 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import { resolve, extname, sep } from 'node:path';
 
 const raiz = resolve(import.meta.dirname, '..');
-const guia = process.argv[2] || 'pagamentos';
-if (!['pagamentos', 'entregas'].includes(guia)) throw new Error('Use pagamentos ou entregas.');
-const entrada = guia === 'entregas' ? 'guia-entregas-automaticas.html' : 'guia-pagamentos.html';
-const saida = guia === 'entregas' ? 'guia-entregas-automaticas-mineiro-lanche.pdf' : 'guia-pagamentos-mineiro-lanche.pdf';
+// O guia de entregas automáticas saiu com a tela do motoboy (29/10): só resta o de pagamentos.
+const entrada = 'guia-pagamentos.html';
+const saida = 'guia-pagamentos-mineiro-lanche.pdf';
 const tipos = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.woff2': 'font/woff2' };
 const servidor = createServer((req, res) => {
   const arquivo = resolve(raiz, '.' + new URL(req.url, 'http://localhost').pathname);

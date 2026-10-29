@@ -1,5 +1,7 @@
 # Viagens, rotas e distribuição aos motoboys
 
+> **Retirado em 29/10/2026.** A pedido do dono, as entregas passaram a ser manuais no painel e a operação do motoboy saiu do sistema. Este documento fica só como histórico. Ver [`ENTREGAS-MANUAIS.md`](ENTREGAS-MANUAIS.md).
+
 Implementação de 19/10/2026. A aba **Entregadores → Viagens e rotas** reúne disponibilidade, pedidos prontos, sugestões por percurso e viagens em andamento. O celular do motoboy mostra o turno, a sequência das paradas e os comandos de saída e retorno. Os totais de taxas e a fila offline continuam funcionando separadamente.
 
 ## Preparar a operação

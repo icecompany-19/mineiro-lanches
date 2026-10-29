@@ -21,8 +21,7 @@
     cardapio: { t: 'Produtos', i: 'burger' },
     relatorio: { t: 'Relatório', i: 'grafico' },
     config: { t: 'Configurações', i: 'config' },
-    usuarios: { t: 'Usuários', i: 'lista' },
-    entregadores: { t: 'Entregadores', i: 'moto' }
+    usuarios: { t: 'Usuários', i: 'lista' }
   };
   const MODO_IC = { entrega: 'moto', retirada: 'sacola', local: 'sacola' };
   const COLS = [
@@ -46,7 +45,6 @@
   };
   let modalAtual = null;
   let gestaoUsuarios = null;
-  let gestaoEntregadores = null;
   let gestaoImpressao = null;
   let gestaoProdutos = null;
 
@@ -87,11 +85,8 @@
     if (p.status === 'entregue') return ehHoje(concluidoEm(p)) ? 'concluidos' : null;
     return COL_DO_STATUS[p.status] || null;
   }
-  // Entrega pronta sai pelo celular do motoboy (despacho automático): o quadro não tem próximo passo nem abre Entregadores.
-  const saidaPeloMotoboy = p => p.status === 'pronto' && p.modo === 'entrega' && p.origem !== 'exemplo';
-  const aguardaMotoboyHTML = (p, classe) => saidaPeloMotoboy(p) ? `<p class="${classe}">${ic('moto')}Aguardando saída do motoboy</p>` : '';
+  // Todas as etapas são manuais (29/10): a equipe aceita, marca pronto, registra a saída e conclui a entrega no quadro.
   function proximoStatus(p) {
-    if (saidaPeloMotoboy(p)) return null;
     return p.pagamentoOnline && p.pagamentoOnline !== 'aprovado' ? null : ML.regras.proximoStatus(p);
   }
   const PAGAMENTO_TXT = { pendente:'Aguardando pagamento', aprovado:'Pago no Mercado Pago', recusado:'Pagamento recusado',
@@ -274,7 +269,7 @@
       ${p.modo === 'entrega' ? `<p class="pn-taxa${p.taxaEntrega == null ? ' pn-taxa--pendente' : ''}">${esc(taxaTxt(p))}</p>` : ''}
       <div class="pn-rodape"><span class="pn-pag">${esc(pagTxt(p))}</span><strong class="pn-total">${brl(p.total)}</strong></div>
       <div class="pn-acoes">
-        ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : aguardaMotoboyHTML(p, 'pn-aguarda-moto')}
+        ${prox ? `<button type="button" class="pn-btn pn-btn--prim pn-avancar" data-act="avancar" data-id="${esc(p.id)}">${ic('seta')}${esc(rotuloAvanco(p))}</button>` : ''}
         <div class="pn-acoes-sec">${entregaPagamentoHTML(p)}${estornoHTML(p)}
           <button type="button" class="pn-btn" data-act="imprimir" data-id="${esc(p.id)}" aria-label="Imprimir comanda do pedido ${num}">${ic('impressora')}Imprimir</button>
           ${tel ? `<a class="pn-btn" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nome)} no WhatsApp">${ic('chat')}WhatsApp</a>` : ''}
@@ -345,7 +340,6 @@
           </section>
           <section class="pn-sec" data-view="cardapio" aria-label="Produtos" hidden><div data-produtos></div></section>
           <section class="pn-sec" data-view="relatorio" aria-label="Relatório" hidden><div data-slot="relatorio"></div></section>
-          <section class="pn-sec" data-view="entregadores" aria-label="Entregadores" hidden><div data-entregadores></div></section>
           <section class="pn-sec" data-view="usuarios" aria-label="Usuários" hidden><div data-usuarios></div></section>
           <section class="pn-sec" data-view="config" aria-label="Configurações" hidden>
             <div class="pn-cfg">
@@ -384,8 +378,8 @@
     <div class="pn-mobile">
       <header class="pn-m-topo"><img class="pn-selo-logo" src="/assets/logo/selo-128.webp" srcset="/assets/logo/selo-128.webp 1x, /assets/logo/selo-256.webp 2x" alt="${esc(ML.CONFIG.nome)}" width="64" height="64"><span class="pn-loja-txt" data-lojatxt-m role="status"></span></header>
       <p class="pn-aviso-m" role="note"><strong>O painel foi pensado para computador</strong></p>
-      <nav class="pn-usuarios-nav-mobile" aria-label="Seções do painel no celular"><button class="pn-btn" type="button" data-usuarios-ir="pedidos">Pedidos</button><button class="pn-btn" type="button" data-usuarios-ir="cardapio">Produtos</button><button class="pn-btn" type="button" data-usuarios-ir="usuarios">Usuários</button><button class="pn-btn" type="button" data-usuarios-ir="entregadores">Entregadores</button></nav>
-      <div data-mobile></div><div data-produtos-mobile hidden><div data-produtos></div></div><div data-entregadores-mobile hidden><div data-entregadores></div></div><div data-usuarios-mobile hidden><div data-usuarios></div></div>
+      <nav class="pn-usuarios-nav-mobile" aria-label="Seções do painel no celular"><button class="pn-btn" type="button" data-usuarios-ir="pedidos">Pedidos</button><button class="pn-btn" type="button" data-usuarios-ir="cardapio">Produtos</button><button class="pn-btn" type="button" data-usuarios-ir="usuarios">Usuários</button></nav>
+      <div data-mobile></div><div data-produtos-mobile hidden><div data-produtos></div></div><div data-usuarios-mobile hidden><div data-usuarios></div></div>
       ${sairHTML()}
     </div>
     </div>`;
@@ -579,7 +573,7 @@
     q('[data-mobile]').innerHTML = lista.length ? '<ul class="pn-m-lista">' + lista.map(p => {
       const prox = proximoStatus(p);
       return `<li class="pn-m-item"><div class="pn-m-t"><b class="pn-num">${ML.fmt.numero(p.numero)}</b> <span>${esc(nomeCli(p))}</span> ${statusChip(p.status)}${tagsOrigem(p)}</div>
-        <p>${esc(itensTxt(p))}</p>${p.pagamentoOnline||p.pagamentoNaEntrega?`<p>${esc(pagTxt(p))}</p>`:""}${avisoPagamento(p)}<div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${entregaPagamentoHTML(p)}${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : aguardaMotoboyHTML(p, 'pn-aguarda-moto pn-aguarda-moto--m')}</div></div></li>`;
+        <p>${esc(itensTxt(p))}</p>${p.pagamentoOnline||p.pagamentoNaEntrega?`<p>${esc(pagTxt(p))}</p>`:""}${avisoPagamento(p)}<div class="pn-m-b"><strong>${brl(p.total)}</strong><div class="pn-m-acoes">${entregaPagamentoHTML(p)}${telWa(p) ? `<a class="pn-btn pn-m-wa" href="${esc(linkWa(p))}" target="${alvoWa()}" rel="noopener" aria-label="Chamar ${esc(nomeCli(p))} no WhatsApp, pedido ${ML.fmt.numero(p.numero)}">${ic('chat')}WhatsApp</a>` : ''}${prox ? `<button type="button" class="pn-btn pn-btn--prim" data-act="avancar" data-id="${esc(p.id)}">${esc(rotuloAvanco(p))}</button>` : ''}</div></div></li>`;
     }).join('') + '</ul>' : `<div class="pn-vazio">${ic('truck', 'pn-vazio-ic')}<p>${esc(textoVazio())}</p></div>`;
   }
 
@@ -639,7 +633,7 @@
     const fora = document.hidden || !document.hasFocus() || !S.visivel;
     if (fora) novos.forEach(p => S.naoVistos.add(p.id));
   }
-  // Pedido que virou "entregue" em outro aparelho (o motoboy leu o QR da comanda, ou outro computador da equipe): aviso discreto,
+  // Pedido que virou "entregue" em outro aparelho (outro computador ou celular da equipe): aviso discreto,
   // sem som (o som é só de pedido novo). O que este painel mesmo concluiu já teve o aviso em avancar() e fica de fora.
   function avisarEntregues() {
     const entregues = S.pedidos.filter(p => {
@@ -649,8 +643,8 @@
     });
     if (!entregues.length || !S.visivel) return;
     if (entregues.length > 1) { toast(entregues.length + ' pedidos entregues'); return; }
-    const p = entregues[0], ultimo = (p.historico || []).slice(-1)[0] || {};
-    toast(ML.fmt.numero(p.numero) + ' entregue' + (ultimo.por === 'motoboy' ? ' pelo motoboy' : '') + ' · ' + nomeCli(p));
+    const p = entregues[0];
+    toast(ML.fmt.numero(p.numero) + ' entregue · ' + nomeCli(p));
   }
 
   /* ---------- tick de 1 s ---------- */
@@ -680,10 +674,8 @@
     if(gestaoProdutos){if(v==='cardapio')gestaoProdutos.abrir();else gestaoProdutos.esconder();}
     q('[data-produtos-mobile]').hidden=v!=='cardapio';
     if(gestaoUsuarios){if(v==='usuarios')gestaoUsuarios.abrir();else gestaoUsuarios.esconder();}
-    if(gestaoEntregadores){if(v==='entregadores')gestaoEntregadores.abrir();else gestaoEntregadores.esconder();}
-    q('[data-entregadores-mobile]').hidden=v!=='entregadores';
-    q('[data-mobile]').hidden=['usuarios','entregadores','cardapio'].includes(v);
-    q('.pn-aviso-m').hidden=['usuarios','entregadores','cardapio'].includes(v);
+    q('[data-mobile]').hidden=['usuarios','cardapio'].includes(v);
+    q('.pn-aviso-m').hidden=['usuarios','cardapio'].includes(v);
     q('[data-usuarios-mobile]').hidden=v!=='usuarios';
     qa('.pn-sec').forEach(s => { s.hidden = s.dataset.view !== v; });
     qa('[data-nav]').forEach(b => { if (b.dataset.nav === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
@@ -774,18 +766,6 @@
     };
     Promise.all(pendentes.map(esperarImagem)).then(seguir);
   }
-  // QR do entregador: só em pedido de entrega com id e com o gerador carregado (window.MLQr, de main-painel.js).
-  // Carrega <site>/motoboy/#<id do pedido>; a leitura marca o pedido como entregue (docs/PLANO-FASE-3.md, C3).
-  // Se falhar ao gerar, a comanda sai sem o QR, nunca sem a comanda.
-  function qrEntregaHTML(p) {
-    const Q = window.MLQr;
-    if (p.modo !== 'entrega' || !p.id || !Q || typeof Q.qrSvg !== 'function') return '';
-    try {
-      const num = ML.fmt.numero(p.numero);
-      const svg = Q.qrSvg(Q.base + '/motoboy/#' + p.id, { rotulo: 'QR code da entrega do pedido ' + num });
-      return `<hr><div class="pn-c-qr">${svg}<p class="pn-c-qr-t">ENTREGADOR: LEIA AO ENTREGAR</p><p class="pn-c-qr-n">${esc(num)}</p></div>`;
-    } catch { return ''; }
-  }
   function comandaHTML(p) {
     const itens = p.itens.map(it => {
       const l = [];
@@ -811,7 +791,6 @@
       ${p.modo === 'entrega' ? `<p class="pn-c-taxa">${esc(p.taxaEntrega != null ? taxaTxt(p).replace(/^Entrega /, 'ENTREGA: ') : taxaTxt(p).toUpperCase())}</p>` : ''}
       <p>${esc(pagTxt(p))}</p>${avisoPagamento(p)}
       <p class="pn-c-total"><span>TOTAL</span><span>${brl(p.total)}</span></p>
-      ${qrEntregaHTML(p)}
     </div>`;
   }
   function abrirComanda(id) {
@@ -898,7 +877,6 @@
   function avancar(id) {
     const p = pedidoPorId(id), prox = p && proximoStatus(p);
     if (!prox) return;
-    if (prox === 'entregue' && p.modo === 'entrega' && p.origem !== 'exemplo') { irPara('entregadores'); toast('Use Baixa manual e informe o motivo, ou peça a confirmação ao motoboy.'); return; }
     S.focoId = id;
     if (prox === 'entregue') S.concluidosAqui.add(id);
     ML.store.avancar(id);
@@ -1132,7 +1110,6 @@
     el.innerHTML = esqueleto();
     if(window.MLProdutos)gestaoProdutos=window.MLProdutos.montar(el);
     if(window.MLUsuarios)gestaoUsuarios=window.MLUsuarios.montar(el);
-    if(window.MLEntregadores)gestaoEntregadores=window.MLEntregadores.montar(el);
     if(window.MLImpressao)gestaoImpressao=window.MLImpressao.montar(el, {
       pedidos: () => ML.store.pedidos(), online: () => !S.offline && (!ML.store.online || ML.store.online()) && navigator.onLine,
       comanda: comandaHTML, podeImprimir: () => S.visivel && !modalAtual,
@@ -1188,7 +1165,6 @@
     if (gestaoImpressao) gestaoImpressao.esconder();
     if(gestaoProdutos)gestaoProdutos.esconder();
     if(gestaoUsuarios)gestaoUsuarios.esconder();
-    if(gestaoEntregadores)gestaoEntregadores.esconder();
     if (S.tickId) { clearInterval(S.tickId); S.tickId = null; }
     qa('[data-kpi]').forEach(k => { if (k._raf) { cancelAnimationFrame(k._raf); k._raf = null; } });
     fecharModal();

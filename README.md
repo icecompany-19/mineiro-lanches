@@ -6,8 +6,8 @@ Bio, cardápio, site e painel de pedidos da loja Mineiro Lanche (Centro de Suzan
 |---|---|
 | `/` | Bio (link do Instagram) → cardápio (`#cardapio`) → site (`#site`) → acompanhar pedido (`#pedido/<token>`) |
 | `/q` e `/q/<mesa>` | Destino do QR code: redireciona para o cardápio e marca a origem (e a mesa) |
-| `/painel/` | Pedidos, entregadores e acessos da equipe (login do Supabase) |
-| `/motoboy/` e `/motoboy/#<pedido>` | Tela do entregador (login próprio): pedidos atribuídos, QR da comanda e confirmação com fila sem internet |
+| `/painel/` | Pedidos (todas as etapas manuais), produtos e acessos da equipe (login do Supabase) |
+| `/motoboy/` | Retirada em 29/10: redireciona para `/painel/` ([entregas manuais](docs/ENTREGAS-MANUAIS.md)) |
 | `/qr/cartaz.html` | Cartaz para imprimir (A6; `?tamanho=a5`), com os PDFs ao lado |
 
 Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.app` continua respondendo).
@@ -20,9 +20,8 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
 - [`docs/PLANO-FASE-2.md`](docs/PLANO-FASE-2.md): plano de 12/10: fechar as telas do cliente, site imersivo, painel, bateria no Windows e go-live, com modelo de IA por tarefa.
 - [`docs/PLANO-FASE-3.md`](docs/PLANO-FASE-3.md): plano atual (17/10): horário automático, motoboy, comanda com logo e QR e domínio.
 - [`docs/CONTRATO-API.md`](docs/CONTRATO-API.md): contrato banco ⇄ front.
-- [`docs/ENTREGADORES.md`](docs/ENTREGADORES.md): atribuição, saída, painel operacional, confirmações offline e baixa manual auditada.
-- [`docs/ROTAS-OPERACAO.md`](docs/ROTAS-OPERACAO.md): viagens com paradas, turno, mapas, saída/retorno e configuração da distribuição automática.
-- [`docs/PLANO-ROTAS-ENTREGADORES.md`](docs/PLANO-ROTAS-ENTREGADORES.md): proposta de viagens com paradas ordenadas, agrupamento por percurso e distribuição automática aos motoboys.
+- [`docs/ENTREGAS-MANUAIS.md`](docs/ENTREGAS-MANUAIS.md): desde 29/10 a equipe faz todas as etapas no painel; o que saiu (motoboy, entregadores, rotas, despacho, QR da comanda) e a migration.
+- Histórico do motoboy, retirado em 29/10: [`docs/ENTREGADORES.md`](docs/ENTREGADORES.md), [`docs/ROTAS-OPERACAO.md`](docs/ROTAS-OPERACAO.md), [`docs/PLANO-ROTAS-ENTREGADORES.md`](docs/PLANO-ROTAS-ENTREGADORES.md) e [`docs/despacho-automatico.md`](docs/despacho-automatico.md).
 - [`docs/CONTRATO-PAINEL.md`](docs/CONTRATO-PAINEL.md): contrato do painel.
 - [`docs/IMPRESSAO-AUTOMATICA.md`](docs/IMPRESSAO-AUTOMATICA.md): preparação da impressora P180, estação de impressão direta, fila local e conferência de falhas.
 - [`docs/ENTREGA-CONFIAVEL.md`](docs/ENTREGA-CONFIAVEL.md): diagnóstico das taxas ausentes e proposta de cotação validada no servidor, fontes alternativas e confirmação da localização.
@@ -35,7 +34,7 @@ Produção: **https://mineirolanches.store** (o `https://mineiro-lanches.vercel.
    - O script pode ser rodado de novo a cada versão.
    - Na primeira instalação, crie e confirme o usuário do dono em Authentication → Users e execute os comandos de primeiro administrador comentados no fim do arquivo (equipe + usuarios_painel). Na atualização existente, o único acesso da equipe já recebe administração.
    - Desligue o cadastro aberto (Authentication → Sign In / Providers).
-   - Equipe e entregadores: entre no painel como administrador e abra **Usuários → Novo usuário**. Para contas já existentes, use **Liberar conta existente**. Consulte [o guia de usuários](docs/USUARIOS-PAINEL.md).
+   - Equipe: entre no painel como administrador e abra **Usuários → Novo usuário**. Para contas já existentes, use **Liberar conta existente**. Consulte [o guia de usuários](docs/USUARIOS-PAINEL.md).
    - Mudou o horário no `CONFIG`? O banco manda: o `setup.sql` regrava `loja.horarios`; confira também se `loja.modo` está em `auto`.
 2. **Vercel.** Importe o repositório. O `vercel.json` já define o build (`npm run build`, saída em `dist`), a CSP, o cache e os redirecionamentos. A URL e a chave **publishable** do Supabase estão em `.env.production`; ela é pública, e quem protege os dados é o RLS.
 3. **Domínio e QR.** Com o domínio final:
