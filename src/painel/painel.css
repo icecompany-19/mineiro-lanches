@@ -342,6 +342,9 @@
 .pn-toast--novo { border-left-color: var(--fio); font-weight: 600; }
 .pn-toast--erro { border-left-color: var(--vermelho-luz); }
 .pn-toast--sai { animation: pn-toast-out 260ms var(--suave) both; }
+/* versão nova do painel publicada (versao.js): acima do quadro e do detalhe, abaixo das janelas */
+.pn-versao { position: fixed; top: .75rem; left: 1rem; right: 1rem; z-index: 60; width: fit-content; margin-inline: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem .9rem; padding: .6rem .7rem .6rem 1rem; background: var(--chapa-2); color: var(--osso); border: 1.5px solid var(--borda-campo); border-left: 5px solid var(--fio); border-radius: var(--r-md); font: 600 15px/1.35 var(--f-corpo); box-shadow: var(--sombra-card); animation: pn-toast-in 200ms var(--suave) both; }
+.pn-versao p { margin: 0; }
 
 /* modal e comanda */
 .pn-modal { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: 1rem; background: color-mix(in srgb, var(--carvao) 80%, transparent); animation: pn-fade var(--t-ui) var(--suave) both; font-family: var(--f-corpo); color: var(--creme); }

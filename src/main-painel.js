@@ -9,8 +9,12 @@ import './painel/impressao-automatica.js';
 import './painel/usuarios.js';
 import './painel/produtos.js';
 import { iniciarAcesso } from './painel/acesso.js';
+import { acompanharVersao } from './painel/versao.js';
 
 window.ML.links.base = import.meta.env.MODE === 'development' ? location.origin : (import.meta.env.VITE_SITE_URL || location.origin);
 
 // "Simular pedido" e "Gerar exemplos" só na demonstração (VITE_DEMO=1 no .env)
 iniciarAcesso({ el: document.getElementById('view-painel'), demo: import.meta.env.VITE_DEMO === '1', prazoAcessoMs: 15000 });
+
+// O painel fica aberto por dias: avisa (e, com a loja fechada, recarrega) quando sai uma versão nova
+acompanharVersao();

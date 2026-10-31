@@ -43,6 +43,10 @@ Não apaga nada: tabelas `motoboys`, `entregas_operacao`, `entregas_eventos`, `e
 
 Reverter: reaplicar as migrations `20261019024838`, `20261019123043`, `20261022193306` e `20261024023500` (recriam funções, gatilhos e permissões) e religar pela RPC `configurar_despacho_entregas`; o front precisa voltar junto.
 
+## Painel aberto antes da publicação (30/10)
+
+Um painel que já estava aberto continua com o código anterior até ser recarregado: mostra "Aguardando saída do motoboy" no lugar do botão **Saiu para entrega** e não deixa concluir entregas. Em 30/10 havia 13 entregas paradas em Pronto por isso, com banco e site já corretos. Resolve com F5 no computador ou fechando e abrindo o painel no celular. A partir desta data o painel avisa sozinho quando sai uma versão nova (`src/painel/versao.js`).
+
 ## Pendências
 
 - A Edge Function `planejar-entregas` continua publicada no Supabase, parada (sem job e com a automação desligada). Pode ser removida pelo painel do Supabase quando o dono quiser.
