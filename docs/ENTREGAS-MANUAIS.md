@@ -51,7 +51,7 @@ Um painel que já estava aberto continua com o código anterior até ser recarre
 
 - A Edge Function `planejar-entregas` continua publicada no Supabase, parada (sem job e com a automação desligada). Pode ser removida pelo painel do Supabase quando o dono quiser.
 - `docs/GUIA-DA-PLATAFORMA.pdf` e o guia de pagamentos (`public/guias/guia-pagamentos-mineiro-lanche.pdf`, página do cache do motoboy) ainda mostram telas do motoboy; refazer quando houver nova rodada de capturas.
-- Os testes SQL `00_estrutura`, `02_criar_pedido`, `04_rls` e `05_equipe_estado` já falhavam antes desta mudança (contam 56 produtos, sem o item de teste de R$ 1, e listas de chaves anteriores ao pagamento na entrega). Não foram corrigidos aqui.
+- Os testes SQL `00_estrutura`, `02_criar_pedido`, `04_rls` e `05_equipe_estado` já falhavam antes desta mudança (contam 56 produtos, sem o item de teste de R$ 1, e listas de chaves anteriores ao pagamento na entrega). Não foram corrigidos aqui. Em 30/10 o item de R$ 1 saiu do seed (56 produtos de novo), o que deve resolver a parte da contagem; não foi rodado de novo.
 
 ## Verificação (29/10)
 

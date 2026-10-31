@@ -312,10 +312,20 @@ export function iniciarApp() {
     { id: 'foto', label: 'Com foto', fn: function (p) { return !!p.foto; } }
   ];
   function semAcento(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\u00a0/g, ' ').toLowerCase(); }
-  function montarChips() {
-    $('#chips').innerHTML = C.categorias.map(function (c, i) {
+  // Um chip por categoria com itens: o cardápio do banco pode tirar ou criar categorias depois da primeira pintura
+  // (30/10: a categoria do teste de pagamento saiu do banco e o chip continuava, apontando para uma seção que não existe).
+  var assinaturaChips = '';
+  function montarCategorias() {
+    var cats = C.categorias.filter(function (c) { return c.itens.length; });
+    var nova = cats.map(function (c) { return c.id + '|' + c.icone + '|' + c.label; }).join('\n');
+    if (nova === assinaturaChips) return;
+    assinaturaChips = nova;
+    $('#chips').innerHTML = cats.map(function (c, i) {
       return '<button type="button" class="chip" data-chip="' + c.id + '" aria-pressed="' + (i === 0) + '">' + ic(c.icone) + esc(c.label) + '</button>';
     }).join('');
+  }
+  function montarChips() {
+    montarCategorias();
     $('#filtros').innerHTML = FILTROS.map(function (f) { return '<button type="button" class="filtro" data-filtro="' + f.id + '" aria-pressed="false">' + esc(f.label) + '</button>'; }).join('');
   }
   // card: o card inteiro (botão) abre a ficha; o "+" ao lado põe o lanche completo na sacola num toque.
@@ -1717,8 +1727,8 @@ export function iniciarApp() {
         sacolaPendente = [];
         salvarSacola();
       }
-      if (tipo === 'cardapio:estado') { montarBio(); marcarCarregadas($('#destaques')); atualizarStatus(); atualizarPrecosFixos(); atualizarContadores(); if (entr.ok && entr.estado !== 'ok' && entr.estado !== 'calculando') agendarTaxa(true); }
-      if (st.tela === 'menu') renderMenu();
+      if (tipo === 'cardapio:estado') { montarBio(); montarCategorias(); marcarCarregadas($('#destaques')); atualizarStatus(); atualizarPrecosFixos(); atualizarContadores(); if (entr.ok && entr.estado !== 'ok' && entr.estado !== 'calculando') agendarTaxa(true); }
+      if (st.tela === 'menu') { renderMenu(); requestAnimationFrame(marcarChip); }
       if (st.tela === 'sacola') renderSacola();
       if (st.tela === 'checkout') renderCheckout();
       if (dlg.open) renderFicha(true);

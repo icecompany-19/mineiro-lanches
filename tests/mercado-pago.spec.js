@@ -156,17 +156,6 @@ test('checkout móvel vai ao Mercado Pago; webhook aprova e retorno mostra pagam
   await expect(page.locator('#pedido-pagar')).toBeHidden();
   expect(sql(`select count(*) from pagamentos_mp m join pedidos p on p.id=m.pedido_id where p.cliente_nome='${nome}'`)).toBe('1');
 });
-test('produto temporário de teste envia exatamente R$ 1,00 ao Mercado Pago', async ({ page }) => {
-  const estado = await preparar(page);
-  await checkout(page, { produto: 'teste-pagamento' });
-  await expect(page.locator('#btn-enviar')).toContainText('R$ 1,00');
-  await page.locator('#btn-enviar').click();
-  await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
-  expect(estado.criadas).toHaveLength(1);
-  expect(estado.criadas[0].body.total_amount).toBe('1.00');
-  expect(estado.criadas[0].body.items).toHaveLength(1);
-  expect(estado.criadas[0].body.items[0].external_code).toBe('teste-pagamento');
-});
 test('falha preserva pedido; retorno adulterado não aprova e repetição usa o mesmo pagamento', async ({ page }) => {
   const estado = await preparar(page, { falhar: true }),
     nome = await checkout(page);
