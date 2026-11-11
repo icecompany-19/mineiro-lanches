@@ -18,6 +18,12 @@ Validação: conta produtiva e chamada do frontend ao backend conferidas, sem cr
 
 A aprovação de uma compra no checkout hospedado ainda não foi executada nesta sessão. Conferir o primeiro pagamento real no Mercado Pago e no acompanhamento/painel; nunca marcar manualmente como aprovado para concluir essa conferência. Sem webhook, a recuperação com navegador fechado é periódica e pode levar cerca de um minuto. Monitorar `net._http_response` e não apenas o sucesso SQL do cron. A ativação vale somente para novos pedidos; históricos continuam com a forma anterior.
 
+## Fila da conciliação prioriza pagamentos em aberto — 10/11
+
+O pedido 0383 foi pago às 21:37 e só liberou às 21:49. A conciliação consultava 12 pagamentos por minuto pela ordem da última consulta, sem olhar o estado; com 148 registros, um pagamento novo esperava a volta inteira dos já encerrados (o 0382 esperou 10 minutos pelo mesmo motivo). A migration `20261111005500_fila_conciliacao_prioriza_abertos.sql`, aplicada em produção, põe pendente, recusado e em revisão na frente; os encerrados seguem conferidos nas vagas que sobram. Teste em `supabase/tests/17_fila_conciliacao.sql`, **ainda não executado**: a máquina da correção não tinha o Postgres local.
+
+Pendências abertas na mesma investigação: o cron responde HTTP 503 em todas as execuções (ao menos uma consulta falha por rodada, sem registro em log, porque as rejeições do `Promise.allSettled` não passam pelo `registrarErro`), e o webhook segue fechado por falta da assinatura.
+
 ## Correção da aplicação produtiva e teste de R$ 1 — 20/10
 
 O pedido 0095 expôs uma falha de configuração: o padrão produtivo havia copiado o ID da aplicação de homologação. O Mercado Pago retornava HTTP 201 com a aplicação produtiva correta, mas a verificação rejeitava a resposta antes de salvar a order e o checkout. O comprador acabava recebendo erro e, se repetisse durante a reserva de 30 segundos, via “preparando pagamento”. Isso não foi detectado pela consulta de identidade da conta nem pelos testes com provedor simulado. A validação completa do checkout real não havia sido concluída; a integração não devia ter sido apresentada como homologada.
