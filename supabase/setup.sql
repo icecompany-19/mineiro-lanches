@@ -1,6 +1,6 @@
 -- =====================================================================================
 -- Mineiro Lanche · setup completo do banco (Supabase)
--- Gerado por scripts/montar-setup.mjs a partir de supabase/migrations/20261008000001_schema.sql, supabase/migrations/20261008000002_rls.sql, supabase/migrations/20261008000003_rpc.sql, supabase/migrations/20261016000001_taxa_entrega.sql, supabase/migrations/20261017000001_motoboy.sql, supabase/migrations/20261017000002_confirmar_entrega_ja_entregue.sql, supabase/migrations/20261018023009_cotacao_entrega.sql, supabase/migrations/20261018031024_destino_entrega_e_limpeza.sql, supabase/migrations/20261018181746_gestao_usuarios_painel.sql, supabase/migrations/20261018185421_pagamentos_mercado_pago.sql, supabase/migrations/20261019024838_controle_entregadores.sql, supabase/migrations/20261019032841_historico_entregas_painel.sql, supabase/migrations/20261019034930_totais_taxas_entregadores.sql, supabase/migrations/20261019123043_viagens_rotas_entregadores.sql, supabase/migrations/20261020145407_pagamentos_permissoes_backend.sql, supabase/migrations/20261020203000_gestao_produtos.sql, supabase/migrations/20261020213000_estoque_categoria.sql, supabase/migrations/20261021001305_pagamento_na_entrega.sql, supabase/migrations/20261021001941_sinalizacao_pagamento_entrega_motoboy.sql, supabase/migrations/20261021003931_email_opcional_e_troco.sql, supabase/migrations/20261022193306_despacho_automatico_individual.sql, supabase/migrations/20261024023500_motoboy_pegar_pedidos.sql, supabase/migrations/20261029190000_entregas_manuais.sql, supabase/migrations/20261030234500_retirar_teste_pagamento.sql, supabase/migrations/20261111005500_fila_conciliacao_prioriza_abertos.sql, supabase/seed.sql.
+-- Gerado por scripts/montar-setup.mjs a partir de supabase/migrations/20261008000001_schema.sql, supabase/migrations/20261008000002_rls.sql, supabase/migrations/20261008000003_rpc.sql, supabase/migrations/20261016000001_taxa_entrega.sql, supabase/migrations/20261017000001_motoboy.sql, supabase/migrations/20261017000002_confirmar_entrega_ja_entregue.sql, supabase/migrations/20261018023009_cotacao_entrega.sql, supabase/migrations/20261018031024_destino_entrega_e_limpeza.sql, supabase/migrations/20261018181746_gestao_usuarios_painel.sql, supabase/migrations/20261018185421_pagamentos_mercado_pago.sql, supabase/migrations/20261019024838_controle_entregadores.sql, supabase/migrations/20261019032841_historico_entregas_painel.sql, supabase/migrations/20261019034930_totais_taxas_entregadores.sql, supabase/migrations/20261019123043_viagens_rotas_entregadores.sql, supabase/migrations/20261020145407_pagamentos_permissoes_backend.sql, supabase/migrations/20261020203000_gestao_produtos.sql, supabase/migrations/20261020213000_estoque_categoria.sql, supabase/migrations/20261021001305_pagamento_na_entrega.sql, supabase/migrations/20261021001941_sinalizacao_pagamento_entrega_motoboy.sql, supabase/migrations/20261021003931_email_opcional_e_troco.sql, supabase/migrations/20261022193306_despacho_automatico_individual.sql, supabase/migrations/20261024023500_motoboy_pegar_pedidos.sql, supabase/migrations/20261029190000_entregas_manuais.sql, supabase/migrations/20261030234500_retirar_teste_pagamento.sql, supabase/migrations/20261111005500_fila_conciliacao_prioriza_abertos.sql, supabase/migrations/20261111011500_fila_conciliacao_sem_cancelados.sql, supabase/seed.sql.
 -- Não edite à mão: mude as migrations ou o CONFIG e rode
 --   node scripts/gerar-seed.mjs && node scripts/montar-setup.mjs
 --
@@ -4907,6 +4907,30 @@ begin
   with candidatos as (
     select id from public.pagamentos_mp
     where order_id is not null and coalesce(ultima_consulta,'-infinity')<now()-interval '1 minute'
+    order by (estado in ('pendente','recusado','revisao')) desc,ultima_consulta nulls first,criado_em
+    limit 12 for update skip locked
+  ), reservados as (
+    update public.pagamentos_mp m set ultima_consulta=now() from candidatos c where m.id=c.id returning m.*
+  ) select coalesce(jsonb_agg(to_jsonb(r)),'[]'::jsonb) into v_resultado from reservados r;
+  return v_resultado;
+end $$;
+revoke all on function public.reservar_conciliacao_mp() from public,anon,authenticated;
+grant execute on function public.reservar_conciliacao_mp() to service_role;
+
+-- ============ supabase/migrations/20261111011500_fila_conciliacao_sem_cancelados.sql ============
+
+-- A conciliação respondia HTTP 503 em todas as rodadas: 28 cobranças que expiraram sem nenhuma tentativa de
+-- pagamento (pedidos 0094 a 0349) deixaram de ser devolvidas pela consulta do Mercado Pago depois de cerca de
+-- dois dias, e voltavam à fila para falhar de novo. Order cancelada ou expirada é estado final no Mercado Pago:
+-- não há o que conferir. Sair da fila libera as vagas e faz o 503 voltar a significar falha de verdade.
+-- Aprovados, estornados e contestados continuam na fila (estorno e contestação mudam depois).
+create or replace function public.reservar_conciliacao_mp()
+returns jsonb language plpgsql security invoker set search_path=public,pg_temp as $$
+declare v_resultado jsonb;
+begin
+  with candidatos as (
+    select id from public.pagamentos_mp
+    where order_id is not null and estado<>'cancelado' and coalesce(ultima_consulta,'-infinity')<now()-interval '1 minute'
     order by (estado in ('pendente','recusado','revisao')) desc,ultima_consulta nulls first,criado_em
     limit 12 for update skip locked
   ), reservados as (

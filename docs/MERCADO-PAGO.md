@@ -22,7 +22,9 @@ A aprovação de uma compra no checkout hospedado ainda não foi executada nesta
 
 O pedido 0383 foi pago às 21:37 e só liberou às 21:49. A conciliação consultava 12 pagamentos por minuto pela ordem da última consulta, sem olhar o estado; com 148 registros, um pagamento novo esperava a volta inteira dos já encerrados (o 0382 esperou 10 minutos pelo mesmo motivo). A migration `20261111005500_fila_conciliacao_prioriza_abertos.sql`, aplicada em produção, põe pendente, recusado e em revisão na frente; os encerrados seguem conferidos nas vagas que sobram. Teste em `supabase/tests/17_fila_conciliacao.sql`, **ainda não executado**: a máquina da correção não tinha o Postgres local.
 
-Pendências abertas na mesma investigação: o cron responde HTTP 503 em todas as execuções (ao menos uma consulta falha por rodada, sem registro em log, porque as rejeições do `Promise.allSettled` não passam pelo `registrarErro`), e o webhook segue fechado por falta da assinatura.
+O cron respondia HTTP 503 em todas as execuções. Causa: 28 cobranças que expiraram sem nenhuma tentativa de pagamento (pedidos 0094 a 0349) deixaram de ser devolvidas pela consulta do Mercado Pago depois de cerca de dois dias e voltavam à fila para falhar de novo; o código HTTP da recusa não foi confirmado, porque as rejeições do `Promise.allSettled` não passam pelo `registrarErro`. A migration `20261111011500_fila_conciliacao_sem_cancelados.sql`, aplicada em produção, tira da fila os pagamentos em estado `cancelado` (final no Mercado Pago). As duas rodadas seguintes responderam 200 com `{"processados":12,"falhas":0}`.
+
+Pendências: registrar em log qual consulta falha na conciliação (exige publicar a Edge Function) e o webhook, que segue fechado por falta da assinatura.
 
 ## Correção da aplicação produtiva e teste de R$ 1 — 20/10
 
