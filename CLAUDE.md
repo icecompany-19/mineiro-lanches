@@ -58,7 +58,9 @@ node --test tests/*.test.mjs
 npx playwright test
 ```
 
-Última execução (17/10, pendências baixas da fase 3, `82d31af`): lint e build ok; 515 verificações SQL; paridade 318; node:test 87 (66 ok, 21 pulados por falta de poppler); Playwright celular + desktop + e2e em 28,6 min: 524 ok, 56 pulados e 4 falhas intermitentes antigas: `site-ii.spec.js:587` (véu do S5, que falha 4 de 6 vezes no front de antes da fase 3) e 3 casos do `ficha.spec.js:4` (`toBeInViewport` do 1º ingrediente depois de "Personalizar"; no commit de base `937aad3` falha 4 de 12 vezes, com o mesmo erro). A anterior (`3441859`, 19,7 min) teve 514 ok, 55 pulados e só a do S5. O projeto `iphone` não roda aqui (sem WebKit). Linha de base e detalhes em `docs/PLANO-FASE-3.md` §7.
+Última execução (20/11, sobre `ef61187`, sem pagamento online): lint e build ok; SQL 533 verificações, todas ok depois da atualização dos testes 00/02/04/05 (eram expectativas antigas); paridade 330; node:test 109 ok e 21 pulados; Playwright celular + desktop + e2e em 21,6 min: 536 ok, 88 pulados, 6 falhas já conhecidas (`produtos.spec.js:66` nos dois projetos, véu do S5 `site-ii.spec.js:587` nos dois, `aceite-painel` alvo de 48 px do cardápio no computador e o e2e "esgotar no painel", que interrompe os 20 casos seguintes do e2e serial).
+
+Execução anterior (17/10, pendências baixas da fase 3, `82d31af`): lint e build ok; 515 verificações SQL; paridade 318; node:test 87 (66 ok, 21 pulados por falta de poppler); Playwright celular + desktop + e2e em 28,6 min: 524 ok, 56 pulados e 4 falhas intermitentes antigas: `site-ii.spec.js:587` (véu do S5, que falha 4 de 6 vezes no front de antes da fase 3) e 3 casos do `ficha.spec.js:4` (`toBeInViewport` do 1º ingrediente depois de "Personalizar"; no commit de base `937aad3` falha 4 de 12 vezes, com o mesmo erro). A anterior (`3441859`, 19,7 min) teve 514 ok, 55 pulados e só a do S5. O projeto `iphone` não roda aqui (sem WebKit). Linha de base e detalhes em `docs/PLANO-FASE-3.md` §7.
 
 ## Ambiente desta máquina (Windows 11, conferido em 12/10/2026)
 

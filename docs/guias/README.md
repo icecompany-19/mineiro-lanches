@@ -1,19 +1,22 @@
 # Guia visual de pagamentos
 
-Edição de 21/10/2026: 16 páginas. Inclui e-mail opcional no site/acompanhamento, dinheiro com resposta obrigatória sobre troco, confirmação financeira pela equipe, comanda e indicação de cobrança no cache do motoboy. As imagens `03-dados`, `04-pagar`, `05-pendente`, `06-aprovado`, `09-card-pendente` e `11-card-pago` foram renovadas; `19-*` a `25-*` mostram o fluxo atual em ambiente local com Ana de demonstração. A retirada do exemplo custa R$ 16,90; a entrega fictícia, R$ 23,90 com taxa local de R$ 7,00. Esses valores ilustram as telas e não definem a taxa da loja. Nenhum pedido ou pagamento de cliente real foi usado nas capturas.
+Edição de 20/11/2026: 8 páginas, refeita depois que o pagamento online saiu do checkout (19/11, commit `ef61187`). Cobre o fluxo atual: Pix, Dinheiro (com a pergunta do troco) e Outra forma, todos a receber; o WhatsApp da loja abrindo com o pedido; o acompanhamento; o painel (acesso, modo Automático/Aberta/Fechada, Pix a receber → Pix recebido, dinheiro a receber, comanda, etapas manuais e cancelamento) e uma nota sobre os pedidos online antigos. As páginas do Mercado Pago e do motoboy saíram, com as imagens delas (continuam no histórico do git).
 
-O HTML editável é `guia-pagamentos.html`. As capturas em `telas/` mostram a interface real do aplicativo em ambiente local com dados fictícios. Os estados financeiros foram simulados com a infraestrutura de `tests/mercado-pago.spec.js`; não representam transações reais. As quatro imagens `15-mp-*` a `18-mp-*` são recortes de quadros da demonstração oficial do Mercado Pago; não são capturas de transações da loja. O checkout hospedado recusou o acesso deste navegador (HTTP 403), e nenhum pagamento real foi iniciado para obter as imagens. Não foi criada uma imitação da interface do provedor.
-
-Fonte das imagens oficiais: [visão geral do Checkout Pro](https://www.mercadopago.com.br/developers/pt/docs/checkout-pro-orders/overview), [GIF original](https://http2.mlstatic.com/storage/dx-devsite/docs-assets/custom-upload/2025/3/25/1745588214106-chopropt990px.gif), consulta em 20/10/2026. Quadros (base zero): 116, 144, 396 e 468. Extraídos na largura original de 990 px, com recorte somente de espaço inferior; interfaces e valores preservados. O exemplo oficial mostra R$ 29,49 e uma caneca, e isso está identificado nas páginas correspondentes. A captura genérica de meios de pagamento mostra opções que não estão habilitadas na loja; a nota do guia distingue essa lista da configuração do Mineiro.
-
-Para gerar o PDF público após alterar o conteúdo:
+O HTML editável é `guia-pagamentos.html`. As telas em `telas/` são do aplicativo real em ambiente local, com clientes fictícios ("Ana Demonstração" e "Bruno Demonstração"), e saem do script:
 
 ```sh
-PW_CHROMIUM=/usr/bin/chromium node scripts/gerar-guia-pagamentos.mjs
+source scripts/supabase-local/ambiente-windows.sh   # Git Bash, com o Supabase local no ar e o setup.sql aplicado
+node scripts/capturas/guia-pagamentos.mjs
 ```
 
-O gerador serve as fontes, imagens e o HTML por HTTP local, verifica a disponibilidade das imagens e impede a geração se houver conteúdo sobre o rodapé. O destino é `public/guias/guia-pagamentos-mineiro-lanche.pdf`.
+O script sobe o `vite preview` na porta 4185, deixa a loja local em "Aberta" sem pagamento online, faz os dois pedidos pelo checkout como um cliente, fotografa o painel e, no fim, apaga esses pedidos e devolve a loja local como estava. O `wa.me` é interceptado: nada sai para a internet. A mensagem do WhatsApp do pedido Pix fica em `capturas/guia-pagamentos/whatsapp.txt` e foi copiada para a página 5 (com o link de acompanhamento trocado pelo endereço público). Ao refazer as capturas, confira se o número do pedido da mensagem bate com o da tela de acompanhamento.
 
-Ao renovar capturas, use somente o ambiente local de testes, uma conta fictícia e pedidos de demonstração. Não exponha dados de clientes, credenciais ou links privados de acompanhamento. Confirme as formas de pagamento da configuração vigente antes de atualizar a primeira página.
+Para gerar o PDF público depois de mudar o conteúdo:
 
-Antes de publicar, confira todas as páginas renderizadas do PDF e mantenha o mesmo endereço público para preservar os links enviados ao cliente.
+```sh
+node scripts/gerar-guia-pagamentos.mjs
+```
+
+O gerador serve as fontes, imagens e o HTML por HTTP local, espera as imagens e se recusa a gerar se algum conteúdo passar do rodapé. O destino é `public/guias/guia-pagamentos-mineiro-lanche.pdf`; mantenha esse endereço, que já foi enviado à loja.
+
+Antes de publicar, confira todas as páginas renderizadas. Não use dados de clientes reais, credenciais ou links de acompanhamento verdadeiros nas capturas.
