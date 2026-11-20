@@ -85,7 +85,8 @@ update produtos set preco = null where id = 'dog-cbo-turbo'; -- cenário de test
 select pg_temp.sou(null);
 set local role anon;
 select estado_cardapio() as e \gset
-select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'e'::jsonb) k) = array['adicionais', 'diaOperacional', 'esgotados', 'inativos', 'loja', 'precos'],
+-- catalogo: produtos e categorias geridos pelo painel (migration 20261020203000)
+select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'e'::jsonb) k) = array['adicionais', 'catalogo', 'diaOperacional', 'esgotados', 'inativos', 'loja', 'precos'],
   'estado_cardapio com as chaves do contrato');
 select pg_temp.igual(:'e'::jsonb ->> 'diaOperacional', dia_operacional()::text, 'estado_cardapio: diaOperacional');
 select pg_temp.ok(:'e'::jsonb -> 'esgotados' = '["gran-crispy"]', 'estado_cardapio: só o esgotado de hoje (o de ontem já caiu)');
@@ -125,8 +126,10 @@ reset role;
 select pg_temp.sou(null);
 set local role anon;
 select acompanhar_pedido(:'ent_token') as a \gset
-select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'a'::jsonb) k) = array['criadoEm', 'distanciaKm', 'historico', 'itens', 'modo', 'numero', 'pagamentoEm', 'pagamentoOnline', 'status', 'taxaEntrega', 'total'],
-  'acompanhar_pedido: só numero, criadoEm, status, historico, modo, total, taxa de entrega (e km) e itens');
+-- pagamento, troco, pagamentoNaEntrega e pagamentoRecebidoEm: o cliente vê como vai pagar e se a loja já recebeu
+-- (migrations 20261021001305 e 20261021003931). Continua sem nome, telefone e endereço (conferido logo abaixo).
+select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'a'::jsonb) k) = array['criadoEm', 'distanciaKm', 'historico', 'itens', 'modo', 'numero', 'pagamento', 'pagamentoEm', 'pagamentoNaEntrega', 'pagamentoOnline', 'pagamentoRecebidoEm', 'status', 'taxaEntrega', 'total', 'troco'],
+  'acompanhar_pedido: só numero, criadoEm, status, historico, modo, total, taxa de entrega (e km), itens e situação do pagamento');
 select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'a'::jsonb #> '{itens,0}') k) = array['nome', 'qtd', 'resumo', 'subtotal'],
   'acompanhar_pedido: itens só com nome, qtd, resumo e subtotal');
 select pg_temp.ok(:'a'::text not like '%Carla%' and :'a'::text not like '%11900000080%' and :'a'::text not like '%Secreta%',

@@ -59,7 +59,10 @@ select pg_temp.igual(pg_temp.erro(format($$select mudar_status(%L, 'preparo')$$,
 select pg_temp.igual(pg_temp.erro($$select marcar_esgotado('gran-burger', true)$$), 'sem_permissao', 'logado fora da equipe: marcar_esgotado → sem_permissao');
 select pg_temp.igual(pg_temp.erro($$select definir_loja('fechada')$$), 'sem_permissao', 'logado fora da equipe: definir_loja → sem_permissao');
 select pg_temp.igual(pg_temp.erro($$select remover_testes()$$), 'sem_permissao', 'logado fora da equipe: remover_testes → sem_permissao');
-select pg_temp.igual(pg_temp.erro($$select pedido_json(p) from pedidos p$$), '42501', 'logado fora da equipe não chama funções internas (pedido_json)');
+-- pedido_json é security invoker e tem execute para anon/authenticated desde 21/10 (migration 20261021001305): só formata a linha
+-- recebida, sem consultar outra tabela. Quem está fora da equipe não lê linha nenhuma de pedidos, então não sai dado nenhum por ela.
+select pg_temp.ok(not (select prosecdef from pg_proc where oid = 'pedido_json(pedidos)'::regprocedure), 'pedido_json é security invoker');
+select pg_temp.igual((select count(*) from (select pedido_json(p) from pedidos p) x)::text, '0', 'logado fora da equipe: pedido_json não devolve pedido nenhum');
 reset role;
 
 -- ================= equipe =================

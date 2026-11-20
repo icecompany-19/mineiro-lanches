@@ -50,12 +50,14 @@ select pg_temp.igual((select count(*) from produtos)::text, '57', 'seed repetido
 select pg_temp.igual((select count(*) from adicionais)::text, '6', 'seed repetido: não duplica adicionais');
 
 -- RLS e Realtime
-select pg_temp.ok((select bool_and(relrowsecurity) and count(*) = 7 from pg_class
-                   where oid in ('produtos'::regclass, 'adicionais'::regclass, 'loja'::regclass, 'clientes'::regclass, 'pedidos'::regclass, 'equipe'::regclass, 'motoboys'::regclass)),
-  'RLS ligado nas 7 tabelas');
+-- categorias_produtos e produtos_eventos entraram com a gestão de produtos no painel (migration 20261020203000)
+select pg_temp.ok((select bool_and(relrowsecurity) and count(*) = 9 from pg_class
+                   where oid in ('produtos'::regclass, 'adicionais'::regclass, 'loja'::regclass, 'clientes'::regclass, 'pedidos'::regclass, 'equipe'::regclass, 'motoboys'::regclass,
+                                 'categorias_produtos'::regclass, 'produtos_eventos'::regclass)),
+  'RLS ligado nas 9 tabelas');
 select pg_temp.igual((select string_agg(tablename || ':' || policyname, ',' order by tablename) from pg_policies where schemaname = 'public'),
-  'adicionais:adicionais_leitura,clientes:clientes_equipe,equipe:equipe_propria,loja:loja_leitura,motoboys:motoboys_proprio,pedidos:pedidos_equipe,produtos:produtos_leitura',
-  '7 policies, sem duplicar');
+  'adicionais:adicionais_leitura,categorias_produtos:categorias_produtos_leitura,clientes:clientes_equipe,equipe:equipe_propria,loja:loja_leitura,motoboys:motoboys_proprio,pedidos:pedidos_equipe,produtos:produtos_leitura,produtos_eventos:produtos_eventos_equipe',
+  '9 policies, sem duplicar');
 select pg_temp.igual((select string_agg(tablename, ',' order by tablename) from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public'),
   'loja,pedidos,produtos', 'Realtime: loja, pedidos e produtos (uma vez cada)');
 
@@ -79,7 +81,10 @@ select pg_temp.ok(not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and ((not p.prosecdef and p.proname not in ('reservar_entrega','emitir_cotacao_entrega','limpar_dados_entrega','gerir_acesso_usuario','taxas_entregador',
       'rotas_regras_validas','rotas_config_json','estado_entregador_rotas','viagem_entrega_json','plano_entrega_json','reservar_plano_entregas',
-      'disparar_planejador_entregas','limpar_planejamento_entregas','proteger_pagamento_pedido','preparar_pagamento_mp','registrar_pagamento_mp','autorizar_reembolso_mp','reservar_conciliacao_mp'))
+      'disparar_planejador_entregas','limpar_planejamento_entregas','proteger_pagamento_pedido','preparar_pagamento_mp','registrar_pagamento_mp','autorizar_reembolso_mp','reservar_conciliacao_mp',
+      -- helpers security invoker posteriores (pagamento na entrega, gestão de produtos e fila do motoboy): rodam com o papel de quem chama
+      'pedido_json','entrega_json','autorizar_pagamento_entrega_mp','liberar_reserva_pagamento_entrega_mp','preparar_pagamento_mp_online',
+      'atualizar_versao_produto','motivo_pegar_pedido','processar_despacho_individual'))
       or not coalesce('search_path=public, pg_temp' = any (p.proconfig) or 'search_path=""' = any (p.proconfig), false))),
   'RPCs têm search_path fixo; helpers de entrega mantêm privilégios do backend');
 select pg_temp.ok(not exists (
@@ -97,11 +102,15 @@ select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execut
                    from unnest(array['entregas_em_rota()', 'confirmar_entrega(uuid)']) f),
   'funções do motoboy fechadas desde as entregas manuais (29/10; detalhes em 16_entregas_manuais.sql)');
 select pg_temp.ok((select bool_and(not has_function_privilege('anon', f, 'execute') and not has_function_privilege('authenticated', f, 'execute'))
-                   from unnest(array['pedido_json(pedidos)', 'resumo_item(jsonb,numeric)', 'loja_json()', 'horario_aberto(jsonb,timestamptz)',
+                   from unnest(array['pedido_json_sem_entrega(pedidos)', 'resumo_item(jsonb,numeric)', 'loja_json()', 'horario_aberto(jsonb,timestamptz)',
                                      'turno_minutos(jsonb)', 'campo_texto(jsonb,integer)', 'campo_inteiro(jsonb,integer,integer,integer)',
                                      'aparar(text)', 'minusculas(text)', 'data_iso(timestamptz)', 'horarios_validos(jsonb)', 'tocar_atualizado_em()',
-                                     'is_motoboy()', 'entrega_json(pedidos)']) f),
+                                     'is_motoboy()', 'entrega_json_sem_entrega(pedidos)']) f),
   'funções internas fechadas para anon e authenticated');
+-- Desde 21/10 (migration 20261021001305) pedido_json e entrega_json são invólucros security invoker com execute para anon e
+-- authenticated; quem formata o pedido são as versões *_sem_entrega (security definer), que continuam fechadas acima.
+select pg_temp.ok((select bool_and(not prosecdef) from pg_proc where oid in ('pedido_json(pedidos)'::regprocedure, 'entrega_json(pedidos)'::regprocedure)),
+  'pedido_json e entrega_json rodam com o papel de quem chama');
 
 -- checks
 select pg_temp.igual(pg_temp.erro($$update loja set horarios = '{"7":null}'$$), '23514', 'check: horarios com dia 7 recusado');
