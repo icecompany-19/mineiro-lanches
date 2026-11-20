@@ -225,21 +225,14 @@
           </section>
           <section class="bloco" aria-labelledby="pag-tit">
             <h2 id="pag-tit">Pagamento</h2>
-            <div id="pagamentos"></div>
-            <div id="pagamento-online-info" hidden>
-              <p>Você paga com segurança no Mercado Pago. O preparo começa após a aprovação do pagamento.</p>
-              <div class="campo"><label for="f-email-pagamento">E-mail para o pagamento (opcional)</label><input id="f-email-pagamento" type="email" autocomplete="email" maxlength="254" aria-describedby="email-pagamento-dica erro-email-pagamento"><small id="email-pagamento-dica">Pode deixar em branco. O Mercado Pago poderá solicitar seus dados ao concluir o pagamento.</small><span class="msg-erro" id="erro-email-pagamento" hidden>Confira o e-mail informado ou deixe em branco.</span></div>
-            </div>
-            <div id="pagamento-entrega-info" hidden>
-              <p>Como você vai pagar ao receber?</p>
-              <div id="pagamento-entrega-formas" role="group" aria-label="Forma de pagamento ao receber"></div>
-              <p class="msg-erro" id="erro-forma-entrega" role="alert" hidden>Selecione a forma de pagamento ao receber.</p>
-              <div id="pagamento-dinheiro-info" hidden>
-                <p id="troco-pergunta">Vai precisar de troco?</p>
-                <div id="troco-opcoes" role="group" aria-labelledby="troco-pergunta"></div>
-                <p class="msg-erro" id="erro-troco-opcao" role="alert" hidden>Informe se vai precisar de troco.</p>
-                <div class="campo" id="campo-troco" hidden><label for="f-troco">Troco para quanto? (R$)</label><input id="f-troco" type="text" inputmode="decimal" maxlength="12" placeholder="Ex.: 100,00" aria-describedby="troco-dica erro-troco"><small id="troco-dica">Informe o valor que vai entregar em dinheiro.</small><span class="msg-erro" id="erro-troco" hidden>Informe um valor maior que o total do pedido.</span></div>
-              </div>
+            <div id="pagamentos" role="group" aria-labelledby="pag-tit"></div>
+            <p class="msg-erro" id="erro-forma-entrega" role="alert" hidden>Selecione a forma de pagamento.</p>
+            <p id="pagamento-whatsapp-info" hidden></p>
+            <div id="pagamento-dinheiro-info" hidden>
+              <p id="troco-pergunta">Vai precisar de troco?</p>
+              <div id="troco-opcoes" role="group" aria-labelledby="troco-pergunta"></div>
+              <p class="msg-erro" id="erro-troco-opcao" role="alert" hidden>Informe se vai precisar de troco.</p>
+              <div class="campo" id="campo-troco" hidden><label for="f-troco">Troco para quanto? (R$)</label><input id="f-troco" type="text" inputmode="decimal" maxlength="12" placeholder="Ex.: 100,00" aria-describedby="troco-dica erro-troco"><small id="troco-dica">Informe o valor que vai entregar em dinheiro.</small><span class="msg-erro" id="erro-troco" hidden>Informe um valor maior que o total do pedido.</span></div>
             </div>
           </section>
           <section class="bloco">
@@ -288,7 +281,7 @@
         <div class="form">
           <section class="bloco" aria-labelledby="st-tit"><h2 id="st-tit">Status</h2><p class="prazo-nota" data-prazo></p><ol class="linha-tempo" id="linha-tempo"></ol></section>
           <section class="bloco" aria-labelledby="it-tit"><h2 id="it-tit">Itens</h2><div id="ped-itens"></div><div class="comanda-sombra"><div class="resumo comanda"><div class="total"><span>Total</span><span id="ped-total">R$ 0,00</span></div></div></div></section>
-          <a class="btn btn-borda" id="ped-wa" href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>Avisar também pelo WhatsApp</a>
+          <a class="btn btn-vermelho" id="ped-wa" href="#" target="_blank" rel="noopener"><svg class="ic" aria-hidden="true"><use href="#i-chat"/></svg>Enviar pedido no WhatsApp</a>
           <button type="button" class="btn btn-borda" data-novo-pedido>Fazer outro pedido</button>
           <section class="bloco" id="bloco-meus" hidden aria-labelledby="meus-tit"><h2 id="meus-tit">Meus pedidos neste aparelho</h2><div class="meus" id="meus"></div></section>
         </div>

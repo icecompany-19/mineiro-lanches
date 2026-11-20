@@ -133,6 +133,8 @@ async function montarPedido(page, { produto, nome, telefone, escolhas, local }) 
   if (local) await page.locator('[data-modo="local"]').click();
   await page.locator('#f-nome').fill(nome);
   await page.locator('#f-tel').fill(telefone);
+  // sem pagamento online (19/11/2026): a forma é obrigatória e o pedido segue pelo WhatsApp
+  await page.locator('[data-pag="outro"]').click();
 }
 
 test.beforeAll(async () => {
@@ -434,6 +436,7 @@ test.describe('cliente e painel', () => {
     await expect(celular.locator('#sacola-linhas .linha')).not.toHaveClass(/esgotado/);
     await celular.locator('#btn-continuar').click();
     await expect(celular.locator('#f-nome')).toHaveValue('Diego Teste'); // rascunho do checkout guardado
+    await celular.locator('[data-pag="outro"]').click(); // a forma de pagamento não fica no rascunho
     await expect(celular.locator('#aviso-fechado')).toContainText('Fechado agora');
     await celular.locator('#btn-enviar').click();
     await expect(erro).toContainText('A loja não está recebendo pedidos agora');

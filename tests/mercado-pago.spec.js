@@ -1,4 +1,4 @@
-/* global document, window */
+/* global window */
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { createHmac } from 'node:crypto';
@@ -116,7 +116,23 @@ async function checkout(page, { produto = 'x-burguer' } = {}) {
   const nome = 'MP Teste ' + Math.random().toString(36).slice(2);
   await page.locator('#f-nome').fill(nome);
   await page.locator('[data-modo=local]').click();
-  await page.locator('#f-email-pagamento').fill('comprador@example.com');
+  return nome;
+}
+// Desde 19/11/2026 o checkout não oferece pagamento online. Os pedidos online que já existem continuam pagáveis pelo
+// acompanhamento; para criar um, a página age como a versão antiga do site (pagamento 'Mercado Pago' com a loja ativa).
+async function pedidoOnlineAntigo(page, { email = 'comprador@example.com' } = {}) {
+  await page.route('**/rest/v1/rpc/criar_pedido', async (route) => {
+    const corpo = JSON.parse(route.request().postData());
+    corpo.p.pagamento = 'Mercado Pago';
+    corpo.p.troco = '';
+    await route.continue({ postData: JSON.stringify(corpo) });
+  });
+  const nome = await checkout(page);
+  await page.locator('[data-pag="outro"]').click();
+  await page.locator('#btn-enviar').click();
+  await expect(page.locator('#pedido-pagar')).toBeVisible();
+  if (email) await page.locator('#pedido-pagamento-email').fill(email);
+  await page.getByRole('button', { name: 'Pagar no Mercado Pago', exact: true }).click();
   return nome;
 }
 async function confirmar(estado) {
@@ -139,12 +155,9 @@ async function confirmar(estado) {
   );
   expect(res.status).toBe(200);
 }
-test('checkout móvel vai ao Mercado Pago; webhook aprova e retorno mostra pagamento confirmado', async ({ page }) => {
+test('pedido online antigo vai ao Mercado Pago pelo acompanhamento; webhook aprova e retorno mostra pagamento confirmado', async ({ page }) => {
   const estado = await preparar(page),
-    nome = await checkout(page);
-  await expect(page.locator('#btn-enviar')).toContainText('Pagar pedido');
-  await page.screenshot({ path: test.info().outputPath('checkout-mercado-pago.png'), fullPage: true });
-  await page.locator('#btn-enviar').click();
+    nome = await pedidoOnlineAntigo(page);
   await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
   expect(estado.criadas).toHaveLength(1);
   expect(estado.criadas[0].body.total_amount).toBe('16.90');
@@ -158,8 +171,7 @@ test('checkout móvel vai ao Mercado Pago; webhook aprova e retorno mostra pagam
 });
 test('falha preserva pedido; retorno adulterado não aprova e repetição usa o mesmo pagamento', async ({ page }) => {
   const estado = await preparar(page, { falhar: true }),
-    nome = await checkout(page);
-  await page.locator('#btn-enviar').click();
+    nome = await pedidoOnlineAntigo(page);
   await expect(page.locator('#pedido-pagamento-erro')).toBeVisible();
   await page.screenshot({ path: test.info().outputPath('pagamento-pendente.png'), fullPage: true });
   const token = sql(`select token from pedidos where cliente_nome='${nome}'`),
@@ -187,8 +199,7 @@ test('reserva concorrente aguarda e abre o checkout sozinha sem duplicar o pedid
     const res = await estado.handler(new Request(req.url(), { method: req.method(), headers: req.headers(), body: req.postData() }));
     await route.fulfill({ status: res.status, contentType: 'application/json', body: await res.text() });
   });
-  const nome = await checkout(page);
-  await page.locator('#btn-enviar').click();
+  const nome = await pedidoOnlineAntigo(page);
   await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
   expect(chamadas).toBe(2);
   expect(estado.criadas).toHaveLength(1);
@@ -196,8 +207,7 @@ test('reserva concorrente aguarda e abre o checkout sozinha sem duplicar o pedid
 });
 test('painel bloqueia aceitar antes de pagar e habilita depois do webhook', async ({ page, browser }) => {
   const estado = await preparar(page),
-    nome = await checkout(page);
-  await page.locator('#btn-enviar').click();
+    nome = await pedidoOnlineAntigo(page);
   await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } }),
     painel = await ctx.newPage();
@@ -220,8 +230,7 @@ test('painel bloqueia aceitar antes de pagar e habilita depois do webhook', asyn
 });
 test('administrador estorna pedido pago e cancelado pelo detalhe do histórico', async ({ page, browser }) => {
   const estado = await preparar(page),
-    nome = await checkout(page);
-  await page.locator('#btn-enviar').click();
+    nome = await pedidoOnlineAntigo(page);
   await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
   await confirmar(estado);
   const id = sql(`select id from pedidos where cliente_nome='${nome}'`),
@@ -258,13 +267,11 @@ test('administrador estorna pedido pago e cancelado pelo detalhe do histórico',
   }
 });
 
-test('pagamento na entrega dispensa e-mail e checkout, libera preparo e registra recebimento separado',async({page,browser})=>{
+test('outra forma de pagamento dispensa checkout, libera preparo e registra recebimento separado',async({page,browser})=>{
  const estado=await preparar(page);
  const nome=await checkout(page);
- await page.locator('[data-pag="Pagamento na entrega"]').click();
- await page.locator('[data-forma-entrega="outro"]').click();
- await expect(page.locator('#f-email-pagamento')).toBeHidden();
- await page.evaluate(()=>{document.querySelector('#f-email-pagamento').value='';});
+ await page.locator('[data-pag="outro"]').click();
+ await expect(page.locator('#pagamento-whatsapp-info')).toContainText('combinar o pagamento');
  await page.locator('#btn-enviar').click();
  await expect(page.locator('#pedido-pagamento-status')).toContainText('Pagamento na retirada');
  expect(estado.criadas).toHaveLength(0);
@@ -283,29 +290,62 @@ test('pagamento na entrega dispensa e-mail e checkout, libera preparo e registra
  await contexto.close();
 });
 
-test('checkout online aceita e-mail em branco; um endereço inválido continua bloqueado',async({page})=>{
+test('sem pagar online mesmo com a loja ativa: Pix vai ao painel como a receber e abre o WhatsApp com o pedido',async({page,browser})=>{
  const estado=await preparar(page);
+ await page.context().route('https://wa.me/**',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>WhatsApp simulado</title>'}));
  const nome=await checkout(page);
- await page.locator('#f-email-pagamento').fill('nao-e-email');
+ await expect(page.locator('#pagamentos [data-pag]')).toHaveText(['Pix','Dinheiro','Outra forma']);
+ await expect(page.getByText('Pagar online')).toHaveCount(0);
+ await expect(page.locator('#f-email-pagamento')).toHaveCount(0);
+ await expect(page.locator('#btn-enviar')).toContainText('Enviar pedido');
  await page.locator('#btn-enviar').click();
- await expect(page.locator('#erro-email-pagamento')).toBeVisible();
- expect(estado.criadas).toHaveLength(0);
+ await expect(page.locator('#erro-forma-entrega')).toBeVisible();
  expect(sql(`select count(*) from pedidos where cliente_nome='${nome}'`)).toBe('0');
- await page.locator('#f-email-pagamento').fill('');
+ await page.locator('[data-pag="Pix"]').click();
+ await expect(page.locator('#erro-forma-entrega')).toBeHidden();
+ await expect(page.locator('#pagamento-whatsapp-info')).toHaveText('Depois de enviar, o WhatsApp da loja abre com o seu pedido e a equipe manda a chave Pix por lá.');
+ await page.screenshot({ path: test.info().outputPath('checkout-pix-whatsapp.png'), fullPage: true });
+ const janela=page.waitForEvent('popup');
  await page.locator('#btn-enviar').click();
- await expect(page).toHaveURL(/mercadopago/);
- expect(estado.criadas).toHaveLength(1);
- expect(estado.criadas[0].body).not.toHaveProperty('payer');
- expect(sql(`select m.email from pagamentos_mp m join pedidos p on p.id=m.pedido_id where p.cliente_nome='${nome}'`)).toBe('');
+ const wa=await janela;
+ await wa.waitForLoadState();
+ const url=new URL(wa.url()),texto=url.searchParams.get('text');
+ expect(url.hostname).toBe('wa.me');expect(url.pathname).toBe('/5511985720150');
+ const p=JSON.parse(sql(`select json_build_object('id',id,'numero',numero,'token',token,'pagamento',pagamento,'cod',pagamento_na_entrega,'online',pagamento_online) from pedidos where cliente_nome='${nome}'`));
+ expect(p).toMatchObject({pagamento:'Pix na retirada',cod:true,online:null});
+ expect(texto).toContain('Pagamento: Pix (aguardo a chave)');
+ expect(texto).toContain('Nome: '+nome);
+ expect(texto).toContain('/#pedido/'+p.token);
+ expect(estado.criadas).toHaveLength(0);
+ expect(sql(`select count(*) from pagamentos_mp where pedido_id='${p.id}'`)).toBe('0');
+ await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
+ await expect(page.locator('#pedido-pagamento-status')).toContainText('a loja manda a chave Pix pelo WhatsApp');
+ await expect(page.locator('#pedido-pagar')).toBeHidden();
+ const botao=page.locator('#ped-wa');
+ await expect(botao).toHaveText('Enviar pedido no WhatsApp');await expect(botao).toHaveClass(/btn-vermelho/);
+ expect(await botao.getAttribute('href')).toBe(wa.url());
+ await page.screenshot({ path: test.info().outputPath('acompanhamento-pix-whatsapp.png'), fullPage: true });
+ const ctx=await browser.newContext({viewport:{width:1280,height:800}}),painel=await ctx.newPage();
+ try {
+  await painel.goto('/painel/');await painel.getByLabel('E-mail').fill('equipe@teste.local');await painel.getByLabel('Senha').fill('teste');await painel.getByRole('button',{name:'Entrar',exact:true}).click();
+  const card=painel.locator(`.pn-card[data-id="${p.id}"]`);
+  await expect(card).toContainText('Pix a receber (chave pelo WhatsApp)');
+  await card.getByRole('button',{name:'Aceitar e preparar',exact:true}).click();
+  await expect(card).toContainText('Em preparo');
+  painel.once('dialog',d=>d.accept());
+  await card.getByRole('button',{name:'Confirmar pagamento recebido',exact:true}).click();
+  await expect(card).toContainText('Pix recebido');
+ } finally { await ctx.close(); }
+ await page.reload();
+ await expect(page.locator('#pedido-pagamento-status')).toHaveText('Pagamento recebido pela loja');
 });
 
 test('dinheiro exige resposta sobre troco e valor válido; painel e comanda conservam a informação',async({page,browser})=>{
  const estado=await preparar(page);
  const nome=await checkout(page);
- await page.locator('[data-pag="Pagamento na entrega"]').click();
  await page.locator('#btn-enviar').click();
  await expect(page.locator('#erro-forma-entrega')).toBeVisible();
- await page.locator('[data-forma-entrega="Dinheiro"]').click();
+ await page.locator('[data-pag="Dinheiro"]').click();
  await page.locator('#btn-enviar').click();
  await expect(page.locator('#erro-troco-opcao')).toBeVisible();
  await page.locator('[data-troco="sim"]').click();
@@ -338,8 +378,7 @@ test('dinheiro exige resposta sobre troco e valor válido; painel e comanda cons
 test('dinheiro sem troco é uma escolha explícita e não reaproveita valor de outro meio',async({page})=>{
  const estado=await preparar(page);
  await checkout(page);
- await page.locator('[data-pag="Pagamento na entrega"]').click();
- await page.locator('[data-forma-entrega="Dinheiro"]').click();
+ await page.locator('[data-pag="Dinheiro"]').click();
  await page.locator('[data-troco="sim"]').click();await page.locator('#f-troco').fill('100');
  await page.locator('[data-troco="nao"]').click();
  await expect(page.locator('#f-troco')).toBeHidden();await expect(page.locator('#f-troco')).toBeDisabled();
@@ -352,8 +391,7 @@ test('dinheiro sem troco é uma escolha explícita e não reaproveita valor de o
 
 test('equipe troca pedido online pendente para entrega depois de cancelar checkout, sem duplicar pedido',async({page})=>{
  const estado=await preparar(page);
- const nome=await checkout(page);
- await page.locator('#btn-enviar').click();
+ const nome=await pedidoOnlineAntigo(page);
  await expect(page).toHaveURL(/mercadopago/);
  const p=JSON.parse(sql(`select json_build_object('id',id,'numero',numero) from pedidos where cliente_nome='${nome}'`));
  await page.goto('/painel/');

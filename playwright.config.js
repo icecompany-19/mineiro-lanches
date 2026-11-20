@@ -13,7 +13,12 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: [['list']],
-  use: { baseURL: `http://localhost:${PORTA}`, launchOptions: { executablePath: process.env.PW_CHROMIUM || undefined } },
+  // O checkout abre o WhatsApp da loja depois do pedido: no Chromium, wa.me e api.whatsapp.com não resolvem, para os testes
+  // não saírem para a internet (o teste do Pix intercepta o wa.me pelo context.route e confere a mensagem).
+  use: {
+    baseURL: `http://localhost:${PORTA}`,
+    launchOptions: { executablePath: process.env.PW_CHROMIUM || undefined, args: ['--host-resolver-rules=MAP wa.me ~NOTFOUND, MAP api.whatsapp.com ~NOTFOUND'] }
+  },
   projects: [
     { name: 'celular', use: { ...devices['Pixel 7'] }, testIgnore: E2E },
     { name: 'desktop', use: { viewport: { width: 1280, height: 800 } }, testIgnore: E2E },

@@ -1,6 +1,8 @@
 # Pagamento na entrega ou retirada
 
-O checkout mantém **Pagar online** pelo Mercado Pago e oferece **Pagar na entrega** (ou **Pagar na retirada**, conforme o modo do pedido). O pagamento local dispensa e-mail e redirecionamento. O total e a taxa continuam sendo calculados pelo servidor.
+**Desde 19/11/2026 não há mais pagamento online no checkout** (ver `docs/MERCADO-PAGO.md`, seção "Desligado no checkout"): as formas são **Pix**, **Dinheiro** e **Outra forma**, todas registradas como pagamento a receber, e o WhatsApp da loja abre com o pedido depois do envio (no Pix, a equipe manda a chave por lá). O texto abaixo descreve o fluxo de 21/10, quando ainda havia "Pagar online"; as regras de troco, recebimento e conversão continuam valendo.
+
+O checkout mantinha **Pagar online** pelo Mercado Pago e oferecia **Pagar na entrega** (ou **Pagar na retirada**, conforme o modo do pedido). O pagamento local dispensa e-mail e redirecionamento. O total e a taxa continuam sendo calculados pelo servidor.
 
 Ao pagar em **Dinheiro**, o cliente precisa responder **Não preciso** ou **Preciso de troco**. Na segunda opção, informa o valor que vai entregar em dinheiro; ele deve superar o total, já incluindo a entrega. A resposta fica no pedido, no painel, na comanda e na tela/cache do motoboy. O servidor também impede dinheiro sem resposta e valores inválidos. **Sem troco** é registrado explicitamente; mudar para outra forma não envia o troco anterior. Meios presenciais específicos só devem ser anunciados após confirmação da loja; a opção genérica **Outra forma de pagamento** mantém o fluxo anterior.
 

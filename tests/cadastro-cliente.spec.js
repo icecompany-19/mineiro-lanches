@@ -32,6 +32,8 @@ async function checkout(page) {
   await page.locator('#barra .btn').click();
   await page.locator('#btn-continuar').click();
   await expect(page.locator('[data-screen="checkout"]')).toBeVisible();
+  // sem pagamento online (19/11/2026): a forma é obrigatória e o pedido segue pelo WhatsApp
+  await page.locator('[data-pag="outro"]').click();
 }
 
 async function preencherEndereco(page, endereco) {
@@ -49,8 +51,7 @@ test('cliente novo começa pelo telefone e salva o cadastro somente após o pedi
   await expect(page.locator('#f-nome')).toHaveValue('');
   await expect(page.locator('#f-end')).toHaveValue('');
   await expect(page.locator('#enderecos-salvos')).toBeHidden();
-  await expect(page.locator('#pagamentos')).toBeEmpty();
-  await expect(page.locator('#pag-tit')).toBeHidden();
+  await expect(page.locator('#pagamentos [data-pag]')).toHaveText(['Pix', 'Dinheiro', 'Outra forma']);
   await page.locator('#f-nome').fill('Cadastro Teste Novo');
   await preencherEndereco(page, CASA);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mineiro:v2:cadastros')))).toEqual({});

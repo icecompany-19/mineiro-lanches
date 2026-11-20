@@ -2,6 +2,16 @@
 
 Integração desenvolvida em `feat/mercado-pago` e publicada pela PR #1 na branch produtiva `claude/modest-galileo-t43m7f`. Usa **Checkout Pro via Orders API**, conforme a documentação oficial consultada em 18/10/2026. O histórico de homologação abaixo precede a publicação produtiva descrita nesta seção.
 
+## Desligado no checkout — 19/11/2026
+
+A loja pediu para tirar o pagamento online: o Pix do Mercado Pago demorava para cair e o pedido ficava preso esperando a aprovação antes do preparo. Desde então o checkout **não oferece mais "Pagar online"**. O cliente escolhe **Pix**, **Dinheiro** (com a pergunta do troco) ou **Outra forma**; o pedido entra direto no painel e, logo depois do envio, o WhatsApp da loja abre com o pedido escrito (número, itens, total, endereço, pagamento e link de acompanhamento). No Pix, a equipe manda a chave por lá e, quando o Pix cai, toca em **Confirmar pagamento recebido** no painel, que mostra "Pix a receber (chave pelo WhatsApp)" até lá.
+
+- **Sem migration.** O front manda `Pix na entrega|retirada`, `Dinheiro na entrega|retirada` ou `Pagamento na entrega`, valores que o gatilho `proteger_pagamento_pedido` já trata como pagamento a receber (`pagamento_na_entrega`). Por isso nenhum pedido novo vira cobrança online, **mesmo com `loja.pagamentos_ativos` ainda ligado**.
+- **Falta desligar a chave no banco de produção** para fechar a porta a quem estiver com a versão antiga do site aberta: `update public.loja set pagamentos_ativos=false where id=1;` (SQL Editor do Supabase `puwylyfmwcvpfsftsrta`). Em 19/11 o MCP do Supabase desta máquina não alcançava o projeto, por isso a linha ficou para o responsável.
+- **O backend do Mercado Pago continua no ar** (funções `mercado-pago` e `mercado-pago-webhook`, cron de conciliação, tabelas financeiras), conforme a seção "Reversão": serve para fechar pedidos online antigos (pagar pelo acompanhamento, estornar, converter para "Receber na entrega"). Desligar as funções, o cron e o token só depois de conferir que não há pedido online pendente.
+- **Abertura do WhatsApp:** `window.open` logo depois da resposta do servidor, ainda dentro da ativação do toque. Testado no Chromium (Android e desktop). Se o navegador bloquear, o botão principal "Enviar pedido no WhatsApp" do acompanhamento leva a mesma mensagem. Nos testes, `wa.me` e `api.whatsapp.com` não resolvem (`playwright.config.js`), e o teste do Pix intercepta o `wa.me` para conferir a mensagem.
+- **Desatualizados:** o guia em PDF de pagamentos (`public/guias/guia-pagamentos-mineiro-lanche.pdf` e `docs/guias/guia-pagamentos.html`) ainda mostra o checkout com Mercado Pago.
+
 ## Publicação produtiva — 20/10
 
 **Publicado e ativo:** PR #1 mesclada no commit `151e536`, deploy Vercel confirmado, `loja.pagamentos_ativos=true`. Verificação no domínio público em viewport de 390 px confirmou o formulário com e-mail e botão “Pagar pedido”; o bundle usa o JWT público e o backend do projeto produtivo. Nenhum pedido ou pagamento real foi enviado pelo teste. A loja permanece pausada por sua configuração operacional anterior, sem alteração de modo ou horário nesta publicação.

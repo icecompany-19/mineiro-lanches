@@ -151,6 +151,7 @@ async function checkout(page, c = casos[0]) {
   await page.locator('#f-cep').fill(c.cep);
   await expect(page.locator('#f-end')).toHaveValue(c.rua + ', ');
   await page.locator('#f-end').fill(c.rua + (c === casos[2] ? ' 100, Casa' : ', 100'));
+  await page.locator('[data-pag="outro"]').click();
   return nome;
 }
 async function confirmar(page) {

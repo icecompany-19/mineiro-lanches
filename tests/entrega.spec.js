@@ -53,6 +53,8 @@ async function irAoCheckout(page, { nome = NOME } = {}) {
   // telefone próprio de cada teste: o limite é de 5 pedidos por telefone em 10 min, e os outros testes usam o 11985720150
   await page.locator('#f-tel').fill('1198' + String(1_000_000 + Math.floor(Math.random() * 8_999_999)));
   await page.locator('[data-modo="entrega"]').click();
+  // sem pagamento online (19/11/2026): a forma é obrigatória e o pedido segue pelo WhatsApp
+  await page.locator('[data-pag="outro"]').click();
 }
 const totalCheckout = (page) => page.locator('[data-screen="checkout"] .resumo .total [data-total]');
 const digitar = async (page, sufixo) => {

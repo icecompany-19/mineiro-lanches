@@ -238,6 +238,7 @@ test.describe('movimento reduzido', () => {
     await page.locator('#f-nome').fill('Ana Teste');
     await page.locator('#f-tel').fill('11985720150');
     await page.locator('[data-modo="local"]').click();
+    await page.locator('[data-pag="outro"]').click();
     await page.locator('#btn-enviar').click();
     await expect(page.locator('#btn-enviar')).toHaveClass(/enviando/);
     await parado('enviando (barra de calor e ícone)');
@@ -296,6 +297,7 @@ test.describe('keyframes só com transform, opacity e clip-path', () => {
     await page.locator('#f-nome').fill('Ana Teste');
     await page.locator('#f-tel').fill('11985720150');
     await page.locator('[data-modo="local"]').click();
+    await page.locator('[data-pag="outro"]').click();
     await page.locator('#btn-enviar').click(); // enviando: barra de calor
     await expect(page.locator('#btn-enviar')).toHaveClass(/enviando/);
     await page.waitForTimeout(800);
@@ -520,6 +522,7 @@ test.describe('defeitos conhecidos', () => {
     await page.locator('#f-nome').fill('Ana Teste');
     await page.locator('#f-tel').fill('11985720150');
     await page.locator('[data-modo="local"]').click();
+    await page.locator('[data-pag="outro"]').click();
     await page.locator('#btn-enviar').click();
     await expect(page.locator('#btn-enviar')).toHaveClass(/enviando/);
     await page.waitForTimeout(500);

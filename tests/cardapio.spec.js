@@ -103,6 +103,7 @@ test('adicional que saiu do cardápio com o lanche na sacola: a linha acusa, o e
   await page.locator('#f-nome').fill('Ana Teste');
   await page.locator('#f-tel').fill('11985720150');
   await page.locator('[data-modo="local"]').click();
+  await page.locator('[data-pag="outro"]').click();
   await page.locator('#btn-enviar').click();
   const erro = page.locator('#envio-erro');
   await expect(erro).toContainText('Um item da sacola saiu do cardápio');

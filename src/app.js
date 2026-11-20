@@ -113,7 +113,7 @@ export function iniciarApp() {
   // ================= estado =================
   // aba: 'app' (bio, cardápio e telas do pedido) ou 'site'; tela: a tela visível dentro do app
   // pedidoToken: o pedido aberto em "Acompanhe" (#pedido/<token>, link que pode ser compartilhado)
-  var st = { aba: 'app', tela: 'bio', busca: '', filtro: null, pedidoToken: null, modo: 'entrega', pagamento: null, formaEntrega: null, precisaTroco: null };
+  var st = { aba: 'app', tela: 'bio', busca: '', filtro: null, pedidoToken: null, modo: 'entrega', pagamento: null, precisaTroco: null };
   // sacola e rascunho do checkout ficam no aparelho (localStorage, prefixo mineiro:v2:) e nunca se perdem num erro de envio
   var CHAVE_SACOLA = 'mineiro:v2:sacola', CHAVE_RASCUNHO = 'mineiro:v2:rascunho';
   function lerLocal(k, padrao) { try { var v = localStorage.getItem(k); return v == null ? padrao : JSON.parse(v); } catch { return padrao; } }
@@ -1014,7 +1014,21 @@ export function iniciarApp() {
   renderEnderecosCliente();
 
   function modoLabel(m) { return m.id === 'local' && origemQR && origemQR.mesa ? m.label + ' · Mesa ' + origemQR.mesa : m.label; }
-  function pagaOnline() { return !!ML.store.loja().pagamentosAtivos && st.pagamento !== 'Pagamento na entrega'; }
+  // Sem pagamento online desde 19/11/2026: o pedido entra direto no painel e, em seguida, o WhatsApp da loja abre com ele
+  // (no Pix, a equipe manda a chave por lá). Todas as formas chegam ao banco como "a receber" (pagamento_na_entrega),
+  // então nenhum pedido novo passa pelo Mercado Pago, mesmo com loja.pagamentos_ativos ligado. O Mercado Pago só segue
+  // no acompanhamento e no painel dos pedidos online antigos.
+  var FORMAS_PAGAMENTO = [['Pix', 'Pix'], ['Dinheiro', 'Dinheiro'], ['outro', 'Outra forma']];
+  var AVISO_PAGAMENTO = {
+    Pix: 'Depois de enviar, o WhatsApp da loja abre com o seu pedido e a equipe manda a chave Pix por lá.',
+    Dinheiro: 'Depois de enviar, o WhatsApp da loja abre com o seu pedido.',
+    outro: 'Depois de enviar, o WhatsApp da loja abre com o seu pedido para combinar o pagamento.'
+  };
+  function pagamentoEscolhido() {
+    if (!st.pagamento) return null;
+    if (st.pagamento === 'outro') return 'Pagamento na entrega';
+    return st.pagamento + ' na ' + (st.modo === 'entrega' ? 'entrega' : 'retirada');
+  }
   function renderCheckout() {
     if(entr.cotacaoAtiva!==usaCotacao()) {entr.cotacaoAtiva=usaCotacao();if(entr.ok)agendarTaxa(true);}
     if (restaurarCep) { restaurarCep = false; buscarCep($('#f-cep').value.replace(/\D/g, ''), true); }
@@ -1022,18 +1036,11 @@ export function iniciarApp() {
       return '<button type="button" class="modo" data-modo="' + m.id + '" aria-pressed="' + (st.modo === m.id) + '">' + ic(ICONE_MODO[m.id]) + '<span><strong>' + esc(modoLabel(m)) + '</strong><small>' + esc(m.desc) + '</small></span>' + ic('check', 'modo-check') + '</button>';
     }).join('');
     $('#bloco-endereco').hidden = st.modo !== 'entrega';
-    var pagamentosAtivos=!!ML.store.loja().pagamentosAtivos, onlinePagamento=pagaOnline();
-    var temPagamentos = !pagamentosAtivos&&Array.isArray(C.pagamentos) && C.pagamentos.length > 0;
-    $('#pagamentos').closest('.bloco').hidden = !temPagamentos&&!pagamentosAtivos;
-    $('#pagamento-online-info').hidden=!onlinePagamento;
-    $('#f-email-pagamento').required=false;
-    $('#f-email-pagamento').disabled=!onlinePagamento;
-    $('#pagamentos').innerHTML = pagamentosAtivos ? segHTML('pagamento', [{attr:'data-pag="Mercado Pago"',on:onlinePagamento,txt:'Pagar online'}, {attr:'data-pag="Pagamento na entrega"',on:!onlinePagamento,txt:st.modo==='entrega'?'Pagar na entrega':'Pagar na retirada'}]) : temPagamentos
-      ? segHTML('pagamento', C.pagamentos.map(function (p) { return { attr: 'data-pag="' + esc(p) + '"', on: st.pagamento === p, txt: esc(p) }; }))
-      : '';
-    var aoReceber=st.pagamento==='Pagamento na entrega', dinheiro=aoReceber&&st.formaEntrega==='Dinheiro';
-    $('#pagamento-entrega-info').hidden=!aoReceber;
-    $('#pagamento-entrega-formas').innerHTML=segHTML('forma-entrega', [{attr:'data-forma-entrega="Dinheiro"',on:st.formaEntrega==='Dinheiro',txt:'Dinheiro'}, {attr:'data-forma-entrega="outro"',on:st.formaEntrega==='outro',txt:'Outra forma de pagamento'}]);
+    $('#pagamentos').innerHTML = segHTML('pagamento', FORMAS_PAGAMENTO.map(function (f) { return { attr: 'data-pag="' + f[0] + '"', on: st.pagamento === f[0], txt: f[1] }; }));
+    $('#pagamento-whatsapp-info').hidden = !AVISO_PAGAMENTO[st.pagamento];
+    $('#pagamento-whatsapp-info').textContent = AVISO_PAGAMENTO[st.pagamento] || '';
+    if (st.pagamento) $('#erro-forma-entrega').hidden = true; // escolheu: o aviso de "selecione" sai na hora
+    var dinheiro = st.pagamento === 'Dinheiro';
     $('#pagamento-dinheiro-info').hidden=!dinheiro;
     $('#troco-opcoes').innerHTML=segHTML('troco', [{attr:'data-troco="nao"',on:st.precisaTroco==='nao',txt:'Não preciso'}, {attr:'data-troco="sim"',on:st.precisaTroco==='sim',txt:'Preciso de troco'}]);
     $('#campo-troco').hidden=!dinheiro||st.precisaTroco!=='sim';
@@ -1042,7 +1049,7 @@ export function iniciarApp() {
     var t = totaisSacola();
     $('#chk-itens').textContent = plural(t.n);
     renderTaxa();
-    if(!envio.enviando) $('#btn-enviar span').textContent=onlinePagamento?'Pagar pedido':'Enviar pedido';
+    if(!envio.enviando) $('#btn-enviar span').textContent='Enviar pedido';
     // a comanda (que recolhe) lista os itens com o que foi escolhido
     $('#chk-lista').innerHTML = sacola.map(function (l) {
       var it = ML.precos.item(l.sel);
@@ -1069,8 +1076,8 @@ export function iniciarApp() {
       endereco: st.modo === 'entrega' ? enderecoCompleto() : '', referencia: st.modo === 'entrega' ? $('#f-ref').value.trim() : '',
       distanciaKm: st.modo === 'entrega' && entr.estado === 'ok' ? entr.km : null,
       cotacaoId: st.modo==='entrega' && entr.cotacao?entr.cotacao.id:null,
-      pagamento: st.pagamento==='Pagamento na entrega'&&st.formaEntrega&&st.formaEntrega!=='outro' ? st.formaEntrega+' na '+(st.modo==='entrega'?'entrega':'retirada') : st.pagamento,
-      troco: st.pagamento==='Pagamento na entrega'&&st.formaEntrega==='Dinheiro' ? (st.precisaTroco==='nao'?'Sem troco':(trocoEmCentavos($('#f-troco').value)/100).toFixed(2).replace('.',',')) : '', obs: $('#f-obs').value.trim(),
+      pagamento: pagamentoEscolhido(),
+      troco: st.pagamento==='Dinheiro' ? (st.precisaTroco==='nao'?'Sem troco':(trocoEmCentavos($('#f-troco').value)/100).toFixed(2).replace('.',',')) : '', obs: $('#f-obs').value.trim(),
       origem: origemQR ? 'qrcode' : 'cardapio', mesa: mesa,
       itens: sacola.map(function (l) { return l.sel; })
     };
@@ -1130,7 +1137,7 @@ export function iniciarApp() {
     btn.classList.toggle('enviando', sim);
     btn.setAttribute('aria-disabled', String(sim));
     $('#form-pedido').setAttribute('aria-busy', String(sim));
-    $('span', btn).textContent = sim ? (pagaOnline()?'Registrando pedido…':'Enviando para a loja…') : pagaOnline()?'Pagar pedido':'Enviar pedido';
+    $('span', btn).textContent = sim ? 'Enviando para a loja…' : 'Enviar pedido';
   }
   function validar() {
     var nome = $('#f-nome').value.trim(), tel = digitosTel($('#f-tel').value), end = $('#f-end').value.trim(), ok = true;
@@ -1144,16 +1151,12 @@ export function iniciarApp() {
       campo.setAttribute('aria-invalid', String(c[1]));
       if (c[1]) campo.setAttribute('aria-describedby', c[3]); else if (campo.id === 'f-tel') campo.setAttribute('aria-describedby', 'cliente-dica'); else campo.removeAttribute('aria-describedby');
     });
-    var email=$('#f-email-pagamento'),emailInvalido=pagaOnline()&&!!email.value.trim()&&!email.validity.valid;
-    $('#erro-email-pagamento').hidden=!emailInvalido;
-    email.setAttribute('aria-invalid',String(emailInvalido));
-    if(emailInvalido){email.focus();ok=false;}
-    var aoReceber=st.pagamento==='Pagamento na entrega',dinheiro=aoReceber&&st.formaEntrega==='Dinheiro';
-    var semForma=aoReceber&&!st.formaEntrega,semOpcao=dinheiro&&!st.precisaTroco;
+    var dinheiro=st.pagamento==='Dinheiro';
+    var semForma=!st.pagamento,semOpcao=dinheiro&&!st.precisaTroco;
     var troco=trocoEmCentavos($('#f-troco').value),trocoInvalido=dinheiro&&st.precisaTroco==='sim'&&(troco===null||troco<=Math.round((totaisSacola().v+(taxaCalculada()||0))*100));
     $('#erro-forma-entrega').hidden=!semForma;$('#erro-troco-opcao').hidden=!semOpcao;$('#erro-troco').hidden=!trocoInvalido;
     $('#f-troco').setAttribute('aria-invalid',String(trocoInvalido));
-    if(semForma||semOpcao||trocoInvalido){ok=false;$(semForma?'[data-forma-entrega]':semOpcao?'[data-troco]':'#f-troco').focus();}
+    if(semForma||semOpcao||trocoInvalido){ok=false;$(semForma?'[data-pag]':semOpcao?'[data-troco]':'#f-troco').focus();}
     if (!ok) { var prim = $('.campo.erro input'); if (prim) prim.focus(); }
     return ok;
   }
@@ -1187,7 +1190,6 @@ export function iniciarApp() {
       return;
     }
     var cadastroEnviado = { telefone: dados.cliente.telefone, nome: dados.cliente.nome, endereco: dados.modo === 'entrega' ? lerEnderecoCliente() : null };
-    var emailPagamento=$('#f-email-pagamento').value.trim();
     // item que já se sabe esgotado nem vai ao servidor
     if (nomesIndisponiveis().length) { renderSacola(); mostrarErroEnvio(codigoIndisponivel(), dados); return; }
     if (!envio.uuid || envio.assinatura !== assinatura) { envio.uuid = novoUuid(); envio.assinatura = assinatura; }
@@ -1202,13 +1204,15 @@ export function iniciarApp() {
       // o cliente que volta só confere: nome, telefone, endereço e referência continuam no aparelho (rascunho);
       // sai apenas a observação, que valia para aquele pedido
       $('#f-obs').value = '';
-      st.formaEntrega=null;st.precisaTroco=null;$('#f-troco').value='';
+      st.pagamento=null;st.precisaTroco=null;$('#f-troco').value='';
       salvarRascunho();
       travarEnvio(false);
       st.pedidoToken = pedido.token;
       // o checkout sai do histórico: voltar do acompanhamento leva à sacola, não ao formulário enviado
       navegar('pedido', true);
-      if(pedido.pagamentoOnline==='pendente') pagarPedido(pedido.token,emailPagamento);
+      // sem checkout online: o WhatsApp da loja abre com o pedido (no Pix, a equipe manda a chave por lá).
+      // Se o navegador bloquear a janela, o botão "Enviar pedido no WhatsApp" do acompanhamento faz o mesmo.
+      if (!pedido.pagamentoOnline) abrirWhatsApp(linkWhatsPedido(pedido));
       // a comanda "imprime" no acompanhamento
       if (!reduz) { var c = $('#pedido-topo .comanda'); if (c) { c.classList.remove('imprime'); void c.offsetWidth; c.classList.add('imprime'); } }
     }, function (err) {
@@ -1235,7 +1239,8 @@ export function iniciarApp() {
   var pagamentoEnviando=false;
   function renderPagamentoPedido(p) {
     $('#pedido-pagamento').hidden=!p?.pagamentoOnline&&!p?.pagamentoNaEntrega;
-    if(p?.pagamentoNaEntrega&&!p.pagamentoOnline) { $('#pedido-pagamento-status').textContent=p.pagamentoRecebidoEm?'Pagamento recebido pela loja':(p.pagamento&&p.pagamento!=='Pagamento na entrega'?p.pagamento:p.modo==='entrega'?'Pagamento na entrega':'Pagamento na retirada')+' · '+brl(p.total)+(p.troco?(p.troco==='Sem troco'?' · Sem troco':' · Troco para R$ '+p.troco):''); $('#pedido-pagar').hidden=true; return; }
+    var pix=/^Pix na (entrega|retirada)$/.test(p?.pagamento||'');
+    if(p?.pagamentoNaEntrega&&!p.pagamentoOnline) { $('#pedido-pagamento-status').textContent=p.pagamentoRecebidoEm?'Pagamento recebido pela loja':pix?'Pix · '+brl(p.total)+' · a loja manda a chave Pix pelo WhatsApp':(p.pagamento&&p.pagamento!=='Pagamento na entrega'?p.pagamento:p.modo==='entrega'?'Pagamento na entrega':'Pagamento na retirada')+' · '+brl(p.total)+(p.troco?(p.troco==='Sem troco'?' · Sem troco':' · Troco para R$ '+p.troco):''); $('#pedido-pagar').hidden=true; return; }
     if(!p?.pagamentoOnline)return;
     $('#pedido-pagamento-status').textContent=textoPagamento(p.pagamentoOnline)+(p.status==='cancelado'&&p.pagamentoOnline==='aprovado'?'. Pedido cancelado: fale com a loja sobre o reembolso.':'');
     $('#pedido-pagar').hidden=!permitePagar(p);
@@ -1273,6 +1278,33 @@ export function iniciarApp() {
   }
   // o último status mostrado de cada pedido: a mudança acende a lâmpada e pisca o selo uma vez
   var statusVisto = {};
+  // "Pagamento:" da mensagem de WhatsApp. O Pix vai como pedido de chave; "Outra forma" fica a combinar.
+  function pagamentoNaMensagem(p) {
+    if (p.pagamentoOnline) return textoPagamento(p.pagamentoOnline) + ' (Mercado Pago)';
+    var forma = (p.pagamento || '').replace(/ na (entrega|retirada)$/, '');
+    if (!forma || forma === 'Pagamento') return null;
+    if (forma === 'Pix') return p.pagamentoRecebidoEm ? 'Pix (já recebido pela loja)' : 'Pix (aguardo a chave)';
+    return p.pagamento;
+  }
+  // A mensagem completa (com nome e endereço) só existe logo depois do envio: o acompanhamento guardado no aparelho
+  // não tem esses dados. Fica só na memória da página, para o botão do acompanhamento repetir a mesma mensagem.
+  var ultimaMensagem = { token: null, link: '' };
+  function linkWhatsPedido(p) {
+    if (!p.cliente && ultimaMensagem.token === p.token) return ultimaMensagem.link;
+    var m = Object.assign({ cliente: { nome: '' }, endereco: '', referencia: '', pagamento: null, troco: '', obs: '', origem: origemQR ? 'qrcode' : 'cardapio' }, p,
+      { pagamento: pagamentoNaMensagem(p), itens: p.itens.map(function (i) { return Object.assign({ resumo: '' }, i); }) });
+    var link = ML.whatsapp.link(ML.whatsapp.mensagem(m));
+    if (p.cliente) ultimaMensagem = { token: p.token, link: link };
+    return link;
+  }
+  // Abre logo depois da resposta do servidor, ainda dentro da ativação do toque em "Enviar pedido".
+  // Navegador que bloqueia a janela devolve null: o botão do acompanhamento continua ali para o cliente tocar.
+  function abrirWhatsApp(link) {
+    var janela = null;
+    try { janela = window.open(link, '_blank'); } catch { janela = null; }
+    if (janela) { try { janela.opener = null; } catch { /* outra origem */ } }
+    return !!janela;
+  }
   function renderPedido() {
     if (!st.pedidoToken) { var meus = ML.store.meus(); if (meus.length) st.pedidoToken = meus[0].token; }
     if (!st.pedidoToken) { navegar('cardapio', true); return; }
@@ -1327,8 +1359,11 @@ export function iniciarApp() {
     }).join('');
     // total do servidor (nunca o calculado no navegador)
     $('#ped-total').textContent = brl(p.total) + (p.modo !== 'entrega' ? '' : p.taxaEntrega != null ? ' (com entrega de ' + brl(p.taxaEntrega) + ')' : ' + entrega');
-    var pedidoParaMensagem = Object.assign({ cliente: { nome: '' }, endereco: '', referencia: '', pagamento: null, troco: '', obs: '', origem: origemQR ? 'qrcode' : 'cardapio' }, p, { pagamento: p.pagamentoOnline ? textoPagamento(p.pagamentoOnline)+' (Mercado Pago)' : p.pagamento||null, itens: p.itens.map(function (i) { return Object.assign({ resumo: '' }, i); }) });
-    $('#ped-wa').href = ML.whatsapp.link(ML.whatsapp.mensagem(pedidoParaMensagem));
+    // sem pagamento online, o WhatsApp é o próximo passo do pedido em aberto (no Pix, é por lá que chega a chave)
+    var wa = $('#ped-wa'), waPrincipal = !p.pagamentoOnline && FINAIS.indexOf(p.status) < 0;
+    wa.href = linkWhatsPedido(p);
+    wa.classList.toggle('btn-vermelho', waPrincipal); wa.classList.toggle('btn-borda', !waPrincipal);
+    wa.lastChild.textContent = waPrincipal ? 'Enviar pedido no WhatsApp' : 'Falar com a loja no WhatsApp';
     renderMeus();
   }
   function renderMeus() {
@@ -1656,7 +1691,7 @@ export function iniciarApp() {
 
   // ================= eventos =================
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('a[href^="#"],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-forma-entrega],[data-troco],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
+    var t = e.target.closest('a[href^="#"],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-troco],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
     if (!t) return;
     var A = function (n) { return t.getAttribute(n); };
     // links internos (#bio, #site, #cardapio/<categoria>…): mesma navegação dos botões, com o histórico do app
@@ -1697,8 +1732,7 @@ export function iniciarApp() {
       if (lu) { var s2 = JSON.parse(JSON.stringify(lu.sel)); s2.combo = { ativo: true, refri: '' }; abrirFicha(s2.produtoId, { sel: s2, editar: lu.chave, origem: t.closest('[data-card]'), focoRefri: true }); }
     }
     else if (t.hasAttribute('data-modo')) { st.modo = A('data-modo'); agendarTaxa(true); renderCheckout(); salvarRascunho(); }
-    else if (t.hasAttribute('data-pag')) { st.pagamento = A('data-pag'); renderCheckout(); }
-    else if (t.hasAttribute('data-forma-entrega')) { st.formaEntrega=A('data-forma-entrega'); renderCheckout(); $('[data-forma-entrega="'+st.formaEntrega+'"]').focus(); }
+    else if (t.hasAttribute('data-pag')) { st.pagamento = A('data-pag'); renderCheckout(); $('[data-pag="' + st.pagamento + '"]').focus(); }
     else if (t.hasAttribute('data-troco')) { st.precisaTroco=A('data-troco'); renderCheckout(); $(st.precisaTroco==='sim'?'#f-troco':'[data-troco="nao"]').focus(); }
     else if (t.hasAttribute('data-story-abrir')) abrirStory(+A('data-story-abrir'));
     else if (t.hasAttribute('data-story')) passarStory(+A('data-story'));

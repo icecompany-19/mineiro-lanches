@@ -81,4 +81,6 @@ O projeto de testes `iphone` usa WebKit e verifica a abertura da ficha pelo nome
 
 ## Branch de pagamentos
 
+**19/11/2026:** o pagamento online saiu do checkout a pedido da loja (Pix, Dinheiro ou Outra forma, com o pedido seguindo pelo WhatsApp). O histórico abaixo vale para os pedidos online antigos; ver `docs/MERCADO-PAGO.md`.
+
 Checkout Pro via Orders API está publicado em produção com confirmação por consulta/reconciliação e estorno administrativo. A validação de uma compra real aprovada continua pendente; o webhook depende do segredo de assinatura. A categoria temporária **Teste de pagamento** contém um item de R$ 1 para essa conferência (usar retirada no local). O [guia Mercado Pago](docs/MERCADO-PAGO.md) contém conexão da conta, configuração do MCP oficial, homologação e reversão.
