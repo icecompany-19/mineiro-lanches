@@ -711,6 +711,8 @@ html[data-luz="apagada"] .barra-site__ponto{background:var(--vermelho-luz);box-s
   .placa-halo,.placa-halo::before,.placa-anel,.status::after{animation:none!important}
   .placa-arte{animation:none!important;opacity:1!important}
   .faixa-combo.anima .selo-placa{animation:none}
+  /* 22/11/2026: a cor do "+" (verde por 600 ms) e o esmaecer das fotos lazy também param (o teste da jornada oscilava) */
+  .prod-mais,.foto img{transition:none}
 }
 
 /* endereço por CEP, taxa de entrega por distância e prazo */

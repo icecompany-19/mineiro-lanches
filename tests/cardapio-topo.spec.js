@@ -249,3 +249,24 @@ test('buscando, a barra de categorias não fica escondida atrás do painel', asy
   await page.locator('[data-busca-fechar]').click();
   await expect(page.locator('#chips')).toBeHidden(); // de volta ao topo: o índice está na tela
 });
+
+// a cor do "+" voltava do verde com transição de 0,2 s mesmo com movimento reduzido, e o teste da jornada do
+// aceite-cliente oscilava conforme o tempo de rolagem até o lanche seguinte
+test('movimento reduzido: o "+" volta do verde sem transição', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/#cardapio');
+  await page.locator('#menu-lista [data-rapido]').first().click();
+  // o verde dura 600 ms: amostra, de 0 a 1 s depois do toque, as transições do "+" e do esmaecer das fotos
+  const vivas = await page.evaluate(async () => {
+    const vistas = new Set();
+    const fim = performance.now() + 1000;
+    while (performance.now() < fim) {
+      document.getAnimations()
+        .filter((a) => a.playState === 'running' && a.transitionProperty && a.effect && a.effect.target && a.effect.target.matches('.prod-mais, .foto img'))
+        .forEach((a) => vistas.add(a.transitionProperty + ' em ' + a.effect.target.tagName.toLowerCase()));
+      await new Promise((r) => setTimeout(r, 16));
+    }
+    return [...vistas];
+  });
+  expect(vivas).toEqual([]);
+});
