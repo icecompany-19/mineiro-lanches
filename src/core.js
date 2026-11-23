@@ -44,7 +44,7 @@
     ],
     pagamentos: null, // a confirmar; ex.: ['Pix', 'Cartão', 'Dinheiro']
     regras: {
-      combo: { preco: 14.90, inclui: ['Batata frita 140 g', 'Refrigerante lata 350 ml'], refris: null }, // sabores a confirmar
+      combo: { preco: 14.99, inclui: ['Batata frita 140 g', 'Refrigerante lata 350 ml'], refris: null }, // sabores a confirmar
       prensado: { preco: 0, texto: 'Não cobramos para prensar' }
     },
     adicionais: [
@@ -121,11 +121,11 @@
       { id: 'porcoes', label: 'Porções', icone: 'batata', desc: 'Pra dividir', itens: [
         // 23/11/2026: batata pequena avulsa (a 99 vende como "Porção de Batata 1 Pessoa"), acompanhamento da sacola
         { id: 'porcao-batata-p', nome: 'Batata frita P', preco: 16.99, tipo: 'porcao', inclui: ['Batata frita para 1 pessoa'] },
-        { id: 'porcao-batata', nome: 'Porção de batata turbinada', preco: 39.99, tipo: 'porcao', inclui: ['500 g de batata frita', 'Cheddar cremoso', 'Bacon', 'Requeijão', 'Calabresa', 'Alho-poró'] },
-        { id: 'porcao-onion', nome: 'Porção de onion', preco: 14.99, tipo: 'porcao', inclui: ['6 onion rings'] }
+        { id: 'porcao-batata', nome: 'Porção de batata turbinada', preco: 44.99, tipo: 'porcao', inclui: ['500 g de batata frita', 'Cheddar cremoso', 'Bacon', 'Requeijão', 'Calabresa', 'Alho-poró'] },
+        { id: 'porcao-onion', nome: 'Porção de onion', preco: 16.99, tipo: 'porcao', inclui: ['6 onion rings'] }
       ] },
       { id: 'bebidas', label: 'Bebidas', icone: 'lata', desc: 'Geladas', itens: [
-        { id: 'refri-lata', nome: 'Refrigerante lata', preco: 9.99, tipo: 'bebida', sabor: true },
+        { id: 'refri-lata', nome: 'Refrigerante lata', preco: 10.99, tipo: 'bebida', sabor: true },
         { id: 'refri-600', nome: 'Refrigerante 600 ml', preco: 12.99, tipo: 'bebida', sabor: true },
         { id: 'refri-1l', nome: 'Refrigerante 1 litro', preco: 14.99, tipo: 'bebida', sabor: true },
         { id: 'refri-dolly', nome: 'Refrigerante Dolly', preco: 4.99, tipo: 'bebida', sabor: true },

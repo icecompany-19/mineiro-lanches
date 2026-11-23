@@ -44,7 +44,7 @@ test.describe('S1 · fitas de letreiro', () => {
     // a faixa b: prensado, combo e domingo, do CONFIG
     expect(b).toEqual([
       'Prensado? Avise antes: não cobramos para prensar',
-      'Qualquer lanche vira combo +R$ 14,90',
+      'Qualquer lanche vira combo +R$ 14,99',
       'Domingo também, das 19h à 1h'
     ]);
     const texto = await page.locator('.fitas').textContent();
@@ -78,7 +78,7 @@ test.describe('S1 · fitas de letreiro', () => {
     await page.goto('/#site');
     await expect.poll(() => itensDoGrupo(page, 'b').then((l) => l[1])).toBe('Qualquer lanche vira combo +R$ 16,50');
     const texto = await page.locator('.fitas').textContent();
-    expect(texto).not.toContain('+R$ 14,90');
+    expect(texto).not.toContain('+R$ 14,99');
     // a cópia aria-hidden do laço acompanha
     await expect(page.locator('[data-fita="b"] .fita__grupo').nth(1)).toContainText('+R$ 16,50');
   });
@@ -457,7 +457,7 @@ test.describe('S5 · vira combo + pilha de combos', () => {
     await abrir(page);
     await expect(page.locator('.combo-neon')).toHaveText('Qualquer lanche vira combo +R$ 16,50');
     await expect(page.locator('.s-combos [data-preco-de="combo-diluvio"]')).toHaveText('R$ 51,50');
-    expect(await page.locator('.s-combos').textContent()).not.toContain('R$ 14,90');
+    expect(await page.locator('.s-combos').textContent()).not.toContain('R$ 14,99');
   });
 
   test('"Escolher e virar combo" abre a ficha do chip escolhido com o combo ligado', async ({ page }) => {

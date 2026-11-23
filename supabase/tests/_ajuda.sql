@@ -94,7 +94,7 @@ $$;
 -- ponto de partida igual para todos: loja aberta, nada esgotado, tudo ativo, usuário de teste na equipe e motoboy de teste cadastrado
 delete from pedidos where cliente_telefone like '119000%' or origem = 'exemplo';
 delete from clientes where telefone like '119000%';
-update loja set modo = 'aberta', aceita_fechada = false, combo_preco = 14.90;
+update loja set modo = 'aberta', aceita_fechada = false, combo_preco = 14.99;
 update produtos set esgotado_dia = null, ativo = true;
 update adicionais set ativo = true;
 insert into equipe (user_id, nome) values (:'equipe', 'Equipe teste') on conflict do nothing;

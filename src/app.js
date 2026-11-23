@@ -591,7 +591,7 @@ export function iniciarApp() {
       return;
     }
     h += '</div>';
-    // 1. combo primeiro: "Vira combo? +R$ 14,90" (o painel enche de cheddar quando liga)
+    // 1. combo primeiro: "Vira combo? +R$ 14,99" (o painel enche de cheddar quando liga)
     if (ML.regras.podeCombo(p)) {
       var on = !!s.combo.ativo, ICONE_INCLUI = ['batata', 'lata'];
       h += '<section class="grupo-combo' + (on ? ' on' : '') + '"><span class="cheddar" aria-hidden="true"></span><button type="button" class="interruptor" role="switch" aria-checked="' + on + '" data-combo><span class="grupo-cab">' + ic('combo') + '<span><strong>Vira combo? <span class="nb">+' + comboTxt() + '</span></strong><small>' + esc(C.regras.combo.inclui.join(' + ')) + '</small></span></span><span class="trilho" aria-hidden="true"></span></button>';

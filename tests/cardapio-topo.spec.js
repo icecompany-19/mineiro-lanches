@@ -195,7 +195,7 @@ test('tamanho esgotado sai da régua', async ({ page }) => {
 
 test('faixa do combo fica depois dos hot dogs, e a busca tira régua e faixa', async ({ page }) => {
   await page.goto('/#cardapio');
-  await expect(page.locator('#cat-hotdog + .faixa-combo')).toContainText('+R$ 14,90');
+  await expect(page.locator('#cat-hotdog + .faixa-combo')).toContainText('+R$ 14,99');
   await expect(page.locator('[data-screen="menu"] .faixa-combo')).toHaveCount(1);
   await page.locator('.tela-cab [data-busca-abrir]').click();
   await page.fill('#f-busca', 'dog');

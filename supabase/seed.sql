@@ -63,9 +63,9 @@ insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingrediente
   ('combo-x-frango', 'combos', 'Combo X-Frango', 39.99, 'combo', null, array['Mussarela', 'Maionese', 'Barbecue', 'Vinagrete', 'Purê', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 45, '{"base":"","nota":"","inclui":["X-Frango na baguete (filé de frango, mussarela, maionese, barbecue, vinagrete, purê, batata palha, cheddar e catupiry)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
   ('combo-gran-chicken', 'combos', 'Combo Gran Chicken', 38.99, 'combo', null, array['Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa']::text[], 46, '{"base":"","nota":"","inclui":["Gran Chicken (brioche, frango empanado, maionese, barbecue, alface americano, tomate e cebola roxa)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
   ('porcao-batata-p', 'porcoes', 'Batata frita P', 16.99, 'porcao', null, '{}'::text[], 47, '{"base":"","nota":"","inclui":["Batata frita para 1 pessoa"],"sabor":false,"escolheRefri":false}'::jsonb),
-  ('porcao-batata', 'porcoes', 'Porção de batata turbinada', 39.99, 'porcao', null, '{}'::text[], 48, '{"base":"","nota":"","inclui":["500 g de batata frita","Cheddar cremoso","Bacon","Requeijão","Calabresa","Alho-poró"],"sabor":false,"escolheRefri":false}'::jsonb),
-  ('porcao-onion', 'porcoes', 'Porção de onion', 14.99, 'porcao', null, '{}'::text[], 49, '{"base":"","nota":"","inclui":["6 onion rings"],"sabor":false,"escolheRefri":false}'::jsonb),
-  ('refri-lata', 'bebidas', 'Refrigerante lata', 9.99, 'bebida', null, '{}'::text[], 50, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('porcao-batata', 'porcoes', 'Porção de batata turbinada', 44.99, 'porcao', null, '{}'::text[], 48, '{"base":"","nota":"","inclui":["500 g de batata frita","Cheddar cremoso","Bacon","Requeijão","Calabresa","Alho-poró"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('porcao-onion', 'porcoes', 'Porção de onion', 16.99, 'porcao', null, '{}'::text[], 49, '{"base":"","nota":"","inclui":["6 onion rings"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('refri-lata', 'bebidas', 'Refrigerante lata', 10.99, 'bebida', null, '{}'::text[], 50, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
   ('refri-600', 'bebidas', 'Refrigerante 600 ml', 12.99, 'bebida', null, '{}'::text[], 51, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
   ('refri-1l', 'bebidas', 'Refrigerante 1 litro', 14.99, 'bebida', null, '{}'::text[], 52, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
   ('refri-dolly', 'bebidas', 'Refrigerante Dolly', 4.99, 'bebida', null, '{}'::text[], 53, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
@@ -105,7 +105,7 @@ where ativo and id not in ('catupiry', 'bacon', 'doritos', 'queijo', 'pizza');
 
 -- loja: cria se não existir; depois só horarios, combo_preco e taxa de entrega vêm do CONFIG (modo e aceita_fechada são do painel)
 insert into public.loja (id, modo, aceita_fechada, combo_preco, taxa_km, taxa_fixa, horarios)
-values (1, 'auto', false, 14.90, 1.00, 4.00, '{"0":["19:00","01:00"],"1":["19:00","00:00"],"2":["19:00","00:00"],"3":null,"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb)
+values (1, 'auto', false, 14.99, 1.00, 4.00, '{"0":["19:00","01:00"],"1":["19:00","00:00"],"2":["19:00","00:00"],"3":null,"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb)
 on conflict (id) do update set
   horarios = excluded.horarios,
   combo_preco = excluded.combo_preco,

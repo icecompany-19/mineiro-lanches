@@ -11,10 +11,10 @@ set local role anon;
 select criar_pedido(pg_temp.pedido(
   jsonb_build_array(pg_temp.item('gran-bacon-onion', '{"completo":false,"removidos":["Cebola roxa"],"prensado":true,"combo":{"ativo":true,"refri":"Guaraná"},"adicionais":[{"id":"bacon","qtd":1}]}')),
   pg_temp.cliente('11900000001') || '{"modo":"entrega","endereco":"Rua X, 10"}')) as contrato \gset
-select pg_temp.igual(:'contrato'::jsonb #>> '{itens,0,resumo}', 'Sem cebola roxa · Prensado · Combo +R$14,90 (Guaraná) · + Bacon', 'resumo igual ao exemplo do contrato');
-select pg_temp.igual(:'contrato'::jsonb #>> '{itens,0,precoUnit}', '57.89', 'precoUnit = 35,99 + combo 14,90 + bacon 7,00');
-select pg_temp.igual(:'contrato'::jsonb ->> 'total', '57.89', 'total 57,89');
-select pg_temp.ok(:'contrato'::jsonb #> '{itens,0}' = '{"produtoId":"gran-bacon-onion","nome":"Gran Bacon Onion","categoria":"artesanais","tipo":"lanche","precoBase":35.99,"precoUnit":57.89,"qtd":1,"completo":false,"removidos":["Cebola roxa"],"prensado":true,"combo":{"ativo":true,"refri":"Guaraná"},"adicionais":[{"id":"bacon","nome":"Bacon","qtd":1,"preco":7.00}],"sabor":"","resumo":"Sem cebola roxa · Prensado · Combo +R$14,90 (Guaraná) · + Bacon","subtotal":57.89}'::jsonb,
+select pg_temp.igual(:'contrato'::jsonb #>> '{itens,0,resumo}', 'Sem cebola roxa · Prensado · Combo +R$14,99 (Guaraná) · + Bacon', 'resumo igual ao exemplo do contrato');
+select pg_temp.igual(:'contrato'::jsonb #>> '{itens,0,precoUnit}', '57.98', 'precoUnit = 35,99 + combo 14,99 + bacon 7,00');
+select pg_temp.igual(:'contrato'::jsonb ->> 'total', '57.98', 'total 57,98');
+select pg_temp.ok(:'contrato'::jsonb #> '{itens,0}' = '{"produtoId":"gran-bacon-onion","nome":"Gran Bacon Onion","categoria":"artesanais","tipo":"lanche","precoBase":35.99,"precoUnit":57.98,"qtd":1,"completo":false,"removidos":["Cebola roxa"],"prensado":true,"combo":{"ativo":true,"refri":"Guaraná"},"adicionais":[{"id":"bacon","nome":"Bacon","qtd":1,"preco":7.00}],"sabor":"","resumo":"Sem cebola roxa · Prensado · Combo +R$14,99 (Guaraná) · + Bacon","subtotal":57.98}'::jsonb,
   'item exatamente no formato do contrato (nome, categoria, tipo e preços do banco)');
 select pg_temp.ok(jsonb_typeof(:'contrato'::jsonb -> 'total') = 'number' and jsonb_typeof(:'contrato'::jsonb -> 'numero') = 'number'
                   and jsonb_typeof(:'contrato'::jsonb #> '{itens,0,precoUnit}') = 'number' and jsonb_typeof(:'contrato'::jsonb #> '{itens,0,subtotal}') = 'number',
@@ -36,10 +36,10 @@ select criar_pedido(pg_temp.pedido(
   '[{"produtoId":"gran-burger","qtd":2,"precoBase":0.01,"precoUnit":0.01,"subtotal":0.01,"nome":"Grátis","resumo":"de graça","tipo":"bebida",
      "adicionais":[{"id":"bacon","qtd":2,"preco":0,"nome":"Ouro"}],"combo":{"ativo":true,"refri":"Coca"}}]',
   pg_temp.cliente('11900000002') || '{"total":0.01}')) as adult \gset
-select pg_temp.igual(:'adult'::jsonb ->> 'total', '111.78', 'preço adulterado ignorado: (26,99 + 14,90 + 2 × 7,00) × 2 = 111,78');
-select pg_temp.ok(:'adult'::jsonb #> '{itens,0}' @> '{"nome":"Gran Burger","tipo":"lanche","precoBase":26.99,"precoUnit":55.89,"subtotal":111.78,"adicionais":[{"id":"bacon","nome":"Bacon","qtd":2,"preco":7.00}]}',
+select pg_temp.igual(:'adult'::jsonb ->> 'total', '111.96', 'preço adulterado ignorado: (26,99 + 14,99 + 2 × 7,00) × 2 = 111,96');
+select pg_temp.ok(:'adult'::jsonb #> '{itens,0}' @> '{"nome":"Gran Burger","tipo":"lanche","precoBase":26.99,"precoUnit":55.98,"subtotal":111.96,"adicionais":[{"id":"bacon","nome":"Bacon","qtd":2,"preco":7.00}]}',
   'preço adulterado: nome, tipo, precoUnit, subtotal e adicional vêm do banco');
-select pg_temp.igual(:'adult'::jsonb #>> '{itens,0,resumo}', 'Completo · Não prensado · Combo +R$14,90 (Coca) · + 2× Bacon', 'resumo do servidor, não o do navegador');
+select pg_temp.igual(:'adult'::jsonb #>> '{itens,0,resumo}', 'Completo · Não prensado · Combo +R$14,99 (Coca) · + 2× Bacon', 'resumo do servidor, não o do navegador');
 
 -- vários itens: subtotal = precoUnit × qtd; total = soma
 select criar_pedido(pg_temp.pedido(jsonb_build_array(
@@ -50,14 +50,14 @@ select criar_pedido(pg_temp.pedido(jsonb_build_array(
   pg_temp.cliente('11900000003'))) as varios \gset
 select pg_temp.ok((:'varios'::jsonb #> '{itens,0}') @> '{"precoUnit":59.99,"subtotal":179.97,"qtd":3}', 'x-burguer: 17,99 + queijo 7,00 + 5 × catupiry 7,00 = 59,99; × 3 = 179,97');
 select pg_temp.igual(:'varios'::jsonb #>> '{itens,0,resumo}', 'Completo · Não prensado · + Queijo · + 5× Catupiry', 'resumo com adicionais na ordem enviada e "5× "');
-select pg_temp.ok((:'varios'::jsonb #> '{itens,1}') @> '{"precoUnit":9.99,"subtotal":39.96,"sabor":"Guaraná","resumo":"Guaraná","prensado":false}', 'bebida: 4 × 9,99, sabor aparado, resumo = sabor');
-select pg_temp.ok((:'varios'::jsonb #> '{itens,2}') @> '{"subtotal":39.99,"resumo":"","completo":true}', 'porção: resumo vazio');
+select pg_temp.ok((:'varios'::jsonb #> '{itens,1}') @> '{"precoUnit":10.99,"subtotal":43.96,"sabor":"Guaraná","resumo":"Guaraná","prensado":false}', 'bebida: 4 × 10,99, sabor aparado, resumo = sabor');
+select pg_temp.ok((:'varios'::jsonb #> '{itens,2}') @> '{"subtotal":44.99,"resumo":"","completo":true}', 'porção: resumo vazio');
 select pg_temp.ok((:'varios'::jsonb #> '{itens,3}') @> '{"precoUnit":56.99,"prensado":true,"resumo":"Completo · Prensado · + Doritos"}', 'combo do cardápio: prensado e adicional valem');
-select pg_temp.igual(:'varios'::jsonb ->> 'total', '316.91', 'total = 179,97 + 39,96 + 39,99 + 56,99');
+select pg_temp.igual(:'varios'::jsonb ->> 'total', '325.91', 'total = 179,97 + 43,96 + 44,99 + 56,99');
 
 -- ================= combo só em lanche =================
-select pg_temp.ok(pg_temp.um('x-salada', '{"combo":{"ativo":true,"refri":""}}') @> '{"precoUnit":35.89,"combo":{"ativo":true,"refri":""},"resumo":"Completo · Não prensado · Combo +R$14,90"}',
-  'combo em lanche: +14,90, sem refri não mostra parênteses');
+select pg_temp.ok(pg_temp.um('x-salada', '{"combo":{"ativo":true,"refri":""}}') @> '{"precoUnit":35.98,"combo":{"ativo":true,"refri":""},"resumo":"Completo · Não prensado · Combo +R$14,99"}',
+  'combo em lanche: +14,99, sem refri não mostra parênteses');
 select pg_temp.ok(pg_temp.um('x-salada', '{"combo":{"ativo":true,"refri":"  Fanta Uva  "}}') @> '{"combo":{"ativo":true,"refri":"Fanta Uva"}}', 'refri aparado');
 select pg_temp.ok(pg_temp.um('x-salada', '{"combo":{"ativo":false,"refri":"Coca"}}') @> '{"precoUnit":20.99,"combo":{"ativo":false,"refri":""}}', 'combo desligado: sem preço e sem refri');
 select pg_temp.ok(pg_temp.um('x-salada', '{"combo":null}') @> '{"combo":{"ativo":false,"refri":""}}', 'combo null = desligado');

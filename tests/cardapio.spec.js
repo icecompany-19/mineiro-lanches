@@ -65,11 +65,11 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   const textos = () => page.evaluate(() => [...document.querySelectorAll('[data-combo-preco]')].map((e) => e.textContent));
   await expect.poll(textos).toEqual(Array(4).fill('R$ 16,50'));
   await expect(page.locator('.bio-ctas + .faixa-combo')).toContainText('+R$ 16,50 · batata frita');
-  expect(await page.locator('body').innerText()).not.toContain('+R$ 14,90');
+  expect(await page.locator('body').innerText()).not.toContain('+R$ 14,99');
   await page.locator('.bio-ctas').getByRole('button', { name: 'Fazer pedido' }).click();
   await expect(page.locator('[data-screen="menu"] .faixa-combo')).toContainText('+R$ 16,50');
   await expect(page.locator('#prod-gran-burger .selo-combo')).toHaveText('Vira combo +R$ 16,50');
-  expect(await page.locator('body').innerText()).not.toContain('+R$ 14,90');
+  expect(await page.locator('body').innerText()).not.toContain('+R$ 14,99');
   await page.goto('/#site');
   // a S2 (Pão seladinho na chapa): o preço do botão "Pedir este" é o do banco e a nota do combo também
   await expect(page.locator('.s-monte [data-preco-de="gran-bacon-onion"]')).toHaveText('R$ 35,50');
