@@ -164,6 +164,13 @@ for (const [largura, altura] of [[320, 640], [1280, 800]]) {
     const r = await rolagemHorizontal(page);
     expect(r.andou).toBe(0);
     expect(r.scrollWidth).toBeLessThanOrEqual(r.clientWidth);
+    // preço e rótulo dos cards numa linha só (em 320 px o "a partir de R$ 14,99" quebrava)
+    const linhas = await page.locator('#car-trilho .car-slide').first().evaluate((s) => {
+      const alt = (el) => Math.round(el.getBoundingClientRect().height);
+      return { preco: alt(s.querySelector('.car-preco')), rotulo: alt(s.querySelector('.car-rot')) };
+    });
+    expect(linhas.preco, 'preço numa linha').toBeLessThanOrEqual(32);
+    expect(linhas.rotulo, 'rótulo numa linha').toBeLessThanOrEqual(16);
     for (const raiz of ['#car-hd', '#indice', '#cat-hotdog .regua-hd']) {
       const { pequenos } = await alvosPequenos(page, raiz, 44);
       expect(pequenos.map((p) => `${p.quem} "${p.texto}" ${p.medida}`), raiz).toEqual([]);

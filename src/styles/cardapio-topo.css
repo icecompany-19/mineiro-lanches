@@ -63,3 +63,13 @@
 .regua-v{margin-top:3px;font:700 16px/1 var(--f-placa);color:var(--fio);font-variant-numeric:tabular-nums}
 @media (hover:hover){.regua-tam:hover{background:rgba(255,204,0,.08)}}
 .regua-tam:active{background:rgba(255,204,0,.14)}
+
+/* telas estreitas (320–359 px): preço e rótulo dos cards numa linha só */
+.car-preco,.car-rot{white-space:nowrap}
+@media (max-width:359px){
+  .car-txt{width:60%;padding-left:14px}
+  .car-rot{font-size:9.5px;letter-spacing:.1em}
+  .car-tit{font-size:27px}
+  .car-preco{font-size:12px}
+  .car-preco b{font-size:18px}
+}
