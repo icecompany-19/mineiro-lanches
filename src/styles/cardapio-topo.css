@@ -8,3 +8,26 @@
 .busca-painel .busca{position:static;flex:1;min-width:0;padding:0;background:transparent}
 .busca-painel .filtros{padding:10px 0 0}
 [data-screen="menu"].buscando #car-hd,[data-screen="menu"].buscando #indice{display:none}
+
+/* carrossel dos hot dogs: foto grande à direita, texto no lado escuro, o próximo card aparece na borda.
+   Só anda com a rolagem da pessoa (encaixe por scroll-snap); nenhuma animação. */
+.car-hd{margin:14px 0 0}
+.car-hd[hidden]{display:none}
+.car-trilho{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 var(--calha);scroll-padding:0 var(--calha);scrollbar-width:none;overscroll-behavior-x:contain}
+.car-trilho::-webkit-scrollbar{display:none}
+.car-slide{position:relative;flex:0 0 calc(100% - 46px);max-width:380px;height:222px;border-radius:var(--r-xl);overflow:hidden;scroll-snap-align:start;background:#170E0B;border:1px solid rgba(255,204,0,.32);box-shadow:var(--sombra-card)}
+.car-slide .foto{position:absolute;top:0;right:0;width:62%;height:100%;background:#170E0B}
+.car-slide .foto.antiga{padding:0;box-shadow:none}
+.car-slide .foto.antiga img{border-radius:0}
+.car-slide::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(90deg,#170E0B 36%,rgba(23,14,11,.82) 46%,rgba(23,14,11,0) 70%)}
+.car-txt{position:relative;z-index:3;display:flex;flex-direction:column;justify-content:center;width:56%;height:100%;padding:14px 0 14px 16px}
+.car-rot{margin:0;font:600 10.5px/1.2 var(--f-placa);letter-spacing:.18em;text-transform:uppercase;color:var(--anel-claro)}
+.car-tit{margin:5px 0 0;font:400 31px/.92 var(--f-letreiro);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa)}
+.car-linha{margin:7px 0 0;font:500 13px/1.3 var(--f-placa);color:var(--osso-2)}
+.car-preco{margin:6px 0 0;font:500 13px var(--f-placa);color:var(--osso-2)}
+.car-preco b{font:700 21px var(--f-placa);color:var(--fio);font-variant-numeric:tabular-nums}
+.car-cta{align-self:flex-start;display:inline-flex;align-items:center;min-height:44px;margin-top:8px;padding:0 16px;border:0;border-radius:var(--r-pill);background:var(--placa);color:var(--branco);font:600 13px var(--f-placa);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;box-shadow:inset 0 0 0 2px var(--fio);cursor:pointer}
+.car-n{position:absolute;z-index:3;top:10px;right:10px;padding:3px 9px;border-radius:var(--r-pill);background:rgba(18,11,9,.72);font:600 11.5px var(--f-placa);letter-spacing:.08em;color:var(--osso)}
+.car-pontos{display:flex;justify-content:center;gap:6px;margin-top:10px}
+.car-pontos i{width:7px;height:7px;border-radius:var(--r-pill);background:rgba(255,243,224,.28)}
+.car-pontos i.on{width:20px;background:var(--fio)}

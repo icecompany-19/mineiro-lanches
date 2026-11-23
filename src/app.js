@@ -363,6 +363,52 @@ export function iniciarApp() {
     $('#vazio-busca').hidden = achou > 0;
     marcarCarregadas($('#menu-lista'));
   }
+  // ================= topo do cardápio: carrossel dos hot dogs (22/11/2026) =================
+  // Foto e preço do catálogo; textos curtos só com a composição. Um card sai se o produto estiver esgotado, fora do
+  // cardápio, sem preço ou sem foto; sem nenhum, a seção some. Não anda sozinho: só a rolagem da pessoa.
+  var CARROSSEL_HD = [
+    { tamanhos: ['dog-medio', 'dog-max', 'dog-super'], foto: 'dog-max', rotulo: 'Hot dog · 3 tamanhos', titulo: 'Hot dog', linha: 'Médio, Max ou Super' },
+    { produto: 'dog-cbo-turbo', rotulo: '3 salsichas', titulo: 'CBO Turbo', linha: 'Bacon, catupiry e mussarela gratinada' },
+    { produto: 'dog-pizza', rotulo: 'Hot Dog Super', titulo: 'Dog Pizza', linha: 'Queijo gratinado e orégano por cima' },
+    { produto: 'dog-doritos', rotulo: 'Com Doritos', titulo: 'Doritos Max', linha: 'Hot Dog Max com Doritos' }
+  ];
+  function vendavel(id) { var p = ML.produtos[id]; return !!p && !indisponivel(id) && ML.regras.temPreco(p); }
+  var carrosselHTML = null;
+  function montarCarrossel() {
+    var cards = CARROSSEL_HD.map(function (d) {
+      if (d.tamanhos) {
+        var ok = d.tamanhos.filter(vendavel), dono = ML.produtos[d.foto];
+        if (!ok.length || !dono || !dono.foto) return null;
+        return { d: d, foto: dono, preco: Math.min.apply(null, ok.map(function (id) { return ML.produtos[id].preco; })) };
+      }
+      var p = ML.produtos[d.produto];
+      return vendavel(d.produto) && p.foto ? { d: d, foto: p, preco: p.preco } : null;
+    }).filter(Boolean);
+    var n = cards.length;
+    var html = cards.map(function (c, i) {
+      var d = c.d, cta = d.tamanhos
+        ? '<button type="button" class="car-cta" data-ir-cat="hotdog">Ver tamanhos</button>'
+        : '<button type="button" class="car-cta" data-abrir="' + d.produto + '">Pedir este</button>';
+      return '<article class="car-slide" aria-roledescription="slide" aria-label="' + (i + 1) + ' de ' + n + ': ' + esc(d.titulo) + '">' +
+        visual(c.foto, '540', 'car-foto', { uso: '(min-width: 640px) 260px, 62vw', carga: i ? 'lazy' : 'cedo' }) +
+        '<span class="car-n" aria-hidden="true">' + (i + 1) + '/' + n + '</span>' +
+        '<div class="car-txt"><p class="car-rot">' + esc(d.rotulo) + '</p><h3 class="car-tit">' + esc(d.titulo) + '</h3>' +
+        '<p class="car-linha">' + esc(d.linha) + '</p><p class="car-preco">' + (d.tamanhos ? 'a partir de ' : '') + '<b>' + brl(c.preco) + '</b></p>' + cta + '</div></article>';
+    }).join('');
+    $('#car-hd').hidden = !n;
+    if (html === carrosselHTML) return;
+    carrosselHTML = html;
+    $('#car-trilho').innerHTML = html;
+    $('#car-pontos').innerHTML = cards.map(function (c, i) { return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('');
+    marcarCarregadas($('#car-trilho'));
+  }
+  function marcarPonto() {
+    var t = $('#car-trilho'), s = $('.car-slide', t);
+    if (!s) return;
+    var i = Math.round(t.scrollLeft / (s.offsetWidth + 10));
+    $$('#car-pontos i').forEach(function (p, k) { p.classList.toggle('on', k === i); });
+  }
+
   // busca atrás da lupa (22/11/2026): o painel com o campo e os filtros abre por cima da lista; fechar limpa busca e filtro
   // (nada de filtro escondido). Sair do cardápio fecha o painel.
   function abrirBusca() {
@@ -1708,7 +1754,7 @@ export function iniciarApp() {
 
   // ================= eventos =================
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('a[href^="#"],[data-busca-abrir],[data-busca-fechar],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-troco],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
+    var t = e.target.closest('a[href^="#"],[data-busca-abrir],[data-busca-fechar],[data-ir-cat],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-troco],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
     if (!t) return;
     var A = function (n) { return t.getAttribute(n); };
     // links internos (#bio, #site, #cardapio/<categoria>…): mesma navegação dos botões, com o histórico do app
@@ -1719,6 +1765,7 @@ export function iniciarApp() {
     }
     if (t.hasAttribute('data-busca-abrir')) { abrirBusca(); return; }
     if (t.hasAttribute('data-busca-fechar')) { fecharBusca(); return; }
+    if (t.hasAttribute('data-ir-cat')) { irCategoria(A('data-ir-cat')); return; }
     if (t.hasAttribute('data-go')) {
       var go = A('data-go'), rota = ROTA_DA_TELA[go] || go;
       if (go === 'checkout' && !sacola.length) return;
@@ -1764,6 +1811,7 @@ export function iniciarApp() {
     else if (t.hasAttribute('data-comanda-abre')) { var aberta = A('aria-expanded') !== 'true'; t.setAttribute('aria-expanded', String(aberta)); t.textContent = aberta ? 'Recolher' : 'Ver itens'; $('#chk-lista').hidden = !aberta; }
   });
   $('#f-busca').addEventListener('input', function (e) { st.busca = e.target.value; renderMenu(); });
+  $('#car-trilho').addEventListener('scroll', marcarPonto, { passive: true });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#busca-painel').hidden && !dlg.open) { fecharBusca(); var l = $('.tela-cab [data-busca-abrir]'); if (l) l.focus(); } });
   window.addEventListener('scroll', function () {
     if (st.aba === 'app' && st.tela === 'menu') marcarChip();
@@ -1782,6 +1830,7 @@ export function iniciarApp() {
         salvarSacola();
       }
       if (tipo === 'cardapio:estado') { montarBio(); montarCategorias(); marcarCarregadas($('#destaques')); atualizarStatus(); atualizarPrecosFixos(); atualizarContadores(); if (entr.ok && entr.estado !== 'ok' && entr.estado !== 'calculando') agendarTaxa(true); }
+      montarCarrossel();
       if (st.tela === 'menu') { renderMenu(); requestAnimationFrame(marcarChip); }
       if (st.tela === 'sacola') renderSacola();
       if (st.tela === 'checkout') renderCheckout();
@@ -1822,7 +1871,7 @@ export function iniciarApp() {
     passarBrilho: passarBrilho, // (el .placa com .placa-arte e .placa-brilho)
     indisponivel: indisponivel // (id) → esgotado hoje ou fora do cardápio
   };
-  montarBio(); montarChips(); renderMenu();
+  montarBio(); montarChips(); montarCarrossel(); renderMenu();
   atualizarStatus(); atualizarPrecosFixos(); agendarStatus();
   aplicarRota(inicial, true);
   irCategoria(catInicial);
