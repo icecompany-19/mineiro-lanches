@@ -231,7 +231,7 @@ test.describe('cliente e painel', () => {
         await ficha.locator('[data-combo]').click();
         await ficha.locator('#f-refri').fill('Guaraná');
         await ficha.locator('[data-adic="bacon"][data-d="1"]').click();
-        await expect(celular.locator('#ficha-total')).toHaveText('R$ 57,89');
+        await expect(celular.locator('#ficha-total')).toHaveText('R$ 57,98');
       }
     });
     // mesa do QR já marcada; aviso de privacidade (LGPD) visível
@@ -243,7 +243,7 @@ test.describe('cliente e painel', () => {
       )
     ).toBeVisible();
     const totalCheckout = (await celular.locator('[data-screen="checkout"] .resumo .total [data-total]').textContent()).trim();
-    expect(totalCheckout).toBe('R$ 57,89');
+    expect(totalCheckout).toBe('R$ 57,98');
 
     // envio com a resposta atrasada: o botão fica travado em "enviando"
     await celular.route('**/rest/v1/rpc/criar_pedido', async (r) => {
@@ -262,7 +262,7 @@ test.describe('cliente e painel', () => {
       "select numero, total, origem, mesa, modo from pedidos where cliente_nome = 'Ana Teste' order by criado_em desc limit 1"
     ).split('|');
     expect([origem, mesa, modo]).toEqual(['qrcode', '3', 'local']);
-    expect(Number(total)).toBe(57.89);
+    expect(Number(total)).toBe(57.98);
     await expect(celular.locator('#ped-num')).toHaveText('#' + numero.padStart(4, '0'));
     await expect(celular.locator('#ped-total')).toHaveText(brl(total));
     expect(totalCheckout).toBe(brl(total));
