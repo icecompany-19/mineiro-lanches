@@ -52,8 +52,8 @@ select pg_temp.ok((:'varios'::jsonb #> '{itens,0}') @> '{"precoUnit":59.99,"subt
 select pg_temp.igual(:'varios'::jsonb #>> '{itens,0,resumo}', 'Completo · Não prensado · + Queijo · + 5× Catupiry', 'resumo com adicionais na ordem enviada e "5× "');
 select pg_temp.ok((:'varios'::jsonb #> '{itens,1}') @> '{"precoUnit":9.99,"subtotal":39.96,"sabor":"Guaraná","resumo":"Guaraná","prensado":false}', 'bebida: 4 × 9,99, sabor aparado, resumo = sabor');
 select pg_temp.ok((:'varios'::jsonb #> '{itens,2}') @> '{"subtotal":39.99,"resumo":"","completo":true}', 'porção: resumo vazio');
-select pg_temp.ok((:'varios'::jsonb #> '{itens,3}') @> '{"precoUnit":57.99,"prensado":true,"resumo":"Completo · Prensado · + Doritos"}', 'combo do cardápio: prensado e adicional valem');
-select pg_temp.igual(:'varios'::jsonb ->> 'total', '317.91', 'total = 179,97 + 39,96 + 39,99 + 57,99');
+select pg_temp.ok((:'varios'::jsonb #> '{itens,3}') @> '{"precoUnit":56.99,"prensado":true,"resumo":"Completo · Prensado · + Doritos"}', 'combo do cardápio: prensado e adicional valem');
+select pg_temp.igual(:'varios'::jsonb ->> 'total', '316.91', 'total = 179,97 + 39,96 + 39,99 + 56,99');
 
 -- ================= combo só em lanche =================
 select pg_temp.ok(pg_temp.um('x-salada', '{"combo":{"ativo":true,"refri":""}}') @> '{"precoUnit":35.89,"combo":{"ativo":true,"refri":""},"resumo":"Completo · Não prensado · Combo +R$14,90"}',
@@ -70,7 +70,7 @@ select pg_temp.igual(pg_temp.erro_item('x-salada', '{"combo":true}'), 'dados_inv
 -- ================= prensado: lanche e combo =================
 select pg_temp.ok(pg_temp.um('agua', '{"prensado":true}') @> '{"prensado":false,"resumo":""}', 'prensado em bebida é descartado');
 select pg_temp.ok(pg_temp.um('porcao-onion', '{"prensado":true}') @> '{"prensado":false,"resumo":""}', 'prensado em porção é descartado');
-select pg_temp.ok(pg_temp.um('combo-x-frango', '{"prensado":true}') @> '{"prensado":true,"precoUnit":40.99,"resumo":"Completo · Prensado"}', 'prensado em combo vale e não muda o preço');
+select pg_temp.ok(pg_temp.um('combo-x-frango', '{"prensado":true}') @> '{"prensado":true,"precoUnit":39.99,"resumo":"Completo · Prensado"}', 'prensado em combo vale e não muda o preço');
 select pg_temp.ok(pg_temp.um('dog-medio', '{"prensado":"sim"}') @> '{"prensado":false}', 'prensado só com true de verdade');
 
 -- ================= adicionais: lanche e combo =================
