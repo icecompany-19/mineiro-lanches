@@ -172,12 +172,12 @@ for (const [i, c] of casos.entries())
     await preparar(page);
     const nome = await checkout(page, c);
     await confirmar(page);
-    await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 30,90');
+    await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 31,99');
     await page.locator('#btn-enviar').click();
     await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
     expect(
       psql(`select taxa_entrega,total,cotacao_entrega_id is not null,entrega_destino is not null from pedidos where cliente_nome='${nome}'`)
-    ).toBe('14.00|30.90|t|t');
+    ).toBe('14.00|31.99|t|t');
   });
 test('endereço preciso segue automaticamente; falha da rota principal recupera pelo segundo provedor', async ({ page }) => {
   const chamadas = await preparar(page, { preciso: true, principalFalha: true });

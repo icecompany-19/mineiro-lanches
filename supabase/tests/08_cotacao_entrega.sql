@@ -31,7 +31,7 @@ select pg_temp.pedido(jsonb_build_array(pg_temp.item('x-burguer')),pg_temp.clien
 select criar_pedido(:'entrada') as aceito \gset
 select pg_temp.igual(:'aceito'::jsonb->>'distanciaKm','3.200','servidor ignora distância adulterada e usa cotação');
 select pg_temp.igual(:'aceito'::jsonb->>'taxaEntrega','8.00','pedido grava taxa da cotação');
-select pg_temp.igual(:'aceito'::jsonb->>'total','24.90','total inclui entrega');
+select pg_temp.igual(:'aceito'::jsonb->>'total','25.99','total inclui entrega');
 select pg_temp.ok(:'aceito'::jsonb->'entregaDestino' @> '{"lat":-23.54,"lon":-46.31}'::jsonb,'pedido mantém o ponto usado para calcular a rota');
 select pg_temp.ok(not (acompanhar_pedido((:'aceito'::jsonb->>'token')::uuid)?'entregaDestino'),'acompanhamento por token não expõe GPS');
 select pg_temp.igual(pg_temp.erro_pedido(pg_temp.pedido(jsonb_build_array(pg_temp.item('x-burguer')),
@@ -77,6 +77,6 @@ reset role;
 update pedidos set entrega_destino_ate=now()-interval '1 second' where id=(:'aceito'::jsonb->>'id')::uuid;
 update cotacoes_entrega set destino_ate=now()-interval '1 second';
 select limpar_dados_entrega();
-select pg_temp.ok((select entrega_destino is null and taxa_entrega=8 and total=24.9 from pedidos where id=(:'aceito'::jsonb->>'id')::uuid),'limpeza remove GPS vencido e preserva valores do pedido');
+select pg_temp.ok((select entrega_destino is null and taxa_entrega=8 and total=25.99 from pedidos where id=(:'aceito'::jsonb->>'id')::uuid),'limpeza remove GPS vencido e preserva valores do pedido');
 select pg_temp.ok((select bool_and(destino is null) from cotacoes_entrega),'GPS vencido da cotação também é apagado');
 rollback;

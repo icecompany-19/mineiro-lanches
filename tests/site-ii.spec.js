@@ -163,9 +163,9 @@ test.describe('S1b · placa do cardápio', () => {
     await page.goto('/#site');
     const preco = (id) => page.locator(`.s-placa a[href="#cardapio/${id}"] .placa-preco`);
     await expect(preco('tradicionais')).toHaveText('a partir de R$ 18,50');
-    await expect(preco('hotdog')).toHaveText('a partir de R$ 15,90'); // o Médio (13,90) esgotou: vale o Max
+    await expect(preco('hotdog')).toHaveText('a partir de R$ 16,99'); // o Médio (14,99) esgotou: vale o Max
     await expect(preco('porcoes')).toHaveText('Esgotado hoje');
-    await expect(preco('artesanais')).toHaveText('a partir de R$ 24,90');
+    await expect(preco('artesanais')).toHaveText('a partir de R$ 25,99');
     expect(await page.locator('.s-placa .placa-lista').textContent()).not.toMatch(/confirmar|R\$ 0,00/i);
   });
 });
@@ -371,18 +371,18 @@ test.describe('S4 · hot dog: 1, 2 ou 3 salsichas', () => {
     await expect(preco(page)).toHaveAttribute('data-preco-de', 'dog-super');
   });
 
-  test('card do CBO Turbo: R$ 34,90 e botão Pedir abre a personalização', async ({ page }) => {
+  test('card do CBO Turbo: R$ 35,99 e botão Pedir abre a personalização', async ({ page }) => {
     await abrir(page);
     const card = page.locator('#dog-cbo');
     await card.scrollIntoViewIfNeeded();
     await expect(card).toContainText('Hot Dog CBO Turbo');
     await expect(card).toContainText('3 salsichas Perdigão');
-    await expect(card.locator('#dog-cbo-preco')).toHaveText('R$ 34,90');
+    await expect(card.locator('#dog-cbo-preco')).toHaveText('R$ 35,99');
     await expect(card.locator('img')).toHaveAttribute('src', /\/dog-cbo-turbo-540\.webp$/);
     await expect(card.locator('#dog-cbo-wa')).toBeHidden();
     await card.getByRole('button', { name: 'Pedir', exact: true }).click();
     await expect(page.locator('#ficha-nome')).toHaveText('Hot Dog CBO Turbo');
-    await expect(page.locator('#ficha-total')).toHaveText('R$ 34,90');
+    await expect(page.locator('#ficha-total')).toHaveText('R$ 35,99');
     await expect(page.locator('#ficha-add')).toHaveAttribute('aria-disabled', 'false');
     expect(await sacola(page)).toEqual([]);
   });

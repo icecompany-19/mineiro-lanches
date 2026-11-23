@@ -6,7 +6,7 @@ begin;
 update loja set modo='aberta',cotacao_ativa=false,pagamentos_ativos=true;
 delete from pagamentos_mp;
 insert into pagamentos_mp (pedido_id,email,total,order_id,estado,ultima_consulta)
-select (pg_temp.novo(jsonb_build_array(pg_temp.item('x-burguer')))->>'id')::uuid,'teste@example.com',16.90,
+select (pg_temp.novo(jsonb_build_array(pg_temp.item('x-burguer')))->>'id')::uuid,'teste@example.com',17.99,
   'ORDTST0000000000000000000000'||lpad(n::text,2,'0'),
   case when n=14 then 'pendente' when n=15 then 'cancelado' else 'aprovado' end,
   case when n=14 then now()-interval '2 minutes' when n=15 then now()-interval '1 day' else now()-interval '10 minutes' end

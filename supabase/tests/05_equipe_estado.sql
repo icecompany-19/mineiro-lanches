@@ -91,11 +91,11 @@ select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'e'::j
 select pg_temp.igual(:'e'::jsonb ->> 'diaOperacional', dia_operacional()::text, 'estado_cardapio: diaOperacional');
 select pg_temp.ok(:'e'::jsonb -> 'esgotados' = '["gran-crispy"]', 'estado_cardapio: só o esgotado de hoje (o de ontem já caiu)');
 select pg_temp.ok(:'e'::jsonb -> 'inativos' = '["combo-casal"]', 'estado_cardapio: inativos');
-select pg_temp.ok((select count(*) from jsonb_object_keys(:'e'::jsonb -> 'precos')) = 56 and :'e'::jsonb #> '{precos,gran-burger}' = '25.90'::jsonb
+select pg_temp.ok((select count(*) from jsonb_object_keys(:'e'::jsonb -> 'precos')) = 56 and :'e'::jsonb #> '{precos,gran-burger}' = '26.99'::jsonb
                   and jsonb_typeof(:'e'::jsonb #> '{precos,gran-burger}') = 'number', 'estado_cardapio: preço dos 56 produtos, como número');
 select pg_temp.ok((:'e'::jsonb -> 'precos') ? 'dog-cbo-turbo' and jsonb_typeof(:'e'::jsonb #> '{precos,dog-cbo-turbo}') = 'null'
                   and not (:'e'::jsonb -> 'inativos') ? 'dog-cbo-turbo', 'estado_cardapio: item sem preço vem com preço null (e ativo)');
-select pg_temp.ok(:'e'::jsonb -> 'adicionais' = '{"bacon":7.50,"catupiry":7.50,"doritos":7.50,"queijo":7.50}', 'estado_cardapio: adicionais ativos com preço');
+select pg_temp.ok(:'e'::jsonb -> 'adicionais' = '{"bacon":7.00,"catupiry":7.00,"doritos":7.00,"queijo":7.00}', 'estado_cardapio: adicionais ativos com preço');
 select pg_temp.ok(:'e'::jsonb -> 'loja' = jsonb_build_object('modo', 'aberta', 'aceitaFechada', false, 'comboPreco', 14.90, 'taxaKm', 1.00, 'taxaFixa', 4.00, 'horarios', (select horarios from loja),'cotacaoAtiva',false,'pagamentosAtivos',false),
   'estado_cardapio: bloco loja');
 reset role;
@@ -134,7 +134,7 @@ select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'a'::j
   'acompanhar_pedido: itens só com nome, qtd, resumo e subtotal');
 select pg_temp.ok(:'a'::text not like '%Carla%' and :'a'::text not like '%11900000080%' and :'a'::text not like '%Secreta%',
   'acompanhar_pedido não devolve nome, telefone nem endereço');
-select pg_temp.ok(:'a'::jsonb @> '{"status":"entregue","modo":"entrega","total":25.90,"itens":[{"nome":"Gran Burger","qtd":1,"subtotal":25.90,"resumo":"Completo · Não prensado"}]}'
+select pg_temp.ok(:'a'::jsonb @> '{"status":"entregue","modo":"entrega","total":26.99,"itens":[{"nome":"Gran Burger","qtd":1,"subtotal":26.99,"resumo":"Completo · Não prensado"}]}'
                   and jsonb_array_length(:'a'::jsonb -> 'historico') = 5, 'acompanhar_pedido mostra o status atual e o histórico com prontidão');
 select pg_temp.ok(acompanhar_pedido('00000000-0000-4000-8000-00000000abcd') is null, 'token inexistente: null');
 select pg_temp.ok(acompanhar_pedido(null) is null, 'token null: null');

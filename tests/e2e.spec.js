@@ -107,7 +107,7 @@ function enviarMudanca(rt, tabela, tipo, linha) {
   );
 }
 
-// pedido de ENTREGA (3,2 km = 4 km cobrados: taxa de R$ 8,00 sobre o X-Burguer de R$ 16,90)
+// pedido de ENTREGA (3,2 km = 4 km cobrados: taxa de R$ 8,00 sobre o X-Burguer de R$ 17,99)
 const ENTREGA = { modo: 'entrega', endereco: 'Rua das Flores, 120, Centro, Suzano/SP', referencia: 'Portão azul', distanciaKm: 3.2 };
 
 async function entrarNoPainel(page, email) {
@@ -231,7 +231,7 @@ test.describe('cliente e painel', () => {
         await ficha.locator('[data-combo]').click();
         await ficha.locator('#f-refri').fill('Guaraná');
         await ficha.locator('[data-adic="bacon"][data-d="1"]').click();
-        await expect(celular.locator('#ficha-total')).toHaveText('R$ 57,30');
+        await expect(celular.locator('#ficha-total')).toHaveText('R$ 57,89');
       }
     });
     // mesa do QR já marcada; aviso de privacidade (LGPD) visível
@@ -243,7 +243,7 @@ test.describe('cliente e painel', () => {
       )
     ).toBeVisible();
     const totalCheckout = (await celular.locator('[data-screen="checkout"] .resumo .total [data-total]').textContent()).trim();
-    expect(totalCheckout).toBe('R$ 57,30');
+    expect(totalCheckout).toBe('R$ 57,89');
 
     // envio com a resposta atrasada: o botão fica travado em "enviando"
     await celular.route('**/rest/v1/rpc/criar_pedido', async (r) => {
@@ -262,7 +262,7 @@ test.describe('cliente e painel', () => {
       "select numero, total, origem, mesa, modo from pedidos where cliente_nome = 'Ana Teste' order by criado_em desc limit 1"
     ).split('|');
     expect([origem, mesa, modo]).toEqual(['qrcode', '3', 'local']);
-    expect(Number(total)).toBe(57.3);
+    expect(Number(total)).toBe(57.89);
     await expect(celular.locator('#ped-num')).toHaveText('#' + numero.padStart(4, '0'));
     await expect(celular.locator('#ped-total')).toHaveText(brl(total));
     expect(totalCheckout).toBe(brl(total));
@@ -381,10 +381,10 @@ test.describe('cliente e painel', () => {
     const href = await wa.getAttribute('href');
     expect(href).toMatch(/^https:\/\/wa\.me\/5511985720150\?text=/);
     const msg = decodeURIComponent(href.split('?text=')[1]);
-    expect(msg).toContain('1× X-Burguer — R$ 16,90');
+    expect(msg).toContain('1× X-Burguer — R$ 17,99');
     expect(msg).toContain('Nome: Bruno Teste');
     expect(msg).toContain('Observação: sem pressa');
-    expect(msg).toContain('Total: R$ 16,90');
+    expect(msg).toContain('Total: R$ 17,99');
     // nada se perdeu: botão destravado, formulário preenchido, sacola guardada
     await expect(celular.locator('#btn-enviar')).toHaveAttribute('aria-disabled', 'false');
     await expect(celular.locator('#f-nome')).toHaveValue('Bruno Teste');
@@ -519,8 +519,8 @@ test.describe('cliente e painel', () => {
     await celular.locator('#btn-enviar').click();
     await expect(celular.locator('[data-screen="pedido"]')).toBeVisible();
     const total = psql("select total from pedidos where cliente_nome = 'Carla Teste'");
-    expect(Number(total)).toBe(25.9);
-    await expect(celular.locator('#ped-total')).toHaveText('R$ 25,90');
+    expect(Number(total)).toBe(26.99);
+    await expect(celular.locator('#ped-total')).toHaveText('R$ 26,99');
     // pedido enviado (D6): nome, telefone e endereço ficam no aparelho para o próximo pedido; só a observação sai
     expect(await celular.evaluate(() => JSON.parse(localStorage.getItem('mineiro:v2:rascunho')))).toEqual({
       nome: 'Carla Teste',
@@ -717,7 +717,7 @@ test.describe('entrega com etapas manuais no painel', () => {
     const pedido = await criarPedidoApi('Elisa Entrega', '11977770010', ENTREGA);
     const status = () => psql(`select status from pedidos where id = '${pedido.id}'`);
     const num = '#' + String(pedido.numero).padStart(4, '0');
-    expect(pedido.total).toBe(24.9);
+    expect(pedido.total).toBe(25.99);
     await celular.goto('/#pedido/' + pedido.token);
     await expect(celular.locator('#ped-num')).toHaveText(num);
     await expect(celular.locator('.passo.atual')).toContainText('Recebido');

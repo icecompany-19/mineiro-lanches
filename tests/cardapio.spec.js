@@ -118,7 +118,7 @@ test('adicional que saiu do cardápio com o lanche na sacola: a linha acusa, o e
   await expect(page.locator('#ficha')).toBeHidden();
   await expect(l).not.toHaveClass(/esgotado/);
   await expect(l.locator('.tag.adic')).toHaveCount(0);
-  await expect(l.locator('.linha-nome .preco')).toHaveText('R$ 25,90');
+  await expect(l.locator('.linha-nome .preco')).toHaveText('R$ 26,99');
 });
 
 test('checkout: o erro de cada campo chega ao leitor de tela (aria-invalid e descrição)', async ({ page }) => {

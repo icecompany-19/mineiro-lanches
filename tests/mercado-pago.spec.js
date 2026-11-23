@@ -160,7 +160,7 @@ test('pedido online antigo vai ao Mercado Pago pelo acompanhamento; webhook apro
     nome = await pedidoOnlineAntigo(page);
   await expect(page).toHaveURL(/www\.mercadopago\.com\.br\/checkout\//);
   expect(estado.criadas).toHaveLength(1);
-  expect(estado.criadas[0].body.total_amount).toBe('16.90');
+  expect(estado.criadas[0].body.total_amount).toBe('17.99');
   expect(sql(`select pagamento_online from pedidos where cliente_nome='${nome}'`)).toBe('pendente');
   await confirmar(estado);
   const token = sql(`select token from pedidos where cliente_nome='${nome}'`);
@@ -349,7 +349,7 @@ test('dinheiro exige resposta sobre troco e valor válido; painel e comanda cons
  await page.locator('#btn-enviar').click();
  await expect(page.locator('#erro-troco-opcao')).toBeVisible();
  await page.locator('[data-troco="sim"]').click();
- for(const valor of ['', '10', '-100', '16,90']) {
+ for(const valor of ['', '10', '-100', '17,99']) {
   await page.locator('#f-troco').fill(valor);
   await page.locator('#btn-enviar').click();
   await expect(page.locator('#erro-troco')).toBeVisible();

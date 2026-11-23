@@ -1,4 +1,4 @@
-// Preço do CBO Turbo confirmado em R$ 34,90 e proteção caso um produto perca o preço no banco:
+// Preço do CBO Turbo confirmado em R$ 35,99 e proteção caso um produto perca o preço no banco:
 // o card mostra "Preço a confirmar", a ficha não deixa adicionar e oferece "Consultar no WhatsApp" com a mensagem
 // pronta, e o item nunca fica na sacola. O horário da semana mostra o domingo aberto.
 // Só comportamento: o visual definitivo é do agente de design.
@@ -12,7 +12,7 @@ const sacolaGuardada = (page) => page.evaluate(() => JSON.parse(localStorage.get
 test('Preço a confirmar: aparece no cardápio, não vai para a sacola e oferece o WhatsApp', async ({ page }) => {
   const erros = [];
   page.on('pageerror', (e) => erros.push(e.message));
-  // simula o preço retirado no banco (o CBO Turbo de produção custa R$ 34,90).
+  // simula o preço retirado no banco (o CBO Turbo de produção custa R$ 35,99).
   await page.route('**/rest/v1/rpc/estado_cardapio', async (r) => {
     const resposta = await r.fetch();
     const j = await resposta.json();
@@ -58,19 +58,19 @@ test('Preço a confirmar: aparece no cardápio, não vai para a sacola e oferece
   await page.locator('#prod-dog-max').click();
   await expect(page.locator('#ficha-add')).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('#ficha-add-txt')).toHaveText('Adicionar');
-  await expect(page.locator('#ficha-total')).toHaveText('R$ 15,90');
+  await expect(page.locator('#ficha-total')).toHaveText('R$ 16,99');
   await expect(page.locator('#ficha [data-fq="1"]')).toBeEnabled();
   await expect(ficha.locator('.ficha-nota')).toContainText('Dog Bacon ou Dog Pizza');
   expect(erros).toEqual([]);
 });
 
-test('CBO Turbo por R$ 34,90 pode ser personalizado e adicionado à sacola', async ({ page }) => {
+test('CBO Turbo por R$ 35,99 pode ser personalizado e adicionado à sacola', async ({ page }) => {
   await page.goto('/#cardapio');
   const card = page.locator('#prod-' + ID);
-  await expect(card.locator('.preco')).toHaveText('R$ 34,90');
+  await expect(card.locator('.preco')).toHaveText('R$ 35,99');
   await expect(card.locator('.selo-combo')).toContainText('Vira combo');
   await card.click();
-  await expect(page.locator('#ficha-total')).toHaveText('R$ 34,90');
+  await expect(page.locator('#ficha-total')).toHaveText('R$ 35,99');
   await expect(page.locator('#ficha-add')).toHaveAttribute('aria-disabled', 'false');
   await expect(page.locator('#ficha [data-adic="bacon"][data-d="1"]')).toHaveCount(1);
   await page.locator('#ficha-add').click();
@@ -79,7 +79,7 @@ test('CBO Turbo por R$ 34,90 pode ser personalizado e adicionado à sacola', asy
   const linha = page.locator('#sacola-linhas .linha');
   await expect(linha).toHaveCount(1);
   await expect(linha).toContainText('Hot Dog CBO Turbo');
-  await expect(linha.locator('.linha-nome .preco')).toHaveText('R$ 34,90');
+  await expect(linha.locator('.linha-nome .preco')).toHaveText('R$ 35,99');
   expect((await sacolaGuardada(page))[0].sel.produtoId).toBe(ID);
 });
 

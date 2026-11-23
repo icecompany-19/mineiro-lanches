@@ -100,15 +100,15 @@ test('CEP preenche rua, bairro e cidade; com o número vem a taxa e ela entra no
   // 3,2 km → 4 km × R$ 1 + R$ 4 = R$ 8,00
   await expect(page.locator('#taxa-msg')).toHaveText('Taxa de entrega: R$ 8,00');
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
-  await expect(totalCheckout(page)).toHaveText('R$ 24,90'); // X-Burguer 16,90 + 8,00
-  await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 24,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 25,99'); // X-Burguer 17,99 + 8,00
+  await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 25,99');
   expect(chamadas.viacep).toBe(1);
   await page.locator('#f-ref').fill('Portão azul');
   await page.locator('#btn-enviar').click();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
   const linha = psql(`select endereco, referencia, distancia_km, taxa_entrega, total from pedidos where cliente_nome = '${NOME} cep'`);
-  expect(linha).toBe('Rua Eliziél Alves Costa, 300, Centro, Suzano/SP, CEP 08674-185|Portão azul|3.200|8.00|24.90');
-  await expect(page.locator('#ped-total')).toHaveText('R$ 24,90 (com entrega de R$ 8,00)');
+  expect(linha).toBe('Rua Eliziél Alves Costa, 300, Centro, Suzano/SP, CEP 08674-185|Portão azul|3.200|8.00|25.99');
+  await expect(page.locator('#ped-total')).toHaveText('R$ 25,99 (com entrega de R$ 8,00)');
 });
 
 test('CEP 08555-120: bairro diferente no mapa não impede atualizar entrega, comanda e total', async ({ page }) => {
@@ -125,12 +125,12 @@ test('CEP 08555-120: bairro diferente no mapa não impede atualizar entrega, com
   await digitar(page, '100');
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00', { timeout: 10_000 });
   await expect(page.locator('#taxa-msg')).toHaveText('Taxa de entrega: R$ 8,00');
-  await expect(totalCheckout(page)).toHaveText('R$ 24,90');
-  await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 24,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 25,99');
+  await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 25,99');
   expect(consultas.some(q => q.includes('Rua Mantiqueira') && q.includes('Poá') && !q.includes('Jardim Santa Luiza'))).toBe(true);
   await page.locator('#btn-enviar').click();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
-  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} bairro divergente'`)).toBe('8.00|24.90');
+  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} bairro divergente'`)).toBe('8.00|25.99');
 });
 
 test('número sem vírgula e complemento: busca só a rua quando o mapa não reconhece o endereço completo', async ({ page }) => {
@@ -151,7 +151,7 @@ test('número sem vírgula e complemento: busca só a rua quando o mapa não rec
   await expect(page.locator('#f-end')).toHaveValue('Rua Benedito Leite 100, Casa');
   await page.locator('#btn-enviar').click();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
-  expect(psql(`select endereco, taxa_entrega, total from pedidos where cliente_nome = '${NOME} complemento'`)).toBe('Rua Benedito Leite 100, Casa, Vila Correa, Ferraz de Vasconcelos/SP, CEP 08501-500|8.00|24.90');
+  expect(psql(`select endereco, taxa_entrega, total from pedidos where cliente_nome = '${NOME} complemento'`)).toBe('Rua Benedito Leite 100, Casa, Vila Correa, Ferraz de Vasconcelos/SP, CEP 08501-500|8.00|25.99');
 });
 
 test('preenchimento rápido do celular conserva rua e número enquanto o CEP responde', async ({ page }) => {
@@ -171,7 +171,7 @@ test('preenchimento rápido do celular conserva rua e número enquanto o CEP res
   await expect(page.locator('#f-bairro')).toHaveValue('Centro · Suzano/SP');
   await expect(page.locator('#f-end')).toHaveValue('Rua Eliziel Alves Costa, 300');
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
-  await expect(totalCheckout(page)).toHaveText('R$ 24,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 25,99');
 });
 
 test('enviar enquanto o CEP responde espera a taxa e não grava um pedido sem entrega', async ({ page }) => {
@@ -195,7 +195,7 @@ test('enviar enquanto o CEP responde espera a taxa e não grava um pedido sem en
   liberar();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
   expect(envios).toBe(1);
-  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} cep pendente'`)).toBe('8.00|24.90');
+  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} cep pendente'`)).toBe('8.00|25.99');
 });
 
 test('trocar o CEP remove a taxa anterior até calcular o endereço novo', async ({ page }) => {
@@ -216,12 +216,12 @@ test('trocar o CEP remove a taxa anterior até calcular o endereço novo', async
   await page.locator('#f-cep').fill('08555120');
   await consulta;
   await expect(page.locator('#chk-taxa')).not.toHaveText('R$ 8,00');
-  await expect(totalCheckout(page)).toHaveText('R$ 16,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 17,99');
   liberar();
   await expect(page.locator('#f-end')).toHaveValue('Rua Mantiqueira, ');
   await digitar(page, '100');
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
-  await expect(totalCheckout(page)).toHaveText('R$ 24,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 25,99');
 });
 
 test('se o serviço de rota voltar, Recalcular entrega substitui a combinar pelo valor', async ({ page }) => {
@@ -238,8 +238,8 @@ test('se o serviço de rota voltar, Recalcular entrega substitui a combinar pelo
   await page.getByRole('button', { name: 'Recalcular entrega' }).click();
   await expect(page.locator('#chk-taxa')).toHaveText('R$ 8,00');
   await expect(page.locator('#taxa-msg')).toHaveText('Taxa de entrega: R$ 8,00');
-  await expect(totalCheckout(page)).toHaveText('R$ 24,90');
-  await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 24,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 25,99');
+  await expect(page.locator('#btn-enviar .btn-valor')).toHaveText('R$ 25,99');
   await expect(page.getByRole('button', { name: 'Recalcular entrega' })).toBeHidden();
 });
 
@@ -285,7 +285,7 @@ test('rota responde 503 uma vez: recupera sem o cliente reenviar e grava a taxa'
   expect(tentativas).toBe(2);
   await page.locator('#btn-enviar').click();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
-  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} rota recuperada'`)).toBe('8.00|24.90');
+  expect(psql(`select taxa_entrega, total from pedidos where cliente_nome = '${NOME} rota recuperada'`)).toBe('8.00|25.99');
 });
 
 test('mapa responde 429 uma vez: respeita o intervalo e recupera a taxa', async ({ page }) => {
@@ -362,11 +362,11 @@ test('rota indisponível: taxa a combinar e o pedido segue sem taxa', async ({ p
   await digitar(page, '300');
   await expect(page.locator('#taxa-msg')).toContainText('Não conseguimos calcular a taxa agora');
   await expect(page.locator('#chk-taxa')).toHaveText('a combinar');
-  await expect(totalCheckout(page)).toHaveText('R$ 16,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 17,99');
   await page.locator('#btn-enviar').click();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
-  expect(psql(`select taxa_entrega is null, distancia_km is null, total from pedidos where cliente_nome = '${NOME} rota'`)).toBe('t|t|16.90');
-  await expect(page.locator('#ped-total')).toHaveText('R$ 16,90 + entrega');
+  expect(psql(`select taxa_entrega is null, distancia_km is null, total from pedidos where cliente_nome = '${NOME} rota'`)).toBe('t|t|17.99');
+  await expect(page.locator('#ped-total')).toHaveText('R$ 17,99 + entrega');
 });
 
 test('endereço que o mapa não acha: taxa a combinar', async ({ page }) => {
@@ -376,7 +376,7 @@ test('endereço que o mapa não acha: taxa a combinar', async ({ page }) => {
   await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
   await digitar(page, '999');
   await expect(page.locator('#taxa-msg')).toContainText('Não conseguimos calcular a taxa agora', { timeout: 10_000 });
-  await expect(totalCheckout(page)).toHaveText('R$ 16,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 17,99');
 });
 
 test('CEP inexistente: avisa e deixa escrever o endereço à mão (sem taxa)', async ({ page }) => {
@@ -397,7 +397,7 @@ test('retirada no local não tem taxa nem pede CEP', async ({ page }) => {
   await page.locator('[data-modo="local"]').click();
   await expect(page.locator('#bloco-endereco')).toBeHidden();
   await expect(page.locator('#chk-taxa')).toHaveText('sem taxa');
-  await expect(totalCheckout(page)).toHaveText('R$ 16,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 17,99');
 });
 
 test('banco ainda sem a taxa (antes da migration): fica "a combinar" e o total não diverge do servidor', async ({ page }) => {
@@ -415,11 +415,11 @@ test('banco ainda sem a taxa (antes da migration): fica "a combinar" e o total n
   await digitar(page, '300');
   await expect(page.locator('#chk-taxa')).toHaveText('a combinar');
   await expect(page.locator('#taxa-msg')).toBeHidden();
-  await expect(totalCheckout(page)).toHaveText('R$ 16,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 17,99');
   expect(chamadas.osrm).toBe(0);
   await page.locator('#btn-enviar').click();
   await expect(page.locator('[data-screen="pedido"]')).toBeVisible();
-  expect(psql(`select taxa_entrega is null, total from pedidos where cliente_nome = '${NOME} antigo'`)).toBe('t|16.90');
+  expect(psql(`select taxa_entrega is null, total from pedidos where cliente_nome = '${NOME} antigo'`)).toBe('t|17.99');
 });
 
 test('rota acima de 100 km (o banco só aceita até 100): taxa a combinar', async ({ page }) => {
@@ -429,7 +429,7 @@ test('rota acima de 100 km (o banco só aceita até 100): taxa a combinar', asyn
   await expect(page.locator('#f-end')).toHaveValue('Rua Eliziél Alves Costa, ');
   await digitar(page, '300');
   await expect(page.locator('#taxa-msg')).toContainText('Não conseguimos calcular a taxa agora');
-  await expect(totalCheckout(page)).toHaveText('R$ 16,90');
+  await expect(totalCheckout(page)).toHaveText('R$ 17,99');
 });
 
 test('rascunho com CEP: refaz a busca só no checkout e mantém a rua e o número digitados', async ({ page }) => {
