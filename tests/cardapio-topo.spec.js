@@ -2,6 +2,7 @@
 // Hot dog como primeira categoria, busca atrás da lupa, carrossel de fotos, índice do cardápio que vira a barra de categorias,
 // régua de tamanhos e a faixa do combo depois dos hot dogs. O estado vem do Supabase local; mudanças só pelo page.route.
 // Uso: npx playwright test tests/cardapio-topo.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
+/* global document */
 import { test, expect } from '@playwright/test';
 import { instalarApoio, rolagemHorizontal, alvosPequenos } from './apoio/aceite.js';
 
@@ -163,7 +164,7 @@ for (const [largura, altura] of [[320, 640], [1280, 800]]) {
     const r = await rolagemHorizontal(page);
     expect(r.andou).toBe(0);
     expect(r.scrollWidth).toBeLessThanOrEqual(r.clientWidth);
-    for (const raiz of ['#car-hd', '#indice', '#cat-hotdog .regua']) {
+    for (const raiz of ['#car-hd', '#indice', '#cat-hotdog .regua-hd']) {
       const { pequenos } = await alvosPequenos(page, raiz, 44);
       expect(pequenos.map((p) => `${p.quem} "${p.texto}" ${p.medida}`), raiz).toEqual([]);
     }
@@ -173,7 +174,7 @@ for (const [largura, altura] of [[320, 640], [1280, 800]]) {
 // ---------- régua de tamanhos e faixa do combo ----------
 test('régua com os 3 tamanhos e preço do catálogo', async ({ page }) => {
   await page.goto('/#cardapio');
-  const tam = page.locator('#cat-hotdog .regua .regua-tam');
+  const tam = page.locator('#cat-hotdog .regua-hd .regua-tam');
   await expect(tam).toHaveText([/Médio\s*R\$ 14,99/, /Max\s*R\$ 16,99/, /Super\s*R\$ 19,99/]);
   await tam.filter({ hasText: 'Max' }).click();
   await expect(page.locator('#ficha-nome')).toHaveText('Hot Dog Max');
@@ -191,6 +192,22 @@ test('faixa do combo fica depois dos hot dogs, e a busca tira régua e faixa', a
   await expect(page.locator('[data-screen="menu"] .faixa-combo')).toHaveCount(1);
   await page.locator('.tela-cab [data-busca-abrir]').click();
   await page.fill('#f-busca', 'dog');
-  await expect(page.locator('#menu-lista .regua')).toHaveCount(0);
+  await expect(page.locator('#menu-lista .regua-hd')).toHaveCount(0);
   await expect(page.locator('[data-screen="menu"] .faixa-combo')).toHaveCount(0);
+});
+
+// classes com nomes que já existiam no CSS do site (.dest dos destaques da bio, .regua do controle da cena noite)
+// quebravam o índice e a régua sem os testes de texto perceberem: confere a geometria de verdade
+test('índice com colunas iguais e régua inteira à vista', async ({ page }) => {
+  await page.goto('/#cardapio');
+  const larguras = await page.locator('#indice .indice-tile').evaluateAll((ts) => ts.slice(0, 4).map((t) => Math.round(t.getBoundingClientRect().width)));
+  expect(Math.max(...larguras) - Math.min(...larguras), `larguras ${larguras}`).toBeLessThanOrEqual(1);
+  const regua = page.locator('#cat-hotdog .regua-tam');
+  await regua.first().scrollIntoViewIfNeeded();
+  const visiveis = await regua.evaluateAll((bs) => bs.map((b) => {
+    const n = b.querySelector('.regua-n').getBoundingClientRect();
+    const alvo = document.elementFromPoint(n.left + n.width / 2, n.top + n.height / 2);
+    return !!alvo && b.contains(alvo) && b.getBoundingClientRect().height >= 70;
+  }));
+  expect(visiveis).toEqual([true, true, true]);
 });

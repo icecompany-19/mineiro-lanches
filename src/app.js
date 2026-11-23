@@ -355,7 +355,7 @@ export function iniciarApp() {
   function reguaHTML() {
     var ok = REGUA_HD.filter(function (r) { return vendavel(r[0]); });
     if (!ok.length) return '';
-    return '<div class="regua" role="group" aria-label="Tamanhos do hot dog" style="--n:' + ok.length + '">' + ok.map(function (r) {
+    return '<div class="regua-hd" role="group" aria-label="Tamanhos do hot dog" style="--n:' + ok.length + '">' + ok.map(function (r) {
       var p = ML.produtos[r[0]];
       return '<button type="button" class="regua-tam" data-abrir="' + r[0] + '" aria-label="' + esc(p.nome) + ', ' + brl(p.preco) + '">' + salsichasSVG(r[2]) +
         '<span class="regua-n">' + r[1] + '</span><span class="regua-v">' + brl(p.preco) + '</span></button>';
@@ -443,7 +443,7 @@ export function iniciarApp() {
     var cats = C.categorias.filter(function (c) { return c.itens.length; }), total = 0;
     var html = cats.map(function (c, i) {
       var n = c.itens.length; total += n;
-      return '<button type="button" class="indice-tile' + (i ? '' : ' dest') + '" data-ir-cat="' + c.id + '">' + ic(c.icone) + '<b>' + esc(c.label) + '</b><small>' + n + (n === 1 ? ' item' : ' itens') + '</small></button>';
+      return '<button type="button" class="indice-tile' + (i ? '' : ' indice-hd') + '" data-ir-cat="' + c.id + '">' + ic(c.icone) + '<b>' + esc(c.label) + '</b><small>' + n + (n === 1 ? ' item' : ' itens') + '</small></button>';
     }).join('') + '<button type="button" class="indice-tile buscar" data-busca-abrir>' + ic('busca') + '<b>Buscar</b><small>por nome</small></button>';
     $('#indice-total').textContent = total + (total === 1 ? ' item' : ' itens');
     if (html !== indiceHTML) { $('#indice-grade').innerHTML = html; indiceHTML = html; }
