@@ -47,12 +47,12 @@ test('os preços escritos no HTML seguem o CONFIG e, na página, o preço do ban
   const combo = brl(CONFIG.regras.combo.preco);
   const html = readFileSync(resolve(RAIZ, 'index.html'), 'utf8');
   const noHtml = [...html.matchAll(/(?:combo por \+|data-combo-preco>)(R\$ \d+,\d\d)/g)].map((m) => m[1]);
-  expect(noHtml.length, 'textos de combo no index.html (3 metas + 4 na página)').toBe(7);
+  expect(noHtml.length, 'textos de combo no index.html (3 metas + 3 na página; a faixa do cardápio sai do JS desde 22/11/2026)').toBe(6);
   expect([...new Set(noHtml)], 'preço do combo escrito no HTML = CONFIG').toEqual([combo]);
   // a hora de abertura do título "fechado" do herói do site é a do CONFIG (o JS refaz com os turnos que o banco mandar)
   const [hh, mm] = CONFIG.horarios[0][0].split(':').map(Number);
   expect(html, 'hora de abertura no herói do index.html = CONFIG').toContain(`<span data-abre>${hh}h${mm ? String(mm).padStart(2, '0') : ''}</span>`);
-  expect((await (await request.get('/')).text()).match(/data-combo-preco/g).length).toBe(4);
+  expect((await (await request.get('/')).text()).match(/data-combo-preco/g).length).toBe(3);
 
   // o banco manda outro preço: todos os textos fixos da página trocam
   await mudarEstado(page, (j) => {
