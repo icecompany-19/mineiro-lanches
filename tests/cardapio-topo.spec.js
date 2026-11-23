@@ -169,3 +169,28 @@ for (const [largura, altura] of [[320, 640], [1280, 800]]) {
     }
   });
 }
+
+// ---------- régua de tamanhos e faixa do combo ----------
+test('régua com os 3 tamanhos e preço do catálogo', async ({ page }) => {
+  await page.goto('/#cardapio');
+  const tam = page.locator('#cat-hotdog .regua .regua-tam');
+  await expect(tam).toHaveText([/Médio\s*R\$ 14,99/, /Max\s*R\$ 16,99/, /Super\s*R\$ 19,99/]);
+  await tam.filter({ hasText: 'Max' }).click();
+  await expect(page.locator('#ficha-nome')).toHaveText('Hot Dog Max');
+});
+
+test('tamanho esgotado sai da régua', async ({ page }) => {
+  await mudarEstado(page, (j) => { j.esgotados = ['dog-max']; });
+  await page.goto('/#cardapio');
+  await expect(page.locator('#cat-hotdog .regua-tam')).toHaveText([/Médio/, /Super/]);
+});
+
+test('faixa do combo fica depois dos hot dogs, e a busca tira régua e faixa', async ({ page }) => {
+  await page.goto('/#cardapio');
+  await expect(page.locator('#cat-hotdog + .faixa-combo')).toContainText('+R$ 14,90');
+  await expect(page.locator('[data-screen="menu"] .faixa-combo')).toHaveCount(1);
+  await page.locator('.tela-cab [data-busca-abrir]').click();
+  await page.fill('#f-busca', 'dog');
+  await expect(page.locator('#menu-lista .regua')).toHaveCount(0);
+  await expect(page.locator('[data-screen="menu"] .faixa-combo')).toHaveCount(0);
+});

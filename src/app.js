@@ -340,6 +340,32 @@ export function iniciarApp() {
       '<span class="prod-txt"><span class="prod-nome">' + esc(p.nome) + '</span><span class="prod-ing">' + esc(ingTexto(p)) + '</span>' + selo +
       '<span class="prod-pe"><span class="preco' + (semPreco ? ' sem' : '') + '">' + brl(p.preco) + '</span></span></span></button>' + acao + '</div>';
   }
+  // régua de tamanhos no topo da categoria Hot dog (22/11/2026): 1, 2 ou 3 salsichas desenhadas, preço do catálogo,
+  // o toque abre a ficha. Tamanho esgotado ou fora do cardápio sai; sem nenhum, a régua não aparece.
+  var REGUA_HD = [['dog-medio', 'Médio', 1], ['dog-max', 'Max', 2], ['dog-super', 'Super', 3]];
+  function salsichasSVG(n) {
+    var s = '';
+    for (var i = 0; i < n; i++) {
+      var y = 19 - i * 6.5, x = i % 2 ? 9 : 5;
+      s += '<rect x="' + x + '" y="' + y + '" width="48" height="8" rx="4" fill="#B5481E"/><rect x="' + (x + 5) + '" y="' + (y + 1.6) + '" width="30" height="1.8" rx=".9" fill="#E8834E"/>';
+    }
+    return '<svg class="regua-svg" viewBox="0 0 62 40" aria-hidden="true" focusable="false">' + s +
+      '<path d="M3 26h56c0 6-4 10-10 10H13C7 36 3 32 3 26z" fill="#E0A257"/><path d="M3 26h56" stroke="#F3C987" stroke-width="2" stroke-linecap="round"/></svg>';
+  }
+  function reguaHTML() {
+    var ok = REGUA_HD.filter(function (r) { return vendavel(r[0]); });
+    if (!ok.length) return '';
+    return '<div class="regua" role="group" aria-label="Tamanhos do hot dog" style="--n:' + ok.length + '">' + ok.map(function (r) {
+      var p = ML.produtos[r[0]];
+      return '<button type="button" class="regua-tam" data-abrir="' + r[0] + '" aria-label="' + esc(p.nome) + ', ' + brl(p.preco) + '">' + salsichasSVG(r[2]) +
+        '<span class="regua-n">' + r[1] + '</span><span class="regua-v">' + brl(p.preco) + '</span></button>';
+    }).join('') + '</div>';
+  }
+  // a faixa "Qualquer lanche vira combo" saiu do topo e vem logo depois dos hot dogs (fora da busca)
+  function faixaComboHTML() {
+    return '<div class="faixa-combo" data-faixa-combo><span class="selo-placa" data-combo-selo aria-hidden="true">+' + esc(comboTxt().replace('R$ ', '')) + '</span>' +
+      '<strong>Qualquer lanche vira combo</strong><span class="fc-sub">+<span data-combo-preco>' + esc(comboTxt()) + '</span> · <span data-combo-inclui>' + esc(comboInclui()) + '</span>. Ligue na ficha do lanche.</span></div>';
+  }
   var menuHTML = '', toqueMenuEmCurso = false, menuPendente = false;
   function renderMenu() {
     // A resposta do catálogo pode chegar entre pointerdown e click. Substituir o
@@ -351,12 +377,13 @@ export function iniciarApp() {
       var itens = c.itens.filter(function (p) { return (!q || semAcento(p.nome + ' ' + ingTexto(p)).indexOf(q) >= 0) && (!filtro || filtro.fn(p)); });
       achou += itens.length;
       if (!itens.length) return '';
-      return '<section class="cat" id="cat-' + c.id + '" data-cat="' + c.id + '" aria-labelledby="ct-' + c.id + '"><div class="cat-cab">' + ic(c.icone) + '<div><h2 id="ct-' + c.id + '">' + esc(c.label) + '</h2><small>' + esc(c.desc) + '</small></div></div>' +
+      var topoHD = c.id === 'hotdog' && !q && !filtro;
+      return '<section class="cat" id="cat-' + c.id + '" data-cat="' + c.id + '" aria-labelledby="ct-' + c.id + '"><div class="cat-cab">' + ic(c.icone) + '<div><h2 id="ct-' + c.id + '">' + esc(c.label) + '</h2><small>' + esc(c.desc) + '</small></div></div>' + (topoHD ? reguaHTML() : '') +
         itens.map(function (p) {
           var carga = 'lazy';
           if (naTela && p.foto && fotos < 4) carga = fotos++ === 0 ? 'lcp' : 'cedo';
           return cardHTML(p, !!esg[p.id], carga);
-        }).join('') + '</section>';
+        }).join('') + '</section>' + (topoHD ? faixaComboHTML() : '');
     }).join('');
     $('[data-screen="menu"]').classList.toggle('buscando', !!(q || filtro));
     if (html !== menuHTML) { $('#menu-lista').innerHTML = html; menuHTML = html; }
