@@ -62,6 +62,11 @@ npx playwright test
 
 Execução anterior (17/10, pendências baixas da fase 3, `82d31af`): lint e build ok; 515 verificações SQL; paridade 318; node:test 87 (66 ok, 21 pulados por falta de poppler); Playwright celular + desktop + e2e em 28,6 min: 524 ok, 56 pulados e 4 falhas intermitentes antigas: `site-ii.spec.js:587` (véu do S5, que falha 4 de 6 vezes no front de antes da fase 3) e 3 casos do `ficha.spec.js:4` (`toBeInViewport` do 1º ingrediente depois de "Personalizar"; no commit de base `937aad3` falha 4 de 12 vezes, com o mesmo erro). A anterior (`3441859`, 19,7 min) teve 514 ok, 55 pulados e só a do S5. O projeto `iphone` não roda aqui (sem WebKit). Linha de base e detalhes em `docs/PLANO-FASE-3.md` §7.
 
+## Ambiente no macOS (22/11/2026)
+
+- Postgres 17 e PostgREST 16.6 do Homebrew (`brew install postgresql@17 postgrest`); `bash scripts/supabase-local/iniciar.sh --reset` sobe tudo (banco em `~/.mineiro-pg`, `LC_ALL=C`, portas conferidas com `lsof`). Depois, `supabase/setup.sql` duas vezes.
+- Chromium do Playwright: o `npx playwright install chromium` baixa, mas trava na extração (como no Windows). Contorno: descompactar o zip baixado em `$TMPDIR/playwright-download-*/` com `ditto -x -k <zip> ~/Library/Caches/ms-playwright/chromium-1194` e criar `INSTALLATION_COMPLETE`. Rodar os testes com `PW_CHROMIUM=$HOME/Library/Caches/ms-playwright/chromium-1194/chrome-mac/Chromium.app/Contents/MacOS/Chromium` (sem o headless shell).
+
 ## Ambiente desta máquina (Windows 11, conferido em 12/10/2026)
 
 - Node 24, npm 11, git 2.54, `gh` logado como `icecompany-19`. Shell: Git Bash (`bash`) ou PowerShell 5.1. `npm ci` feito; `npm run lint` e `npm run build` passam.

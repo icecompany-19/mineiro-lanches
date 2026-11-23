@@ -9,7 +9,17 @@ AQUI="$(cd "$(dirname "$0")" && pwd)"
 PGURL=postgresql://postgres@localhost:54322/postgres
 PORTA_POSTGREST=54323
 WIN=
+MAC=
 case "$(uname -s)" in
+  Darwin)
+    # macOS (22/11/2026): Postgres 17 e PostgREST do Homebrew (brew install postgresql@17 postgrest); banco em ~/.mineiro-pg.
+    # Sem LC_ALL válido o postmaster do Homebrew recusa subir ("postmaster became multithreaded during startup").
+    MAC=1
+    PGBIN="${MINEIRO_PGBIN:-/opt/homebrew/opt/postgresql@17/bin}"
+    PGHOME="${MINEIRO_PGHOME:-$HOME/.mineiro-pg}"
+    POSTGREST="${MINEIRO_POSTGREST:-$(command -v postgrest || echo /opt/homebrew/bin/postgrest)}"
+    export LC_ALL=C
+    ;;
   MINGW* | MSYS* | CYGWIN*)
     WIN=1
     FERR="$(cygpath -u "${MINEIRO_FERRAMENTAS:-$LOCALAPPDATA/mineiro-ferramentas}")"
@@ -38,6 +48,8 @@ matar_porta() {
     for pid in $(netstat -ano | awk -v p=":$1\$" '$1 == "TCP" && $2 ~ p && $4 == "LISTENING" { print $5 }' | sort -u); do
       taskkill //PID "$pid" //F > /dev/null 2>&1 || true
     done
+  elif [[ $MAC ]]; then
+    for pid in $(lsof -nP -t -iTCP:"$1" -sTCP:LISTEN 2> /dev/null | sort -u); do kill "$pid" 2> /dev/null || true; done
   else
     for pid in $(ss -ltnpH "sport = :$1" 2> /dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do kill "$pid" 2> /dev/null || true; done
   fi
@@ -52,7 +64,7 @@ fi
 if [[ ! -d $PGDATA ]]; then
   mkdir -p "$PGHOME"
   if [[ ! $WIN ]] && [[ $(id -u) == 0 ]]; then chown postgres:postgres "$PGHOME"; fi
-  if [[ $WIN ]]; then LOCALE=(--locale=C -E UTF8); else LOCALE=(--locale=C.UTF-8 -E UTF8); fi
+  if [[ $WIN ]] || [[ $MAC ]]; then LOCALE=(--locale=C -E UTF8); else LOCALE=(--locale=C.UTF-8 -E UTF8); fi
   como_postgres "$PGBIN/initdb" -D "$(nativo "$PGDATA")" -A trust -U postgres "${LOCALE[@]}" > /dev/null
   {
     echo "port = 54322"
@@ -79,7 +91,9 @@ db-channel-enabled = true
 CONF
 # Espera a porta abrir sem curl: no Windows, um connect recusado leva ~2 s.
 escutando() {
-  if [[ $WIN ]]; then netstat -ano | grep -qE ":$1 +[^ ]+ +LISTENING"; else ss -ltnH "sport = :$1" 2> /dev/null | grep -q .; fi
+  if [[ $WIN ]]; then netstat -ano | grep -qE ":$1 +[^ ]+ +LISTENING"
+  elif [[ $MAC ]]; then lsof -nP -iTCP:"$1" -sTCP:LISTEN > /dev/null 2>&1
+  else ss -ltnH "sport = :$1" 2> /dev/null | grep -q .; fi
 }
 esperar_porta() { # porta segundos
   local i
