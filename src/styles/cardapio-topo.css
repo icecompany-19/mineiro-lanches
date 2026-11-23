@@ -1,0 +1,10 @@
+/* Mineiro Lanche · topo do cardápio com os hot dogs na frente (22/11/2026).
+   Desenho: docs/superpowers/specs/2026-11-22-hotdogs-topo-cardapio-design.md. */
+
+/* busca atrás da lupa: o painel fica preso logo abaixo do cabeçalho */
+.busca-painel{position:sticky;top:calc(var(--top) + 64px);z-index:6;padding:8px var(--calha) 12px;background:var(--noite);border-bottom:1px solid var(--borda)}
+.busca-painel[hidden]{display:none}
+.busca-linha{display:flex;align-items:center;gap:8px}
+.busca-painel .busca{position:static;flex:1;min-width:0;padding:0;background:transparent}
+.busca-painel .filtros{padding:10px 0 0}
+[data-screen="menu"].buscando #car-hd,[data-screen="menu"].buscando #indice{display:none}

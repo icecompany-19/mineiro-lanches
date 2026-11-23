@@ -551,6 +551,7 @@ test.describe('defeitos conhecidos', () => {
   // 1,5 px fica dentro): o alvo real é 42 px (conferido com elementFromPoint: acerta de -3 px a +38 px), a direção pede 44.
   test('cardápio, chips de filtro (`button.filtro`, 390 e 1280): área clicável de 42 px de altura (36 + `::after{inset:-4px 0}`), o mínimo é 44', async ({ page }) => {
     await abrir(page, 'cardapio');
+    await page.locator('.tela-cab [data-busca-abrir]').click(); // os filtros moram atrás da lupa desde 22/11/2026
     const { pequenos, conferidos } = await alvosPequenos(page, '#filtros', 44);
     expect(conferidos, 'chips de filtro conferidos').toBeGreaterThan(3);
     expect(pequenos.map((p) => `${p.quem} "${p.texto}" ${p.medida}`)).toEqual([]);

@@ -47,6 +47,7 @@ test('cardápio: composição em frase corrida, foto antiga em moldura escura e 
   expect(await ing('dog-doritos')).toBe('O hot dog com Doritos da casa, Doritos, cheddar');
   expect(await ing('combo-2-dog-doritos')).toContain('Coca-Cola 600 ml'); // número e unidade colados
   // a busca digita espaço comum e acha a composição escrita com NBSP
+  await page.locator('.tela-cab [data-busca-abrir]').click(); // a busca mora atrás da lupa desde 22/11/2026
   await page.fill('#f-busca', '200 g');
   await expect.poll(() => page.locator('#menu-lista .prod').count()).toBeGreaterThan(0);
   await page.fill('#f-busca', '');

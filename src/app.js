@@ -358,9 +358,25 @@ export function iniciarApp() {
           return cardHTML(p, !!esg[p.id], carga);
         }).join('') + '</section>';
     }).join('');
+    $('[data-screen="menu"]').classList.toggle('buscando', !!(q || filtro));
     if (html !== menuHTML) { $('#menu-lista').innerHTML = html; menuHTML = html; }
     $('#vazio-busca').hidden = achou > 0;
     marcarCarregadas($('#menu-lista'));
+  }
+  // busca atrás da lupa (22/11/2026): o painel com o campo e os filtros abre por cima da lista; fechar limpa busca e filtro
+  // (nada de filtro escondido). Sair do cardápio fecha o painel.
+  function abrirBusca() {
+    $('#busca-painel').hidden = false;
+    $$('[data-busca-abrir][aria-expanded]').forEach(function (b) { b.setAttribute('aria-expanded', 'true'); });
+    $('#f-busca').focus();
+  }
+  function fecharBusca() {
+    var aberta = !$('#busca-painel').hidden, ativa = !!(st.busca || st.filtro);
+    $('#busca-painel').hidden = true;
+    $$('[data-busca-abrir][aria-expanded]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
+    st.busca = ''; st.filtro = null; $('#f-busca').value = '';
+    $$('[data-filtro]').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+    if (aberta || ativa) renderMenu();
   }
   function marcarChip() {
     var chips = $('#chips'), atual = null, lim = (chips ? chips.getBoundingClientRect().bottom : 182) + 18;
@@ -1592,6 +1608,7 @@ export function iniciarApp() {
     var usaVT = !inicial && podeTransicao();
     var troca = function () {
       if (st.aba !== 'app') mostrarView('app');
+      if (st.tela === 'menu' && tela !== 'menu') fecharBusca();
       st.tela = tela;
       $$('[data-screen]').forEach(function (s) { s.hidden = s.getAttribute('data-screen') !== tela; });
       if (tela === 'menu') { renderMenu(); requestAnimationFrame(marcarChip); animarFaixas(); }
@@ -1691,7 +1708,7 @@ export function iniciarApp() {
 
   // ================= eventos =================
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('a[href^="#"],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-troco],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
+    var t = e.target.closest('a[href^="#"],[data-busca-abrir],[data-busca-fechar],[data-go],[data-rapido],[data-abrir],[data-chip],[data-filtro],[data-completo],[data-ing],[data-prensado],[data-combo],[data-adic],[data-fq],#ficha-add,[data-fechar-ficha],[data-sq],[data-editar],[data-upsell],[data-modo],[data-pag],[data-troco],[data-story-abrir],[data-story],[data-fechar-story],#story-pedir,[data-ver-pedido],[data-novo-pedido],[data-tentar],[data-pedir-de-novo],[data-comanda-abre]');
     if (!t) return;
     var A = function (n) { return t.getAttribute(n); };
     // links internos (#bio, #site, #cardapio/<categoria>…): mesma navegação dos botões, com o histórico do app
@@ -1700,6 +1717,8 @@ export function iniciarApp() {
       if (!h || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
       e.preventDefault(); navegar(lerRota(h)); irCategoria(categoriaDaRota(h)); return;
     }
+    if (t.hasAttribute('data-busca-abrir')) { abrirBusca(); return; }
+    if (t.hasAttribute('data-busca-fechar')) { fecharBusca(); return; }
     if (t.hasAttribute('data-go')) {
       var go = A('data-go'), rota = ROTA_DA_TELA[go] || go;
       if (go === 'checkout' && !sacola.length) return;
@@ -1745,6 +1764,7 @@ export function iniciarApp() {
     else if (t.hasAttribute('data-comanda-abre')) { var aberta = A('aria-expanded') !== 'true'; t.setAttribute('aria-expanded', String(aberta)); t.textContent = aberta ? 'Recolher' : 'Ver itens'; $('#chk-lista').hidden = !aberta; }
   });
   $('#f-busca').addEventListener('input', function (e) { st.busca = e.target.value; renderMenu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#busca-painel').hidden && !dlg.open) { fecharBusca(); var l = $('.tela-cab [data-busca-abrir]'); if (l) l.focus(); } });
   window.addEventListener('scroll', function () {
     if (st.aba === 'app' && st.tela === 'menu') marcarChip();
     else if (st.aba === 'app' && st.tela === 'bio') balancarPlaca();
