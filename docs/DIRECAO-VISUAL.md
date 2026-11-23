@@ -565,7 +565,7 @@ As classes atuais continuam (os testes dependem delas; ver 5.0). Aqui está só 
 
 ### 5.0 Seletores e textos que os testes usam: não renomear
 
-- **Ids:** `#cardapio`, `#site`, `#view-site`, `#pedido`, `#ficha`, `#ficha-add`, `#ficha-total`, `#ficha-add-txt`, `#btn-continuar`, `#btn-enviar`, `#f-nome`, `#f-tel`, `#ped-num`, `#ped-msg`, `#ped-status`, `#ped-total`, `#envio-erro`.
+- **Ids:** `#cardapio`, `#site`, `#view-site`, `#pedido`, `#ficha`, `#ficha-add`, `#ficha-total`, `#ficha-add-txt`, `#btn-continuar`, `#btn-enviar`, `#f-nome`, `#f-tel`, `#ped-num`, `#ped-msg`, `#ped-status`, `#ped-total`, `#envio-erro`. Topo do cardápio (22/11/2026): `#car-hd`, `#car-trilho`, `#car-pontos`, `#indice`, `#indice-grade`, `#indice-total`, `#busca-painel`, `#f-busca`, `#chips`, `#filtros`, `#menu-lista`.
 - **Atributos `data-*`:** `[data-screen="menu"]`, `[data-screen="checkout"]`, `[data-nav]`, `[data-act]`, `[data-modo]`, `[data-combo]`, `[data-combo-preco]`, `[data-adic]`, `[data-total]`, `[data-status]`, `[data-semana]`, `[data-fq]`, `[data-fechar-ficha]`, `[data-completo]`, `[data-prensado]`, `[data-ing]`, `[data-id]`, `[data-vazio]`, `[data-fechar-story]`, `[data-editar]`, `[data-d]`, `[data-contador]`, `[data-confirma-t]`.
 - **Classes:** `.bio-ctas`, `.faixa`, `.faixa-combo`, `.selo-combo`, `.selo-esgotado`, `.story-btn`, `.s-hero`, `.passo.atual`, e todo `.pn-*` (`.pn-app`, `.pn-card`, `.pn-desktop`, `.pn-mobile`, `.pn-col--novos`, `.pn-acesso`, `.pn-modal`, `.pn-num`, `.pn-selo--*`, `.pn-tag--mesa`, `.pn-tag--qr`, `.pn-toast`, `.pn-total`).
 - **Textos:** "Fazer pedido", "Conheça a loja" e "Na chapa" (no passo atual).
@@ -597,11 +597,15 @@ Sem a logo montada por partes e sem os recortes de lanche voando.
 
 **390:**
 
-- **Cabeçalho fixo de 64 px** (fundo `rgba(18,11,9,.94)`, sem blur): voltar, selo de 38 px, "Cardápio" em Lilita 24, status neon curto e sacola redonda.
-- **Busca:** campo escuro (especificação do campo em 5.5).
-- **Fileiras:** chips de categoria fixos e chips de filtro.
-- **Faixa do combo.**
-- **Categorias:** título em Lilita 28, `--letreiro`, −1,5°, com a descrição (`desc`) em Oswald 500 14 px `--osso-2`. Abaixo, os cards de item.
+**Atualização de 22/11/2026 (hot dogs na frente):** desenho em `docs/superpowers/specs/2026-11-22-hotdogs-topo-cardapio-design.md`; estilos em `src/styles/cardapio-topo.css`; testes em `tests/cardapio-topo.spec.js`. Ordem da tela:
+
+- **Cabeçalho fixo de 64 px** (fundo `rgba(18,11,9,.94)`, sem blur): voltar, selo de 38 px, "Cardápio" em Lilita 24, status neon curto, **lupa** (`[data-busca-abrir]`) e sacola redonda.
+- **Busca atrás da lupa:** `#busca-painel`, preso sob o cabeçalho, com o campo (especificação em 5.5) e os chips de filtro. Fechar (`[data-busca-fechar]`, Esc ou sair do cardápio) limpa busca e filtro. Com busca ou filtro ativo, a tela ganha `.buscando` e carrossel, índice, régua e faixa do combo saem.
+- **Carrossel dos hot dogs (`#car-hd`):** 4 cards (Hot dog "a partir de", CBO Turbo, Dog Pizza, Doritos Max), foto à direita em 62% do card, preço do catálogo, "Ver tamanhos" (`[data-ir-cat]`) ou "Pedir este" (`[data-abrir]`). Encaixe por rolagem, sem avançar sozinho. Card esgotado, fora do cardápio, sem preço ou sem foto sai.
+- **Índice "Cardápio completo" (`#indice`):** quadros por categoria com a quantidade de itens e o quadro "Buscar"; 4 colunas (3 abaixo de 360 px).
+- **Barra de categorias (`#chips` dentro de `.barra-cat`):** altura zero no fluxo, por cima do conteúdo; aparece só quando o índice sobe para trás do cabeçalho (`.com-barra`). O chip da categoria atual acende como antes.
+- **Categorias:** título em Lilita 28, `--letreiro`, −1,5°, com a descrição (`desc`) em Oswald 500 14 px `--osso-2`. Abaixo, os cards de item. O hot dog vem primeiro, com a **régua** Médio, Max e Super (`.regua-hd .regua-tam`) logo abaixo do título, e a **faixa do combo** vem logo depois da seção de hot dogs.
+- **Não usar** `.dest` nem `.regua` em peças novas do cardápio: os nomes já são dos destaques da bio e do controle da cena noite.
 - **Barra fixa da sacola.**
 
 **Adição rápida pelo "+":**
