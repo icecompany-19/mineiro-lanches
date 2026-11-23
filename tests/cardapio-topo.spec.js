@@ -3,6 +3,7 @@
 // régua de tamanhos e a faixa do combo depois dos hot dogs. O estado vem do Supabase local; mudanças só pelo page.route.
 // Uso: npx playwright test tests/cardapio-topo.spec.js (com o Supabase local no ar e o supabase/setup.sql aplicado)
 import { test, expect } from '@playwright/test';
+import { instalarApoio, rolagemHorizontal, alvosPequenos } from './apoio/aceite.js';
 
 test('hot dog é a primeira categoria do cardápio', async ({ page }) => {
   await page.goto('/#cardapio');
@@ -115,3 +116,56 @@ test('carrossel não anda sozinho', async ({ page }) => {
   await page.waitForTimeout(5000);
   expect(await page.locator('#car-trilho').evaluate((t) => t.scrollLeft)).toBe(0);
 });
+
+// ---------- índice do cardápio e barra de categorias ----------
+test('índice mostra as 7 categorias e o total', async ({ page }) => {
+  await page.goto('/#cardapio');
+  const tiles = page.locator('#indice .indice-tile[data-ir-cat]');
+  await expect(tiles).toHaveCount(7);
+  await expect(tiles.first()).toContainText('Hot dog');
+  await expect(tiles.first()).toContainText('9 itens');
+  await expect(page.locator('#indice-total')).toHaveText('56 itens');
+  await expect(page.locator('#indice [data-busca-abrir]')).toBeVisible();
+});
+
+test('tocar no índice leva à categoria', async ({ page }) => {
+  await page.goto('/#cardapio');
+  await page.locator('#indice [data-ir-cat="combos"]').click();
+  await expect(page.locator('#ct-combos')).toBeInViewport();
+});
+
+test('barra de categorias só aparece depois do índice', async ({ page }) => {
+  await page.goto('/#cardapio');
+  await expect(page.locator('#indice')).toBeVisible();
+  await expect(page.locator('#chips')).toBeHidden();
+  await page.locator('#cat-artesanais').evaluate((c) => c.scrollIntoView({ block: 'start' }));
+  await expect(page.locator('#chips')).toBeVisible();
+  await expect(page.locator('[data-chip="artesanais"]')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('link direto abre na categoria, com o título fora do cabeçalho e da barra', async ({ page }) => {
+  await page.goto('/#cardapio/combos');
+  await expect(page.locator('#ct-combos')).toBeInViewport();
+  await expect(page.locator('#chips')).toBeVisible();
+  await expect.poll(async () => {
+    const t = await page.locator('#ct-combos').boundingBox();
+    const b = await page.locator('#chips').boundingBox();
+    return Math.round(t.y - (b.y + b.height));
+  }).toBeGreaterThanOrEqual(0);
+});
+
+for (const [largura, altura] of [[320, 640], [1280, 800]]) {
+  test(`largura ${largura}: topo sem rolagem lateral e alvos de 44 px`, async ({ page }) => {
+    await instalarApoio(page);
+    await page.setViewportSize({ width: largura, height: altura });
+    await page.goto('/#cardapio');
+    await expect(page.locator('#car-trilho .car-slide')).toHaveCount(4);
+    const r = await rolagemHorizontal(page);
+    expect(r.andou).toBe(0);
+    expect(r.scrollWidth).toBeLessThanOrEqual(r.clientWidth);
+    for (const raiz of ['#car-hd', '#indice', '#cat-hotdog .regua']) {
+      const { pequenos } = await alvosPequenos(page, raiz, 44);
+      expect(pequenos.map((p) => `${p.quem} "${p.texto}" ${p.medida}`), raiz).toEqual([]);
+    }
+  });
+}

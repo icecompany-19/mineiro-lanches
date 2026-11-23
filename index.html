@@ -148,12 +148,13 @@
           <div><h1 id="menu-tit">Cardápio</h1><small data-status-curto>Mineiro Lanche</small></div>
           <div class="acoes"><button type="button" class="ibtn" data-busca-abrir aria-label="Buscar no cardápio" aria-expanded="false" aria-controls="busca-painel"><svg class="ic" aria-hidden="true"><use href="#i-busca"/></svg></button><button type="button" class="ibtn ibtn-sacola" data-go="sacola" aria-label="Ver a sacola" data-sacola-btn><svg class="ic" aria-hidden="true"><use href="#i-sacola"/></svg><span class="badge" data-contador hidden>0</span></button></div>
         </header>
-        <nav class="chips" id="chips" aria-label="Categorias"></nav>
+        <div class="barra-cat"><nav class="chips" id="chips" aria-label="Categorias"></nav></div>
         <div class="busca-painel" id="busca-painel" hidden>
           <div class="busca-linha"><div class="busca"><label><svg class="ic" aria-hidden="true"><use href="#i-busca"/></svg><span class="sr">Buscar no cardápio</span><input id="f-busca" type="search" placeholder="Buscar: bacon, frango, doritos…" autocomplete="off"></label></div><button type="button" class="ibtn" data-busca-fechar aria-label="Fechar a busca"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
           <div class="filtros" id="filtros" aria-label="Filtros rápidos"></div>
         </div>
         <section class="car-hd" id="car-hd" aria-roledescription="carrossel" aria-label="Hot dogs em destaque"><div class="car-trilho" id="car-trilho"></div><div class="car-pontos" id="car-pontos" aria-hidden="true"></div></section>
+        <section class="indice" id="indice" aria-labelledby="indice-tit"><div class="indice-cab"><h2 id="indice-tit">Cardápio completo</h2><span id="indice-total"></span></div><div class="indice-grade" id="indice-grade"></div></section>
         <div class="faixa-combo" data-faixa-combo>
           <span class="selo-placa" data-combo-selo aria-hidden="true">+14,90</span>
           <strong>Qualquer lanche vira combo</strong>

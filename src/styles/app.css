@@ -282,13 +282,13 @@ html[data-luz="apagada"] .semana li.hoje .lampada{box-shadow:0 0 0 3px rgba(255,
 .filtro{position:relative;flex:none;min-height:36px;margin:4px 0;padding:0 14px;border-radius:var(--r-pill);border:1.5px solid var(--borda-campo);background:transparent;font:600 13px var(--f-placa);letter-spacing:.06em;text-transform:uppercase;color:var(--osso-2);transition:background-color var(--t-toque),border-color var(--t-toque)}
 .filtro::after{content:"";position:absolute;inset:-6px 0}
 .filtro[aria-pressed="true"]{background:var(--chapa-2);border-color:var(--fio);color:var(--osso)}
-.cat{padding:30px var(--calha) 0;scroll-margin-top:calc(var(--top) + 196px)}
+.cat{padding:30px var(--calha) 0;scroll-margin-top:calc(var(--top) + 136px)}
 .cat-cab{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
 .cat-cab .ic{width:32px;height:32px;margin-top:1px;color:var(--anel);--ic-d:rgba(216,168,72,.2)}
 .cat-cab h2{margin:0;font:400 28px/1 var(--f-letreiro);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa);transform:rotate(-1.5deg);transform-origin:0 50%}
 .cat-cab small{display:block;margin-top:7px;font:500 14px/1.35 var(--f-placa);letter-spacing:.02em;color:var(--osso-2)}
 /* card: o card inteiro abre a ficha; o "+" (outro botão, no canto) põe na sacola em 1 toque */
-.prod-cel{position:relative;margin-top:10px;scroll-margin-top:calc(var(--top) + 196px)}
+.prod-cel{position:relative;margin-top:10px;scroll-margin-top:calc(var(--top) + 136px)}
 .prod{width:100%;min-height:104px;display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;align-items:start;padding:12px;border:1px solid var(--borda);border-radius:var(--r-lg);background:var(--chapa);color:var(--osso);text-align:left;box-shadow:var(--sombra-card);transition:transform var(--t-toque) var(--mola),border-color .2s}
 @media (hover:hover){.prod:hover{border-color:rgba(255,204,0,.4)}}
 .prod:active{transform:scale(.985)}

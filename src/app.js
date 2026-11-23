@@ -361,6 +361,7 @@ export function iniciarApp() {
     $('[data-screen="menu"]').classList.toggle('buscando', !!(q || filtro));
     if (html !== menuHTML) { $('#menu-lista').innerHTML = html; menuHTML = html; }
     $('#vazio-busca').hidden = achou > 0;
+    marcarBarra();
     marcarCarregadas($('#menu-lista'));
   }
   // ================= topo do cardápio: carrossel dos hot dogs (22/11/2026) =================
@@ -409,6 +410,26 @@ export function iniciarApp() {
     $$('#car-pontos i').forEach(function (p, k) { p.classList.toggle('on', k === i); });
   }
 
+  // índice "Cardápio completo" (22/11/2026): as categorias com itens, a quantidade e o quadro "Buscar".
+  var indiceHTML = null;
+  function montarIndice() {
+    var cats = C.categorias.filter(function (c) { return c.itens.length; }), total = 0;
+    var html = cats.map(function (c, i) {
+      var n = c.itens.length; total += n;
+      return '<button type="button" class="indice-tile' + (i ? '' : ' dest') + '" data-ir-cat="' + c.id + '">' + ic(c.icone) + '<b>' + esc(c.label) + '</b><small>' + n + (n === 1 ? ' item' : ' itens') + '</small></button>';
+    }).join('') + '<button type="button" class="indice-tile buscar" data-busca-abrir>' + ic('busca') + '<b>Buscar</b><small>por nome</small></button>';
+    $('#indice-total').textContent = total + (total === 1 ? ' item' : ' itens');
+    if (html !== indiceHTML) { $('#indice-grade').innerHTML = html; indiceHTML = html; }
+  }
+  // a barra de categorias (#chips) só aparece quando o índice já subiu para trás do cabeçalho (ou está fora, na busca):
+  // uma navegação de cada vez. Conferido junto com o chip aceso, na rolagem.
+  function marcarBarra() {
+    var menu = $('[data-screen="menu"]'), idx = $('#indice'), cab = menu && $('.tela-cab', menu);
+    if (!idx || !cab) return;
+    var fora = !idx.getClientRects().length || idx.getBoundingClientRect().bottom <= cab.getBoundingClientRect().bottom;
+    menu.classList.toggle('com-barra', fora);
+  }
+
   // busca atrás da lupa (22/11/2026): o painel com o campo e os filtros abre por cima da lista; fechar limpa busca e filtro
   // (nada de filtro escondido). Sair do cardápio fecha o painel.
   function abrirBusca() {
@@ -425,6 +446,7 @@ export function iniciarApp() {
     if (aberta || ativa) renderMenu();
   }
   function marcarChip() {
+    marcarBarra();
     var chips = $('#chips'), atual = null, lim = (chips ? chips.getBoundingClientRect().bottom : 182) + 18;
     $$('.cat').forEach(function (c) { if (c.getBoundingClientRect().top - lim <= 0) atual = c.getAttribute('data-cat'); });
     if (!atual) { var pri = $('.cat'); atual = pri && pri.getAttribute('data-cat'); }
@@ -1830,7 +1852,7 @@ export function iniciarApp() {
         salvarSacola();
       }
       if (tipo === 'cardapio:estado') { montarBio(); montarCategorias(); marcarCarregadas($('#destaques')); atualizarStatus(); atualizarPrecosFixos(); atualizarContadores(); if (entr.ok && entr.estado !== 'ok' && entr.estado !== 'calculando') agendarTaxa(true); }
-      montarCarrossel();
+      montarCarrossel(); montarIndice();
       if (st.tela === 'menu') { renderMenu(); requestAnimationFrame(marcarChip); }
       if (st.tela === 'sacola') renderSacola();
       if (st.tela === 'checkout') renderCheckout();
@@ -1871,7 +1893,7 @@ export function iniciarApp() {
     passarBrilho: passarBrilho, // (el .placa com .placa-arte e .placa-brilho)
     indisponivel: indisponivel // (id) → esgotado hoje ou fora do cardápio
   };
-  montarBio(); montarChips(); montarCarrossel(); renderMenu();
+  montarBio(); montarChips(); montarCarrossel(); montarIndice(); renderMenu();
   atualizarStatus(); atualizarPrecosFixos(); agendarStatus();
   aplicarRota(inicial, true);
   irCategoria(catInicial);

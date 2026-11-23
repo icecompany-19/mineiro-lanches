@@ -31,3 +31,25 @@
 .car-pontos{display:flex;justify-content:center;gap:6px;margin-top:10px}
 .car-pontos i{width:7px;height:7px;border-radius:var(--r-pill);background:rgba(255,243,224,.28)}
 .car-pontos i.on{width:20px;background:var(--fio)}
+
+/* índice "Cardápio completo": o cardápio inteiro numa olhada, logo abaixo do carrossel */
+.indice{margin:18px var(--calha) 0}
+.indice-cab{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 2px 10px}
+.indice-cab h2{margin:0;font:600 15px var(--f-placa);letter-spacing:.1em;text-transform:uppercase;color:var(--osso)}
+.indice-cab span{font:500 13px var(--f-placa);color:var(--osso-2);white-space:nowrap}
+.indice-grade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.indice-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:78px;padding:8px 4px;border-radius:var(--r-lg);border:1px solid var(--borda);background:var(--chapa);color:var(--osso);text-align:center;cursor:pointer}
+.indice-tile .ic{width:24px;height:24px;color:var(--anel)}
+.indice-tile b{max-width:100%;font:600 12.5px/1.1 var(--f-placa);letter-spacing:.04em;text-transform:uppercase}
+.indice-tile small{font:500 11.5px/1 var(--f-placa);color:var(--osso-2)}
+.indice-tile.dest{border-color:rgba(255,204,0,.6);background:linear-gradient(180deg,#33200f,var(--chapa))}
+.indice-tile.buscar{border-style:dashed;border-color:var(--borda-campo)}
+@media (hover:hover){.indice-tile:hover{border-color:rgba(255,204,0,.45)}}
+@media (max-width:359px){.indice-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* barra de categorias: altura zero no fluxo (nada pula quando ela aparece), por cima do conteúdo, presa abaixo do
+   cabeçalho; só aparece quando o índice sai da tela (classe com-barra, ligada em marcarBarra) */
+.barra-cat{position:sticky;top:calc(var(--top) + 64px);z-index:5;height:0}
+.barra-cat .chips{position:absolute;top:0;left:0;right:0;visibility:hidden;opacity:0;transform:translateY(-6px);transition:opacity .2s ease,transform .2s ease,visibility 0s linear .2s}
+[data-screen="menu"].com-barra .barra-cat .chips{visibility:visible;opacity:1;transform:none;transition:opacity .2s ease,transform .2s ease}
+@media (prefers-reduced-motion:reduce){.barra-cat .chips,[data-screen="menu"].com-barra .barra-cat .chips{transition:none}}
