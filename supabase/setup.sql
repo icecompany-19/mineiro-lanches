@@ -4953,7 +4953,7 @@ update public.categorias_produtos
 -- ============ supabase/seed.sql ============
 
 -- Cardápio do Mineiro Lanche: gerado por scripts/gerar-seed.mjs a partir do CONFIG de src/core.js. Não edite à mão.
--- 56 produtos e 5 adicionais. Idempotente: atualiza nome, preço, categoria, ordem,
+-- 57 produtos e 5 adicionais. Idempotente: atualiza nome, preço, categoria, ordem,
 -- ingredientes, tipo e foto pelo id, sem mexer em esgotado_dia. O CONFIG manda no ativo: quem está nele fica
 -- ativo (um item que saiu e voltou é reativado); quem saiu fica inativo. Itens editados/criados
 -- no painel são preservados integralmente, inclusive disponibilidade, preço e categoria.
@@ -5016,16 +5016,17 @@ insert into public.produtos (id, categoria, nome, preco, tipo, foto, ingrediente
   ('combo-hot-dog-max', 'combos', 'Combo Hot Dog Max', 29.99, 'combo', null, array['Alface', 'Purê', 'Batata palha', 'Ketchup', 'Cheddar', 'Catupiry']::text[], 44, '{"base":"","nota":"","inclui":["Hot dog médio com 2 salsichas, alface, purê, batata palha, ketchup, cheddar e catupiry","250 g de batata frita","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
   ('combo-x-frango', 'combos', 'Combo X-Frango', 39.99, 'combo', null, array['Mussarela', 'Maionese', 'Barbecue', 'Vinagrete', 'Purê', 'Batata palha', 'Cheddar', 'Catupiry']::text[], 45, '{"base":"","nota":"","inclui":["X-Frango na baguete (filé de frango, mussarela, maionese, barbecue, vinagrete, purê, batata palha, cheddar e catupiry)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
   ('combo-gran-chicken', 'combos', 'Combo Gran Chicken', 38.99, 'combo', null, array['Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa']::text[], 46, '{"base":"","nota":"","inclui":["Gran Chicken (brioche, frango empanado, maionese, barbecue, alface americano, tomate e cebola roxa)","250 g de batata","Coca-Cola 350 ml"],"sabor":false,"escolheRefri":false}'::jsonb),
-  ('porcao-batata', 'porcoes', 'Porção de batata turbinada', 39.99, 'porcao', null, '{}'::text[], 47, '{"base":"","nota":"","inclui":["500 g de batata frita","Cheddar cremoso","Bacon","Requeijão","Calabresa","Alho-poró"],"sabor":false,"escolheRefri":false}'::jsonb),
-  ('porcao-onion', 'porcoes', 'Porção de onion', 14.99, 'porcao', null, '{}'::text[], 48, '{"base":"","nota":"","inclui":["6 onion rings"],"sabor":false,"escolheRefri":false}'::jsonb),
-  ('refri-lata', 'bebidas', 'Refrigerante lata', 9.99, 'bebida', null, '{}'::text[], 49, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
-  ('refri-600', 'bebidas', 'Refrigerante 600 ml', 12.99, 'bebida', null, '{}'::text[], 50, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
-  ('refri-1l', 'bebidas', 'Refrigerante 1 litro', 14.99, 'bebida', null, '{}'::text[], 51, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
-  ('refri-dolly', 'bebidas', 'Refrigerante Dolly', 4.99, 'bebida', null, '{}'::text[], 52, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
-  ('suco-lata', 'bebidas', 'Suco lata', 9.99, 'bebida', null, '{}'::text[], 53, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
-  ('suco-1l', 'bebidas', 'Suco 1 litro', 12.99, 'bebida', null, '{}'::text[], 54, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
-  ('agua', 'bebidas', 'Água', 4.99, 'bebida', null, '{}'::text[], 55, '{"base":"","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
-  ('h2o', 'bebidas', 'H2O', 9.99, 'bebida', null, '{}'::text[], 56, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb)
+  ('porcao-batata-p', 'porcoes', 'Batata frita P', 16.99, 'porcao', null, '{}'::text[], 47, '{"base":"","nota":"","inclui":["Batata frita para 1 pessoa"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('porcao-batata', 'porcoes', 'Porção de batata turbinada', 39.99, 'porcao', null, '{}'::text[], 48, '{"base":"","nota":"","inclui":["500 g de batata frita","Cheddar cremoso","Bacon","Requeijão","Calabresa","Alho-poró"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('porcao-onion', 'porcoes', 'Porção de onion', 14.99, 'porcao', null, '{}'::text[], 49, '{"base":"","nota":"","inclui":["6 onion rings"],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('refri-lata', 'bebidas', 'Refrigerante lata', 9.99, 'bebida', null, '{}'::text[], 50, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('refri-600', 'bebidas', 'Refrigerante 600 ml', 12.99, 'bebida', null, '{}'::text[], 51, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('refri-1l', 'bebidas', 'Refrigerante 1 litro', 14.99, 'bebida', null, '{}'::text[], 52, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('refri-dolly', 'bebidas', 'Refrigerante Dolly', 4.99, 'bebida', null, '{}'::text[], 53, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('suco-lata', 'bebidas', 'Suco lata', 9.99, 'bebida', null, '{}'::text[], 54, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('suco-1l', 'bebidas', 'Suco 1 litro', 12.99, 'bebida', null, '{}'::text[], 55, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb),
+  ('agua', 'bebidas', 'Água', 4.99, 'bebida', null, '{}'::text[], 56, '{"base":"","nota":"","inclui":[],"sabor":false,"escolheRefri":false}'::jsonb),
+  ('h2o', 'bebidas', 'H2O', 9.99, 'bebida', null, '{}'::text[], 57, '{"base":"","nota":"","inclui":[],"sabor":true,"escolheRefri":false}'::jsonb)
 on conflict (id) do update set
   categoria = excluded.categoria,
   nome = excluded.nome,
@@ -5040,7 +5041,7 @@ where not public.produtos.editado_painel;
 
 -- o que saiu do CONFIG fica inativo (pedidos antigos continuam apontando para ele)
 update public.produtos set ativo = false
-where ativo and not editado_painel and id not in ('dog-medio', 'dog-medio-frango', 'dog-max', 'dog-max-frango', 'dog-super', 'dog-super-frango', 'dog-doritos', 'dog-pizza', 'dog-cbo-turbo', 'gran-burger', 'gran-burger-bacon', 'gran-salada', 'gran-egg', 'gran-bacon', 'gran-egg-bacon', 'gran-big-tudo', 'gran-black', 'gran-big-mineiro', 'gran-chicken', 'gran-bacon-onion', 'gran-crispy', 'x-burguer', 'x-salada', 'mega-x-salada-egg', 'ultra-x-salada-bacon', 'exagerado-x-salada-egg-bacon', 'big-tudo', 'black-master', 'big-mineiro', 'carne-maluca', 'x-frango', 'x-frango-egg-bacon', 'x-calabresa', 'x-churrasco', 'americano', 'combo-diluvio', 'combo-casal', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos', 'combo-gran-burger', 'combo-gran-bacon', 'combo-gran-salada', 'combo-gran-bacon-onion', 'combo-hot-dog-max', 'combo-x-frango', 'combo-gran-chicken', 'porcao-batata', 'porcao-onion', 'refri-lata', 'refri-600', 'refri-1l', 'refri-dolly', 'suco-lata', 'suco-1l', 'agua', 'h2o');
+where ativo and not editado_painel and id not in ('dog-medio', 'dog-medio-frango', 'dog-max', 'dog-max-frango', 'dog-super', 'dog-super-frango', 'dog-doritos', 'dog-pizza', 'dog-cbo-turbo', 'gran-burger', 'gran-burger-bacon', 'gran-salada', 'gran-egg', 'gran-bacon', 'gran-egg-bacon', 'gran-big-tudo', 'gran-black', 'gran-big-mineiro', 'gran-chicken', 'gran-bacon-onion', 'gran-crispy', 'x-burguer', 'x-salada', 'mega-x-salada-egg', 'ultra-x-salada-bacon', 'exagerado-x-salada-egg-bacon', 'big-tudo', 'black-master', 'big-mineiro', 'carne-maluca', 'x-frango', 'x-frango-egg-bacon', 'x-calabresa', 'x-churrasco', 'americano', 'combo-diluvio', 'combo-casal', 'gran-bacon-coca-maionese', 'combo-2-dog-doritos', 'combo-gran-burger', 'combo-gran-bacon', 'combo-gran-salada', 'combo-gran-bacon-onion', 'combo-hot-dog-max', 'combo-x-frango', 'combo-gran-chicken', 'porcao-batata-p', 'porcao-batata', 'porcao-onion', 'refri-lata', 'refri-600', 'refri-1l', 'refri-dolly', 'suco-lata', 'suco-1l', 'agua', 'h2o');
 
 insert into public.adicionais (id, nome, preco) values
   ('catupiry', 'Catupiry', 7.00),

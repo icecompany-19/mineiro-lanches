@@ -1,0 +1,15 @@
+/* Mineiro Lanche · acompanhamentos na sacola (23/11/2026): batata, onion e bebidas para somar ao pedido com um toque. */
+.acomp{min-width:0;max-width:100%;margin:18px 0 4px} /* min-width 0: a faixa que rola de lado não pode esticar a coluna da sacola */
+.acomp[hidden]{display:none}
+.acomp-cab{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 2px 10px}
+.acomp-cab h2{margin:0;font:400 22px/1 var(--f-letreiro);color:var(--letreiro);text-shadow:0 .06em 0 var(--placa)}
+.acomp-cab small{font:500 12.5px/1.3 var(--f-placa);color:var(--osso-2);text-align:right}
+.acomp-trilho{min-width:0;display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scroll-snap-type:x proximity;scrollbar-width:none;overscroll-behavior-x:contain}
+.acomp-trilho::-webkit-scrollbar{display:none}
+.acomp-item{position:relative;flex:none;display:flex;flex-direction:column;gap:4px;width:132px;padding:10px 10px 12px;border-radius:var(--r-lg);border:1px solid var(--borda);background:var(--chapa);scroll-snap-align:start}
+.acomp-item .foto,.acomp-item .arte{width:56px;height:56px;border-radius:var(--r-md)}
+.acomp-nome{min-height:2.3em;font:600 14px/1.15 var(--f-placa);text-transform:uppercase;letter-spacing:.02em;color:var(--osso)}
+.acomp-preco{font:700 16px var(--f-placa);color:var(--fio);font-variant-numeric:tabular-nums}
+.acomp-mais{position:absolute;top:10px;right:10px;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:var(--placa);color:var(--branco);box-shadow:inset 0 0 0 2px var(--fio);cursor:pointer}
+.acomp-mais .ic{width:18px;height:18px}
+.acomp-mais:active{transform:scale(.92)}

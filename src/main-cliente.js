@@ -4,6 +4,7 @@ import './fontes.js';
 import './styles/base.css';
 import './styles/app.css';
 import './styles/cardapio-topo.css';
+import './styles/acompanhamentos.css';
 import './core.js';
 import { instalarStoreSupabase } from './lib/store-supabase.js';
 import { iniciarApp } from './app.js';

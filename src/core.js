@@ -119,6 +119,8 @@
         { id: 'combo-gran-chicken', nome: 'Combo Gran Chicken', preco: 38.99, tipo: 'combo', inclui: ['Gran Chicken (brioche, frango empanado, maionese, barbecue, alface americano, tomate e cebola roxa)', '250 g de batata', 'Coca-Cola 350 ml'], ing: ['Maionese', 'Barbecue', 'Alface americano', 'Tomate', 'Cebola roxa'] }
       ] },
       { id: 'porcoes', label: 'Porções', icone: 'batata', desc: 'Pra dividir', itens: [
+        // 23/11/2026: batata pequena avulsa (a 99 vende como "Porção de Batata 1 Pessoa"), acompanhamento da sacola
+        { id: 'porcao-batata-p', nome: 'Batata frita P', preco: 16.99, tipo: 'porcao', inclui: ['Batata frita para 1 pessoa'] },
         { id: 'porcao-batata', nome: 'Porção de batata turbinada', preco: 39.99, tipo: 'porcao', inclui: ['500 g de batata frita', 'Cheddar cremoso', 'Bacon', 'Requeijão', 'Calabresa', 'Alho-poró'] },
         { id: 'porcao-onion', nome: 'Porção de onion', preco: 14.99, tipo: 'porcao', inclui: ['6 onion rings'] }
       ] },

@@ -158,7 +158,7 @@ test.describe('S1b · placa do cardápio', () => {
   test('preço do banco e itens esgotados refazem o "a partir de"; categoria toda esgotada diz Esgotado hoje', async ({ page }) => {
     await mudarEstado(page, (j) => {
       j.precos['x-burguer'] = 18.5;
-      j.esgotados = ['dog-medio', 'porcao-batata', 'porcao-onion'];
+      j.esgotados = ['dog-medio', 'porcao-batata-p', 'porcao-batata', 'porcao-onion']; // a Batata frita P entrou em 23/11/2026
     });
     await page.goto('/#site');
     const preco = (id) => page.locator(`.s-placa a[href="#cardapio/${id}"] .placa-preco`);

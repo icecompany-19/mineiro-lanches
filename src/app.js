@@ -739,6 +739,22 @@ export function iniciarApp() {
     if (sel.sabor) t.push('<span class="tag">' + esc(sel.sabor) + '</span>');
     return t.join('');
   }
+  // ================= acompanhamentos na sacola (23/11/2026) =================
+  // batata, onion e bebidas para somar ao próprio pedido com um toque; preço e disponibilidade do catálogo.
+  // Bebida com sabor abre a ficha (adicionarRapido); esgotado ou fora do cardápio sai da lista.
+  var ACOMPANHAMENTOS = ['porcao-batata-p', 'porcao-onion', 'refri-lata', 'suco-lata', 'agua', 'refri-600', 'h2o', 'porcao-batata'];
+  var acompHTML = null;
+  function montarAcomp() {
+    var sec = $('#acomp');
+    if (!sec) return;
+    var itens = sacola.length ? ACOMPANHAMENTOS.filter(vendavel).map(function (id) { return ML.produtos[id]; }) : [];
+    sec.hidden = !itens.length;
+    var html = itens.map(function (p) {
+      return '<div class="acomp-item">' + visual(p, 'q') + '<span class="acomp-nome">' + esc(p.nome) + '</span><span class="acomp-preco">' + brl(p.preco) + '</span>' +
+        '<button type="button" class="acomp-mais" data-rapido="' + p.id + '" aria-label="Adicionar ' + esc(p.nome) + ' ao pedido">' + ic('mais') + '</button></div>';
+    }).join('');
+    if (html !== acompHTML) { $('#acomp-trilho').innerHTML = html; acompHTML = html; marcarCarregadas($('#acomp-trilho')); }
+  }
   function renderSacola() {
     var vazia = !sacola.length;
     $('#sacola-vazia').hidden = !vazia;
@@ -760,6 +776,7 @@ export function iniciarApp() {
         '<div class="linha-acoes"><button type="button" class="mini" data-editar="' + esc(l.chave) + '">' + ic('lapis') + 'Editar</button></div></div></div>' + upsell + '</article>';
     }).join('');
     marcarCarregadas($('#sacola-linhas'));
+    montarAcomp();
     atualizarContadores();
   }
 
@@ -1826,7 +1843,7 @@ export function iniciarApp() {
       if (go === 'checkout' && !sacola.length) return;
       if (t.hasAttribute('data-voltar')) voltarPara(rota); else navegar(rota);
     }
-    else if (t.hasAttribute('data-rapido')) adicionarRapido(A('data-rapido'), t.parentNode.querySelector('[data-abrir]'));
+    else if (t.hasAttribute('data-rapido')) { adicionarRapido(A('data-rapido'), t.parentNode.querySelector('[data-abrir]')); if (st.tela === 'sacola') renderSacola(); }
     else if (t.hasAttribute('data-abrir')) abrirFicha(A('data-abrir'), { origem: t.closest('[data-abrir]') });
     else if (t.hasAttribute('data-chip')) { var cat = $('#cat-' + A('data-chip')); if (cat) cat.scrollIntoView({ behavior: reduz ? 'auto' : 'smooth', block: 'start' }); }
     else if (t.hasAttribute('data-filtro')) { st.filtro = st.filtro === A('data-filtro') ? null : A('data-filtro'); $$('[data-filtro]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-filtro') === st.filtro)); }); renderMenu(); }

@@ -3,10 +3,10 @@ begin;
 \ir _ajuda.sql
 
 -- seed (CONFIG do core.js)
-select pg_temp.igual((select count(*) from produtos)::text, '56', 'seed: 56 produtos');
+select pg_temp.igual((select count(*) from produtos)::text, '57', 'seed: 57 produtos (Batata frita P desde 23/11/2026)');
 select pg_temp.igual(
   (select string_agg(tipo || '=' || n, ',' order by tipo) from (select tipo, count(*) n from produtos group by tipo) t),
-  'bebida=8,combo=11,lanche=35,porcao=2', 'seed: 35 lanches, 11 combos, 2 porções, 8 bebidas');
+  'bebida=8,combo=11,lanche=35,porcao=3', 'seed: 35 lanches, 11 combos, 3 porções, 8 bebidas');
 select pg_temp.igual((select count(*) from adicionais where preco = 7.00)::text, '5', 'seed: 5 adicionais a R$ 7,00');
 select pg_temp.igual((select count(*) from loja)::text, '1', 'seed: uma linha de loja');
 select pg_temp.igual((select id from categorias_produtos order by ordem limit 1), 'hotdog', 'seed: hot dog é a primeira categoria (22/11/2026)');
@@ -47,7 +47,7 @@ select pg_temp.ok((select not ativo from produtos where id = 'saiu-do-config'), 
 select pg_temp.ok((select not ativo from adicionais where id = 'saiu-do-config'), 'seed repetido: adicional fora do CONFIG fica inativo');
 select pg_temp.ok((select modo = 'fechada' and aceita_fechada and combo_preco = 14.90 and horarios ? '5' from loja),
   'seed repetido: loja preserva modo e aceita_fechada, atualiza combo_preco e horarios');
-select pg_temp.igual((select count(*) from produtos)::text, '57', 'seed repetido: não duplica produtos');
+select pg_temp.igual((select count(*) from produtos)::text, '58', 'seed repetido: não duplica produtos (57 do CONFIG + o que saiu)');
 select pg_temp.igual((select count(*) from adicionais)::text, '6', 'seed repetido: não duplica adicionais');
 
 -- RLS e Realtime

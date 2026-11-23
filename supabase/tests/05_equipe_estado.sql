@@ -91,8 +91,8 @@ select pg_temp.ok((select array_agg(k order by k) from jsonb_object_keys(:'e'::j
 select pg_temp.igual(:'e'::jsonb ->> 'diaOperacional', dia_operacional()::text, 'estado_cardapio: diaOperacional');
 select pg_temp.ok(:'e'::jsonb -> 'esgotados' = '["gran-crispy"]', 'estado_cardapio: só o esgotado de hoje (o de ontem já caiu)');
 select pg_temp.ok(:'e'::jsonb -> 'inativos' = '["combo-casal"]', 'estado_cardapio: inativos');
-select pg_temp.ok((select count(*) from jsonb_object_keys(:'e'::jsonb -> 'precos')) = 56 and :'e'::jsonb #> '{precos,gran-burger}' = '26.99'::jsonb
-                  and jsonb_typeof(:'e'::jsonb #> '{precos,gran-burger}') = 'number', 'estado_cardapio: preço dos 56 produtos, como número');
+select pg_temp.ok((select count(*) from jsonb_object_keys(:'e'::jsonb -> 'precos')) = 57 and :'e'::jsonb #> '{precos,gran-burger}' = '26.99'::jsonb
+                  and jsonb_typeof(:'e'::jsonb #> '{precos,gran-burger}') = 'number', 'estado_cardapio: preço dos 57 produtos, como número');
 select pg_temp.ok((:'e'::jsonb -> 'precos') ? 'dog-cbo-turbo' and jsonb_typeof(:'e'::jsonb #> '{precos,dog-cbo-turbo}') = 'null'
                   and not (:'e'::jsonb -> 'inativos') ? 'dog-cbo-turbo', 'estado_cardapio: item sem preço vem com preço null (e ativo)');
 select pg_temp.ok(:'e'::jsonb -> 'adicionais' = '{"bacon":7.00,"catupiry":7.00,"doritos":7.00,"queijo":7.00}', 'estado_cardapio: adicionais ativos com preço');

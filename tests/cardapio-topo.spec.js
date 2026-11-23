@@ -125,7 +125,7 @@ test('índice mostra as 7 categorias e o total', async ({ page }) => {
   await expect(tiles).toHaveCount(7);
   await expect(tiles.first()).toContainText('Hot dog');
   await expect(tiles.first()).toContainText('9 itens');
-  await expect(page.locator('#indice-total')).toHaveText('56 itens');
+  await expect(page.locator('#indice-total')).toHaveText('57 itens');
   await expect(page.locator('#indice [data-busca-abrir]')).toBeVisible();
 });
 
