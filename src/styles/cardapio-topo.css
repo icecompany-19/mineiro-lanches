@@ -73,3 +73,12 @@
   .car-preco{font-size:12px}
   .car-preco b{font-size:18px}
 }
+
+/* achados da revisão final (22/11/2026) */
+/* com o painel de busca aberto, a barra de categorias ficaria por trás dele, invisível e ainda focável */
+[data-screen="menu"].busca-aberta .barra-cat .chips{visibility:hidden}
+/* 360–399 px: "Tradicionais" vazava do quadro do índice */
+@media (max-width:399px){
+  .indice-tile{padding:8px 2px}
+  .indice-tile b{font-size:11px;letter-spacing:.01em}
+}

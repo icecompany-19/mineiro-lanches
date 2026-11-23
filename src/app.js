@@ -461,12 +461,14 @@ export function iniciarApp() {
   // (nada de filtro escondido). Sair do cardápio fecha o painel.
   function abrirBusca() {
     $('#busca-painel').hidden = false;
+    $('[data-screen="menu"]').classList.add('busca-aberta');
     $$('[data-busca-abrir][aria-expanded]').forEach(function (b) { b.setAttribute('aria-expanded', 'true'); });
     $('#f-busca').focus();
   }
   function fecharBusca() {
     var aberta = !$('#busca-painel').hidden, ativa = !!(st.busca || st.filtro);
     $('#busca-painel').hidden = true;
+    $('[data-screen="menu"]').classList.remove('busca-aberta');
     $$('[data-busca-abrir][aria-expanded]').forEach(function (b) { b.setAttribute('aria-expanded', 'false'); });
     st.busca = ''; st.filtro = null; $('#f-busca').value = '';
     $$('[data-filtro]').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
@@ -1814,7 +1816,11 @@ export function iniciarApp() {
     }
     if (t.hasAttribute('data-busca-abrir')) { abrirBusca(); return; }
     if (t.hasAttribute('data-busca-fechar')) { fecharBusca(); return; }
-    if (t.hasAttribute('data-ir-cat')) { irCategoria(A('data-ir-cat')); return; }
+    if (t.hasAttribute('data-ir-cat')) {
+      // com o painel aberto e vazio, ele cobriria o título da categoria: fecha antes de rolar
+      if (!$('#busca-painel').hidden && !st.busca && !st.filtro) fecharBusca();
+      irCategoria(A('data-ir-cat')); return;
+    }
     if (t.hasAttribute('data-go')) {
       var go = A('data-go'), rota = ROTA_DA_TELA[go] || go;
       if (go === 'checkout' && !sacola.length) return;

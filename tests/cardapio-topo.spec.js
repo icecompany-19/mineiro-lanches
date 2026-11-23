@@ -218,3 +218,34 @@ test('índice com colunas iguais e régua inteira à vista', async ({ page }) =>
   }));
   expect(visiveis).toEqual([true, true, true]);
 });
+
+// ---------- achados da revisão final ----------
+for (const largura of [360, 375]) {
+  test(`largura ${largura}: nome da categoria cabe no quadro do índice`, async ({ page }) => {
+    await page.setViewportSize({ width: largura, height: 760 });
+    await page.goto('/#cardapio');
+    const vazando = await page.locator('#indice .indice-tile').evaluateAll((ts) => ts.filter((t) => {
+      const r = document.createRange(); r.selectNodeContents(t.querySelector('b'));
+      const q = t.getBoundingClientRect(), b = r.getBoundingClientRect(); // o texto, não a caixa (que fica presa em 100%)
+      return b.left < q.left || b.right > q.right;
+    }).map((t) => t.textContent));
+    expect(vazando).toEqual([]);
+  });
+}
+
+test('com a lupa aberta e sem busca, tocar no índice fecha o painel e mostra o título', async ({ page }) => {
+  await page.goto('/#cardapio');
+  await page.locator('.tela-cab [data-busca-abrir]').click();
+  await page.locator('#indice [data-ir-cat="artesanais"]').click();
+  await expect(page.locator('#busca-painel')).toBeHidden();
+  await expect(page.locator('#ct-artesanais')).toBeInViewport();
+});
+
+test('buscando, a barra de categorias não fica escondida atrás do painel', async ({ page }) => {
+  await page.goto('/#cardapio');
+  await page.locator('.tela-cab [data-busca-abrir]').click();
+  await page.fill('#f-busca', 'bacon');
+  await expect(page.locator('#chips')).toBeHidden();
+  await page.locator('[data-busca-fechar]').click();
+  await expect(page.locator('#chips')).toBeHidden(); // de volta ao topo: o índice está na tela
+});
