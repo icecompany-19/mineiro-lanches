@@ -9,10 +9,11 @@ select pg_temp.igual(
   'bebida=8,combo=11,lanche=35,porcao=2', 'seed: 35 lanches, 11 combos, 2 porções, 8 bebidas');
 select pg_temp.igual((select count(*) from adicionais where preco = 7.00)::text, '5', 'seed: 5 adicionais a R$ 7,00');
 select pg_temp.igual((select count(*) from loja)::text, '1', 'seed: uma linha de loja');
+select pg_temp.igual((select id from categorias_produtos order by ordem limit 1), 'hotdog', 'seed: hot dog é a primeira categoria (22/11/2026)');
 select pg_temp.ok((select combo_preco = 14.90 and horarios = '{"0":["19:00","01:00"],"1":["19:00","00:00"],"2":["19:00","00:00"],"3":null,"4":["19:00","00:00"],"5":["19:00","01:00"],"6":["19:00","01:00"]}'::jsonb from loja),
   'seed: loja com combo 14,90 e horários do CONFIG (seg/ter/qui 19h–0h e sex/sáb/dom 19h–1h, quarta fechada)');
 select pg_temp.igual((select string_agg(id, ',' order by ordem) from (select id, ordem from produtos order by ordem limit 3) t),
-  'gran-burger,gran-burger-bacon,gran-salada', 'seed: ordem do CONFIG');
+  'dog-medio,dog-medio-frango,dog-max', 'seed: ordem do CONFIG (hot dog primeiro desde 22/11/2026)');
 select pg_temp.ok((select ingredientes = array['Maionese grill', 'Barbecue', 'Cheddar cremoso', 'Bacon em fatias', '2 onion rings', 'Alface americana', 'Tomate em rodelas', 'Cebola roxa']
                    and categoria = 'artesanais' and preco = 35.99 and foto = 'gran-bacon-onion' from produtos where id = 'gran-bacon-onion'),
   'seed: ingredientes = ing do CONFIG, com categoria, preço e foto');

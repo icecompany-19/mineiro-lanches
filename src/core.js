@@ -57,6 +57,20 @@
     // tipo: lanche (vira combo, prensado, tirar item, adicionais) | combo (prensado, tirar item, adicionais) | porcao | bebida
     // foto: nome do arquivo em /assets/fotos (sem tamanho)
     categorias: [
+      // 22/11/2026: hot dog primeiro (carro-chefe da loja); a ordem vale também em categorias_produtos.ordem
+      { id: 'hotdog', label: 'Hot dog', icone: 'hotdog', desc: 'Salsicha Perdigão · Dog Bacon ou Dog Pizza: qualquer dog com o adicional Bacon ou Pizza', itens: [
+        { id: 'dog-medio', nome: 'Hot Dog Médio', preco: 14.99, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 1 salsicha Perdigão', nota: DICA_DOG },
+        { id: 'dog-medio-frango', nome: 'Hot Dog Médio Frango', preco: 21.99, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 1 salsicha' },
+        { id: 'dog-max', nome: 'Hot Dog Max', preco: 16.99, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 2 salsichas Perdigão', nota: DICA_DOG },
+        { id: 'dog-max-frango', nome: 'Hot Dog Max Frango', preco: 23.99, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 2 salsichas' },
+        { id: 'dog-super', nome: 'Hot Dog Super', preco: 19.99, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 3 salsichas Perdigão', nota: DICA_DOG },
+        { id: 'dog-super-frango', nome: 'Hot Dog Super Frango', preco: 26.99, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 3 salsichas' },
+        { id: 'dog-doritos', nome: 'Dog com Doritos', preco: 24.99, tipo: 'lanche', foto: 'dog-doritos', ing: ['Doritos', 'Cheddar'], base: 'O hot dog com Doritos da casa' },
+        // o Hot Dog Super com o adicional Pizza (foto "Hot Dog Super Pizza" do dono; 19,99 + 7,00 desde 22/11/2026)
+        { id: 'dog-pizza', nome: 'Hot Dog Pizza', preco: 26.99, tipo: 'lanche', foto: 'dog-pizza', ing: ING_DOG.concat(['Queijo gratinado', 'Orégano']), base: 'Hot Dog Super (3 salsichas Perdigão) com o adicional Pizza' },
+        // item novo; o dono ainda vai mandar o preço: null = "Preço a confirmar" (não vai para a sacola; consulta pelo WhatsApp)
+        { id: 'dog-cbo-turbo', nome: 'Hot Dog CBO Turbo', preco: 35.99, tipo: 'lanche', foto: 'dog-cbo-turbo', ing: ['Maionese', 'Ketchup', 'Alface', 'Azeite e sal', 'Purê de batata', 'Batata palha', 'Cheddar', 'Catupiry', 'Mussarela gratinada', 'Bacon'], base: 'Pão de dog e 3 salsichas Perdigão' }
+      ] },
       { id: 'artesanais', label: 'Artesanais', icone: 'burger', desc: 'Hambúrguer artesanal de 200 g', itens: [
         { id: 'gran-burger', nome: 'Gran Burger', preco: 26.99, tipo: 'lanche', foto: 'gran-burger', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue'], base: 'Pão e hambúrguer artesanal 200 g' },
         { id: 'gran-burger-bacon', nome: 'Gran Burger Bacon', preco: 33.99, tipo: 'lanche', foto: 'gran-burger-bacon', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Bacon'], base: 'Gran Burger com bacon' },
@@ -82,19 +96,6 @@
         { id: 'big-tudo', nome: 'Big Tudo', preco: 29.99, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Bacon', 'Batata palha'], base: 'Pão e hambúrguer' },
         { id: 'black-master', nome: 'Black Master', preco: 30.99, tipo: 'lanche', ing: ['Queijo', 'Cheddar', 'Maionese', 'Barbecue', 'Alface', 'Vinagrete com cebola', 'Azeite e sal', 'Requeijão', 'Ovo', 'Bacon'], base: 'Pão australiano e hambúrguer' },
         { id: 'big-mineiro', nome: 'Big Mineiro', preco: 31.99, tipo: 'lanche', foto: 'big-mineiro', ing: ['Mussarela', 'Presunto', 'Ovo', 'Bacon', 'Maionese', 'Barbecue', 'Batata palha', 'Alface', 'Vinagrete', 'Azeite e sal'], base: 'Pão de hambúrguer e hambúrguer 90 g' }
-      ] },
-      { id: 'hotdog', label: 'Hot dog', icone: 'hotdog', desc: 'Salsicha Perdigão · Dog Bacon ou Dog Pizza: qualquer dog com o adicional Bacon ou Pizza', itens: [
-        { id: 'dog-medio', nome: 'Hot Dog Médio', preco: 14.99, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 1 salsicha Perdigão', nota: DICA_DOG },
-        { id: 'dog-medio-frango', nome: 'Hot Dog Médio Frango', preco: 21.99, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 1 salsicha' },
-        { id: 'dog-max', nome: 'Hot Dog Max', preco: 16.99, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 2 salsichas Perdigão', nota: DICA_DOG },
-        { id: 'dog-max-frango', nome: 'Hot Dog Max Frango', preco: 23.99, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 2 salsichas' },
-        { id: 'dog-super', nome: 'Hot Dog Super', preco: 19.99, tipo: 'lanche', foto: 'dog-max', ing: ING_DOG.slice(), base: 'Pão médio e 3 salsichas Perdigão', nota: DICA_DOG },
-        { id: 'dog-super-frango', nome: 'Hot Dog Super Frango', preco: 26.99, tipo: 'lanche', ing: ['Frango', 'Maionese', 'Ketchup', 'Alface', 'Purê', 'Batata palha', 'Cheddar', 'Requeijão', 'Azeite e sal'], base: 'Pão e 3 salsichas' },
-        { id: 'dog-doritos', nome: 'Dog com Doritos', preco: 24.99, tipo: 'lanche', foto: 'dog-doritos', ing: ['Doritos', 'Cheddar'], base: 'O hot dog com Doritos da casa' },
-        // o Hot Dog Super com o adicional Pizza (foto "Hot Dog Super Pizza" do dono; 19,99 + 7,00 desde 22/11/2026)
-        { id: 'dog-pizza', nome: 'Hot Dog Pizza', preco: 26.99, tipo: 'lanche', foto: 'dog-pizza', ing: ING_DOG.concat(['Queijo gratinado', 'Orégano']), base: 'Hot Dog Super (3 salsichas Perdigão) com o adicional Pizza' },
-        // item novo; o dono ainda vai mandar o preço: null = "Preço a confirmar" (não vai para a sacola; consulta pelo WhatsApp)
-        { id: 'dog-cbo-turbo', nome: 'Hot Dog CBO Turbo', preco: 35.99, tipo: 'lanche', foto: 'dog-cbo-turbo', ing: ['Maionese', 'Ketchup', 'Alface', 'Azeite e sal', 'Purê de batata', 'Batata palha', 'Cheddar', 'Catupiry', 'Mussarela gratinada', 'Bacon'], base: 'Pão de dog e 3 salsichas Perdigão' }
       ] },
       { id: 'baguetes', label: 'Baguetes', icone: 'baguete', desc: 'Na baguete, do jeito mineiro', itens: [
         { id: 'carne-maluca', nome: 'Carne Maluca', preco: 27.99, tipo: 'lanche', ing: ['Maionese', 'Barbecue', 'Milho', 'Batata palha', 'Vinagrete com cebola', 'Purê', 'Requeijão', 'Cheddar'], base: 'Baguete e carne desfiada' },
