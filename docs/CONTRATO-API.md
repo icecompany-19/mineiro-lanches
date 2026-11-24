@@ -52,7 +52,7 @@ Fonte única para quem escreve o SQL (`supabase/`) e para quem escreve o adaptad
 
 | Coluna | Valor inicial |
 |---|---|
-| `modo` | `auto` · `aberta` · `fechada` |
+| `modo` | `auto` · `fechada` (`aberta` ainda passa no banco, mas desde 24/11/2026 nenhuma RPC grava; ver `definir_loja`) |
 | `aceita_fechada` | `false` |
 | `combo_preco` | `14.90` |
 | `taxa_km` | `1.00` (R$ por km cobrado; vem do `CONFIG.entrega.taxa.porKm`) |
@@ -208,7 +208,7 @@ Quando o dono mandar o preço: troque o `null` pelo valor no `CONFIG`, rode `npm
 |---|---|---|
 | `mudar_status(p_id uuid, p_status text, p_motivo text default null)` | `jsonb` (`pedido_json`) | Permitido: `novo→preparo`; `preparo→pronto` se o modo não é entrega, ou `preparo→rota` se é; `pronto` ou `rota → entregue`; qualquer status não final `→ cancelado`, com motivo de 1 a 200 caracteres. Pedido de origem `exemplo` aceita qualquer transição. Acrescenta `{status, em, motivo?}` ao `historico`. |
 | `marcar_esgotado(p_produto text, p_esgotado boolean)` | `void` | Grava `esgotado_dia = dia_operacional()` ou `null`. |
-| `definir_loja(p_modo text)` | `jsonb` | O mesmo bloco `loja` do `estado_cardapio`. |
+| `definir_loja(p_modo text)` | `jsonb` | Só `auto` ou `fechada` (24/11/2026: `aberta` → `dados_invalidos`). O mesmo bloco `loja` do `estado_cardapio`. |
 | `remover_testes()` | `int` | Apaga os pedidos com `origem = 'exemplo'`. |
 
 ### Contrato histórico do motoboy (17/10, substituído)

@@ -32,7 +32,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
   - `pedidos()`, `pedido(id)`, `atualizarStatus(id, status, motivo)`, `avancar(id)`;
   - `removerTestes()`, `gerarExemplos(n)`;
   - `esgotados()` → `{ id: true }`, `marcarEsgotado(id, bool)`;
-  - `loja()` → `{ modo: 'auto' | 'aberta' | 'fechada' }`, `definirLoja(modo)`;
+  - `loja()` → `{ modo: 'auto' | 'fechada' }` (`'aberta'` só se alguém gravar direto no banco), `definirLoja(modo)` com `'auto'` ou `'fechada'`;
   - `config()` → `{ som, atencaoMin, atrasoMin }`, `salvarConfig(obj)`;
   - `ouvir(fn)` → retorna a função de cancelar. `fn` recebe `{ tipo, dados }`. Os tipos são `pedido:novo`, `pedido:status`, `pedidos:limpos`, `cardapio:esgotados`, `loja:modo`, `config` e `storage:<chave>`. Esses eventos chegam também de outras abas (BroadcastChannel + evento `storage`). **Ao receber qualquer evento, releia `ML.store.pedidos()` e redesenhe só o que mudou.**
 - `ML.whatsapp.mensagem(pedido)` e `ML.whatsapp.link(texto, telefone?)`.
@@ -100,7 +100,7 @@ Entregar **dois arquivos** nesta pasta: `painel.js` e `painel.css`. Não editar 
      - no rodapé, aviso de prévia: "Prévia GaspLab · pedidos guardados neste navegador".
    - **Barra superior:**
      - título da seção;
-     - **status da loja** (botão de 3 estados: Automático pelo horário / Aberta / Fechada, mostrando `ML.horario.situacao().txt`);
+     - **status da loja** (botão de 2 estados: Automático pelo horário / Fechada, mostrando `ML.horario.situacao().txt`; o "Aberta" saiu em 24/11/2026);
      - relógio;
      - botão de som (liga/desliga, salvo em config);
      - **Simular pedido** (gera 1 pedido de exemplo realista via `gerarExemplos(1)` e o deixa como `novo`; atenção: `gerarExemplos` espalha status, então ajuste o gerado para `novo` com `atualizarStatus` ou crie com uma variação sua usando `ML.store.criarPedido` + `ML.precos`);

@@ -542,4 +542,40 @@ test.describe('cabeçalho', () => {
     const referencia = lugares.pedidos;
     for (const view of VIEWS) expect(lugares[view], `barra superior em ${view} (x, y) contra a de pedidos`).toEqual(referencia);
   });
+
+  // 24/11/2026: o botão "Aberta" saiu (gravava a loja aberta para sempre e entrou pedido à tarde sem ninguém na loja)
+  test('computador (1280): o modo da loja só tem Automático e Fechada, e o realce cobre o botão escolhido', async ({ page, largura }) => {
+    test.skip(largura !== 1280, 'interface de computador');
+    await fechado(page);
+    // o banco é compartilhado (e os outros testes contam com 'aberta'): a troca de modo responde aqui, sem gravar nada
+    const gravados = [];
+    await page.route('**/rest/v1/rpc/definir_loja', async (route) => {
+      const { p_modo } = route.request().postDataJSON();
+      gravados.push(p_modo);
+      const atual = await page.evaluate(() => window.ML.store.loja());
+      await route.fulfill({ json: { ...atual, modo: p_modo } });
+    });
+    await entrar(page);
+    const botoes = page.locator('.pn-seg [data-loja]');
+    await expect(botoes).toHaveCount(2);
+    expect(await botoes.evaluateAll((bs) => bs.map((b) => b.dataset.loja)), 'opções do modo da loja').toEqual(['auto', 'fechada']);
+    await expect(page.locator('[data-loja="aberta"]')).toHaveCount(0);
+    await expect(page.locator('[data-loja="auto"]')).toHaveAttribute('aria-pressed', 'true');
+    // o realce deslizante (::before) fica em cima do botão pressionado, com a mesma largura (até 2 px de diferença:
+    // a borda do seletor tem 1,5 px)
+    const desvio = (modo) =>
+      page.locator('.pn-seg').evaluate((seg, modo) => {
+        const s = seg.getBoundingClientRect(), cs = window.getComputedStyle(seg, '::before'), b = seg.querySelector(`[data-loja="${modo}"]`).getBoundingClientRect();
+        const m = new window.DOMMatrixReadOnly(cs.transform === 'none' ? undefined : cs.transform);
+        const x = s.left + parseFloat(window.getComputedStyle(seg).borderLeftWidth) + parseFloat(cs.left) + m.m41;
+        return Math.max(Math.abs(x - b.left), Math.abs(parseFloat(cs.width) - b.width));
+      }, modo);
+    await expect.poll(() => desvio('auto')).toBeLessThanOrEqual(2);
+    await page.locator('[data-loja="fechada"]').click();
+    await expect(page.locator('[data-loja="fechada"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => desvio('fechada')).toBeLessThanOrEqual(2);
+    await page.locator('[data-loja="auto"]').click();
+    await expect(page.locator('[data-loja="auto"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(gravados, 'o painel pediu ao banco só Fechada e depois Automático').toEqual(['fechada', 'auto']);
+  });
 });

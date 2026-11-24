@@ -35,20 +35,20 @@
 /* ---------- barra superior ---------- */
 .pn-main { min-width: 0; display: flex; flex-direction: column; }
 .pn-topo { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem .6rem; padding: .75rem 1.5rem; background: var(--carvao); border-bottom: 1px solid var(--borda-escura); }
-.pn-titulo { font-family: var(--f-letreiro); font-weight: 400; font-size: 1.9rem; line-height: 1; color: var(--letreiro); text-shadow: 0 .06em 0 var(--placa); margin-right: auto; }
+/* o título ocupa sempre a largura do mais comprido ("Configurações"): assim a barra quebra igual em todas as telas e os controles não mudam de lugar */
+.pn-titulo { font-family: var(--f-letreiro); font-weight: 400; font-size: 1.9rem; line-height: 1; color: var(--letreiro); text-shadow: 0 .06em 0 var(--placa); margin-right: auto; min-width: 6.5em; }
 .pn-titulo:focus-visible { outline-offset: 6px; }
 .pn-loja { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
 /* modo da loja: segmentado (4.2) e status neon (4.4). O texto vem de ML.horario.situacao().txt; a classe --on/--off vem do JS */
-.pn-seg { position: relative; display: inline-grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px; border: 1.5px solid var(--borda-campo); border-radius: var(--r-md); background: var(--chapa-2); }
+.pn-seg { position: relative; display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 4px; border: 1.5px solid var(--borda-campo); border-radius: var(--r-md); background: var(--chapa-2); }
 .pn-seg-b { position: relative; z-index: 1; min-height: 48px; padding: 0 .75rem; border: 0; border-radius: calc(var(--r-md) - 4px); background: transparent; color: var(--osso-2); font: 600 .85rem var(--f-placa); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; transition: background var(--t-ui) var(--suave), color var(--t-ui) var(--suave); }
 .pn-seg-b:hover { color: var(--osso); }
 .pn-seg-b[aria-pressed="true"] { background: var(--osso); color: var(--grafite); }
 /* com :has() a opção ativa desliza (transform); sem ele, o fundo vai direto na opção */
 @supports selector(:has(*)) {
-  .pn-seg::before { content: ''; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3); border-radius: calc(var(--r-md) - 4px); background: var(--osso); opacity: 0; transition: transform var(--t-ui) var(--suave), opacity var(--t-toque) var(--suave); }
+  .pn-seg::before { content: ''; position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 2); border-radius: calc(var(--r-md) - 4px); background: var(--osso); opacity: 0; transition: transform var(--t-ui) var(--suave), opacity var(--t-toque) var(--suave); }
   .pn-seg:has([aria-pressed="true"])::before { opacity: 1; }
-  .pn-seg:has([data-loja="aberta"][aria-pressed="true"])::before { transform: translateX(100%); }
-  .pn-seg:has([data-loja="fechada"][aria-pressed="true"])::before { transform: translateX(200%); }
+  .pn-seg:has([data-loja="fechada"][aria-pressed="true"])::before { transform: translateX(100%); }
   .pn-seg-b[aria-pressed="true"] { background: transparent; }
 }
 .pn-loja-txt { --neon: var(--osso-2); --brilho: none; position: relative; display: inline-flex; align-items: center; gap: .5rem; min-width: 16ch; min-height: 32px; padding: 0 .9rem; border: 1.5px solid var(--borda-campo); border-radius: var(--r-pill); background: var(--chapa-2); color: var(--neon); font: 600 .85rem/1 var(--f-placa); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }

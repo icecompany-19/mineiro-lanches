@@ -312,7 +312,6 @@
           <div class="pn-loja">
             <div class="pn-seg" role="group" aria-label="Status da loja">
               <button type="button" class="pn-seg-b" data-loja="auto" title="Automático pelo horário">Automático</button>
-              <button type="button" class="pn-seg-b" data-loja="aberta">Aberta</button>
               <button type="button" class="pn-seg-b" data-loja="fechada">Fechada</button>
             </div>
             <span class="pn-loja-txt" data-lojatxt role="status"></span>

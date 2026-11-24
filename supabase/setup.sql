@@ -1,6 +1,6 @@
 -- =====================================================================================
 -- Mineiro Lanche · setup completo do banco (Supabase)
--- Gerado por scripts/montar-setup.mjs a partir de supabase/migrations/20261008000001_schema.sql, supabase/migrations/20261008000002_rls.sql, supabase/migrations/20261008000003_rpc.sql, supabase/migrations/20261016000001_taxa_entrega.sql, supabase/migrations/20261017000001_motoboy.sql, supabase/migrations/20261017000002_confirmar_entrega_ja_entregue.sql, supabase/migrations/20261018023009_cotacao_entrega.sql, supabase/migrations/20261018031024_destino_entrega_e_limpeza.sql, supabase/migrations/20261018181746_gestao_usuarios_painel.sql, supabase/migrations/20261018185421_pagamentos_mercado_pago.sql, supabase/migrations/20261019024838_controle_entregadores.sql, supabase/migrations/20261019032841_historico_entregas_painel.sql, supabase/migrations/20261019034930_totais_taxas_entregadores.sql, supabase/migrations/20261019123043_viagens_rotas_entregadores.sql, supabase/migrations/20261020145407_pagamentos_permissoes_backend.sql, supabase/migrations/20261020203000_gestao_produtos.sql, supabase/migrations/20261020213000_estoque_categoria.sql, supabase/migrations/20261021001305_pagamento_na_entrega.sql, supabase/migrations/20261021001941_sinalizacao_pagamento_entrega_motoboy.sql, supabase/migrations/20261021003931_email_opcional_e_troco.sql, supabase/migrations/20261022193306_despacho_automatico_individual.sql, supabase/migrations/20261024023500_motoboy_pegar_pedidos.sql, supabase/migrations/20261029190000_entregas_manuais.sql, supabase/migrations/20261030234500_retirar_teste_pagamento.sql, supabase/migrations/20261111005500_fila_conciliacao_prioriza_abertos.sql, supabase/migrations/20261111011500_fila_conciliacao_sem_cancelados.sql, supabase/migrations/20261122230000_hotdog_primeira_categoria.sql, supabase/seed.sql.
+-- Gerado por scripts/montar-setup.mjs a partir de supabase/migrations/20261008000001_schema.sql, supabase/migrations/20261008000002_rls.sql, supabase/migrations/20261008000003_rpc.sql, supabase/migrations/20261016000001_taxa_entrega.sql, supabase/migrations/20261017000001_motoboy.sql, supabase/migrations/20261017000002_confirmar_entrega_ja_entregue.sql, supabase/migrations/20261018023009_cotacao_entrega.sql, supabase/migrations/20261018031024_destino_entrega_e_limpeza.sql, supabase/migrations/20261018181746_gestao_usuarios_painel.sql, supabase/migrations/20261018185421_pagamentos_mercado_pago.sql, supabase/migrations/20261019024838_controle_entregadores.sql, supabase/migrations/20261019032841_historico_entregas_painel.sql, supabase/migrations/20261019034930_totais_taxas_entregadores.sql, supabase/migrations/20261019123043_viagens_rotas_entregadores.sql, supabase/migrations/20261020145407_pagamentos_permissoes_backend.sql, supabase/migrations/20261020203000_gestao_produtos.sql, supabase/migrations/20261020213000_estoque_categoria.sql, supabase/migrations/20261021001305_pagamento_na_entrega.sql, supabase/migrations/20261021001941_sinalizacao_pagamento_entrega_motoboy.sql, supabase/migrations/20261021003931_email_opcional_e_troco.sql, supabase/migrations/20261022193306_despacho_automatico_individual.sql, supabase/migrations/20261024023500_motoboy_pegar_pedidos.sql, supabase/migrations/20261029190000_entregas_manuais.sql, supabase/migrations/20261030234500_retirar_teste_pagamento.sql, supabase/migrations/20261111005500_fila_conciliacao_prioriza_abertos.sql, supabase/migrations/20261111011500_fila_conciliacao_sem_cancelados.sql, supabase/migrations/20261122230000_hotdog_primeira_categoria.sql, supabase/migrations/20261124200000_painel_sem_modo_aberta.sql, supabase/seed.sql.
 -- Não edite à mão: mude as migrations ou o CONFIG e rode
 --   node scripts/gerar-seed.mjs && node scripts/montar-setup.mjs
 --
@@ -4949,6 +4949,44 @@ grant execute on function public.reservar_conciliacao_mp() to service_role;
 update public.categorias_produtos
    set ordem = case id when 'hotdog' then 1 when 'artesanais' then 2 when 'tradicionais' then 3 end
  where id in ('hotdog', 'artesanais', 'tradicionais');
+
+-- ============ supabase/migrations/20261124200000_painel_sem_modo_aberta.sql ============
+
+-- 24/11/2026: o painel não abre mais a loja fora do horário.
+-- O botão "Aberta" gravava modo = 'aberta' para sempre: a loja ficou aberta à tarde (e numa quarta, dia fechado)
+-- e entrou pedido sem ninguém na loja. Agora a equipe só escolhe "Automático" (segue loja.horarios) ou "Fechada".
+-- Para abrir em outro horário, muda-se loja.horarios.
+-- O valor 'aberta' continua aceito na tabela (os testes forçam a loja aberta por SQL), mas nenhuma RPC grava mais.
+-- Pode ser aplicada de novo.
+
+update public.loja set modo = 'auto' where modo = 'aberta';
+
+-- modo manual da loja: 'auto' segue o horário; 'fechada' é decisão do painel
+create or replace function public.definir_loja(p_modo text)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not public.is_equipe() then
+    raise exception 'sem_permissao' using errcode = 'P0001';
+  end if;
+  if p_modo is null or p_modo not in ('auto', 'fechada') then
+    raise exception 'dados_invalidos' using errcode = 'P0001';
+  end if;
+  update public.loja set modo = p_modo where id = 1;
+  if not found then
+    raise exception 'nao_encontrado' using errcode = 'P0001';
+  end if;
+  return public.loja_json();
+end;
+$$;
+
+-- mesmas permissões de antes: só o painel (login; dentro, is_equipe() decide)
+revoke all on function public.definir_loja(text) from public, anon, authenticated;
+grant execute on function public.definir_loja(text) to authenticated;
 
 -- ============ supabase/seed.sql ============
 

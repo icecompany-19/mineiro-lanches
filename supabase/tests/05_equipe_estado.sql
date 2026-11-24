@@ -116,8 +116,9 @@ select pg_temp.igual(pg_temp.erro($$select marcar_esgotado('gran-crispy', null)$
 select pg_temp.ok(definir_loja('fechada') @> '{"modo":"fechada","aceitaFechada":false,"comboPreco":14.99}', 'definir_loja devolve o bloco loja');
 select pg_temp.ok(not loja_aberta(), 'definir_loja(fechada) fecha');
 select pg_temp.igual(definir_loja('auto') ->> 'modo', 'auto', 'definir_loja(auto)');
-select pg_temp.igual(definir_loja('aberta') ->> 'modo', 'aberta', 'definir_loja(aberta)');
-select pg_temp.ok(loja_aberta(), 'definir_loja(aberta) abre');
+-- 24/11/2026: o modo manual "aberta" saiu do painel (a loja ficou aberta à tarde e entrou pedido sem ninguém)
+select pg_temp.igual(pg_temp.erro($$select definir_loja('aberta')$$), 'dados_invalidos', 'definir_loja(aberta): recusado, a equipe não abre fora do horário');
+select pg_temp.igual((select modo from loja where id = 1), 'auto', 'definir_loja(aberta) recusado não muda o modo');
 select pg_temp.igual(pg_temp.erro($$select definir_loja('meio-aberta')$$), 'dados_invalidos', 'definir_loja com modo desconhecido: dados_invalidos');
 select pg_temp.igual(pg_temp.erro($$select definir_loja(null)$$), 'dados_invalidos', 'definir_loja(null): dados_invalidos');
 reset role;

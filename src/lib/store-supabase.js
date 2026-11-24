@@ -737,7 +737,7 @@ export function criarStoreSupabase(opc) {
         });
     },
 
-    // modo 'auto' segue o horário; 'aberta' ou 'fechada' é decisão manual do painel
+    // modo 'auto' segue o horário; 'fechada' é decisão manual do painel ('aberta' saiu em 24/11/2026: o banco recusa)
     loja: () => Object.assign({}, loja),
     definirLoja(modo) {
       const antes = loja.modo;
